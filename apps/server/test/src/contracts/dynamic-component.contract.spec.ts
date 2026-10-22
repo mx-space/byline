@@ -117,4 +117,20 @@ describe('DynamicComponentController contract (e2e)', () => {
     expect(res.statusCode).toBe(422)
     expect(res.json().error.code).toBe('VALIDATION_FAILED')
   })
+
+  test.each(['javascript:alert(1)', 'data:text/javascript,alert(1)'])(
+    'POST /dynamic-components rejects a non-http url (%s)',
+    async (url) => {
+      service.register.mockClear()
+      const res = await proxy.app.inject({
+        headers: authPassHeader,
+        method: 'POST',
+        url: `${apiRoutePrefix}/dynamic-components`,
+        payload: { name: 'x', url, initialHeight: 100 },
+      })
+
+      expect(res.statusCode).toBe(422)
+      expect(service.register).not.toHaveBeenCalled()
+    },
+  )
 })

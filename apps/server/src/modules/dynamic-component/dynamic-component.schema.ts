@@ -2,7 +2,21 @@ import { z } from 'zod'
 
 export const DYNAMIC_CATALOG_VERSION = 1
 
-const zCatalogUrl = z.string().trim().min(1).max(2048)
+const isHttpModuleUrl = (value: string) => {
+  try {
+    const { protocol } = new URL(value, 'http://localhost')
+    return protocol === 'http:' || protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+const zCatalogUrl = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2048)
+  .refine(isHttpModuleUrl, 'url must be an http(s) URL or a path')
 
 export const RegisterDynamicComponentSchema = z.object({
   name: z.string().trim().min(1).max(120),
