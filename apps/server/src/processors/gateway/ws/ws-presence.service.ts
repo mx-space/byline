@@ -17,7 +17,7 @@ import type { WsLocalSnapshot, WsNamespace } from './ws.types'
 const NODE_TTL_SECONDS = 30
 const HEARTBEAT_MS = 10_000
 const SWEEP_MS = 60_000
-const WS_NAMESPACES: WsNamespace[] = ['web', 'admin']
+const WS_NAMESPACES: WsNamespace[] = ['admin']
 
 // KEYS[1] = room hash, KEYS[2] = rooms set, ARGV[1] = room name, ARGV[2..] = member ids to HDEL first (optional)
 const ROOM_PRUNE_SCRIPT = `

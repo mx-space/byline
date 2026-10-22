@@ -7,7 +7,7 @@ const HEARTBEAT_INTERVAL_MS = 30_000
 
 class TestGateway extends WsGatewayBase {
   constructor(bus: any, presence: any) {
-    super('web', bus, presence)
+    super('admin', bus, presence)
   }
 
   broadcast() {}

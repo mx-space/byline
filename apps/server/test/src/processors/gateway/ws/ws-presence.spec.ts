@@ -39,71 +39,71 @@ describe('WsPresenceService', () => {
   })
 
   it('addConnection/connectionIds bookkeeping is visible cross-instance', async () => {
-    await nodeA.addConnection('web', 'conn-a1')
-    await nodeB.addConnection('web', 'conn-b1')
+    await nodeA.addConnection('admin', 'conn-a1')
+    await nodeB.addConnection('admin', 'conn-b1')
 
-    const ids = (await nodeA.connectionIds('web')).sort()
+    const ids = (await nodeA.connectionIds('admin')).sort()
     expect(ids).toEqual(['conn-a1', 'conn-b1'])
 
-    await nodeA.removeConnection('web', 'conn-a1')
-    await nodeB.removeConnection('web', 'conn-b1')
+    await nodeA.removeConnection('admin', 'conn-a1')
+    await nodeB.removeConnection('admin', 'conn-b1')
   })
 
   it('joinRoom bookkeeping is visible cross-instance and reflected in roomSizes', async () => {
-    await nodeA.joinRoom('web', 'roomX', 'conn-a2')
-    await nodeB.joinRoom('web', 'roomX', 'conn-b2')
+    await nodeA.joinRoom('admin', 'roomX', 'conn-a2')
+    await nodeB.joinRoom('admin', 'roomX', 'conn-b2')
 
-    const members = (await nodeA.roomMemberIds('web', 'roomX')).sort()
+    const members = (await nodeA.roomMemberIds('admin', 'roomX')).sort()
     expect(members).toEqual(['conn-a2', 'conn-b2'])
 
-    const sizes = await nodeA.roomSizes('web')
+    const sizes = await nodeA.roomSizes('admin')
     expect(sizes.roomX).toBe(2)
 
-    await nodeA.leaveRoom('web', 'roomX', 'conn-a2')
-    await nodeB.leaveRoom('web', 'roomX', 'conn-b2')
+    await nodeA.leaveRoom('admin', 'roomX', 'conn-a2')
+    await nodeB.leaveRoom('admin', 'roomX', 'conn-b2')
   })
 
   it('leaveRoom evicts the room hash and rooms-set entry once the room is empty', async () => {
-    await nodeA.joinRoom('web', 'roomY', 'conn-a3')
+    await nodeA.joinRoom('admin', 'roomY', 'conn-a3')
 
-    await nodeA.leaveRoom('web', 'roomY', 'conn-a3')
+    await nodeA.leaveRoom('admin', 'roomY', 'conn-a3')
 
-    expect(await nodeA.roomMemberIds('web', 'roomY')).toEqual([])
-    const roomsSetKey = getRedisKey(RedisKeys.WsRooms, 'web')
+    expect(await nodeA.roomMemberIds('admin', 'roomY')).toEqual([])
+    const roomsSetKey = getRedisKey(RedisKeys.WsRooms, 'admin')
     expect(await client.sismember(roomsSetKey, 'roomY')).toBe(0)
-    const roomHashKey = getRedisKey(RedisKeys.WsRoom, 'web', 'roomY')
+    const roomHashKey = getRedisKey(RedisKeys.WsRoom, 'admin', 'roomY')
     expect(await client.exists(roomHashKey)).toBe(0)
   })
 
   it('leaveRoom keeps a room alive if another member is present, and cleans up once truly empty', async () => {
-    await nodeA.joinRoom('web', 'roomZ', 'm1')
+    await nodeA.joinRoom('admin', 'roomZ', 'm1')
     await client.hset(
-      getRedisKey(RedisKeys.WsRoom, 'web', 'roomZ'),
+      getRedisKey(RedisKeys.WsRoom, 'admin', 'roomZ'),
       'm2',
       nodeB.nodeId,
     )
 
-    await nodeA.leaveRoom('web', 'roomZ', 'm1')
+    await nodeA.leaveRoom('admin', 'roomZ', 'm1')
 
-    expect(await nodeA.roomMemberIds('web', 'roomZ')).toEqual(['m2'])
-    const roomsSetKey = getRedisKey(RedisKeys.WsRooms, 'web')
-    const roomHashKey = getRedisKey(RedisKeys.WsRoom, 'web', 'roomZ')
+    expect(await nodeA.roomMemberIds('admin', 'roomZ')).toEqual(['m2'])
+    const roomsSetKey = getRedisKey(RedisKeys.WsRooms, 'admin')
+    const roomHashKey = getRedisKey(RedisKeys.WsRoom, 'admin', 'roomZ')
     expect(await client.sismember(roomsSetKey, 'roomZ')).toBe(1)
     expect(await client.exists(roomHashKey)).toBe(1)
 
-    await nodeB.leaveRoom('web', 'roomZ', 'm2')
+    await nodeB.leaveRoom('admin', 'roomZ', 'm2')
 
-    expect(await nodeA.roomMemberIds('web', 'roomZ')).toEqual([])
+    expect(await nodeA.roomMemberIds('admin', 'roomZ')).toEqual([])
     expect(await client.sismember(roomsSetKey, 'roomZ')).toBe(0)
     expect(await client.exists(roomHashKey)).toBe(0)
   })
 
   describe('sweepOnce', () => {
     it('removes a dead node conns/room fields and Socket metadata, keeping the live node intact', async () => {
-      await nodeA.addConnection('web', 'dead-conn')
-      await nodeB.addConnection('web', 'live-conn')
-      await nodeA.joinRoom('web', 'sweepRoom', 'dead-conn')
-      await nodeB.joinRoom('web', 'sweepRoom', 'live-conn')
+      await nodeA.addConnection('admin', 'dead-conn')
+      await nodeB.addConnection('admin', 'live-conn')
+      await nodeA.joinRoom('admin', 'sweepRoom', 'dead-conn')
+      await nodeB.joinRoom('admin', 'sweepRoom', 'live-conn')
       await client.hset(
         getRedisKey(RedisKeys.Socket),
         'dead-conn',
@@ -120,8 +120,8 @@ describe('WsPresenceService', () => {
 
       await nodeA.sweepOnce()
 
-      expect(await nodeA.connectionIds('web')).toEqual(['live-conn'])
-      expect(await nodeA.roomMemberIds('web', 'sweepRoom')).toEqual([
+      expect(await nodeA.connectionIds('admin')).toEqual(['live-conn'])
+      expect(await nodeA.roomMemberIds('admin', 'sweepRoom')).toEqual([
         'live-conn',
       ])
 
@@ -135,8 +135,8 @@ describe('WsPresenceService', () => {
       expect(nodesSetMembers).not.toContain(nodeA.nodeId)
       expect(nodesSetMembers).toContain(nodeB.nodeId)
 
-      await nodeB.removeConnection('web', 'live-conn')
-      await nodeB.leaveRoom('web', 'sweepRoom', 'live-conn')
+      await nodeB.removeConnection('admin', 'live-conn')
+      await nodeB.leaveRoom('admin', 'sweepRoom', 'live-conn')
       await client.hdel(getRedisKey(RedisKeys.Socket), 'live-conn')
     })
 
@@ -157,25 +157,25 @@ describe('WsPresenceService', () => {
 
     it('reconciles zombie entries owned by a live node against the local index', async () => {
       await client.set(getRedisKey(RedisKeys.WsNode, nodeB.nodeId), '1')
-      nodeB.registerLocalIndex('web', () => ({
+      nodeB.registerLocalIndex('admin', () => ({
         conns: ['recon-live'],
         rooms: { reconLiveRoom: ['recon-live'] },
       }))
-      await nodeB.addConnection('web', 'recon-zombie')
-      await nodeB.joinRoom('web', 'reconRoom', 'recon-zombie')
+      await nodeB.addConnection('admin', 'recon-zombie')
+      await nodeB.joinRoom('admin', 'reconRoom', 'recon-zombie')
 
       await nodeB.sweepOnce()
 
-      const ids = await nodeB.connectionIds('web')
+      const ids = await nodeB.connectionIds('admin')
       expect(ids).toContain('recon-live')
       expect(ids).not.toContain('recon-zombie')
-      expect(await nodeB.roomMemberIds('web', 'reconRoom')).toHaveLength(0)
-      expect(await nodeB.roomMemberIds('web', 'reconLiveRoom')).toEqual([
+      expect(await nodeB.roomMemberIds('admin', 'reconRoom')).toHaveLength(0)
+      expect(await nodeB.roomMemberIds('admin', 'reconLiveRoom')).toEqual([
         'recon-live',
       ])
 
-      await nodeB.removeConnection('web', 'recon-live')
-      await nodeB.leaveRoom('web', 'reconLiveRoom', 'recon-live')
+      await nodeB.removeConnection('admin', 'recon-live')
+      await nodeB.leaveRoom('admin', 'reconLiveRoom', 'recon-live')
     })
   })
 })

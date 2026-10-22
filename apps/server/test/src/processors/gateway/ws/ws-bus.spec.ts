@@ -44,13 +44,13 @@ describe('WsBusService', () => {
 
   it('publish from A delivers the frame to B registered ns handler', async () => {
     const received: WsBusFrame[] = []
-    busB.register('web', (frame) => received.push(frame))
+    busB.register('admin', (frame) => received.push(frame))
 
-    busA.publish({ ns: 'web', event: 'test.event', payload: { hello: 1 } })
+    busA.publish({ ns: 'admin', event: 'test.event', payload: { hello: 1 } })
 
     await vi.waitFor(() => expect(received).toHaveLength(1))
     expect(received[0]).toEqual({
-      ns: 'web',
+      ns: 'admin',
       event: 'test.event',
       payload: { hello: 1 },
     })
@@ -66,24 +66,12 @@ describe('WsBusService', () => {
     expect(received[0].event).toBe('self.event')
   })
 
-  it('a handler registered for one ns never receives frames of another ns', async () => {
-    const webReceived: WsBusFrame[] = []
-    const adminReceived: WsBusFrame[] = []
-    busB.register('web', (frame) => webReceived.push(frame))
-    busB.register('admin', (frame) => adminReceived.push(frame))
-
-    busA.publish({ ns: 'web', event: 'ns.isolation' })
-
-    await vi.waitFor(() => expect(webReceived).toHaveLength(1))
-    expect(adminReceived).toHaveLength(0)
-  })
-
   it('unregister stops further delivery to that handler', async () => {
     const received: WsBusFrame[] = []
-    const unregister = busB.register('web', (frame) => received.push(frame))
+    const unregister = busB.register('admin', (frame) => received.push(frame))
     unregister()
 
-    busA.publish({ ns: 'web', event: 'after.unregister' })
+    busA.publish({ ns: 'admin', event: 'after.unregister' })
 
     await new Promise((resolve) => setTimeout(resolve, 200))
     expect(received).toHaveLength(0)
@@ -156,7 +144,7 @@ describe('WsBusService', () => {
 
   it('drops a malformed (non-JSON) frame without throwing or dispatching', async () => {
     const received: WsBusFrame[] = []
-    busB.register('web', (frame) => received.push(frame))
+    busB.register('admin', (frame) => received.push(frame))
 
     await clientA.publish(getRedisKey(RedisKeys.WsBus), 'not-json{{{')
 

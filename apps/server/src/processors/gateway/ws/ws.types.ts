@@ -1,6 +1,6 @@
 import type { WebSocket } from 'ws'
 
-export type WsNamespace = 'web' | 'admin'
+export type WsNamespace = 'admin'
 
 export interface WsConnection {
   id: string

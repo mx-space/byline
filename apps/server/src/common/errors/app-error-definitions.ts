@@ -102,19 +102,6 @@ export const APP_ERROR_DEFINITIONS = {
     status: 422,
     message: 'order value must be unique',
   },
-  [AppErrorCode.INVALID_SEARCH_TYPE]: {
-    status: 400,
-    message: ({ type }) => `Invalid search type: ${type}`,
-    details: ({ type }) => ({ type }),
-  },
-  [AppErrorCode.INVALID_ROOM_NAME]: {
-    status: 400,
-    message: 'Invalid room name',
-  },
-  [AppErrorCode.INVALID_SUBSCRIBE_TYPE]: {
-    status: 400,
-    message: 'Invalid subscribe type',
-  },
   [AppErrorCode.INVALID_VIEW]: {
     status: 400,
     message: ({ view, available }) =>
@@ -129,12 +116,6 @@ export const APP_ERROR_DEFINITIONS = {
     status: 400,
     message: 'Validation failed',
     details: (p) => (p?.issues ? { issues: p.issues } : undefined),
-  },
-
-  // ack
-  [AppErrorCode.ACK_INVALID_PAYLOAD]: {
-    status: 400,
-    message: (p) => p?.message ?? 'Invalid ack payload',
   },
 
   // ai
@@ -321,69 +302,6 @@ export const APP_ERROR_DEFINITIONS = {
     message: 'Category still has posts, cannot delete',
   },
 
-  // comment
-  [AppErrorCode.COMMENT_DISABLED]: {
-    status: 403,
-    message: 'Comments are globally disabled',
-  },
-  [AppErrorCode.COMMENT_FORBIDDEN]: {
-    status: 403,
-    message: 'Comments are forbidden by the owner',
-  },
-  [AppErrorCode.COMMENT_NOT_FOUND]: {
-    status: 404,
-    message: 'Comment not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
-  [AppErrorCode.COMMENT_TOO_DEEP]: {
-    status: 400,
-    message: 'Comment nesting is too deep',
-  },
-  [AppErrorCode.COMMENT_POST_NOT_EXISTS]: {
-    status: 400,
-    message: 'Commented post does not exist',
-  },
-  [AppErrorCode.COMMENT_IMAGE_CAP_EXCEEDED]: {
-    status: 422,
-    message: 'Comment image count exceeds the limit',
-  },
-  [AppErrorCode.COMMENT_UPLOAD_DISABLED]: {
-    status: 503,
-    message: 'Comment image upload is disabled',
-  },
-  [AppErrorCode.COMMENT_UPLOAD_FILE_TOO_LARGE]: {
-    status: 413,
-    message: 'Image size exceeds the limit',
-  },
-  [AppErrorCode.COMMENT_UPLOAD_INVALID_MIME]: {
-    status: 415,
-    message: 'Unsupported image format',
-  },
-  [AppErrorCode.COMMENT_UPLOAD_FILE_NOT_OWNED]: {
-    status: 403,
-    message: 'Cannot reference an image uploaded by someone else',
-  },
-  [AppErrorCode.COMMENT_UPLOAD_FILE_ALREADY_BOUND]: {
-    status: 409,
-    message: 'Image already bound to another comment, please upload again',
-  },
-  [AppErrorCode.COMMENT_UPLOAD_RATE_LIMITED]: {
-    status: 429,
-    message: 'Upload too frequent, please try again later',
-  },
-  [AppErrorCode.COMMENT_UPLOAD_QUOTA_EXCEEDED]: {
-    status: 429,
-    message: 'Image storage quota exceeded',
-  },
-  [AppErrorCode.COMMENT_UPLOAD_ACCOUNT_TOO_NEW]: {
-    status: 403,
-    message: 'Account is too new to upload images',
-  },
-  [AppErrorCode.COMMENT_UPLOAD_INSUFFICIENT_COMMENTS]: {
-    status: 403,
-    message: 'More comments required before uploading is allowed',
-  },
-
   // config
   [AppErrorCode.CONFIG_NOT_FOUND]: {
     status: 404,
@@ -399,16 +317,6 @@ export const APP_ERROR_DEFINITIONS = {
   [AppErrorCode.CRON_NOT_FOUND]: {
     status: 404,
     message: withExtra('Cron task not found'),
-  },
-  [AppErrorCode.INVALID_CRON_METHOD]: {
-    status: 400,
-    message: 'Invalid cron method',
-  },
-  [AppErrorCode.FUNCTION_NOT_FOUND]: {
-    status: 404,
-    message: (p) =>
-      p?.path ? `Function not found: ${p.path}` : 'Function not found',
-    details: (p) => (p?.path ? { path: p.path } : undefined),
   },
 
   // draft
@@ -464,25 +372,6 @@ export const APP_ERROR_DEFINITIONS = {
     message: 'Email template not found',
   },
 
-  // enrichment
-  [AppErrorCode.ENRICHMENT_BROWSER_MODE_REQUIRED]: {
-    status: 409,
-    message: 'Browser mode required for enrichment',
-  },
-  [AppErrorCode.ENRICHMENT_CAPTURE_FAILED]: {
-    status: 500,
-    message: 'Enrichment capture failed',
-  },
-  [AppErrorCode.ENRICHMENT_NOT_FOUND]: {
-    status: 404,
-    message: 'Enrichment not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
-  [AppErrorCode.ENRICHMENT_SCREENSHOT_DISABLED]: {
-    status: 409,
-    message: 'Enrichment screenshot is disabled',
-  },
-
   // file
   [AppErrorCode.FILE_NOT_FOUND]: {
     status: 404,
@@ -505,14 +394,6 @@ export const APP_ERROR_DEFINITIONS = {
   [AppErrorCode.FILE_STORAGE_NOT_CONFIGURED]: {
     status: 400,
     message: 'S3 image storage is not configured',
-  },
-  [AppErrorCode.FILE_UPLOAD_DISABLED]: {
-    status: 503,
-    message: 'File upload is disabled',
-  },
-  [AppErrorCode.FILE_UPLOAD_NOT_AUTHORIZED]: {
-    status: 403,
-    message: 'File upload is not authorized',
   },
   [AppErrorCode.FILE_REQUIRED]: {
     status: 400,
@@ -540,76 +421,11 @@ export const APP_ERROR_DEFINITIONS = {
     status: 422,
     message: 'Request body must be an object',
   },
-  [AppErrorCode.INIT_INVALID_MIME_TYPE]: {
-    status: 415,
-    message: (p) =>
-      p?.got ? `Invalid mime type: ${p.got}` : 'Invalid mime type',
-    details: (p) => (p?.got ? { got: p.got } : undefined),
-  },
-
-  // link
-  [AppErrorCode.LINK_APPLY_DISABLED]: {
-    status: 403,
-    message: 'Link applications are currently closed',
-  },
-  [AppErrorCode.LINK_NOT_FOUND]: {
-    status: 404,
-    message: 'Link not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
-  [AppErrorCode.LINK_DISABLED]: {
-    status: 400,
-    message: 'Your link has been disabled, please contact the administrator',
-  },
-  [AppErrorCode.SUBPATH_LINK_DISABLED]: {
-    status: 422,
-    message: 'Subpath link applications are disabled by the administrator',
-  },
-  [AppErrorCode.DUPLICATE_LINK]: {
-    status: 400,
-    message: 'Please do not submit duplicate link applications',
-  },
-  [AppErrorCode.LINK_AVATAR_VALIDATION_FAILED]: {
-    status: 400,
-    message: (p) =>
-      p?.reason
-        ? `Avatar validation failed: ${p.reason}`
-        : 'Avatar validation failed',
-    details: (p) => (p?.reason ? { reason: p.reason } : undefined),
-  },
-
-  // meta preset
-  [AppErrorCode.META_PRESET_KEY_EXISTS]: {
-    status: 400,
-    message: (p) =>
-      p?.key
-        ? `Preset key already exists: ${p.key}`
-        : 'Preset key already exists',
-    details: (p) => (p?.key ? { key: p.key } : undefined),
-  },
-  [AppErrorCode.META_PRESET_NOT_FOUND]: {
-    status: 404,
-    message: 'Preset not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
-  [AppErrorCode.BUILTIN_PRESET_CANNOT_DELETE]: {
-    status: 403,
-    message: 'Built-in presets cannot be deleted',
-  },
 
   // note
   [AppErrorCode.NOTE_FORBIDDEN]: {
     status: 403,
     message: 'Please do not peek at private notes',
-  },
-  [AppErrorCode.NOTE_NOT_FOUND]: {
-    status: 404,
-    message: 'Note not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
-  [AppErrorCode.NOTE_PASSWORD_REQUIRED]: {
-    status: 403,
-    message: 'Note password required',
   },
 
   // user
@@ -648,28 +464,6 @@ export const APP_ERROR_DEFINITIONS = {
     details: (p) => ({ name: p.name }),
   },
 
-  // page
-  [AppErrorCode.PAGE_NOT_FOUND]: {
-    status: 404,
-    message: 'Page not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
-
-  // project
-  [AppErrorCode.PROJECT_NOT_FOUND]: {
-    status: 404,
-    message: 'Project not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
-  [AppErrorCode.PROJECT_NAME_TAKEN]: {
-    status: 409,
-    message: (p) =>
-      p?.name
-        ? `A project with the name "${p.name}" already exists`
-        : 'A project with this name already exists',
-    details: (p) => (p?.name ? { name: p.name } : undefined),
-  },
-
   // post
   [AppErrorCode.POST_NOT_FOUND]: {
     status: 404,
@@ -686,93 +480,6 @@ export const APP_ERROR_DEFINITIONS = {
     message: 'Post is hidden or encrypted',
   },
 
-  // recently
-  [AppErrorCode.RECENTLY_NOT_FOUND]: {
-    status: 404,
-    message: 'Recently entry not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
-
-  // backup
-  [AppErrorCode.BACKUP_NOT_ENABLED]: {
-    status: 400,
-    message: 'Backup is not enabled in settings',
-  },
-
-  // serverless
-  [AppErrorCode.SERVERLESS_ERROR]: {
-    status: 500,
-    message: (p) => p?.message ?? 'Function execution failed',
-  },
-  [AppErrorCode.SERVERLESS_NO_PERMISSION]: {
-    status: 403,
-    message: 'No permission to run this function',
-  },
-
-  // snippet
-  [AppErrorCode.SNIPPET_NOT_FOUND]: {
-    status: 404,
-    message: 'Snippet not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
-  [AppErrorCode.SNIPPET_EXISTS]: {
-    status: 400,
-    message: 'Snippet already exists',
-  },
-  [AppErrorCode.SNIPPET_PRIVATE]: {
-    status: 403,
-    message: 'Snippet is private',
-  },
-  [AppErrorCode.SNIPPET_INVALID_JSON]: {
-    status: 400,
-    message: 'Content is not valid JSON',
-  },
-  [AppErrorCode.SNIPPET_INVALID_JSON5]: {
-    status: 400,
-    message: 'Content is not valid JSON5',
-  },
-  [AppErrorCode.SNIPPET_INVALID_YAML]: {
-    status: 400,
-    message: 'Content is not valid YAML',
-  },
-  [AppErrorCode.SNIPPET_INVALID_FUNCTION]: {
-    status: 400,
-    message: withExtra('Invalid serverless function'),
-  },
-  [AppErrorCode.SNIPPET_SKILL_INVALID_FRONTMATTER]: {
-    status: 400,
-    message: 'Skill content must start with a valid YAML frontmatter block',
-  },
-  [AppErrorCode.SNIPPET_SKILL_NAME_MISMATCH]: {
-    status: 400,
-    message: 'Frontmatter name does not match the snippet name',
-  },
-  [AppErrorCode.SNIPPET_SKILL_DESCRIPTION_REQUIRED]: {
-    status: 400,
-    message: 'Skill frontmatter must include a non-empty description',
-  },
-
-  // subscribe
-  [AppErrorCode.SUBSCRIBE_NOT_ENABLED]: {
-    status: 400,
-    message: 'Subscription is not enabled',
-  },
-  [AppErrorCode.SUBSCRIBE_TYPE_EMPTY]: {
-    status: 400,
-    message: 'Subscribe type cannot be empty',
-  },
-  [AppErrorCode.ALREADY_SUPPORTED]: {
-    status: 400,
-    message: 'You already supported this',
-  },
-
-  // topic
-  [AppErrorCode.TOPIC_NOT_FOUND]: {
-    status: 404,
-    message: 'Topic not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
-
   // webhook
   [AppErrorCode.WEBHOOK_EVENT_NOT_FOUND]: {
     status: 404,
@@ -786,18 +493,6 @@ export const APP_ERROR_DEFINITIONS = {
   },
 
   // bing
-  [AppErrorCode.BING_API_FAILED]: {
-    status: 503,
-    message: 'Bing API request failed',
-  },
-  [AppErrorCode.BING_KEY_INVALID]: {
-    status: 401,
-    message: 'Bing API key invalid',
-  },
-  [AppErrorCode.BING_DOMAIN_INVALID]: {
-    status: 400,
-    message: 'Bing API domain invalid',
-  },
 } satisfies {
   [C in AppErrorCode]: AppErrorDefinition<C>
 }
