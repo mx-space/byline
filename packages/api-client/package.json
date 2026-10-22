@@ -1,6 +1,6 @@
 {
   "name": "@mx-space/byline-api-client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Typed fetch client for the Byline headless CMS API",
   "keywords": [
     "byline",
