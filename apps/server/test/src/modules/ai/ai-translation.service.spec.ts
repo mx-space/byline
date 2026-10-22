@@ -37,7 +37,10 @@ const row = (overrides: Partial<AiTranslationRow> = {}): AiTranslationRow => ({
   content: null,
   sourceBlockSnapshots: null,
   sourceMetaHashes: null,
+  isLocked: false,
+  seo: null,
   createdAt: now,
+  updatedAt: null,
   ...overrides,
 })
 
@@ -783,5 +786,164 @@ describe('AiTranslationService.buildTranslationKey (in-flight key)', () => {
     const { service } = createService()
 
     expect(buildKey(service)).toBe(buildKey(service))
+  })
+})
+
+describe('AiTranslationService — per-locale SEO', () => {
+  const translated = {
+    sourceLang: 'zh',
+    title: 'Translated title',
+    text: 'Translated text',
+    subtitle: null,
+    summary: null,
+    tags: null,
+    aiModel: 'model-x',
+    aiProvider: 'provider-x',
+  }
+
+  const setup = (
+    seo: Record<string, unknown> | null,
+    existing: ReturnType<typeof row> | null = null,
+  ) => {
+    const ctx = createService()
+    ctx.databaseService.findGlobalById.mockResolvedValue({
+      document: articleDocument({ content: null, seo }),
+      type: CollectionRefTypes.Post,
+    })
+    ctx.repository.findByRef.mockResolvedValue(existing)
+    ctx.repository.upsert.mockImplementation(async (input: any) =>
+      row({ ...input, lang: 'en' }),
+    )
+    ctx.aiService.getTranslationModelWithInfo.mockResolvedValue({
+      runtime: {},
+      info: { model: 'model-x', provider: 'provider-x' },
+    } as any)
+    ctx.lexicalStrategy.translate.mockResolvedValue(translated as any)
+    const generateStructured = vi.fn(async ({ prompt }: { prompt: string }) => {
+      const fields = JSON.parse(prompt.slice(prompt.indexOf('{')))
+      return {
+        output: {
+          translations: Object.fromEntries(
+            Object.entries(fields).map(([key, value]) => [key, `EN ${value}`]),
+          ),
+        },
+      }
+    })
+    ctx.aiService.getFieldTranslationModel.mockResolvedValue({
+      generateStructured,
+    } as any)
+    ctx.aiInFlightService.runWithStream.mockImplementation(
+      async (opts: any) => {
+        const leaderResult = await opts.onLeader({ push: vi.fn() })
+        return {
+          role: 'leader' as const,
+          events: (async function* () {})(),
+          result: Promise.resolve(leaderResult.result),
+        }
+      },
+    )
+    return { ...ctx, generateStructured }
+  }
+
+  it('translates the SEO title and description and stores them on the row', async () => {
+    const { generateStructured, repository, service } = setup({
+      title: '标题',
+      description: '描述',
+      image: 'https://cdn.example.test/og.png',
+    })
+
+    await service.generateTranslation('post-1', 'en')
+
+    expect(generateStructured).toHaveBeenCalledTimes(1)
+    expect(repository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        seo: { title: 'EN 标题', description: 'EN 描述' },
+        sourceMetaHashes: expect.objectContaining({ seo: expect.any(String) }),
+      }),
+    )
+  })
+
+  it('skips the SEO call when the source has no SEO text', async () => {
+    const { generateStructured, repository, service } = setup({
+      image: 'https://cdn.example.test/og.png',
+    })
+
+    await service.generateTranslation('post-1', 'en')
+
+    expect(generateStructured).not.toHaveBeenCalled()
+    expect(repository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ seo: null }),
+    )
+  })
+
+  it('reuses the stored SEO translation while the source SEO is unchanged', async () => {
+    const first = setup({ title: '标题' })
+    await first.service.generateTranslation('post-1', 'en')
+    const stored = first.repository.upsert.mock.calls[0][0] as any
+
+    const second = setup(
+      { title: '标题' },
+      row({
+        lang: 'en',
+        seo: stored.seo,
+        sourceMetaHashes: stored.sourceMetaHashes,
+      }),
+    )
+    await second.service.generateTranslation('post-1', 'en')
+
+    expect(second.generateStructured).not.toHaveBeenCalled()
+    expect(second.repository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ seo: { title: 'EN 标题' } }),
+    )
+  })
+
+  it('keeps the article translation when the SEO call fails', async () => {
+    const { generateStructured, repository, service } = setup({
+      title: '标题',
+    })
+    generateStructured.mockRejectedValueOnce(new Error('model down'))
+
+    await service.generateTranslation('post-1', 'en')
+
+    expect(repository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Translated title', seo: null }),
+    )
+  })
+
+  it('stores SEO sent with a manual translation', async () => {
+    const { databaseService, repository, service } = createService()
+    databaseService.findGlobalById.mockResolvedValue({
+      document: articleDocument({ content: null }),
+      type: CollectionRefTypes.Post,
+    })
+    repository.findByRef.mockResolvedValue(null)
+    repository.upsert.mockResolvedValue(row({ lang: 'en' }))
+
+    await service.writeManualTranslation('post-1', 'en', {
+      title: 'Title',
+      content: '{"root":{}}',
+      seo: { title: 'SEO title', description: null },
+    })
+
+    expect(repository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isLocked: true,
+        seo: { title: 'SEO title', description: null },
+      }),
+    )
+  })
+
+  it('updates SEO through a translation edit', async () => {
+    const { repository, service } = createService()
+    repository.findById.mockResolvedValue(row())
+    repository.updateById.mockResolvedValue(row())
+
+    await service.updateTranslation('translation-1', {
+      seo: { description: 'Edited' },
+    })
+
+    expect(repository.updateById).toHaveBeenCalledWith('translation-1', {
+      seo: { description: 'Edited' },
+    })
   })
 })

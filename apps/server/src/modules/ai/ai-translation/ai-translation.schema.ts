@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 import { zEntityId } from '~/common/zod'
 
+import { PostSeoSchema } from '../../post/post-write.schema'
+
 export const GetTranslationQuerySchema = z.object({
   lang: z.string(),
 })
@@ -27,6 +29,7 @@ export const UpdateTranslationSchema = z.object({
     .nullish()
     .transform((content) => content ?? undefined),
   isLocked: z.boolean().optional(),
+  seo: PostSeoSchema.nullable().optional(),
 })
 
 export type UpdateTranslationDto = z.infer<typeof UpdateTranslationSchema>
@@ -59,6 +62,7 @@ export const WriteManualTranslationSchema = z
     summary: z.string().nullable().optional(),
     tags: z.array(z.string()).optional(),
     sourceLang: z.string().trim().min(2).max(35).optional(),
+    seo: PostSeoSchema.nullable().optional(),
   })
   .refine(
     (value) => {

@@ -1,4 +1,5 @@
 import type { CollectionRefTypes } from '~/constants/db.constant'
+import type { PostSeo } from '~/database/schema'
 import type { EntityId } from '~/shared/id/entity-id'
 
 import type { PostModel } from '../../post/post.types'
@@ -39,6 +40,7 @@ export interface AiTranslationRow {
   sourceBlockSnapshots: unknown
   sourceMetaHashes: unknown
   isLocked: boolean
+  seo: PostSeo | null
   createdAt: Date
   updatedAt: Date | null
   generationMetrics?: GenerationMetricsDto | null

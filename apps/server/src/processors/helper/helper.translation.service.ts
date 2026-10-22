@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common'
 
 import type { EntryTranslation } from '~/common/response/meta.types'
+import type { PostSeo } from '~/database/schema'
 import { AiTranslationService } from '~/modules/ai/ai-translation/ai-translation.service'
 import type { TranslationSourceSnapshot } from '~/modules/ai/ai-translation/translation-consistency.types'
 import { TranslationEntryService } from '~/modules/ai/ai-translation/translation-entry.service'
 import type { TranslationEntryKeyPath } from '~/modules/ai/ai-translation/translation-entry.types'
+import { mergeTranslatedSeo } from '~/modules/ai/ai-translation/translation-seo.util'
 import { describeError, errorStack } from '~/utils/error.util'
 import { normalizeLanguageCode } from '~/utils/lang.util'
 
@@ -23,6 +25,7 @@ export interface TranslationResult {
   tags?: string[]
   content?: string
   contentFormat?: string
+  seo?: PostSeo | null
   isTranslated: boolean
   sourceLang?: string
   translationMeta?: TranslationMeta
@@ -43,6 +46,7 @@ export type ArticleMetaField =
   | 'tags'
   | 'content'
   | 'contentFormat'
+  | 'seo'
 
 export type ArticleTranslatableField =
   | 'title'
@@ -52,6 +56,7 @@ export type ArticleTranslatableField =
   | 'tags'
   | 'content'
   | 'contentFormat'
+  | 'seo'
 
 export type EntryMaps = {
   entityMaps: Map<TranslationEntryKeyPath, Map<string, string>>
@@ -74,6 +79,7 @@ const ALL_TRANSLATABLE_FIELDS: readonly ArticleTranslatableField[] = [
   'summary',
   'content',
   'contentFormat',
+  'seo',
 ]
 
 export type TagGlossaryPair = { source: string; translated: string }
@@ -107,7 +113,8 @@ export function applyArticleTranslationInPlace<T extends Record<string, any>>(
   const fields = opts?.fields ?? ALL_TRANSLATABLE_FIELDS
 
   for (const field of fields) {
-    if (field === 'content' || field === 'contentFormat') continue
+    if (field === 'content' || field === 'contentFormat' || field === 'seo')
+      continue
     const value = (result as unknown as Record<string, unknown>)[field]
     if (value != null) {
       target[field as keyof T] = value as T[keyof T]
@@ -119,6 +126,13 @@ export function applyArticleTranslationInPlace<T extends Record<string, any>>(
     if (fields.includes('contentFormat') && result.contentFormat != null) {
       target['contentFormat' as keyof T] = result.contentFormat as T[keyof T]
     }
+  }
+
+  if (fields.includes('seo') && result.seo) {
+    target['seo' as keyof T] = mergeTranslatedSeo(
+      target.seo,
+      result.seo,
+    ) as T[keyof T]
   }
 
   return target
@@ -264,6 +278,7 @@ export class TranslationService {
       if (translation.content) result.content = translation.content
       if (translation.contentFormat)
         result.contentFormat = translation.contentFormat
+      if (translation.seo) result.seo = translation.seo
       return result
     } catch (error) {
       this.logger.error(
@@ -414,6 +429,7 @@ export class TranslationService {
                 tags: article.tags,
                 content: translation.content ?? undefined,
                 contentFormat: translation.contentFormat ?? undefined,
+                seo: translation.seo,
                 isTranslated: true,
                 sourceLang: translation.sourceLang,
                 translationMeta: translationFieldList.includes(

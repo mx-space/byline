@@ -1,4 +1,5 @@
 import { createAbortError, throwIfAborted } from '@mx-space/ai'
+import { AI_PROMPTS } from '@mx-space/ai/prompts'
 import type { IModelRuntime } from '@mx-space/ai/runtime'
 import { buildSourceMetaHashes } from '@mx-space/ai/translation'
 import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common'
@@ -26,6 +27,7 @@ import { ContentFormat } from '~/shared/types/content-format.type'
 import { md5 } from '~/utils/tool.util'
 
 import { ConfigsService } from '../../configs/configs.service'
+import type { PostSeo } from '../../post/post.types'
 import {
   AI_STREAM_IDLE_TIMEOUT_MS,
   AI_STREAM_LOCK_TTL,
@@ -71,6 +73,12 @@ import { BaseTranslationService } from './base-translation.service'
 import { LexicalPartialTranslationBuilder } from './lexical-partial-translation.builder'
 import { TranslationConsistencyService } from './translation-consistency.service'
 import type { TranslationSourceSnapshot } from './translation-consistency.types'
+import {
+  collectTranslatedSeo,
+  hashSeoText,
+  pickSeoText,
+  readSeoSourceHash,
+} from './translation-seo.util'
 import type { ITranslationStrategy } from './translation-strategy.interface'
 import {
   LEXICAL_TRANSLATION_STRATEGY,
@@ -882,10 +890,19 @@ export class AiTranslationService
         )
         const sourceLang = this.getMetaLang(document) || translated.sourceLang
         const hash = this.computeContentHash(content, sourceLang)
+        const seoFields = pickSeoText(document.seo)
+        const seo = await this.translateSeo(
+          seoFields,
+          targetLang,
+          force ? undefined : existing,
+          signal,
+        )
 
-        // Build source snapshots for future incremental translations
         const sourceSnapshots = this.buildSourceSnapshots(content)
-        const sourceMetaHashes = this.buildSourceMetaHashes(content)
+        const sourceMetaHashes = {
+          ...buildSourceMetaHashes(content),
+          seo: seo ? hashSeoText(seoFields) : undefined,
+        }
 
         const persisted = await this.aiTranslationRepository.upsert({
           hash,
@@ -906,6 +923,7 @@ export class AiTranslationService
           content: translated.content ?? null,
           sourceBlockSnapshots: sourceSnapshots,
           sourceMetaHashes,
+          seo,
         })
 
         await this.generationMetrics.record({
@@ -947,6 +965,39 @@ export class AiTranslationService
         return doc
       },
     })
+  }
+
+  private async translateSeo(
+    fields: ReturnType<typeof pickSeoText>,
+    targetLang: string,
+    existing: AITranslationModel | null | undefined,
+    signal?: AbortSignal,
+  ): Promise<PostSeo | null> {
+    if (Object.keys(fields).length === 0) return null
+    if (
+      existing?.seo &&
+      readSeoSourceHash(existing.sourceMetaHashes) === hashSeoText(fields)
+    ) {
+      return existing.seo
+    }
+    try {
+      const runtime = await this.aiService.getFieldTranslationModel()
+      const promptData = AI_PROMPTS.fieldTranslation(targetLang, fields)
+      const result = await runtime.generateStructured({
+        prompt: promptData.prompt,
+        systemPrompt: promptData.systemPrompt,
+        schema: promptData.schema,
+        reasoningEffort: promptData.reasoningEffort,
+        signal,
+      })
+      return collectTranslatedSeo(fields, result.output.translations)
+    } catch (error) {
+      if ((error as Error)?.name === 'AbortError') throw error
+      this.logger.warn(
+        `SEO translation failed for lang=${targetLang}; serving the source SEO: ${(error as Error).message}`,
+      )
+      return null
+    }
   }
 
   async streamTranslationForArticle(
@@ -1136,6 +1187,7 @@ export class AiTranslationService
       tags?: string[]
       content?: string
       isLocked?: boolean
+      seo?: PostSeo | null
     },
   ) {
     const existing = await this.aiTranslationRepository.findById(id)
@@ -1150,6 +1202,7 @@ export class AiTranslationService
     if (data.summary !== undefined) patch.summary = data.summary
     if (data.tags !== undefined) patch.tags = data.tags
     if (data.isLocked !== undefined) patch.isLocked = data.isLocked
+    if (data.seo !== undefined) patch.seo = data.seo
 
     if (data.content !== undefined) {
       patch.content = data.content
@@ -1212,6 +1265,7 @@ export class AiTranslationService
       sourceBlockSnapshots: this.buildSourceSnapshots(source),
       sourceMetaHashes: this.buildSourceMetaHashes(source),
       isLocked: true,
+      seo: data.seo ?? null,
     })
 
     await this.emitTranslationEvent(

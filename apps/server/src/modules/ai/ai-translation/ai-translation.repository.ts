@@ -44,6 +44,7 @@ const mapTranslation = (
   sourceBlockSnapshots: row.sourceBlockSnapshots,
   sourceMetaHashes: row.sourceMetaHashes,
   isLocked: row.isLocked,
+  seo: row.seo ?? null,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt ?? null,
 })
@@ -274,11 +275,12 @@ export class AiTranslationRepository extends BaseRepository {
   async upsert(
     input: Omit<
       AiTranslationRow,
-      'id' | 'refId' | 'createdAt' | 'updatedAt' | 'isLocked'
+      'id' | 'refId' | 'createdAt' | 'updatedAt' | 'isLocked' | 'seo'
     > & {
       id?: EntityId | string
       refId: EntityId | string
       isLocked?: boolean
+      seo?: AiTranslationRow['seo']
     },
   ): Promise<AiTranslationRow> {
     const refBig = parseEntityId(input.refId)
@@ -298,6 +300,7 @@ export class AiTranslationRepository extends BaseRepository {
       sourceBlockSnapshots: input.sourceBlockSnapshots,
       sourceMetaHashes: input.sourceMetaHashes,
       isLocked: input.isLocked ?? false,
+      seo: input.seo ?? null,
       updatedAt: new Date(),
     }
     return this.db.transaction(async (tx) => {
@@ -374,6 +377,7 @@ export class AiTranslationRepository extends BaseRepository {
     if (patch.sourceMetaHashes !== undefined)
       update.sourceMetaHashes = patch.sourceMetaHashes
     if (patch.isLocked !== undefined) update.isLocked = patch.isLocked
+    if (patch.seo !== undefined) update.seo = patch.seo
     update.updatedAt = patch.updatedAt ?? new Date()
     const [row] = await this.db
       .update(aiTranslations)

@@ -1111,3 +1111,116 @@ describe('buildTagGlossary', () => {
     ).toEqual([])
   })
 })
+
+describe('per-locale SEO on translated reads', () => {
+  const createService = () => {
+    const ai = createMockAiTranslationService()
+    return { ai, service: new TranslationService(ai as any, {} as any) }
+  }
+
+  it('merges translated SEO fields over the source SEO', () => {
+    const post = {
+      title: 'Source',
+      seo: {
+        title: 'Source SEO',
+        description: 'Source description',
+        image: 'https://cdn.example.test/og.png',
+      },
+    }
+
+    applyArticleTranslationInPlace(post, {
+      title: 'Translated',
+      text: '',
+      isTranslated: true,
+      seo: { title: 'Translated SEO', description: null },
+    })
+
+    expect(post.seo).toEqual({
+      title: 'Translated SEO',
+      description: 'Source description',
+      image: 'https://cdn.example.test/og.png',
+    })
+  })
+
+  it('fills SEO from the translation when the source has none', () => {
+    const post: Record<string, unknown> = { title: 'Source', seo: null }
+
+    applyArticleTranslationInPlace(post, {
+      title: 'Translated',
+      text: '',
+      isTranslated: true,
+      seo: { description: 'Translated description' },
+    })
+
+    expect(post.seo).toEqual({ description: 'Translated description' })
+  })
+
+  it('leaves the source SEO alone when the read is untranslated', () => {
+    const seo = { title: 'Source SEO' }
+    const post = { title: 'Source', seo }
+
+    applyArticleTranslationInPlace(post, {
+      title: 'Source',
+      text: '',
+      isTranslated: false,
+      seo: { title: 'ignored' },
+    })
+
+    expect(post.seo).toBe(seo)
+  })
+
+  it('returns the translated SEO from translateArticle', async () => {
+    const { ai, service } = createService()
+    ai.getTranslationAndAvailableLanguages.mockResolvedValue({
+      availableTranslations: ['en'],
+      sourceLang: 'zh',
+      translation: {
+        lang: 'en',
+        sourceLang: 'zh',
+        title: 'Translated',
+        text: 'Body',
+        seo: { title: 'Translated SEO' },
+        createdAt: new Date(),
+      },
+    })
+
+    const result = await service.translateArticle({
+      articleId: '1',
+      targetLang: 'en',
+      originalData: { title: 'Source', text: 'Body' },
+    })
+
+    expect(result.seo).toEqual({ title: 'Translated SEO' })
+  })
+
+  it('carries SEO through list translations when requested', async () => {
+    const { ai, service } = createService()
+    ai.getValidTranslationsForArticles.mockResolvedValue(
+      createTranslationLookup([
+        [
+          '1',
+          {
+            lang: 'en',
+            sourceLang: 'zh',
+            title: 'Translated',
+            text: 'Body',
+            seo: { description: 'Translated description' },
+            createdAt: new Date(),
+          },
+        ],
+      ]),
+    )
+
+    const results = await service.translateArticleList({
+      articles: [{ id: '1', title: 'Source', text: 'Body' } as any],
+      targetLang: 'en',
+      translationFields: ['title', 'seo'],
+    })
+
+    expect(results.get('1')).toEqual({
+      isTranslated: true,
+      title: 'Translated',
+      seo: { description: 'Translated description' },
+    })
+  })
+})

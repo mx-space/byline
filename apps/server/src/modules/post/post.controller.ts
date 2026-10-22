@@ -57,6 +57,7 @@ const POST_LIST_TRANSLATION_FIELDS = [
   'summary',
   'content',
   'contentFormat',
+  'seo',
 ] as const
 
 @ApiController('posts')

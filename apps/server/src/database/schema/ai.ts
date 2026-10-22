@@ -13,6 +13,7 @@ import {
 } from 'drizzle-orm/pg-core'
 
 import { createdAt, pkText, refText, tsCol, updatedAt } from './columns'
+import type { PostSeo } from './content'
 
 export const aiTranslations = pgTable(
   'ai_translations',
@@ -41,6 +42,7 @@ export const aiTranslations = pgTable(
     sourceBlockSnapshots: jsonb('source_block_snapshots').$type<unknown>(),
     sourceMetaHashes: jsonb('source_meta_hashes').$type<unknown>(),
     isLocked: boolean('is_locked').notNull().default(false),
+    seo: jsonb('seo').$type<PostSeo | null>(),
   },
   (table) => [
     uniqueIndex('ai_translations_ref_lang_uniq').on(

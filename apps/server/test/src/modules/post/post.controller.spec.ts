@@ -453,3 +453,66 @@ describe('PostController response casing', () => {
     expect(bypass('getByCateAndSlug')).toEqual(['meta'])
   })
 })
+
+describe('PostController per-locale SEO', () => {
+  const sourceSeo = {
+    title: '源标题',
+    description: '源描述',
+    image: 'https://cdn.example.test/og.png',
+  }
+
+  it('merges the translated SEO over the source SEO on a detail read', async () => {
+    const { controller } = createController({
+      posts: [makePost({ seo: sourceSeo })],
+      translateArticleFn: async () =>
+        makeTranslationResult({
+          isTranslated: true,
+          title: 'Translated title',
+          seo: { title: 'Translated SEO title' },
+        }),
+    })
+
+    const res = await controller.getById(
+      { id: '7000000000000000060' },
+      false,
+      'en',
+    )
+
+    expect((res.data as any).seo).toEqual({
+      title: 'Translated SEO title',
+      description: '源描述',
+      image: 'https://cdn.example.test/og.png',
+    })
+  })
+
+  it('merges the translated SEO on list reads and asks for it', async () => {
+    const post = makePost({ seo: sourceSeo })
+    const { controller, translationService } = createController({
+      posts: [post],
+      collectArticleTranslationsFn: async () => ({
+        results: new Map([
+          [
+            String(post.id),
+            {
+              isTranslated: true,
+              title: 'Translated title',
+              seo: { description: 'Translated description' },
+            },
+          ],
+        ]) as any,
+        meta: new Map(),
+      }),
+    })
+
+    const res = await controller.getPaginate({} as any, false, 'en')
+
+    expect(translationService.collectArticleTranslations).toHaveBeenCalledWith(
+      expect.objectContaining({ fields: expect.arrayContaining(['seo']) }),
+    )
+    expect((res.data[0] as any).seo).toEqual({
+      title: '源标题',
+      description: 'Translated description',
+      image: 'https://cdn.example.test/og.png',
+    })
+  })
+})
