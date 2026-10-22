@@ -317,6 +317,18 @@ CREATE TABLE "drafts" (
 	CONSTRAINT "drafts_status_check" CHECK ("drafts"."status" in ('active', 'archived'))
 );
 --> statement-breakpoint
+CREATE TABLE "dynamic_components" (
+	"id" text PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"description" text DEFAULT '' NOT NULL,
+	"url" text NOT NULL,
+	"initial_height" integer NOT NULL,
+	"props_schema" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"parent_url" text,
+	"created_by" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "post_authors" (
 	"post_id" text NOT NULL,
 	"user_id" text NOT NULL,
@@ -435,6 +447,7 @@ ALTER TABLE "content_revisions" ADD CONSTRAINT "content_revisions_parent_revisio
 ALTER TABLE "drafts" ADD CONSTRAINT "drafts_document_id_content_documents_id_fk" FOREIGN KEY ("document_id") REFERENCES "public"."content_documents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "drafts" ADD CONSTRAINT "drafts_base_revision_id_content_revisions_id_fk" FOREIGN KEY ("base_revision_id") REFERENCES "public"."content_revisions"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "drafts" ADD CONSTRAINT "drafts_head_revision_id_content_revisions_id_fk" FOREIGN KEY ("head_revision_id") REFERENCES "public"."content_revisions"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "dynamic_components" ADD CONSTRAINT "dynamic_components_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "post_authors" ADD CONSTRAINT "post_authors_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "post_authors" ADD CONSTRAINT "post_authors_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts" ADD CONSTRAINT "posts_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -480,6 +493,8 @@ CREATE INDEX "content_revisions_document_idx" ON "content_revisions" USING btree
 CREATE INDEX "content_revisions_parent_idx" ON "content_revisions" USING btree ("parent_revision_id");--> statement-breakpoint
 CREATE INDEX "drafts_document_status_idx" ON "drafts" USING btree ("document_id","status");--> statement-breakpoint
 CREATE INDEX "drafts_updated_at_idx" ON "drafts" USING btree ("updated_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "dynamic_components_name_uniq" ON "dynamic_components" USING btree ("name");--> statement-breakpoint
+CREATE UNIQUE INDEX "dynamic_components_url_uniq" ON "dynamic_components" USING btree ("url");--> statement-breakpoint
 CREATE INDEX "post_authors_user_idx" ON "post_authors" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "post_authors_post_position_idx" ON "post_authors" USING btree ("post_id","position");--> statement-breakpoint
 CREATE UNIQUE INDEX "posts_slug_uniq" ON "posts" USING btree ("slug");--> statement-breakpoint

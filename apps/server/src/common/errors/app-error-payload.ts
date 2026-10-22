@@ -187,6 +187,7 @@ export type AppErrorPayloadMap = {
   [AppErrorCode.INVITE_NOT_FOUND]: undefined
   [AppErrorCode.INVITE_EXPIRED]: undefined
   [AppErrorCode.INVITE_ALREADY_ACCEPTED]: undefined
+  [AppErrorCode.DYNAMIC_COMPONENT_NAME_CONFLICT]: { name: string }
 
   // membership
   [AppErrorCode.MEMBERSHIP_REQUIRED]: undefined

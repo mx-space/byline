@@ -241,3 +241,27 @@ export const contentPublicationEvents = pgTable(
     ),
   ],
 )
+
+export const dynamicComponents = pgTable(
+  'dynamic_components',
+  {
+    id: pkText(),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    url: text('url').notNull(),
+    initialHeight: integer('initial_height').notNull(),
+    propsSchema: jsonb('props_schema')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    parentUrl: text('parent_url'),
+    createdBy: text('created_by').references((): AnyPgColumn => users.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex('dynamic_components_name_uniq').on(table.name),
+    uniqueIndex('dynamic_components_url_uniq').on(table.url),
+  ],
+)

@@ -648,6 +648,11 @@ export const APP_ERROR_DEFINITIONS = {
     status: 409,
     message: 'Invite has already been accepted',
   },
+  [AppErrorCode.DYNAMIC_COMPONENT_NAME_CONFLICT]: {
+    status: 409,
+    message: 'Another dynamic component already uses this name',
+    details: (p) => ({ name: p.name }),
+  },
 
   // membership
   [AppErrorCode.MEMBERSHIP_REQUIRED]: {

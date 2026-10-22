@@ -24,6 +24,7 @@ import { CategoryModule } from './modules/category/category.module'
 import { ConfigsModule } from './modules/configs/configs.module'
 import { CronTaskModule } from './modules/cron-task/cron-task.module'
 import { DraftModule } from './modules/draft/draft.module'
+import { DynamicComponentModule } from './modules/dynamic-component/dynamic-component.module'
 import { FileModule } from './modules/file/file.module'
 import { HealthModule } from './modules/health/health.module'
 import { HelperModule as BizHelperModule } from './modules/helper/helper.module'
@@ -61,6 +62,7 @@ import { SampleResponseInterceptor } from './shared/sample/sample-response.inter
     CronTaskModule,
 
     DraftModule,
+    DynamicComponentModule,
     FileModule,
     HealthModule,
     OptionModule,
