@@ -104,6 +104,17 @@ export class PostsResource {
     )
   }
 
+  getBySlugOnly(slug: string, options: { lang?: string } = {}) {
+    return this.http.request<Post, PostResponseMeta>(
+      'GET',
+      `/posts/slug/${encodeURIComponent(slug)}`,
+      {
+        query: { lang: options.lang ?? this.http.lang },
+        preserve: POST_PRESERVE,
+      },
+    )
+  }
+
   getPath(slug: string) {
     return this.http.request<{ path: string }>(
       'GET',

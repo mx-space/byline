@@ -49,6 +49,23 @@ describe('posts', () => {
     })
   })
 
+  it('getBySlugOnly reads the detail by slug in one request', async () => {
+    const { fetch, calls } = mockFetch(() => ({
+      body: {
+        data: { id: '7', slug: 'hello world', meta: { custom_key: 1 } },
+        meta: { translation: { '7': { article: { is_translated: true } } } },
+      },
+    }))
+    const client = createClient({ endpoint: 'http://x', lang: 'ja', fetch })
+    const { data, meta } = await client.posts.getBySlugOnly('hello world')
+    expect(calls.map(route)).toEqual(['GET /posts/slug/hello%20world'])
+    expect(calls[0].url.searchParams.get('lang')).toBe('ja')
+    expect(data).toMatchObject({ id: '7', meta: { custom_key: 1 } })
+    expect(meta?.translation).toEqual({
+      '7': { article: { isTranslated: true } },
+    })
+  })
+
   it('findBySlug resolves the category path and returns null on 404', async () => {
     const { fetch, calls } = mockFetch((call) => {
       if (call.url.pathname === '/posts/get-url/known')

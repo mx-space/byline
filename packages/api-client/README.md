@@ -23,7 +23,11 @@ const byline = createClient({
 
 const { data: posts, meta } = await byline.posts.list({ size: 20 })
 const { data: post } = await byline.posts.getBySlug('product', 'hello-world')
+const { data: same } = await byline.posts.getBySlugOnly('hello-world')
 ```
+
+`getBySlugOnly` reads a post by its slug alone (`GET /posts/slug/:slug`, one request);
+old slugs resolve to the current post.
 
 `endpoint` is the server's API prefix (`/api/v{version}` in production). Every method
 resolves to `{ data, meta? }`, mirroring the server envelope. Responses are converted
@@ -134,7 +138,7 @@ invite to that user too (`invite.userId`).
 
 | Resource            | Methods                                                                                                                                                       |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `posts`             | `list`, `get`, `getBySlug`, `getPath`, `findBySlug`, `latest`, `create`, `revise`, `update`, `setPublished`, `delete`                                         |
+| `posts`             | `list`, `get`, `getBySlug`, `getBySlugOnly`, `getPath`, `findBySlug`, `latest`, `create`, `revise`, `update`, `setPublished`, `delete`                        |
 | `authors`           | `list`, `listAll`, `get`                                                                                                                                      |
 | `drafts`            | `list`, `get`, `context`, `create`, `update`, `delete`                                                                                                        |
 | `publishJobs`       | `create`, `run` (create and wait)                                                                                                                             |
@@ -167,13 +171,9 @@ export const loadBlogIndex = async (locale: string, page = 1) => {
   return { posts, pagination: meta?.pagination }
 }
 
-export const loadBlogPost = async (
-  locale: string,
-  category: string,
-  slug: string,
-) => {
+export const loadBlogPost = async (locale: string, slug: string) => {
   try {
-    const { data: post, meta } = await byline.posts.getBySlug(category, slug, {
+    const { data: post, meta } = await byline.posts.getBySlugOnly(slug, {
       lang: locale,
     })
     return { post, seo: post.seo, translation: meta?.translation }
