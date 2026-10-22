@@ -1,4 +1,5 @@
 import { type ClientOptions, HttpCore } from './http'
+import { AuthorsResource } from './resources/authors'
 import {
   CategoriesResource,
   DynamicComponentsResource,
@@ -19,6 +20,7 @@ export class BylineClient {
   readonly categories: CategoriesResource
   readonly translations: TranslationsResource
   readonly users: UsersResource
+  readonly authors: AuthorsResource
   readonly invites: InvitesResource
   readonly dynamicComponents: DynamicComponentsResource
   readonly files: FilesResource
@@ -32,6 +34,7 @@ export class BylineClient {
     this.categories = new CategoriesResource(this.http)
     this.translations = new TranslationsResource(this.http)
     this.users = new UsersResource(this.http)
+    this.authors = new AuthorsResource(this.http)
     this.invites = new InvitesResource(this.http)
     this.dynamicComponents = new DynamicComponentsResource(this.http)
     this.files = new FilesResource(this.http)

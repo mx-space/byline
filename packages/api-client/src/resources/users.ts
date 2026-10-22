@@ -3,8 +3,10 @@ import type {
   AcceptInviteInput,
   AllowLoginResult,
   CreatedInvite,
+  CreateInviteInput,
   InitUserInput,
   Invite,
+  InviteUserInput,
   PaginatedMeta,
   ProfileOnlyUserInput,
   PublicInvite,
@@ -75,6 +77,12 @@ export class UsersResource {
     return this.http.request<UserDetail>('POST', `/users/${id}/reactivate`)
   }
 
+  invite(id: string, input: InviteUserInput = {}) {
+    return this.http.request<CreatedInvite>('POST', `/users/${id}/invite`, {
+      body: input,
+    })
+  }
+
   initFirstUser(input: InitUserInput) {
     return this.http.request<unknown>('POST', '/init/user', { body: input })
   }
@@ -87,7 +95,7 @@ export class InvitesResource {
     return this.http.request<Invite[]>('GET', '/users/invites')
   }
 
-  create(input: { email: string; displayName?: string }) {
+  create(input: CreateInviteInput) {
     return this.http.request<CreatedInvite>('POST', '/users/invites', {
       body: input,
     })

@@ -8,6 +8,7 @@ export type {
   RequestOptions,
 } from './http'
 export { HttpCore } from './http'
+export type { AuthorsResource } from './resources/authors'
 export type {
   CategoriesResource,
   DynamicComponentsResource,

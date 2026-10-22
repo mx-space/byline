@@ -60,6 +60,15 @@ export interface PublicAuthor {
   url: string | null
 }
 
+export interface Author extends PublicAuthor {
+  username: string | null
+}
+
+export interface AuthorListQuery {
+  page?: number
+  size?: number
+}
+
 export interface UserDetail extends PublicAuthor {
   email: string | null
   username: string | null
@@ -98,6 +107,7 @@ export interface Invite {
   email: string
   displayName: string | null
   invitedBy: string | null
+  userId: string | null
   expiresAt: string
   acceptedAt: string | null
   createdAt: string
@@ -107,6 +117,16 @@ export interface CreatedInvite extends Invite {
   token: string
   acceptUrl: string
   emailQueued: boolean
+}
+
+export interface CreateInviteInput {
+  email: string
+  displayName?: string
+}
+
+export interface InviteUserInput {
+  email?: string
+  displayName?: string
 }
 
 export interface PublicInvite {
@@ -308,7 +328,7 @@ export interface PublishAiResourceRequest {
 export interface CreatePublishJobInput {
   branchId: string
   revisionId: string
-  expectedPublishedRevisionId: string | null
+  expectedPublishedRevisionId?: string | null
   confirmDiverged?: boolean
   aiResources?: Array<PublishAiResource | PublishAiResourceRequest>
   regenerateLockedTranslations?: boolean
@@ -364,6 +384,7 @@ export interface Translation {
   isLocked: boolean
   aiModel: string | null
   aiProvider: string | null
+  seo: PostSeo | null
   createdAt: string
   updatedAt: string | null
   [key: string]: unknown
@@ -377,6 +398,7 @@ export interface ManualTranslationInput {
   summary?: string | null
   tags?: string[]
   sourceLang?: string
+  seo?: PostSeo | null
 }
 
 export interface TranslationPatch {
@@ -387,6 +409,7 @@ export interface TranslationPatch {
   tags?: string[]
   content?: string | null
   isLocked?: boolean
+  seo?: PostSeo | null
 }
 
 export interface TranslationTaskInput {

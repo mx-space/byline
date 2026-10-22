@@ -321,3 +321,94 @@ describe('translations, catalog and files', () => {
     expect(calls).toHaveLength(2)
   })
 })
+
+describe('authors and invites', () => {
+  it('lists public authors with pagination and pages through all', async () => {
+    const { fetch, calls } = mockFetch((call) => {
+      const page = Number(call.url.searchParams.get('page'))
+      return {
+        body: {
+          data: [
+            { id: String(page), display_name: `A${page}`, username: null },
+          ],
+          meta: {
+            pagination: { page, size: 100, total: 2, total_pages: 2 },
+          },
+        },
+      }
+    })
+    const client = createClient({ endpoint: 'http://x', fetch })
+    const { data, meta } = await client.authors.list({ page: 1, size: 20 })
+    expect(route(calls[0])).toBe('GET /authors')
+    expect(calls[0].url.searchParams.get('size')).toBe('20')
+    expect(data[0]).toEqual({ id: '1', displayName: 'A1', username: null })
+    expect(meta?.pagination.totalPages).toBe(2)
+
+    const all = await client.authors.listAll()
+    expect(all.map((author) => author.id)).toEqual(['1', '2'])
+  })
+
+  it('gets an author by id or username', async () => {
+    const { fetch, calls } = mockFetch(() => ({
+      body: { data: { id: '3', display_name: 'Ada', username: 'ada' } },
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    const { data } = await client.authors.get('Ada Lovelace')
+    expect(calls[0].url.pathname).toBe('/authors/Ada%20Lovelace')
+    expect(data.username).toBe('ada')
+  })
+
+  it('invites a profile-only user by id', async () => {
+    const { fetch, calls } = mockFetch(() => ({
+      status: 201,
+      body: {
+        data: {
+          id: '8',
+          email: 'ada@example.com',
+          user_id: '3',
+          accept_url: 'http://x/accept',
+          email_queued: false,
+        },
+      },
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    const { data } = await client.users.invite('3', { displayName: 'Ada' })
+    expect(route(calls[0])).toBe('POST /users/3/invite')
+    expect(calls[0].body).toEqual({ displayName: 'Ada' })
+    expect(data).toMatchObject({ userId: '3', acceptUrl: 'http://x/accept' })
+
+    await client.users.invite('3')
+    expect(calls[1].body).toEqual({})
+  })
+
+  it('sends and reads translation seo', async () => {
+    const { fetch, calls } = mockFetch(() => ({
+      body: {
+        data: { id: '1', lang: 'de', seo: { title: 'T', image: null } },
+      },
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    const { data } = await client.translations.writeManual('7', 'de', {
+      title: 'Hallo',
+      content: '{"root":{}}',
+      seo: { title: 'T', description: 'D' },
+    })
+    expect(calls[0].body).toMatchObject({
+      seo: { title: 'T', description: 'D' },
+    })
+    expect(data.seo).toEqual({ title: 'T', image: null })
+
+    await client.translations.update('1', { seo: null })
+    expect(route(calls[1])).toBe('PATCH /ai/translations/1')
+    expect(calls[1].body).toEqual({ seo: null })
+  })
+
+  it('creates a publish job without an expected published revision', async () => {
+    const { fetch, calls } = mockFetch(() => ({
+      body: { data: { task_id: 't', created: true } },
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    await client.publishJobs.create({ branchId: '1', revisionId: '2' })
+    expect(calls[0].body).toEqual({ branchId: '1', revisionId: '2' })
+  })
+})
