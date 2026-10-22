@@ -1,7 +1,8 @@
+import { realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import swc from 'unplugin-swc'
-import { defineConfig } from 'vite'
+import { defineConfig, searchForWorkspaceRoot } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import zodCompiler from 'zod-compiler/vite'
 
@@ -44,6 +45,20 @@ const sharedAiDependencies = [
   'zod',
 ]
 
+// While @mx-space/* are `link:` overrides their sources live outside the
+// workspace, and vite-node's fs.strict denies their `?raw` prompt imports.
+const sharedPackageRoots = [
+  '@mx-space/ai',
+  '@mx-space/editor',
+  '@mx-space/ws-client',
+].flatMap((name) => {
+  try {
+    return [realpathSync(resolve(__dirname, 'node_modules', name))]
+  } catch {
+    return []
+  }
+})
+
 export default defineConfig(({ command }) => {
   const isBuild = command === 'build'
 
@@ -51,6 +66,11 @@ export default defineConfig(({ command }) => {
     esbuild: false,
     resolve: {
       dedupe: sharedAiDependencies,
+    },
+    server: {
+      fs: {
+        allow: [searchForWorkspaceRoot(__dirname), ...sharedPackageRoots],
+      },
     },
     define: {
       __DEV__: isBuild ? 'false' : 'true',
