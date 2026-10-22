@@ -195,7 +195,7 @@ describe('FileService.uploadBuffer', () => {
     expect(writeFileSpy.mock.calls[0][1]).toMatch(/^image-[\da-z]{6}\.png$/)
   })
 
-  it('tracks owner files written by module-specific producers', async () => {
+  it('tracks files written by module-specific producers', async () => {
     const fileReferenceService = createFileReferenceService()
     const service = new FileService({} as any, fileReferenceService as any)
     const stream = Readable.from(Buffer.from('avatar'))
@@ -205,7 +205,7 @@ describe('FileService.uploadBuffer', () => {
     )
 
     await expect(
-      service.writeTrackedOwnerFile('avatar', 'friend.png', stream),
+      service.writeTrackedFile('avatar', 'friend.png', stream),
     ).resolves.toBe('http://example.com/objects/avatar/friend.png')
     expect(service.writeFile).toHaveBeenCalledWith(
       'avatar',

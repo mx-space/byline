@@ -108,7 +108,7 @@ export class FileService {
     )
   }
 
-  async writeTrackedOwnerFile(
+  async writeTrackedFile(
     type: FileType,
     name: string,
     data: Readable,
@@ -333,7 +333,7 @@ export class FileService {
       relativePath = await this.resolveUniqueLocalName(type, relativePath)
     }
 
-    const fileUrl = await this.writeTrackedOwnerFile(
+    const fileUrl = await this.writeTrackedFile(
       type,
       relativePath,
       Readable.from(buffer),

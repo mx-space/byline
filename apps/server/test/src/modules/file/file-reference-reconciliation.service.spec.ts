@@ -69,7 +69,7 @@ describe('FileReferenceReconciliationService', () => {
       'https://cdn.example.com/unused.pdf',
       FileReferenceStatus.Active,
     )
-    repository.findOwnerReferences.mockResolvedValue([referenced, isolated])
+    repository.findAll.mockResolvedValue([referenced, isolated])
     inventory.listLocalFiles.mockResolvedValue([])
     usageResolver.findUsageMatches.mockResolvedValue([
       {
@@ -98,7 +98,7 @@ describe('FileReferenceReconciliationService', () => {
       usageChanges: 2,
       usages: 2,
     })
-    expect(repository.createOwnerPendingMany).not.toHaveBeenCalled()
+    expect(repository.createPendingMany).not.toHaveBeenCalled()
     expect(fileUsageRepository.reconcileFileReferences).not.toHaveBeenCalled()
   })
 
@@ -129,11 +129,11 @@ describe('FileReferenceReconciliationService', () => {
       localFile.fileUrl,
       FileReferenceStatus.Pending,
     )
-    repository.findOwnerReferences
+    repository.findAll
       .mockResolvedValueOnce([referenced, isolated])
       .mockResolvedValueOnce([referenced, isolated, created])
     repository.findByUrls.mockResolvedValueOnce([]).mockResolvedValueOnce([])
-    repository.createOwnerPendingMany.mockResolvedValue([created])
+    repository.createPendingMany.mockResolvedValue([created])
     inventory.listLocalFiles.mockResolvedValue([localFile])
     usageResolver.findUsageMatches.mockResolvedValue([
       {
@@ -168,7 +168,7 @@ describe('FileReferenceReconciliationService', () => {
       usageChanges: 3,
       usages: 3,
     })
-    expect(repository.createOwnerPendingMany).toHaveBeenCalledWith([localFile])
+    expect(repository.createPendingMany).toHaveBeenCalledWith([localFile])
     expect(fileUsageRepository.reconcileFileReferences).toHaveBeenCalledWith({
       activeIds: ['ref-a', 'ref-c'],
       fileReferenceIds: ['ref-a', 'ref-b', 'ref-c'],
@@ -203,7 +203,7 @@ describe('FileReferenceReconciliationService', () => {
       fileName: `fixture-${index}.json`,
       fileUrl: `https://api.example.com/objects/file/fixture-${index}.json`,
     }))
-    repository.findOwnerReferences.mockResolvedValue([])
+    repository.findAll.mockResolvedValue([])
     repository.findByUrls.mockResolvedValue([])
     inventory.listLocalFiles.mockResolvedValue(localFiles)
     usageResolver.findUsageMatches.mockResolvedValue([])

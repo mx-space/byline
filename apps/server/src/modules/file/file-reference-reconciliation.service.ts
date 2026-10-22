@@ -28,8 +28,8 @@ export class FileReferenceReconciliationService {
     options: { apply?: boolean } = {},
   ): Promise<FileReferenceReconciliationResult> {
     const apply = options.apply === true
-    const [ownerReferences, localFiles] = await Promise.all([
-      this.fileReferenceRepository.findOwnerReferences(),
+    const [references, localFiles] = await Promise.all([
+      this.fileReferenceRepository.findAll(),
       this.inventory.listLocalFiles(),
     ])
     const existingLocalReferences = await this.findReferencesByUrls(
@@ -44,7 +44,7 @@ export class FileReferenceReconciliationService {
 
     const candidateUrls = [
       ...new Set([
-        ...ownerReferences.map((file) => file.fileUrl),
+        ...references.map((file) => file.fileUrl),
         ...missingLocalFiles.map((file) => file.fileUrl),
       ]),
     ]
@@ -55,18 +55,18 @@ export class FileReferenceReconciliationService {
     if (!apply) {
       const currentUsages =
         await this.fileUsageRepository.findForFileReferences(
-          ownerReferences.map((file) => file.id),
+          references.map((file) => file.id),
         )
       return this.buildResult({
         applied: false,
         localFiles,
         missingLocalFiles,
-        ownerReferences,
+        references,
         referencedUrls,
         usageChanges: this.countPreviewUsageChanges({
           currentUsages,
           missingLocalFiles,
-          ownerReferences,
+          references,
           usageMatches,
         }),
         usageCount: usageMatches.length,
@@ -83,11 +83,10 @@ export class FileReferenceReconciliationService {
       (file) => !latestExistingUrls.has(file.fileUrl),
     )
     if (filesToCreate.length > 0) {
-      await this.fileReferenceRepository.createOwnerPendingMany(filesToCreate)
+      await this.fileReferenceRepository.createPendingMany(filesToCreate)
     }
 
-    const reconciledReferences =
-      await this.fileReferenceRepository.findOwnerReferences()
+    const reconciledReferences = await this.fileReferenceRepository.findAll()
     const referencesByUrl = new Map<string, typeof reconciledReferences>()
     for (const reference of reconciledReferences) {
       const references = referencesByUrl.get(reference.fileUrl) ?? []
@@ -128,7 +127,7 @@ export class FileReferenceReconciliationService {
       applied: true,
       localFiles,
       missingLocalFiles,
-      ownerReferences,
+      references,
       referencedUrls,
       usageChanges,
       usageCount: usages.length,
@@ -143,19 +142,17 @@ export class FileReferenceReconciliationService {
     applied: boolean
     localFiles: LocalFileCandidate[]
     missingLocalFiles: LocalFileCandidate[]
-    ownerReferences: Awaited<
-      ReturnType<FileReferenceRepository['findOwnerReferences']>
-    >
+    references: Awaited<ReturnType<FileReferenceRepository['findAll']>>
     referencedUrls: Set<string>
     usageChanges: number
     usageCount: number
   }): FileReferenceReconciliationResult {
     const candidateUrls = new Set([
-      ...input.ownerReferences.map((file) => file.fileUrl),
+      ...input.references.map((file) => file.fileUrl),
       ...input.missingLocalFiles.map((file) => file.fileUrl),
     ])
     const statusToActive =
-      input.ownerReferences.filter(
+      input.references.filter(
         (file) =>
           input.referencedUrls.has(file.fileUrl) &&
           file.status !== FileReferenceStatus.Active,
@@ -163,7 +160,7 @@ export class FileReferenceReconciliationService {
       input.missingLocalFiles.filter((file) =>
         input.referencedUrls.has(file.fileUrl),
       ).length
-    const statusToPending = input.ownerReferences.filter(
+    const statusToPending = input.references.filter(
       (file) =>
         !input.referencedUrls.has(file.fileUrl) &&
         file.status !== FileReferenceStatus.Pending,
@@ -190,15 +187,13 @@ export class FileReferenceReconciliationService {
   private countPreviewUsageChanges(input: {
     currentUsages: FileUsageInput[]
     missingLocalFiles: LocalFileCandidate[]
-    ownerReferences: Awaited<
-      ReturnType<FileReferenceRepository['findOwnerReferences']>
-    >
+    references: Awaited<ReturnType<FileReferenceRepository['findAll']>>
     usageMatches: Awaited<
       ReturnType<FileReferenceUsageRepository['findUsageMatches']>
     >
   }): number {
     const referencesByUrl = new Map<string, string[]>()
-    for (const reference of input.ownerReferences) {
+    for (const reference of input.references) {
       const ids = referencesByUrl.get(reference.fileUrl) ?? []
       ids.push(reference.id)
       referencesByUrl.set(reference.fileUrl, ids)

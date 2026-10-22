@@ -212,17 +212,13 @@ export class FileReferenceService {
     return { storageRemoved }
   }
 
-  /**
-   * Cleanup pass for owner uploads. A file is deleted only when no persisted
-   * module contains its URL, regardless of the representative refId/status.
-   */
+  // A file is deleted only when no persisted module contains its URL,
+  // regardless of the representative refId/status.
   async cleanupOrphanFiles(maxAgeMinutes = 60) {
     const cutoffTime = new Date(Date.now() - maxAgeMinutes * 60 * 1000)
 
     const candidates =
-      await this.fileReferenceRepository.findOwnerReferencesOlderThan(
-        cutoffTime,
-      )
+      await this.fileReferenceRepository.findOlderThan(cutoffTime)
     const orphanFiles = await this.filterIsolatedFiles(candidates)
 
     const s3Uploader = await this.buildS3Uploader()
@@ -285,8 +281,7 @@ export class FileReferenceService {
     }
 
     if (options.all) {
-      const candidates =
-        await this.fileReferenceRepository.findOwnerReferences()
+      const candidates = await this.fileReferenceRepository.findAll()
       const orphanFiles = await this.filterIsolatedFiles(candidates)
 
       let deletedCount = 0

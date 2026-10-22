@@ -41,7 +41,7 @@ export class FileReferenceRepository extends BaseRepository {
     super(db)
   }
 
-  private ownerOrphanWhere() {
+  private orphanWhere() {
     return and(
       notExists(
         this.db
@@ -139,7 +139,7 @@ export class FileReferenceRepository extends BaseRepository {
     return mapRow(row)
   }
 
-  async createOwnerPendingMany(
+  async createPendingMany(
     files: Array<{ fileName: string; fileUrl: string }>,
   ): Promise<FileReferenceRow[]> {
     const created: FileReferenceRow[] = []
@@ -316,7 +316,7 @@ export class FileReferenceRepository extends BaseRepository {
     page = Math.max(1, page)
     size = Math.min(100, Math.max(1, size))
     const offset = (page - 1) * size
-    const where = this.ownerOrphanWhere()
+    const where = this.orphanWhere()
     const [rows, [{ count }]] = await Promise.all([
       this.db
         .select()
@@ -340,26 +340,11 @@ export class FileReferenceRepository extends BaseRepository {
     const [{ count }] = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(fileReferences)
-      .where(this.ownerOrphanWhere())
+      .where(this.orphanWhere())
     return Number(count ?? 0)
   }
 
-  async findOwnerPendingOlderThan(
-    threshold: Date,
-  ): Promise<FileReferenceRow[]> {
-    const rows = await this.db
-      .select()
-      .from(fileReferences)
-      .where(
-        and(
-          eq(fileReferences.status, FileReferenceStatus.Pending),
-          lt(fileReferences.createdAt, threshold),
-        )!,
-      )
-    return rows.map(mapRow)
-  }
-
-  async findOwnerReferences(): Promise<FileReferenceRow[]> {
+  async findAll(): Promise<FileReferenceRow[]> {
     const rows = await this.db
       .select()
       .from(fileReferences)
@@ -367,9 +352,7 @@ export class FileReferenceRepository extends BaseRepository {
     return rows.map(mapRow)
   }
 
-  async findOwnerReferencesOlderThan(
-    threshold: Date,
-  ): Promise<FileReferenceRow[]> {
+  async findOlderThan(threshold: Date): Promise<FileReferenceRow[]> {
     const rows = await this.db
       .select()
       .from(fileReferences)
