@@ -1,0 +1,78 @@
+{
+  "unknown": "placeholder",
+  "placeholderUrl": "urn:byline:unmapped-component:{name}",
+  "components": {
+    "Image": {
+      "node": "image",
+      "props": {
+        "src": "src",
+        "altText": { "from": "alt", "default": "" },
+        "width": { "from": "width", "type": "number" },
+        "height": { "from": "height", "type": "number" }
+      }
+    },
+    "Video": {
+      "node": "video",
+      "props": {
+        "src": "src",
+        "poster": "poster",
+        "width": { "from": "width", "type": "number" },
+        "height": { "from": "height", "type": "number" }
+      }
+    },
+    "Callout": {
+      "node": "banner",
+      "props": {
+        "bannerType": {
+          "from": "type",
+          "map": {
+            "info": "note",
+            "note": "note",
+            "tip": "tip",
+            "important": "important",
+            "warning": "warning",
+            "error": "caution",
+            "danger": "caution"
+          },
+          "default": "note"
+        }
+      },
+      "children": { "state": "content" }
+    },
+    "Card": {
+      "node": "link-card",
+      "props": {
+        "url": "href",
+        "title": "title",
+        "image": "image",
+        "description": "desc"
+      }
+    },
+    "Cards": {
+      "node": "grid-container",
+      "props": {
+        "cols": { "value": 2 },
+        "gap": { "value": "16px" }
+      },
+      "children": { "cells": "cells" }
+    },
+    "Steps": {
+      "node": "nested-doc",
+      "children": { "state": "content" }
+    },
+    "X": {
+      "node": "embed",
+      "props": {
+        "url": { "template": "https://x.com/i/status/{id}" },
+        "source": { "value": "tweet" }
+      }
+    },
+    "LobeEvalLeaderboard": {
+      "dynamic": {
+        "url": "https://cdn.example.com/lobehub/byline/lobe-eval-leaderboard.mjs",
+        "initialHeight": 640,
+        "props": { "locale": "locale" }
+      }
+    }
+  }
+}

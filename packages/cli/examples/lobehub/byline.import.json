@@ -1,0 +1,14 @@
+{
+  "sourceLocale": "en",
+  "localeAliases": {
+    "zh": "zh-CN"
+  },
+  "components": "./components.json",
+  "authors": "./authors.json",
+  "categories": {
+    "community": { "name": "Community" },
+    "company": { "name": "Company" },
+    "engineering": { "name": "Engineering" },
+    "product": { "name": "Product" }
+  }
+}

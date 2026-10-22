@@ -1,0 +1,228 @@
+import type { PhrasingContent, RootContent } from 'mdast'
+import type { MdxJsxFlowElement } from 'mdast-util-mdx-jsx'
+
+import {
+  applyPropSpecs,
+  type ComponentMap,
+  type DynamicComponentMapping,
+  type NativeComponentMapping,
+  resolveMapping,
+} from './component-map'
+import { type JsxElement, readAttributes, toPlainValue } from './jsx-attributes'
+import {
+  dynamic,
+  isInlineNode,
+  type LexicalNode,
+  lineBreak,
+  rootState,
+  TEXT_FORMAT,
+} from './lexical-nodes'
+import type { InlineItem, MdastToLexical } from './to-lexical'
+import { hasFlowChildren } from './to-lexical'
+
+const INLINE_FORMAT_TAGS: Record<string, number> = {
+  strong: TEXT_FORMAT.bold,
+  b: TEXT_FORMAT.bold,
+  em: TEXT_FORMAT.italic,
+  i: TEXT_FORMAT.italic,
+  del: TEXT_FORMAT.strikethrough,
+  s: TEXT_FORMAT.strikethrough,
+  u: TEXT_FORMAT.underline,
+  code: TEXT_FORMAT.code,
+  kbd: TEXT_FORMAT.code,
+  sub: TEXT_FORMAT.subscript,
+  sup: TEXT_FORMAT.superscript,
+  mark: TEXT_FORMAT.highlight,
+}
+
+const INLINE_HTML = new Set(['a', 'br', ...Object.keys(INLINE_FORMAT_TAGS)])
+
+const childText = (children: readonly unknown[]): string =>
+  children
+    .map((child) => {
+      const node = child as { value?: unknown; children?: unknown[] }
+      if (typeof node.value === 'string') return node.value
+      return node.children ? childText(node.children) : ''
+    })
+    .join(' ')
+    .replaceAll(/\s+/g, ' ')
+    .trim()
+
+const isBlank = (node: RootContent) =>
+  (node.type === 'text' && !node.value.trim()) ||
+  (node.type === 'paragraph' && !childText(node.children))
+
+export class JsxConverter {
+  constructor(
+    private readonly map: ComponentMap,
+    private readonly host: MdastToLexical,
+  ) {}
+
+  flow(element: MdxJsxFlowElement): LexicalNode[] {
+    const { name } = element
+    if (!name) return this.host.childrenToBlocks(element.children)
+    if (!this.map.components[name] && INLINE_HTML.has(name)) {
+      if (hasFlowChildren(element.children)) {
+        return this.host.childrenToBlocks(element.children)
+      }
+      return this.host.paragraphs(this.inline(element as JsxElement, 0))
+    }
+    return this.host.paragraphs(this.component(element, 0))
+  }
+
+  inline(element: JsxElement, format: number): InlineItem[] {
+    const { name } = element
+    const children = element.children as PhrasingContent[]
+    if (!name) return this.host.inline(children, format)
+    if (!this.map.components[name]) {
+      if (name === 'br') return [lineBreak()]
+      if (name in INLINE_FORMAT_TAGS) {
+        return this.host.inline(children, format | INLINE_FORMAT_TAGS[name])
+      }
+      if (name === 'a') {
+        const { attributes } = readAttributes(element)
+        const href = typeof attributes.href === 'string' ? attributes.href : ''
+        if (!href) return this.host.inline(children, format)
+        const title =
+          typeof attributes.title === 'string' ? attributes.title : null
+        return this.host.linkItems(href, title, children, format)
+      }
+    }
+    return this.component(element, format)
+  }
+
+  private component(element: JsxElement, format: number): InlineItem[] {
+    const name = element.name!
+    this.host.countComponent(name)
+    const mapping = resolveMapping(this.map, name)
+    const line = element.position?.start.line
+    if (!mapping) return this.unknown(element, format)
+    if ('skip' in mapping) return []
+    if ('unwrap' in mapping) return this.unwrapChildren(element, format)
+    if ('dynamic' in mapping) {
+      return [{ block: this.dynamicNode(element, mapping, line) }]
+    }
+    const node = this.nativeNode(element, mapping)
+    const inline = mapping.inline ?? isInlineNode(node)
+    const items: InlineItem[] = inline ? [node] : [{ block: node }]
+    if (mapping.children === 'unwrap') {
+      items.push(...this.unwrapChildren(element, format))
+    }
+    return items
+  }
+
+  private unwrapChildren(element: JsxElement, format: number): InlineItem[] {
+    const children = element.children as RootContent[]
+    if (hasFlowChildren(children)) {
+      return this.host.blocks(children).map((block) => ({ block }))
+    }
+    return this.host.inline(children as PhrasingContent[], format)
+  }
+
+  private reportUnresolved(name: string, props: string[], line?: number) {
+    if (!props.length) return
+    this.host.report({
+      kind: 'unresolved-prop',
+      component: name,
+      message: `<${name}> props could not be evaluated statically: ${props.join(', ')}`,
+      line,
+    })
+  }
+
+  private nativeNode(
+    element: JsxElement,
+    mapping: NativeComponentMapping,
+  ): LexicalNode {
+    const name = element.name!
+    const line = element.position?.start.line
+    const { attributes, unresolved } = readAttributes(element)
+    const mapped = applyPropSpecs(mapping.props, attributes)
+    this.reportUnresolved(name, [...unresolved, ...mapped.unresolved], line)
+    const node: LexicalNode = {
+      ...mapped.props,
+      type: mapping.node,
+      version: 1,
+    }
+    const children = (element.children as RootContent[]).filter(
+      (child) => !isBlank(child),
+    )
+    const mode = mapping.children ?? 'drop'
+
+    if (mode === 'drop') {
+      if (children.length && childText(children)) {
+        this.host.report({
+          kind: 'dropped-node',
+          component: name,
+          message: `<${name}> children dropped by the mapping`,
+          line,
+        })
+      }
+    } else if (typeof mode === 'object' && 'state' in mode) {
+      node[mode.state] = rootState(this.host.childrenToBlocks(children))
+    } else if (typeof mode === 'object' && 'cells' in mode) {
+      node[mode.cells] = children.map((child) =>
+        rootState(this.host.childrenToBlocks([child])),
+      )
+    }
+    return node
+  }
+
+  private dynamicNode(
+    element: JsxElement,
+    mapping: DynamicComponentMapping,
+    line?: number,
+  ): LexicalNode {
+    const name = element.name!
+    const { attributes, unresolved } = readAttributes(element)
+    const spec = mapping.dynamic.props ?? 'all'
+    let props: Record<string, unknown>
+    if (spec === 'all') {
+      props = toPlainValue(attributes) as Record<string, unknown>
+      this.reportUnresolved(name, unresolved, line)
+    } else {
+      const mapped = applyPropSpecs(spec, attributes)
+      props = mapped.props
+      this.reportUnresolved(name, mapped.unresolved, line)
+    }
+    if (childText(element.children)) {
+      this.host.report({
+        kind: 'dropped-node',
+        component: name,
+        message: `<${name}> is a dynamic node; its children are not translatable and were dropped`,
+        line,
+      })
+    }
+    return dynamic(mapping.dynamic.url, props, mapping.dynamic.initialHeight)
+  }
+
+  private unknown(element: JsxElement, format: number): InlineItem[] {
+    const name = element.name!
+    this.host.report({
+      kind: 'unmapped-component',
+      component: name,
+      message: `<${name}> has no mapping (${this.map.unknown})`,
+      line: element.position?.start.line,
+    })
+    switch (this.map.unknown) {
+      case 'skip': {
+        return []
+      }
+      case 'unwrap': {
+        return this.unwrapChildren(element, format)
+      }
+      case 'placeholder': {
+        const { attributes } = readAttributes(element)
+        const text = childText(element.children)
+        return [
+          {
+            block: dynamic(this.map.placeholderUrl.replaceAll('{name}', name), {
+              component: name,
+              props: toPlainValue(attributes),
+              ...(text ? { children: text } : {}),
+            }),
+          },
+        ]
+      }
+    }
+  }
+}
