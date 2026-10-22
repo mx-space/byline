@@ -32,10 +32,16 @@ export const getWeekStart = (today: Date) =>
     .set('minute', 0)
     .toDate()
 
-export function getLessThanNow(date: Date | undefined): Date {
+export function getLessThanNow(
+  date: Date | string | number | null | undefined,
+): Date {
   const now = new Date()
-  if (!date) {
+  if (date === undefined || date === null || date === '') {
     return now
   }
-  return dayjs(date).diff(now) > 0 ? now : date
+  const value = date instanceof Date ? date : new Date(date)
+  if (Number.isNaN(value.getTime())) {
+    return now
+  }
+  return value.getTime() > now.getTime() ? now : value
 }
