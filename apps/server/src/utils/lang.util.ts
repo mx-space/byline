@@ -1,6 +1,9 @@
-import { normalizeLanguageCode } from '~/modules/ai/contracts'
+import { normalizeLanguageCode as normalizeSharedLanguageCode } from '@mx-space/ai'
 
-export { normalizeLanguageCode }
+export const normalizeLanguageCode = (
+  input?: string | null,
+): string | undefined =>
+  normalizeSharedLanguageCode(input, { foldRegion: false })
 
 export const resolveRequestedLanguage = (
   input: unknown,

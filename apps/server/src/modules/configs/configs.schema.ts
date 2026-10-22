@@ -13,6 +13,22 @@ export const UrlSchema = section('Site URLs', {
   wsUrl: field.halfGrid(zAllowedUrl.optional(), 'Gateway URL'),
 })
 
+// ==================== Site ====================
+export const SiteSchema = section('Content', {
+  defaultSourceLang: field.plain(
+    z
+      .string()
+      .trim()
+      .regex(/^[a-z]{2,3}(?:-[\da-z]{2,8})*$/i, 'Invalid language code')
+      .optional(),
+    'Default source language',
+    {
+      description:
+        'Language posts are written in unless a post sets its own, as a BCP 47 code such as en, zh-CN or pt-BR',
+    },
+  ),
+})
+
 // ==================== Mail Options ====================
 const SmtpConfigSchema = withMeta(
   z
@@ -572,6 +588,7 @@ export type OAuthConfig = z.infer<typeof OAuthSchema>
 // ==================== Config Schema Mapping ====================
 export const configSchemaMapping = {
   url: UrlSchema,
+  site: SiteSchema,
   mailOptions: MailOptionsSchema,
   imageStorageOptions: ImageStorageOptionsSchema,
   imageGenerationOptions: ImageGenerationOptionsSchema,

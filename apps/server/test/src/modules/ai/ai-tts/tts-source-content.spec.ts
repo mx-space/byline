@@ -79,10 +79,20 @@ describe('resolveTtsSourceContent', () => {
       })
     })
 
-    it('accepts a fresh translation whose sourceLang carries a region subtag', async () => {
+    it('accepts a fresh translation whose sourceLang uses non-canonical casing', async () => {
       await expect(
-        resolve(translationRow({ sourceLang: 'zh-CN' })),
+        resolve(translationRow({ sourceLang: 'zh_cn' }), {
+          sourceLang: 'zh-CN',
+        }),
       ).resolves.toMatchObject({ content: '{"root":{"children":[1]}}' })
+    })
+
+    it('rejects a translation made from another regional variant of the source', async () => {
+      await expect(
+        resolve(translationRow({ sourceLang: 'zh-TW' }), {
+          sourceLang: 'zh-CN',
+        }),
+      ).rejects.toMatchObject({ code: AppErrorCode.TTS_SOURCE_NOT_LEXICAL })
     })
 
     it('falls back to createdAt when the row has no source vintage', async () => {

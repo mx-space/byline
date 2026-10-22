@@ -1,3 +1,6 @@
+import { createAbortError, throwIfAborted } from '@mx-space/ai'
+import type { IModelRuntime } from '@mx-space/ai/runtime'
+import { buildSourceMetaHashes } from '@mx-space/ai/translation'
 import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common'
 import pLimit from 'p-limit'
 
@@ -20,7 +23,6 @@ import {
   TaskStatus,
 } from '~/processors/task-queue'
 import { ContentFormat } from '~/shared/types/content-format.type'
-import { createAbortError, throwIfAborted } from '~/utils/abort.util'
 import { md5 } from '~/utils/tool.util'
 
 import { ConfigsService } from '../../configs/configs.service'
@@ -53,7 +55,6 @@ import {
   type TranslationTaskPayload,
 } from '../ai-task/ai-task.types'
 import { buildGroupedWithOrphans } from '../grouped-with-orphans.util'
-import type { IModelRuntime } from '../runtime'
 import { AiTranslationRepository } from './ai-translation.repository'
 import type {
   GetTranslationsGroupedQueryDto,
@@ -70,7 +71,6 @@ import { BaseTranslationService } from './base-translation.service'
 import { LexicalPartialTranslationBuilder } from './lexical-partial-translation.builder'
 import { TranslationConsistencyService } from './translation-consistency.service'
 import type { TranslationSourceSnapshot } from './translation-consistency.types'
-import { buildSourceMetaHashes } from './translation-meta'
 import type { ITranslationStrategy } from './translation-strategy.interface'
 import {
   LEXICAL_TRANSLATION_STRATEGY,
@@ -240,9 +240,10 @@ export class AiTranslationService
       return
     }
 
+    const sourceLang = await this.resolveSourceLang(payload.refId)
     const { languages, skipped } = await this.excludeLockedLanguages(
       payload.refId,
-      requestedLanguages,
+      requestedLanguages.filter((lang) => lang !== sourceLang),
       payload.regenerateLocked,
     )
     if (skipped.length) {
@@ -745,6 +746,11 @@ export class AiTranslationService
     })
   }
 
+  private async resolveSourceLang(refId: string) {
+    const article = await this.databaseService.findGlobalById(refId)
+    return article?.document ? this.getMetaLang(article.document) : undefined
+  }
+
   async excludeLockedLanguages(
     refId: string,
     languages: string[],
@@ -874,7 +880,7 @@ export class AiTranslationService
           trackCost,
           refType,
         )
-        const { sourceLang } = translated
+        const sourceLang = this.getMetaLang(document) || translated.sourceLang
         const hash = this.computeContentHash(content, sourceLang)
 
         // Build source snapshots for future incremental translations

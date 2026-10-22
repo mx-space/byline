@@ -256,16 +256,16 @@ describe('AiOverviewService.getArticleOverview', () => {
 
   it('builds coverage from the assets it loaded', async () => {
     const { service } = createService({
-      documents: { '300': { meta: { lang: 'zh-CN' } } },
+      documents: { '300': { meta: { lang: 'zh_cn' } } },
       repository: {
         summaryAssets: vi.fn(async () => [
-          { id: 's1', lang: 'zh', summary: 'x', createdAt: new Date() },
+          { id: 's1', lang: 'zh-CN', summary: 'x', createdAt: new Date() },
         ]),
         translationAssets: vi.fn(async () => [
           {
             id: 't1',
             lang: 'en',
-            sourceLang: 'zh',
+            sourceLang: 'zh-CN',
             aiModel: null,
             createdAt: new Date(),
             updatedAt: null,
@@ -276,10 +276,9 @@ describe('AiOverviewService.getArticleOverview', () => {
 
     const detail = await service.getArticleOverview('300')
 
-    // `meta.lang` is a locale here; it must normalise before comparisons.
-    expect(detail.coverage.sourceLang).toBe('zh')
-    expect(detail.coverage.summary.langs).toEqual(['zh'])
-    expect(detail.coverage.tts.expected).toEqual(['en', 'zh'])
+    expect(detail.coverage.sourceLang).toBe('zh-CN')
+    expect(detail.coverage.summary.langs).toEqual(['zh-CN'])
+    expect(detail.coverage.tts.expected).toEqual(['en', 'zh-CN'])
     expect(detail.assets.translation).toHaveLength(1)
   })
 
@@ -290,7 +289,7 @@ describe('AiOverviewService.getArticleOverview', () => {
     await expect(service.getArticleOverview('999')).rejects.toThrow()
   })
 
-  it('canonicalizes the configured target languages, so a zh-CN setting is not a gap an existing zh row can never close', async () => {
+  it('canonicalizes the configured target languages while keeping regional variants distinct', async () => {
     const { service, configService } = createService({
       repository: {
         summaryAssets: vi.fn(async () => [
@@ -299,9 +298,9 @@ describe('AiOverviewService.getArticleOverview', () => {
       } as never,
     })
     configService.get.mockResolvedValue({
-      summaryTargetLanguages: ['zh-CN', 'zh'],
+      summaryTargetLanguages: ['ZH', 'zh'],
       insightsTargetLanguages: ['jp'],
-      translationTargetLanguages: ['en_US', 'EN'],
+      translationTargetLanguages: ['en_US', 'EN', 'en-us'],
     })
 
     const detail = await service.getArticleOverview('300')
@@ -309,7 +308,7 @@ describe('AiOverviewService.getArticleOverview', () => {
     expect(detail.coverage.summary.expected).toEqual(['zh'])
     expect(detail.coverage.summary.langs).toEqual(['zh'])
     expect(detail.coverage.insights.expected).toEqual(['ja'])
-    expect(detail.coverage.translation.expected).toEqual(['en'])
+    expect(detail.coverage.translation.expected).toEqual(['en', 'en-US'])
   })
 
   it('looks up active tasks for this article only, sub-tasks included', async () => {

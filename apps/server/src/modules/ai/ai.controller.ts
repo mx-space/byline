@@ -1,5 +1,12 @@
 import type { Api, Model } from '@earendil-works/pi-ai'
 import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
+import { listDecisionModels, requestDecision } from '@mx-space/ai/decision'
+import {
+  createModelRuntime,
+  createRuntimeForModelList,
+  type IModelRuntime,
+  type ModelInfo,
+} from '@mx-space/ai/runtime'
 import { Body, Get, HttpCode, Logger, Param, Post, Query } from '@nestjs/common'
 
 import { ApiController } from '~/common/decorators/api-controller.decorator'
@@ -15,13 +22,6 @@ import {
 import { AiService } from './ai.service'
 import { type AIProviderCapability, AIProviderType } from './ai.types'
 import { AiViews, type RegistryModelView } from './ai.views'
-import { listDecisionModels, requestDecision } from './decision/typesafe'
-import {
-  createModelRuntime,
-  createRuntimeForModelList,
-  type IModelRuntime,
-  type ModelInfo,
-} from './runtime'
 
 const REGISTRY_CACHE_TTL_MS = 5 * 60 * 1000
 

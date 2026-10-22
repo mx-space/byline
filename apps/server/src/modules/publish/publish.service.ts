@@ -1,3 +1,4 @@
+import { createAbortError, throwIfAborted } from '@mx-space/ai'
 import {
   BadRequestException,
   Injectable,
@@ -12,7 +13,6 @@ import {
   TaskQueueService,
   TaskStatus,
 } from '~/processors/task-queue'
-import { createAbortError, throwIfAborted } from '~/utils/abort.util'
 
 import { AiTaskService } from '../ai/ai-task/ai-task.service'
 import { DraftRefType } from '../draft/draft.enum'

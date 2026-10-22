@@ -317,14 +317,14 @@ describe('AiInsightsService', () => {
         title: 'English Post',
         text: 'English text',
         isPublished: true,
-        meta: { lang: 'en-US' },
+        meta: { lang: 'en_us' },
       },
     })
     repository.findSourceForRef.mockResolvedValue(null)
 
     await service.findSourceInsightsForArticle('post-1')
 
-    expect(repository.findSourceForRef).toHaveBeenCalledWith('post-1', 'en')
+    expect(repository.findSourceForRef).toHaveBeenCalledWith('post-1', 'en-US')
   })
 })
 
@@ -425,7 +425,7 @@ describe('AiInsightsService — insights task target languages', () => {
 
     await runInsightsTask(harness, {
       refId: 'post-1',
-      targetLanguages: ['zh-CN'],
+      targetLanguages: ['ZH'],
     })
 
     const upserts = harness.repository.upsert.mock.calls.map(

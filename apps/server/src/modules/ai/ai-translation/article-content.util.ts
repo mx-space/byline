@@ -12,8 +12,10 @@ export function toArticleContent(document: ArticleDocument): ArticleContent {
 }
 
 export function readArticleMetaLang(document: {
+  sourceLang?: string | null
   meta?: Record<string, unknown> | null
 }): string | undefined {
+  if (document.sourceLang) return document.sourceLang
   const lang = document.meta?.lang
   return typeof lang === 'string' ? lang : undefined
 }

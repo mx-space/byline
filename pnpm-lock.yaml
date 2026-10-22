@@ -163,6 +163,9 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  '@mx-space/ai': link:/Users/innei/git/innei-repo/mx-core-shared/packages/ai
+  '@mx-space/editor': link:/Users/innei/git/innei-repo/mx-core-shared/packages/editor
+  '@mx-space/ws-client': link:/Users/innei/git/innei-repo/mx-core-shared/packages/ws-client
   eslint-plugin-react-compiler>zod: 3.25.76
   get-pixels@^3>request: ./external/request
   better-auth: 1.6.27
@@ -455,11 +458,11 @@ importers:
         specifier: 4.7.0
         version: 4.7.0(monaco-editor@0.57.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@mx-space/editor':
-        specifier: 0.3.0
-        version: 0.3.0(typescript@6.0.3)
+        specifier: link:/Users/innei/git/innei-repo/mx-core-shared/packages/editor
+        version: link:../../../mx-core-shared/packages/editor
       '@mx-space/ws-client':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: link:/Users/innei/git/innei-repo/mx-core-shared/packages/ws-client
+        version: link:../../../mx-core-shared/packages/ws-client
       '@pierre/diffs':
         specifier: 1.5.1
         version: 1.5.1(@shikijs/themes@4.5.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -653,6 +656,9 @@ importers:
       '@haklex/rich-headless':
         specifier: 0.52.0
         version: 0.52.0(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
+      '@haklex/rich-litexml':
+        specifier: 0.52.0
+        version: 0.52.0(typescript@6.0.3)
       '@innei/message-engine':
         specifier: 0.5.0
         version: 0.5.0(@earendil-works/pi-agent-core@0.99.1(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(supports-color@5.5.0)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))(react@19.3.1)
@@ -674,18 +680,24 @@ importers:
       '@lexical/list':
         specifier: 0.52.0
         version: 0.52.0(typescript@6.0.3)
+      '@lexical/markdown':
+        specifier: 0.52.0
+        version: 0.52.0(typescript@6.0.3)
       '@lexical/rich-text':
         specifier: 0.52.0
         version: 0.52.0(typescript@6.0.3)
       '@lexical/table':
         specifier: 0.52.0
         version: 0.52.0(typescript@6.0.3)
+      '@mx-space/ai':
+        specifier: link:/Users/innei/git/innei-repo/mx-core-shared/packages/ai
+        version: link:../../../mx-core-shared/packages/ai
       '@mx-space/editor':
-        specifier: 0.3.0
-        version: 0.3.0(typescript@6.0.3)
+        specifier: link:/Users/innei/git/innei-repo/mx-core-shared/packages/editor
+        version: link:../../../mx-core-shared/packages/editor
       '@mx-space/ws-client':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: link:/Users/innei/git/innei-repo/mx-core-shared/packages/ws-client
+        version: link:../../../mx-core-shared/packages/ws-client
       '@nestjs/cache-manager':
         specifier: 12.0.0
         version: 12.0.0(@nestjs/common@12.1.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@5.5.0))(@nestjs/core@12.1.2)(cache-manager@7.2.9)(keyv@5.6.0)(rxjs@7.8.2)
@@ -3360,12 +3372,6 @@ packages:
     resolution: {integrity: sha512-mQ2s0pYYiav+tzCDR05Zptem8Ey2v8s11lri5RKGhTtL4COVCvVCk5vtyRYNT+9L8qSfyOqqefF9UtnW8mC5jA==}
     engines: {node: '>= 20.19.0'}
 
-  '@mx-space/editor@0.3.0':
-    resolution: {integrity: sha512-HYg2v70wO0zh4f+zwL6YbYFUTydaFxMITR/OVJtxbSqAzI0I0sz/H2F55hn05r1P9DBH0BYhKWzxr/8ZN1j4XQ==}
-
-  '@mx-space/ws-client@0.1.0':
-    resolution: {integrity: sha512-LPxt26kEAKxZxtTJTpe/0v0ovB1iyBxa8VNpg0dwNScqy4n1tNgmI7Ah2L8A1/FcLlX9++N2VZIl6qfaw/jctA==}
-
   '@napi-rs/nice-android-arm-eabi@1.1.1':
     resolution: {integrity: sha512-kjirL3N6TnRPv5iuHw36wnucNqXAO46dzK9oPb0wj076R5Xm8PfUVA9nAFB5ZNMmfJQJVKACAPd/Z2KYMppthw==}
     engines: {node: '>= 10'}
@@ -3643,10 +3649,6 @@ packages:
 
   '@noble/ciphers@2.4.0':
     resolution: {integrity: sha512-AnjFn0Jv92laAkvMrghlFZq4qQCIN/4DxFV/eooqtC2YTjB7kBeLMS2T9KJX4Dn+ZVXLOwK0lSgqDtx9gvxtiw==}
-    engines: {node: '>= 20.19.0'}
-
-  '@noble/hashes@2.2.0':
-    resolution: {integrity: sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg==}
     engines: {node: '>= 20.19.0'}
 
   '@noble/hashes@2.4.0':
@@ -13294,22 +13296,6 @@ snapshots:
       prebuild-install: 7.1.3
     optional: true
 
-  '@mx-space/editor@0.3.0(typescript@6.0.3)':
-    dependencies:
-      '@haklex/rich-headless': 0.52.0(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
-      '@haklex/rich-litexml': 0.52.0(typescript@6.0.3)
-      '@lexical/headless': 0.52.0(typescript@6.0.3)
-      '@lexical/markdown': 0.52.0(typescript@6.0.3)
-      '@noble/hashes': 2.2.0
-      lexical: 0.52.0(typescript@6.0.3)
-    transitivePeerDependencies:
-      - bufferutil
-      - canvas
-      - typescript
-      - utf-8-validate
-
-  '@mx-space/ws-client@0.1.0': {}
-
   '@napi-rs/nice-android-arm-eabi@1.1.1':
     optional: true
 
@@ -13530,8 +13516,6 @@ snapshots:
       - eslint
 
   '@noble/ciphers@2.4.0': {}
-
-  '@noble/hashes@2.2.0': {}
 
   '@noble/hashes@2.4.0': {}
 

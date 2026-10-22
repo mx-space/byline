@@ -7,6 +7,9 @@ export const generateDefaultConfig: () => IConfig = () => ({
     serverUrl: 'http://localhost:2333',
     webUrl: 'http://localhost:2323',
   },
+  site: {
+    defaultSourceLang: 'en',
+  },
   mailOptions: {
     enable: false,
     provider: 'smtp',

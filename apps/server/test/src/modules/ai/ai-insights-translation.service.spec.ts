@@ -92,7 +92,7 @@ describe('AiInsightsTranslationService', () => {
     configService.get.mockResolvedValue({
       enableInsights: true,
       enableAutoTranslateInsights: true,
-      insightsTargetLanguages: ['zh-CN', 'jp', 'ja'],
+      insightsTargetLanguages: ['ZH', 'jp', 'ja'],
     })
     repository.findByRefAndLang.mockResolvedValue(null)
 

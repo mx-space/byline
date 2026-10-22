@@ -236,13 +236,13 @@ describe('TranslationService', () => {
 
       await service.translateArticle({
         articleId: 'article-1',
-        targetLang: 'zh-CN',
+        targetLang: 'zh_cn',
         originalData,
       })
 
       expect(
         mockAiTranslationService.getTranslationAndAvailableLanguages,
-      ).toHaveBeenCalledWith('article-1', 'zh', undefined)
+      ).toHaveBeenCalledWith('article-1', 'zh-CN', undefined)
     })
   })
 
@@ -537,7 +537,7 @@ describe('TranslationService', () => {
 
       expect(
         mockAiTranslationService.getValidTranslationsForArticles,
-      ).toHaveBeenCalledWith(articles, 'en')
+      ).toHaveBeenCalledWith(articles, 'en-US')
     })
 
     it('should handle articles with empty text', async () => {
@@ -562,13 +562,12 @@ describe('TranslationService', () => {
 
       const originalData = { title: 'Test', text: 'Text' }
 
-      // Test various language code formats
       const testCases = [
         { input: 'jp', expected: 'ja' },
-        { input: 'cn', expected: 'zh' },
-        { input: 'zh-tw', expected: 'zh' },
-        { input: 'en-gb', expected: 'en' },
-        { input: 'pt-br', expected: 'pt' },
+        { input: 'cn', expected: 'zh-CN' },
+        { input: 'zh-tw', expected: 'zh-TW' },
+        { input: 'en-gb', expected: 'en-GB' },
+        { input: 'pt-br', expected: 'pt-BR' },
       ]
 
       for (const testCase of testCases) {

@@ -84,17 +84,23 @@ describe('AiTaskService.createTtsTask', () => {
   it('collapses equivalent language codes onto one dedup key', async () => {
     const { service, taskQueueService } = createService()
 
-    await service.createTtsTask({ refId: '1', langs: ['zh-CN'], title: 'T' })
-    await service.createTtsTask({ refId: '1', langs: ['zh'], title: 'T' })
+    await service.createTtsTask({ refId: '1', langs: ['zh_tw'], title: 'T' })
+    await service.createTtsTask({ refId: '1', langs: ['zh-TW'], title: 'T' })
     await service.createTtsTask({
       refId: '1',
-      langs: ['zh', 'zh-CN'],
+      langs: ['ZH-tw', 'zh-TW'],
       title: 'T',
     })
+    await service.createTtsTask({ refId: '1', langs: ['zh'], title: 'T' })
 
     const keys = taskQueueService.createTask.mock.calls.map(
       ([options]) => options.dedupKey,
     )
-    expect(keys).toEqual(['1:inc:zh', '1:inc:zh', '1:inc:zh'])
+    expect(keys).toEqual([
+      '1:inc:zh-TW',
+      '1:inc:zh-TW',
+      '1:inc:zh-TW',
+      '1:inc:zh',
+    ])
   })
 })

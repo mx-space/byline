@@ -1,4 +1,5 @@
 import type { AssistantMessageEvent } from '@earendil-works/pi-ai'
+import type { AiAgentSseEvent } from '@mx-space/ai'
 import {
   Body,
   Delete,
@@ -19,7 +20,6 @@ import { Auth } from '~/common/decorators/auth.decorator'
 import { BypassCaseTransform } from '~/common/decorators/bypass-case-transform.decorator'
 import { WithFastifyRouteOptions } from '~/common/decorators/fastify-route-options.decorator'
 import { HTTPDecorators } from '~/common/decorators/http.decorator'
-import type { AiAgentSseEvent } from '~/modules/ai/contracts'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 import { applyRawCorsHeaders } from '~/utils/sse.util'
 

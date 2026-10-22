@@ -9,15 +9,16 @@ import {
 
 describe('ai-language.util', () => {
   describe('parseLanguageCode', () => {
-    it('should extract language code from locale', () => {
-      expect(parseLanguageCode('en-US')).toBe('en')
-      expect(parseLanguageCode('zh-CN')).toBe('zh')
-      expect(parseLanguageCode('ja-JP')).toBe('ja')
+    it('keeps the region of a regional locale', () => {
+      expect(parseLanguageCode('en-US')).toBe('en-US')
+      expect(parseLanguageCode('zh-CN')).toBe('zh-CN')
+      expect(parseLanguageCode('zh_tw')).toBe('zh-TW')
+      expect(parseLanguageCode('pt-br')).toBe('pt-BR')
     })
 
     it('should handle Accept-Language header format', () => {
-      expect(parseLanguageCode('en-US,en;q=0.9,zh;q=0.8')).toBe('en')
-      expect(parseLanguageCode('zh-CN,zh;q=0.9')).toBe('zh')
+      expect(parseLanguageCode('en-US,en;q=0.9,zh;q=0.8')).toBe('en-US')
+      expect(parseLanguageCode('zh-CN,zh;q=0.9')).toBe('zh-CN')
     })
 
     it('should handle simple language code', () => {
@@ -27,7 +28,8 @@ describe('ai-language.util', () => {
 
     it('should remap legacy aliases to canonical codes', () => {
       expect(parseLanguageCode('jp')).toBe('ja')
-      expect(parseLanguageCode('cn')).toBe('zh')
+      expect(parseLanguageCode('cn')).toBe('zh-CN')
+      expect(parseLanguageCode('tw')).toBe('zh-TW')
       expect(parseLanguageCode('kr')).toBe('ko')
     })
 
@@ -44,9 +46,9 @@ describe('ai-language.util', () => {
       expect(parseLanguageCode('not a lang')).toBe('zh')
     })
 
-    it('should convert to lowercase', () => {
-      expect(parseLanguageCode('EN-US')).toBe('en')
-      expect(parseLanguageCode('ZH-CN')).toBe('zh')
+    it('canonicalizes the casing of language and region', () => {
+      expect(parseLanguageCode('EN-US')).toBe('en-US')
+      expect(parseLanguageCode('ZH-HANT')).toBe('zh-Hant')
     })
   })
 
@@ -58,6 +60,13 @@ describe('ai-language.util', () => {
       expect(getLanguageName('ko')).toBe('Korean')
     })
 
+    it('names regional locales', () => {
+      expect(getLanguageName('zh-CN')).toBe('Simplified Chinese')
+      expect(getLanguageName('zh-TW')).toBe('Traditional Chinese (Taiwan)')
+      expect(getLanguageName('pt-BR')).toBe('Brazilian Portuguese')
+      expect(getLanguageName('en-GB')).toBe('English (GB)')
+    })
+
     it('should return code itself for unknown codes', () => {
       expect(getLanguageName('unknown')).toBe('unknown')
       expect(getLanguageName('xyz')).toBe('xyz')
@@ -65,9 +74,11 @@ describe('ai-language.util', () => {
   })
 
   describe('normalizeTargetLang', () => {
-    it('folds a recognized region-suffixed code to its base', () => {
-      expect(normalizeTargetLang('zh-CN')).toBe('zh')
-      expect(normalizeTargetLang('en_US')).toBe('en')
+    it('keeps regional targets distinct instead of folding them', () => {
+      expect(normalizeTargetLang('zh-CN')).toBe('zh-CN')
+      expect(normalizeTargetLang('zh-tw')).toBe('zh-TW')
+      expect(normalizeTargetLang('en_US')).toBe('en-US')
+      expect(normalizeTargetLang('zh')).toBe('zh')
     })
 
     it('passes an unrecognized token through as trim + lowercase, unlike parseLanguageCode', () => {

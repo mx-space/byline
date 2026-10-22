@@ -82,9 +82,9 @@ const groupConfigs: GroupConfig[] = [
   {
     key: 'site',
     title: 'Site',
-    description: 'Site URLs',
+    description: 'Site URLs and content defaults',
     icon: 'globe',
-    sectionKeys: ['url'],
+    sectionKeys: ['url', 'site'],
   },
   {
     key: 'notification',

@@ -60,7 +60,7 @@ describe('RequestContextMiddleware lang resolution', () => {
       await runWith({
         'accept-language': 'zh-CN',
       }),
-    ).toBe('zh')
+    ).toBe('zh-CN')
   })
 
   test('x-skip-translation: 1 ignores cookie and accept-language', async () => {
@@ -89,6 +89,6 @@ describe('RequestContextMiddleware lang resolution', () => {
         'x-skip-translation': 'true',
         'accept-language': 'zh-CN',
       }),
-    ).toBe('zh')
+    ).toBe('zh-CN')
   })
 })

@@ -1,9 +1,11 @@
-import { normalizeTargetLang } from '~/modules/ai/contracts'
+import { normalizeTargetLang as normalizeSharedTargetLang } from '@mx-space/ai'
+
 import { parseAcceptLanguage } from '~/utils/lang.util'
 
 import { DEFAULT_SUMMARY_LANG, LANGUAGE_CODE_TO_NAME } from './ai.constants'
 
-export { normalizeTargetLang }
+export const normalizeTargetLang = (lang: string): string | undefined =>
+  normalizeSharedTargetLang(lang, { foldRegion: false })
 
 export function normalizeTargetLangs(langs?: string[] | null): string[] {
   return [
@@ -38,12 +40,26 @@ export function parseLanguageCode(lang?: string): string {
   return DEFAULT_SUMMARY_LANG
 }
 
-/**
- * Get the full name for a language code.
- * Examples: "en" -> "English", "zh" -> "Simplified Chinese"
- */
+const REGIONAL_LANGUAGE_NAMES: Record<string, string> = {
+  'zh-CN': 'Simplified Chinese',
+  'zh-Hans': 'Simplified Chinese',
+  'zh-SG': 'Simplified Chinese',
+  'zh-TW': 'Traditional Chinese (Taiwan)',
+  'zh-HK': 'Traditional Chinese (Hong Kong)',
+  'zh-Hant': 'Traditional Chinese',
+  'pt-BR': 'Brazilian Portuguese',
+  'pt-PT': 'European Portuguese',
+}
+
 export function getLanguageName(langCode: string): string {
-  return LANGUAGE_CODE_TO_NAME[langCode] || langCode
+  const exact =
+    LANGUAGE_CODE_TO_NAME[langCode] ?? REGIONAL_LANGUAGE_NAMES[langCode]
+  if (exact) return exact
+  const [base, ...subtags] = langCode.split('-')
+  const baseName = LANGUAGE_CODE_TO_NAME[base]
+  return baseName && subtags.length
+    ? `${baseName} (${subtags.join('-')})`
+    : langCode
 }
 
 export function resolveTargetLanguages(
@@ -54,9 +70,10 @@ export function resolveTargetLanguages(
 }
 
 export function resolveArticleSourceLang(document: {
+  sourceLang?: string | null
   meta?: Record<string, unknown> | null
 }): string {
-  const raw = document.meta?.lang
+  const raw = document.sourceLang || document.meta?.lang
   return typeof raw === 'string' && raw.trim()
     ? parseLanguageCode(raw)
     : DEFAULT_SUMMARY_LANG

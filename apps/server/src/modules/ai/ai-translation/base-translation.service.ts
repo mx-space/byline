@@ -16,6 +16,7 @@ export abstract class BaseTranslationService {
   }
 
   getMetaLang(document: {
+    sourceLang?: string | null
     meta?: Record<string, unknown> | null
   }): string | undefined {
     return readArticleMetaLang(document)

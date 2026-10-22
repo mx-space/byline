@@ -178,7 +178,7 @@ describe('AiTranslationService', () => {
     )
   })
 
-  it('folds a region-suffixed target language into its base before generating', async () => {
+  it('collapses spellings of one regional target before generating', async () => {
     const { configService, service, taskProcessor } = createService()
     configService.get.mockResolvedValue({
       enableTranslation: true,
@@ -206,7 +206,7 @@ describe('AiTranslationService', () => {
     }
 
     await handler.execute(
-      { refId: 'post-1', targetLanguages: ['zh-CN', 'zh'] },
+      { refId: 'post-1', targetLanguages: ['zh_tw', 'zh-TW'] },
       context as any,
     )
 
@@ -724,7 +724,7 @@ describe('AiTranslationService — force regeneration', () => {
     })
   })
 
-  it('normalizes payload target languages before diffing, so zh-CN matches a successful zh', () => {
+  it('normalizes payload target languages before diffing, so zh_tw matches a successful zh-TW', () => {
     const { service, taskProcessor } = createService()
     service.onModuleInit()
     const handler = taskProcessor.registerHandler.mock.calls
@@ -738,13 +738,11 @@ describe('AiTranslationService — force regeneration', () => {
       groupId: 'group-1',
       payload: {
         refId: 'post-1',
-        targetLanguages: ['zh-CN', 'en'],
+        targetLanguages: ['zh_tw', 'en'],
         title: 'T',
         refType: CollectionRefTypes.Post,
       },
-      // executeTranslationTask generates against the normalized language
-      // list, so a successful zh-CN run is recorded as lang: 'zh'
-      result: { translations: [{ lang: 'zh' }] },
+      result: { translations: [{ lang: 'zh-TW' }] },
     }
 
     const retryOptions = handler.buildRetryTask(task)

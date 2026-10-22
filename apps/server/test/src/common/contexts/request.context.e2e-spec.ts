@@ -168,34 +168,34 @@ describe('RequestContext (e2e)', () => {
       expect(body.contextLang).toBe('en')
     })
 
-    test('normalizes language code from header (en-US -> en)', async () => {
+    test('canonicalizes a regional header without dropping the region (en_us -> en-US)', async () => {
       const res = await app.inject({
         method: 'GET',
         url: '/request-context/lang',
         headers: {
-          'x-lang': 'en-US',
+          'x-lang': 'en_us',
         },
       })
 
       expect(res.statusCode).toBe(200)
       const body = await res.json()
-      expect(body.lang).toBe('en')
-      expect(body.contextLang).toBe('en')
+      expect(body.lang).toBe('en-US')
+      expect(body.contextLang).toBe('en-US')
     })
 
-    test('normalizes zh-CN to zh', async () => {
+    test('keeps zh-TW distinct from zh', async () => {
       const res = await app.inject({
         method: 'GET',
         url: '/request-context/lang',
         headers: {
-          'x-lang': 'zh-CN',
+          'x-lang': 'zh-tw',
         },
       })
 
       expect(res.statusCode).toBe(200)
       const body = await res.json()
-      expect(body.lang).toBe('zh')
-      expect(body.contextLang).toBe('zh')
+      expect(body.lang).toBe('zh-TW')
+      expect(body.contextLang).toBe('zh-TW')
     })
 
     test('returns undefined when no lang is provided', async () => {

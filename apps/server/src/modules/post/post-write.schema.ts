@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { zAllowedUrl } from '~/common/zod'
+import { normalizeLanguageCode } from '~/utils/lang.util'
 
 const zNullableTrimmed = (max: number) =>
   z.preprocess(
@@ -39,7 +40,8 @@ export const PostSourceLangSchema = z.preprocess(
   z
     .string()
     .trim()
-    .regex(/^[a-z]{2,3}(?:-[\da-z]{2,8})*$/i, 'Invalid language code')
+    .regex(/^[a-z]{2,3}(?:[_-][\da-z]{2,8})*$/i, 'Invalid language code')
+    .transform((lang) => normalizeLanguageCode(lang) ?? lang)
     .nullable(),
 )
 

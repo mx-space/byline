@@ -38,7 +38,7 @@ function buildService(lockedLangs: string[] = []) {
   const configService = {
     get: vi.fn(async () => ({
       enableTranslation: true,
-      translationTargetLanguages: ['en', 'ja', 'fr'],
+      translationTargetLanguages: ['en', 'ja', 'zh-tw', 'zh'],
       translationLangConcurrency: 3,
     })),
   }
@@ -104,7 +104,7 @@ const execute = (
 ) => (service as any).executeTranslationTask(payload, context) as Promise<void>
 
 describe('locked translations', () => {
-  it('skips locked locales during publish-time translation', async () => {
+  it('skips locked locales and the source language during publish-time translation', async () => {
     const { generate, service } = buildService(['ja'])
     const { context, logs, results } = buildContext()
 
@@ -112,7 +112,7 @@ describe('locked translations', () => {
 
     expect(generate.mock.calls.map((call) => call[1]).sort()).toEqual([
       'en',
-      'fr',
+      'zh-TW',
     ])
     expect(logs).toContain('Skipping locked translations: ja')
     expect(results.at(-1)).toMatchObject({ skippedLocked: ['ja'] })
@@ -152,7 +152,7 @@ describe('locked translations', () => {
   it('writes manual translations as locked, fresh rows', async () => {
     const { document, eventManager, repository, service } = buildService()
 
-    await service.writeManualTranslation('7001', 'FR', {
+    await service.writeManualTranslation('7001', 'pt_br', {
       title: 'Título',
       content: lexicalContent,
     })
@@ -160,7 +160,7 @@ describe('locked translations', () => {
     expect(repository.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         refId: '7001',
-        lang: 'fr',
+        lang: 'pt-BR',
         isLocked: true,
         title: 'Título',
         text: 'translated markdown',

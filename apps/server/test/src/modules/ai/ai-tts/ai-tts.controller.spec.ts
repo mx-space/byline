@@ -117,9 +117,9 @@ describe('AiTtsController', () => {
     const { controller, queryService } = createHarness()
     queryService.getPublicNarration.mockResolvedValue(null)
 
-    await controller.getArticleTts({ id: '1' } as any, { lang: 'zh-CN' } as any)
+    await controller.getArticleTts({ id: '1' } as any, { lang: 'zh_tw' } as any)
 
-    expect(queryService.getPublicNarration).toHaveBeenCalledWith('1', 'zh', {
+    expect(queryService.getPublicNarration).toHaveBeenCalledWith('1', 'zh-TW', {
       isOwner: false,
       password: undefined,
       readerId: undefined,
@@ -151,10 +151,13 @@ describe('AiTtsController', () => {
   it('enqueues a task with the canonical language list', async () => {
     const { controller, taskService } = createHarness()
 
-    await controller.createTask({ refId: '1', langs: ['zh-CN', 'zh'] } as any)
+    await controller.createTask({
+      refId: '1',
+      langs: ['zh-CN', 'zh_cn', 'zh'],
+    } as any)
 
     expect(taskService.createTtsTask).toHaveBeenCalledWith(
-      expect.objectContaining({ refId: '1', langs: ['zh'] }),
+      expect.objectContaining({ refId: '1', langs: ['zh-CN', 'zh'] }),
     )
   })
 

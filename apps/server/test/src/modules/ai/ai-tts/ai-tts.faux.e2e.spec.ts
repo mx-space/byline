@@ -53,7 +53,7 @@ const article = (modifiedAt = new Date('2026-01-01')) => ({
     text: 'plain text',
     contentFormat: 'lexical',
     content: '{"root":{"children":[]}}',
-    meta: { lang: 'zh-CN' },
+    meta: { lang: 'zh' },
     modifiedAt,
   },
 })
@@ -587,9 +587,9 @@ describe('ai-tts generation task (faux e2e)', () => {
     )
   })
 
-  it('narrates a fresh translation whose sourceLang carries a region subtag', async () => {
+  it('narrates a fresh translation whose sourceLang uses non-canonical casing', async () => {
     h.translationRepository.findByRefAndLang.mockResolvedValue(
-      translationRow({ sourceLang: 'zh-CN' }),
+      translationRow({ sourceLang: 'ZH' }),
     )
 
     await h.execute({ refId: '1', langs: ['en'] }, context)
@@ -622,7 +622,7 @@ describe('ai-tts generation task (faux e2e)', () => {
   })
 
   it('canonicalizes and deduplicates the requested languages', async () => {
-    await h.execute({ refId: '1', langs: ['zh-CN', 'zh'] }, context)
+    await h.execute({ refId: '1', langs: ['ZH', 'zh'] }, context)
 
     expect(h.redis.set).toHaveBeenCalledTimes(1)
     expect(h.repository.upsertParent).toHaveBeenCalledWith(

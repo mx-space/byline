@@ -32,6 +32,6 @@ export const zPrefer = z.enum(['lexical']).optional()
 export const zLang = z
   .preprocess(
     (val) => resolveRequestedLanguage(val),
-    z.string().length(2).optional(),
+    z.string().min(2).max(35).optional(),
   )
   .optional()

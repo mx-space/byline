@@ -9,6 +9,7 @@ import {
   type ImageStorageOptionsSchema,
   type MailOptionsSchema,
   type OAuthSchema,
+  type SiteSchema,
   type TtsOptionsSchema,
   type UrlSchema,
 } from './configs.schema'
@@ -24,6 +25,7 @@ export const configDtoMapping = configSchemaMapping
  */
 export abstract class IConfig {
   url: Required<z.infer<typeof UrlSchema>>
+  site: Required<z.infer<typeof SiteSchema>>
   mailOptions: Required<z.infer<typeof MailOptionsSchema>>
   imageStorageOptions: Required<z.infer<typeof ImageStorageOptionsSchema>>
   imageGenerationOptions: Required<z.infer<typeof ImageGenerationOptionsSchema>>

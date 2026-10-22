@@ -21,6 +21,10 @@ allowBuilds:
   unrs-resolver: true
   workerd: true
 overrides:
+  # Shared mx-space packages are consumed from the mx-core-shared checkout until they are published.
+  '@mx-space/ai': link:/Users/innei/git/innei-repo/mx-core-shared/packages/ai
+  '@mx-space/editor': link:/Users/innei/git/innei-repo/mx-core-shared/packages/editor
+  '@mx-space/ws-client': link:/Users/innei/git/innei-repo/mx-core-shared/packages/ws-client
   'eslint-plugin-react-compiler>zod': 3.25.76
   'get-pixels@^3>request': ./external/request
   # better-auth 1.7 keys accounts on (issuer, accountId) and needs a schema

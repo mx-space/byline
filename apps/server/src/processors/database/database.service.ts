@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common'
 
 import { CollectionRefTypes } from '~/constants/db.constant'
+import { ConfigsService } from '~/modules/configs/configs.service'
 import { PostRepository } from '~/modules/post/post.repository'
 import type { PostRow } from '~/modules/post/post.types'
 import { isEntityIdString, parseEntityId } from '~/shared/id/entity-id'
+import { normalizeLanguageCode } from '~/utils/lang.util'
 
 export type RefArticleInfo = {
   id: string
@@ -32,7 +34,22 @@ type IdsCollection = {
 
 @Injectable()
 export class DatabaseService {
-  constructor(private readonly postRepository: PostRepository) {}
+  constructor(
+    private readonly postRepository: PostRepository,
+    private readonly configsService: ConfigsService,
+  ) {}
+
+  private async applyDefaultSourceLang(posts: PostRow[]) {
+    if (posts.every((post) => post.sourceLang)) return posts
+    const { defaultSourceLang } = await this.configsService.get('site')
+    const fallback =
+      normalizeLanguageCode(defaultSourceLang) ?? defaultSourceLang
+    if (!fallback) return posts
+    for (const post of posts) {
+      post.sourceLang ||= fallback
+    }
+    return posts
+  }
 
   public async findGlobalById(
     id: string,
@@ -40,12 +57,15 @@ export class DatabaseService {
     parseEntityId(id)
     const document = await this.postRepository.findById(id)
     if (!document) return null
+    await this.applyDefaultSourceLang([document])
     return { document, type: CollectionRefTypes.Post }
   }
 
   public async findGlobalByIds(ids: string[]): Promise<IdsCollection> {
     const validIds = ids.filter(isEntityIdString)
-    const posts = await this.postRepository.findManyByIds(validIds)
+    const posts = await this.applyDefaultSourceLang(
+      await this.postRepository.findManyByIds(validIds),
+    )
     return { posts }
   }
 

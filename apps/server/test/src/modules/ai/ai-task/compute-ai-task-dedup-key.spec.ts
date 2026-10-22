@@ -121,31 +121,31 @@ describe('computeAITaskDedupKey — force bit', () => {
 })
 
 describe('computeAITaskDedupKey — target language normalization', () => {
-  it('gives Summary the same dedup key for zh-CN and zh, since generation now produces the same result', () => {
-    const regional = computeAITaskDedupKey(AITaskType.Summary, {
-      refId: '1',
-      targetLanguages: ['zh-CN'],
-    })
-    const canonical = computeAITaskDedupKey(AITaskType.Summary, {
-      refId: '1',
-      targetLanguages: ['zh'],
-    })
+  it.each([AITaskType.Summary, AITaskType.Translation])(
+    'gives %s the same dedup key for spellings of one locale',
+    (type) => {
+      const loose = computeAITaskDedupKey(type, {
+        refId: '1',
+        targetLanguages: ['zh_cn'],
+      })
+      const canonical = computeAITaskDedupKey(type, {
+        refId: '1',
+        targetLanguages: ['zh-CN'],
+      })
 
-    expect(regional).toBe(canonical)
-    expect(regional).toBe('1:inc:zh')
-  })
+      expect(loose).toBe(canonical)
+      expect(loose).toBe('1:inc:zh-CN')
+    },
+  )
 
-  it('gives Translation the same dedup key for zh-CN and zh, since generation now produces the same result', () => {
-    const regional = computeAITaskDedupKey(AITaskType.Translation, {
-      refId: '1',
-      targetLanguages: ['zh-CN'],
-    })
-    const canonical = computeAITaskDedupKey(AITaskType.Translation, {
-      refId: '1',
-      targetLanguages: ['zh'],
-    })
-
-    expect(regional).toBe(canonical)
-    expect(regional).toBe('1:inc:zh')
-  })
+  it.each([AITaskType.Summary, AITaskType.Translation])(
+    'keeps regional variants on distinct %s dedup keys',
+    (type) => {
+      expect(
+        computeAITaskDedupKey(type, { refId: '1', targetLanguages: ['zh-TW'] }),
+      ).not.toBe(
+        computeAITaskDedupKey(type, { refId: '1', targetLanguages: ['zh'] }),
+      )
+    },
+  )
 })

@@ -242,15 +242,15 @@ describe('AiTtsQueryService.getPublicNarration', () => {
         id: '1',
         title: 'Post',
         isPublished: true,
-        meta: { lang: 'en-US' },
+        meta: { lang: 'en_us' },
       },
     })
-    repository.findByRefAndLang.mockResolvedValue(parentRow({ lang: 'en' }))
+    repository.findByRefAndLang.mockResolvedValue(parentRow({ lang: 'en-US' }))
     repository.findBlocks.mockResolvedValue([blockRow('blk-a')])
 
     await service.getPublicNarration('1')
 
-    expect(repository.findByRefAndLang).toHaveBeenCalledWith('1', 'en')
+    expect(repository.findByRefAndLang).toHaveBeenCalledWith('1', 'en-US')
   })
 
   it('uses the requested language over the article default', async () => {
