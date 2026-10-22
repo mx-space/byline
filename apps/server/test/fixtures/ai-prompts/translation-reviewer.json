@@ -1,0 +1,55 @@
+[
+  {
+    "name": "happy-empty-issues",
+    "value": { "issues": [] },
+    "expected": true
+  },
+  {
+    "name": "happy-with-issues",
+    "value": {
+      "issues": [
+        {
+          "id": "seg-1",
+          "severity": "minor",
+          "problem": "awkward phrasing"
+        },
+        {
+          "id": "title",
+          "severity": "major",
+          "problem": "mistranslation",
+          "hint": "consider 'opening'"
+        }
+      ]
+    },
+    "expected": true
+  },
+  {
+    "name": "missing-issues",
+    "value": {},
+    "expected": false
+  },
+  {
+    "name": "bad-severity",
+    "value": {
+      "issues": [{ "id": "x", "severity": "critical", "problem": "p" }]
+    },
+    "expected": false
+  },
+  {
+    "name": "legacy-score-shape",
+    "value": { "score": 88, "issues": [] },
+    "expected": false
+  },
+  {
+    "name": "issues-not-array",
+    "value": { "issues": { "id": "x" } },
+    "expected": false
+  },
+  {
+    "name": "issue-missing-problem",
+    "value": {
+      "issues": [{ "id": "x", "severity": "minor" }]
+    },
+    "expected": false
+  }
+]

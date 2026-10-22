@@ -1,0 +1,359 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+
+import { seconds } from '@nestjs/throttler'
+import { Option, program } from 'commander'
+import { load as yamlLoad } from 'js-yaml'
+import nodeMachineId from 'node-machine-id'
+
+import { isDebugMode, isDev } from './global/env.global'
+import {
+  parseRedisConnectionString,
+  resolveRedisConnectionStringEnv,
+} from './utils/redis-config.util'
+import { parseBooleanishValue } from './utils/tool.util'
+
+const { machineIdSync } = nodeMachineId
+
+const {
+  PORT: ENV_PORT,
+  ALLOWED_ORIGINS,
+  MX_ENCRYPT_KEY,
+  MX_ENCRYPT_ENABLE,
+  ENCRYPT_KEY: ENV_ENCRYPT_KEY,
+  ENCRYPT_ENABLE: ENV_ENCRYPT_ENABLE,
+  CDN_CACHE_HEADER,
+  FORCE_CACHE_HEADER,
+  THROTTLE_TTL,
+  THROTTLE_LIMIT,
+  JWT_SECRET,
+  JWTSECRET,
+  MX_DISABLE_TELEMETRY,
+} = process.env
+
+const ENV_JWT_SECRET = JWT_SECRET || JWTSECRET
+const ENCRYPT_KEY_FROM_ENV = MX_ENCRYPT_KEY || ENV_ENCRYPT_KEY
+const ENCRYPT_ENABLE_FROM_ENV = MX_ENCRYPT_ENABLE || ENV_ENCRYPT_ENABLE
+const REDIS_CONNECTION_STRING_FROM_ENV = resolveRedisConnectionStringEnv()
+
+function applyArgvEnvFallback(argv: Record<string, any>) {
+  // Fallback rule:
+  // - If argv key is missing, fallback to env.
+  // - env key = argv key uppercased (camelCase will be converted to SNAKE_CASE).
+  //
+  // NOTE: We only apply to commander-defined options to avoid accidentally
+  // coercing unrelated config keys.
+  for (const option of commander.options) {
+    const optionKey = option.attributeName()
+    const optionRawName = option.name() // usually snake_case from long flag, e.g. db_host
+    const envKey = optionRawName.toUpperCase()
+
+    // Do not override values from cli/config/default.
+    if (argv[optionKey] !== undefined || argv[optionRawName] !== undefined) {
+      continue
+    }
+
+    if (!(envKey in process.env)) continue
+    const envVal = process.env[envKey]
+
+    if (option.isBoolean()) {
+      // Commander treats boolean env var as "present => true", but we want to support
+      // explicit false like CLUSTER=false.
+      const parsed = parseBooleanishValue(envVal)
+      const value = parsed ?? true
+      argv[optionKey] = value
+      argv[optionRawName] = value
+    } else {
+      argv[optionKey] = envVal
+      argv[optionRawName] = envVal
+    }
+  }
+}
+
+const commander = program
+  .option('-p, --port <number>', 'server port', ENV_PORT)
+
+  .option(
+    '--allowed_origins <string>',
+    'allowed origins, e.g. innei.ren,*.innei.ren',
+    ALLOWED_ORIGINS,
+  )
+  .option('-c, --config <path>', 'load yaml config from file')
+  .option('--demo', 'enable demo mode')
+
+  // redis
+  .addOption(
+    new Option(
+      '--redis_connection_string <string>',
+      'redis connection string',
+    ).default(REDIS_CONNECTION_STRING_FROM_ENV, '[configured]'),
+  )
+  .option('--redis_host <string>', 'redis host')
+  .option('--redis_port <number>', 'redis port')
+  .option('--redis_password <string>', 'redis password')
+  .option('--disable_cache', 'disable redis cache')
+
+  // jwt
+  .addOption(
+    new Option('--jwt_secret <string>', 'custom jwt secret').default(
+      ENV_JWT_SECRET,
+      '[configured]',
+    ),
+  )
+  .option('--jwt_expire <number>', 'custom jwt expire time(d)')
+
+  // cluster
+  .option('--cluster', 'enable cluster mode')
+  .option('--cluster_workers <number>', 'cluster worker count')
+
+  // debug
+  .option('--http_request_verbose', 'enable http request verbose')
+
+  // cache
+  .option('--http_cache_ttl <number>', 'http cache ttl')
+  .option(
+    '--http_cache_enable_cdn_header',
+    'enable http cache cdn header, s-maxage',
+  )
+  .option(
+    '--http_cache_enable_force_cache_header',
+    'enable http cache force cache header, max-age',
+  )
+
+  // security
+  .addOption(
+    new Option(
+      '--encrypt_key <string>',
+      '64-character hexadecimal encryption key',
+    ).default(ENCRYPT_KEY_FROM_ENV, '[configured]'),
+  )
+  .option(
+    '--encrypt_enable',
+    'enable encrypt security field, please remember encrypt key.',
+  )
+  .option(
+    '--encrypt_algorithm <string>',
+    'custom encrypt algorithm, default is aes-256-ecb',
+  )
+  // throttle
+  .option('--throttle_ttl <number>', 'throttle ttl')
+  .option('--throttle_limit <number>', 'throttle limit')
+
+  // other
+  .option('--color', 'force enable shell color')
+
+  // debug
+  .option(
+    '--debug_memory_dump',
+    'enable memory dump for debug, send SIGUSR2 to dump memory',
+  )
+
+  // telemetry
+  .option('--disable_telemetry', 'disable anonymous telemetry')
+
+  // snowflake
+  .option(
+    '--snowflake_worker_id <number>',
+    'snowflake worker id (integer 0-1023). Required in production.',
+  )
+
+  // postgres
+  .option(
+    '--pg_connection_string <string>',
+    'PostgreSQL connection string (overrides individual flags)',
+  )
+  .option('--pg_host <string>', 'PostgreSQL host')
+  .option('--pg_port <number>', 'PostgreSQL port')
+  .option('--pg_user <string>', 'PostgreSQL user')
+  .option('--pg_password <string>', 'PostgreSQL password')
+  .option('--pg_database <string>', 'PostgreSQL database name')
+  .option('--pg_max_pool_size <number>', 'PostgreSQL pool size')
+  .option('--pg_ssl', 'enable PostgreSQL TLS')
+
+commander.parse()
+
+const argv = commander.opts()
+
+if (argv.config) {
+  const config = yamlLoad(
+    readFileSync(path.join(String(process.cwd()), argv.config), 'utf8'),
+  )
+  Object.assign(argv, config)
+}
+
+applyArgvEnvFallback(argv)
+
+export const PORT = argv.port || 2333
+export const API_VERSION = 3
+
+export const DEMO_MODE = argv.demo || false
+
+export const CROSS_DOMAIN = {
+  allowedOrigins: argv.allowed_origins
+    ? argv.allowed_origins?.split?.(',')
+    : [
+        'innei.ren',
+        '*.innei.ren',
+
+        'localhost:*',
+        '127.0.0.1',
+        'mbp.cc',
+        'local.innei.test',
+        '22333322.xyz',
+        '*.dev',
+        '*.vercel.app',
+        'innei.in',
+        '*.innei.in',
+
+        'localhost:9528',
+        'localhost:2323',
+      ],
+
+  // allowedReferer: 'innei.ren',
+}
+
+const redisConnection = argv.redis_connection_string
+  ? parseRedisConnectionString(argv.redis_connection_string)
+  : null
+
+export const REDIS = {
+  host: redisConnection?.host || argv.redis_host || 'localhost',
+  port: redisConnection?.port || argv.redis_port || 6379,
+  username: redisConnection?.username,
+  password: redisConnection?.password || argv.redis_password || null,
+  db: redisConnection?.db,
+  url: redisConnection?.url,
+  tls: redisConnection?.tls ?? false,
+  ttl: null,
+  max: 120,
+  disableApiCache: isDev,
+  // disableApiCache: false,
+}
+
+export const HTTP_CACHE = {
+  ttl: 15, // s
+  enableCDNHeader:
+    parseBooleanishValue(
+      (argv.http_cache_enable_cdn_header ?? CDN_CACHE_HEADER) as unknown as
+        string | boolean | undefined,
+    ) ?? true, // s-maxage
+  enableForceCacheHeader:
+    parseBooleanishValue(
+      (argv.http_cache_enable_force_cache_header ??
+        FORCE_CACHE_HEADER) as unknown as string | boolean | undefined,
+    ) ?? false, // cache-control: max-age
+}
+
+export const SECURITY = {
+  jwtSecret: argv.jwt_secret || argv.jwtSecret || ENV_JWT_SECRET,
+  jwtExpire: +argv.jwt_expire || 14,
+}
+
+export const CLUSTER = {
+  enable: argv.cluster ?? false,
+  workers: argv.cluster_workers,
+}
+
+export const DEBUG_MODE = {
+  logging: isDebugMode,
+  httpRequestVerbose:
+    argv.httpRequestVerbose ?? argv.http_request_verbose ?? true,
+  memoryDump:
+    parseBooleanishValue(
+      argv.debug_memory_dump ??
+        process.env.DEBUG_MEMORY_DUMP ??
+        process.env.MX_DEBUG_MEMORY_DUMP,
+    ) ?? false,
+}
+export const THROTTLE_OPTIONS = {
+  ttl: seconds(Number(argv.throttle_ttl ?? THROTTLE_TTL ?? 10)),
+  limit: Number(argv.throttle_limit ?? THROTTLE_LIMIT ?? 100),
+}
+
+const ENCRYPT_KEY = argv.encrypt_key
+// shortcut: enable v2 writes only after all replicas have the compatible reader; remove after the compatibility release.
+export const SECRET_STORAGE_V2 =
+  process.env.MX_SECRET_STORAGE_V2 === '1' ||
+  (parseBooleanishValue(process.env.MX_SECRET_STORAGE_V2) ?? false)
+
+export const ENCRYPT = {
+  key: ENCRYPT_KEY || machineIdSync(),
+  enable:
+    parseBooleanishValue(argv.encrypt_enable ?? ENCRYPT_ENABLE_FROM_ENV) ??
+    !!ENCRYPT_KEY,
+  algorithm: argv.encrypt_algorithm || 'aes-256-ecb',
+}
+
+if (ENCRYPT.enable && (!ENCRYPT_KEY || !/^[\da-f]{64}$/i.test(ENCRYPT_KEY)))
+  throw new Error(
+    'Encryption requires an explicit 64-character hexadecimal MX_ENCRYPT_KEY or ENCRYPT_KEY',
+  )
+
+if (
+  SECRET_STORAGE_V2 &&
+  (!ENCRYPT.enable || !SECURITY.jwtSecret || SECURITY.jwtSecret.length < 32)
+) {
+  throw new Error(
+    'MX_SECRET_STORAGE_V2 requires encryption and a JWT_SECRET of at least 32 characters',
+  )
+}
+
+export const TELEMETRY = {
+  enable: !parseBooleanishValue(argv.disable_telemetry ?? MX_DISABLE_TELEMETRY),
+}
+
+function parseSnowflakeWorkerId(): number {
+  const raw = argv.snowflake_worker_id ?? process.env.SNOWFLAKE_WORKER_ID
+  if (raw === undefined || raw === null || raw === '') {
+    if (isDev) {
+      // Dev fallback: avoid forcing every local checkout to set a worker id.
+      // Production deployments must allocate explicitly to prevent collisions.
+      return 0
+    }
+    throw new Error(
+      'SNOWFLAKE_WORKER_ID is required. Set the SNOWFLAKE_WORKER_ID env var or --snowflake_worker_id flag (integer 0-1023).',
+    )
+  }
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value < 0 || value > 1023) {
+    throw new Error(
+      `SNOWFLAKE_WORKER_ID must be an integer in [0, 1023]; received "${raw}"`,
+    )
+  }
+  return value
+}
+
+export const SNOWFLAKE = {
+  workerId: parseSnowflakeWorkerId(),
+  // 2026-05-02T00:00:00.000Z
+  epochMs: 1746144000000,
+}
+
+const PG_CONNECTION_FROM_ENV =
+  argv.pg_connection_string ||
+  process.env.PG_URL ||
+  process.env.PG_CONNECTION_STRING
+
+function parseInt32(input: unknown, fallback: number): number {
+  if (input === undefined || input === null || input === '') return fallback
+  const n = Number(input)
+  if (!Number.isInteger(n) || n <= 0) return fallback
+  return n
+}
+
+export const POSTGRES = {
+  connectionString: PG_CONNECTION_FROM_ENV as string | undefined,
+  host: argv.pg_host || process.env.PG_HOST || '127.0.0.1',
+  port: parseInt32(argv.pg_port ?? process.env.PG_PORT, 5432),
+  user: argv.pg_user || process.env.PG_USER || 'mx',
+  password: argv.pg_password || process.env.PG_PASSWORD || 'mx',
+  database: argv.pg_database || process.env.PG_DATABASE || 'byline',
+  maxPoolSize: parseInt32(
+    argv.pg_max_pool_size ?? process.env.PG_MAX_POOL_SIZE,
+    20,
+  ),
+  ssl:
+    parseBooleanishValue(argv.pg_ssl ?? process.env.PG_SSL) === true
+      ? { rejectUnauthorized: false }
+      : false,
+}

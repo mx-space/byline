@@ -1,0 +1,86 @@
+import { z } from 'zod'
+
+import { zCoerceBoolean, zEntityId, zNonEmptyString } from '~/common/zod'
+
+import { CategoryType } from './category.enum'
+
+/**
+ * Category schema for API validation
+ */
+export const CategorySchema = z.object({
+  name: zNonEmptyString,
+  type: z.enum(CategoryType).default(CategoryType.Category).optional(),
+  slug: zNonEmptyString.optional(),
+})
+
+export type CategoryDto = z.infer<typeof CategorySchema>
+
+/**
+ * Partial category schema for PATCH operations
+ */
+export const PartialCategorySchema = CategorySchema.partial()
+
+export type PartialCategoryDto = z.infer<typeof PartialCategorySchema>
+
+/**
+ * Slug or ID query schema
+ */
+export const SlugOrIdSchema = z.object({
+  query: zNonEmptyString.optional(),
+})
+
+export type SlugOrIdDto = z.infer<typeof SlugOrIdSchema>
+
+/**
+ * Multi query tag and category schema
+ */
+export const MultiQueryTagAndCategorySchema = z.object({
+  tag: z
+    .preprocess(
+      (val) => {
+        if (val === '1' || val === 'true') return true
+        return val
+      },
+      z.union([z.boolean(), z.string()]),
+    )
+    .optional(),
+})
+
+export type MultiQueryTagAndCategoryDto = z.infer<
+  typeof MultiQueryTagAndCategorySchema
+>
+
+/**
+ * Multi categories query schema
+ */
+export const MultiCategoriesQuerySchema = z.object({
+  ids: z
+    .preprocess((val) => {
+      if (typeof val === 'string') {
+        return [...new Set(val.split(','))]
+      }
+      return val
+    }, z.array(zEntityId).max(50))
+    .optional(),
+  joint: zCoerceBoolean.optional(),
+  type: z
+    .preprocess((val) => {
+      if (typeof val !== 'string') return CategoryType.Category
+      switch (val.toLowerCase()) {
+        case 'category': {
+          return CategoryType.Category
+        }
+        case 'tag': {
+          return CategoryType.Tag
+        }
+        default: {
+          return Object.values(CategoryType).includes(+val)
+            ? +val
+            : CategoryType.Category
+        }
+      }
+    }, z.enum(CategoryType))
+    .optional(),
+})
+
+export type MultiCategoriesQueryDto = z.infer<typeof MultiCategoriesQuerySchema>

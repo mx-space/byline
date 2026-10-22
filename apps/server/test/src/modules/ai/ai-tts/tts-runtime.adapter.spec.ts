@@ -1,0 +1,412 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { AIProviderType } from '~/modules/ai/ai.types'
+import {
+  resolveTtsBaseUrl,
+  TtsRuntimeAdapter,
+} from '~/modules/ai/ai-tts/tts-runtime.adapter'
+import { createAbortError } from '~/utils/abort.util'
+
+const audio = () =>
+  new Response(new Uint8Array([1, 2, 3]), {
+    status: 200,
+    headers: { 'content-type': 'audio/mpeg' },
+  })
+
+afterEach(() => vi.unstubAllGlobals())
+
+describe('resolveTtsBaseUrl', () => {
+  it('maps the presets and honours a custom endpoint', () => {
+    expect(resolveTtsBaseUrl('openrouter')).toBe('https://openrouter.ai/api/v1')
+    expect(resolveTtsBaseUrl('openai')).toBe('https://api.openai.com/v1')
+    expect(resolveTtsBaseUrl('custom', 'https://tts.local/v1/')).toBe(
+      'https://tts.local/v1',
+    )
+  })
+})
+
+describe('TtsRuntimeAdapter', () => {
+  it('uses Vertex Gemini TTS and wraps returned PCM as WAV', async () => {
+    const pcm = Buffer.from([1, 0, 2, 0])
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    inlineData: {
+                      data: pcm.toString('base64'),
+                      mimeType: 'audio/pcm;rate=24000;channels=1',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'vertex',
+      providerType: AIProviderType.GoogleVertex,
+      projectId: 'example-project',
+      apiKey: 'vertex-key',
+      endpoint:
+        'https://aiplatform.googleapis.com/v1/projects/example-project/locations/global/endpoints/openapi',
+      model: 'gemini-3.1-flash-tts-preview',
+    })
+
+    const result = await adapter.generateSpeech({
+      input: '今日',
+      language: 'ja',
+      voice: 'Kore',
+      speed: 1,
+    })
+
+    expect(result.mimeType).toBe('audio/wav')
+    expect(result.buffer.subarray(0, 4).toString()).toBe('RIFF')
+    expect(result.buffer.subarray(44)).toEqual(pcm)
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toContain(
+      '/v1beta1/projects/example-project/locations/us-central1/publishers/google/models/gemini-3.1-flash-tts-preview:generateContent',
+    )
+    expect(init.headers).toMatchObject({
+      'x-goog-api-key': 'vertex-key',
+    })
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      generation_config: {
+        response_modalities: ['AUDIO'],
+        speech_config: {
+          language_code: 'ja-JP',
+          voice_config: {
+            prebuilt_voice_config: { voice_name: 'Kore' },
+          },
+        },
+      },
+    })
+  })
+
+  it('retries a Vertex 200 with no audio and succeeds on the next attempt', async () => {
+    const pcm = Buffer.from([1, 0, 2, 0])
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ candidates: [{ content: { parts: [] } }] }),
+          {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      inlineData: {
+                        data: pcm.toString('base64'),
+                        mimeType: 'audio/pcm;rate=24000;channels=1',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'vertex',
+      providerType: AIProviderType.GoogleVertex,
+      projectId: 'example-project',
+      apiKey: 'vertex-key',
+      endpoint:
+        'https://aiplatform.googleapis.com/v1/projects/example-project/locations/global/endpoints/openapi',
+      model: 'gemini-3.1-flash-tts-preview',
+      retryDelayMs: 0,
+    })
+    const result = await adapter.generateSpeech({
+      input: '你好',
+      language: 'zh',
+      voice: 'Kore',
+      speed: 1,
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(result.buffer.subarray(44)).toEqual(pcm)
+  })
+
+  it('uses Vertex audio from a later part when the first part has no inline data', async () => {
+    const pcm = Buffer.from([1, 0, 2, 0])
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { text: '' },
+                  {
+                    inlineData: {
+                      data: pcm.toString('base64'),
+                      mimeType: 'audio/pcm;rate=24000;channels=1',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'vertex',
+      providerType: AIProviderType.GoogleVertex,
+      projectId: 'example-project',
+      apiKey: 'vertex-key',
+      endpoint:
+        'https://aiplatform.googleapis.com/v1/projects/example-project/locations/global/endpoints/openapi',
+      model: 'gemini-3.1-flash-tts-preview',
+    })
+    const result = await adapter.generateSpeech({
+      input: '你好',
+      language: 'zh',
+      voice: 'Kore',
+      speed: 1,
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(result.buffer.subarray(44)).toEqual(pcm)
+  })
+
+  it('rejects unsupported provider protocols instead of falling back', () => {
+    expect(
+      () =>
+        new TtsRuntimeAdapter({
+          provider: 'anthropic',
+          providerType: AIProviderType.Anthropic,
+          apiKey: 'key',
+          model: 'speech-model',
+        }),
+    ).toThrow('No protocol adapter supports the runtime configuration')
+  })
+
+  it('rejects a non-TTS Vertex model instead of choosing a transport by provider alone', () => {
+    expect(
+      () =>
+        new TtsRuntimeAdapter({
+          provider: 'vertex',
+          providerType: AIProviderType.GoogleVertex,
+          projectId: 'example-project',
+          apiKey: 'key',
+          model: 'gemini-2.5-flash',
+        }),
+    ).toThrow('No protocol adapter supports the runtime configuration')
+  })
+
+  it('posts the OpenAI speech body and returns the audio buffer', async () => {
+    const fetchMock = vi.fn(async () => audio())
+    vi.stubGlobal('fetch', fetchMock)
+
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'openrouter',
+      apiKey: 'k',
+      model: 'openai/tts',
+      sessionId: 'task:tts-1',
+    })
+    const result = await adapter.generateSpeech({
+      input: 'hello',
+      voice: 'alloy',
+      speed: 1,
+    })
+
+    expect(result.mimeType).toBe('audio/mpeg')
+    expect([...result.buffer]).toEqual([1, 2, 3])
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('https://openrouter.ai/api/v1/audio/speech')
+    expect(new Headers(init.headers).get('x-session-id')).toBe('task:tts-1')
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      model: 'openai/tts',
+      input: 'hello',
+      voice: 'alloy',
+      speed: 1,
+      response_format: 'mp3',
+    })
+  })
+
+  it('does not send OpenRouter affinity headers to a non-OpenRouter endpoint', async () => {
+    const fetchMock = vi.fn(async () => audio())
+    vi.stubGlobal('fetch', fetchMock)
+
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'openai',
+      apiKey: 'k',
+      model: 'tts-1',
+      sessionId: 'task:tts-1',
+    })
+    await adapter.generateSpeech({ input: 'hello', voice: 'alloy', speed: 1 })
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(new Headers(init.headers).has('x-session-id')).toBe(false)
+  })
+
+  it('applies the registered language strategy to the request body', async () => {
+    const fetchMock = vi.fn(async () => audio())
+    vi.stubGlobal('fetch', fetchMock)
+
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'openrouter',
+      apiKey: 'k',
+      model: 'x-ai/grok-voice-tts-1.0',
+    })
+    await adapter.generateSpeech({
+      input: '今日',
+      language: 'ja',
+      voice: 'eve',
+      speed: 1,
+    })
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      provider: { options: { xai: { language: 'ja' } } },
+    })
+  })
+
+  it('prompts Gemini in the target language and wraps its PCM as WAV', async () => {
+    const pcm = new Uint8Array([1, 0, 2, 0])
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(pcm, {
+          status: 200,
+          headers: {
+            'content-type': 'audio/pcm;rate=24000;channels=1',
+          },
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'openrouter',
+      apiKey: 'k',
+      model: 'google/gemini-3.1-flash-tts-preview',
+    })
+    const result = await adapter.generateSpeech({
+      input: '今日',
+      language: 'ja',
+      voice: 'Kore',
+      speed: 1,
+    })
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      input: expect.stringMatching(/Japanese \(ja-JP\).*Transcript:\n今日/s),
+      response_format: 'pcm',
+    })
+    expect(result.mimeType).toBe('audio/wav')
+    expect(result.buffer.subarray(0, 4).toString()).toBe('RIFF')
+    expect(result.buffer.subarray(8, 12).toString()).toBe('WAVE')
+    expect(result.buffer.subarray(44)).toEqual(Buffer.from(pcm))
+  })
+
+  it('retries a 500 and succeeds on the next attempt', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('boom', { status: 500 }))
+      .mockResolvedValueOnce(audio())
+    vi.stubGlobal('fetch', fetchMock)
+
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'openrouter',
+      apiKey: 'k',
+      model: 'm',
+      retryDelayMs: 0,
+    })
+    await adapter.generateSpeech({ input: 'x', voice: 'v', speed: 1 })
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not retry a 400', async () => {
+    const fetchMock = vi.fn(
+      async () => new Response('bad voice', { status: 400 }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'openrouter',
+      apiKey: 'k',
+      model: 'm',
+      retryDelayMs: 0,
+    })
+
+    await expect(
+      adapter.generateSpeech({ input: 'x', voice: 'v', speed: 1 }),
+    ).rejects.toThrow()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('fails fast on an aborted signal without retrying', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const fetchMock = vi.fn(async () => {
+      throw createAbortError()
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'openrouter',
+      apiKey: 'k',
+      model: 'm',
+      retryDelayMs: 0,
+    })
+
+    await expect(
+      adapter.generateSpeech({
+        input: 'x',
+        voice: 'v',
+        speed: 1,
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a non-audio 200 response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ error: 'quota' }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+      ),
+    )
+
+    const adapter = new TtsRuntimeAdapter({
+      provider: 'openrouter',
+      apiKey: 'k',
+      model: 'm',
+      retryDelayMs: 0,
+    })
+
+    await expect(
+      adapter.generateSpeech({ input: 'x', voice: 'v', speed: 1 }),
+    ).rejects.toThrow(/quota/)
+  })
+})

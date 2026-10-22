@@ -1,0 +1,593 @@
+import { z } from 'zod'
+
+import { zAllowedUrl } from '~/common/zod'
+import { AIProviderType } from '~/modules/ai/ai.types'
+
+import { field, section, withMeta } from './configs.zod-schema.util'
+
+// ==================== URL ====================
+export const UrlSchema = section('Site URLs', {
+  webUrl: field.halfGrid(zAllowedUrl.optional(), 'Frontend URL'),
+  adminUrl: field.halfGrid(zAllowedUrl.optional(), 'Admin dashboard URL'),
+  serverUrl: field.halfGrid(zAllowedUrl.optional(), 'API URL'),
+  wsUrl: field.halfGrid(zAllowedUrl.optional(), 'Gateway URL'),
+})
+
+// ==================== Mail Options ====================
+const SmtpConfigSchema = withMeta(
+  z
+    .object({
+      user: field.halfGrid(z.string().optional(), 'SMTP username'),
+      pass: field.passwordHalfGrid(
+        z.string().min(1).optional(),
+        'SMTP password',
+      ),
+      host: field.halfGrid(z.string().optional(), 'SMTP host'),
+      port: field.number(
+        z.preprocess(
+          (val) => (val ? Number(val) : val),
+          z.number().int().optional(),
+        ),
+        'SMTP port',
+        { 'ui:options': { halfGrid: true } },
+      ),
+      secure: field.toggle(z.boolean().optional(), 'Use SSL/TLS'),
+    })
+    .optional(),
+  {
+    title: 'SMTP configuration',
+    'ui:options': { showWhen: { provider: 'smtp' } },
+  },
+)
+
+const ResendConfigSchema = withMeta(
+  z
+    .object({
+      apiKey: field.password(z.string().optional(), 'Resend API Key'),
+    })
+    .optional(),
+  {
+    title: 'Resend configuration',
+    'ui:options': { showWhen: { provider: 'resend' } },
+  },
+)
+
+export const MailOptionsSchema = section('Email notifications', {
+  enable: field.toggle(z.boolean().optional(), 'Enable email notifications'),
+  provider: field.select(
+    z.enum(['smtp', 'resend']).optional(),
+    'Email provider',
+    [
+      { label: 'SMTP', value: 'smtp' },
+      { label: 'Resend', value: 'resend' },
+    ],
+  ),
+  from: field.halfGrid(
+    z.email().optional().or(z.literal('')),
+    'Sender email address',
+    {
+      description:
+        'Required for Resend; optional for SMTP (defaults to the SMTP username if omitted)',
+    },
+  ),
+  smtp: SmtpConfigSchema,
+  resend: ResendConfigSchema,
+  rateLimit: field.number(
+    z.preprocess(
+      (val) => (val ? Number(val) : val),
+      z.number().int().min(1).max(1000).optional(),
+    ),
+    'Send rate limit',
+    {
+      description: 'Maximum sends per second; defaults to 10',
+      'ui:options': { halfGrid: true },
+    },
+  ),
+  retryCount: field.number(
+    z.preprocess(
+      (val) => (val ? Number(val) : val),
+      z.number().int().min(0).max(10).optional(),
+    ),
+    'Send failure retry count',
+    {
+      description: 'Maximum retries after a send failure; defaults to 3',
+      'ui:options': { halfGrid: true },
+    },
+  ),
+})
+
+// ==================== S3 Storage Options ====================
+const nullableStorageText = () =>
+  z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => (value === null ? '' : value))
+
+// ==================== Image Storage Options ====================
+
+export const ImageStorageOptionsSchema = section('Image storage', {
+  enable: field.toggle(z.boolean().optional(), 'Enable S3 image storage'),
+  endpoint: field.plain(nullableStorageText(), 'S3 endpoint'),
+  secretId: field.halfGrid(nullableStorageText(), 'Access Key ID'),
+  secretKey: field.passwordHalfGrid(nullableStorageText(), 'Secret Access Key'),
+  bucket: field.halfGrid(nullableStorageText(), 'Bucket'),
+  region: field
+    .halfGrid(nullableStorageText(), 'Region')
+    .transform((value) => value || 'auto'),
+  customDomain: field.plain(
+    z.url().optional().or(z.literal('')),
+    'Custom domain (CDN)',
+    {
+      description: 'Used to replace the default S3 URL, e.g. a CDN domain',
+    },
+  ),
+  prefix: field.plain(z.string().optional(), 'File path prefix', {
+    description:
+      'Path prefix for files uploaded to S3. Supports placeholders: {Y} 4-digit year, {y} 2-digit year, {m} month, {d} day, {h} hour, {i} minute, {s} second, {md5} random MD5, {type} file type, etc. Example: blog/{Y}/{m}/{d} or images/',
+  }),
+})
+
+// ==================== Image Generation Options ====================
+export const ImageGenerationOptionsSchema = section('AI image generation', {
+  enable: field.toggle(z.boolean().optional(), 'Enable AI image generation'),
+  provider: field.select(
+    z.enum(['openrouter', 'custom']).optional().default('openrouter'),
+    'Provider',
+    [
+      { label: 'OpenRouter', value: 'openrouter' },
+      { label: 'Custom', value: 'custom' },
+    ],
+    {
+      description:
+        'Endpoint preset — determines where generation requests are sent. "custom" requires Endpoint to be set.',
+    },
+  ),
+  apiKey: field.password(
+    z
+      .string()
+      .nullable()
+      .optional()
+      .transform((v) => (v === null ? '' : v)),
+    'API Key',
+  ),
+  endpoint: field.plain(
+    z
+      .string()
+      .nullable()
+      .optional()
+      .transform((v) => (v === null ? '' : v)),
+    'Endpoint',
+    { 'ui:options': { showWhen: { provider: 'custom' } } },
+  ),
+  model: field.plain(
+    z
+      .string()
+      .nullable()
+      .optional()
+      .transform((v) => (v === null ? '' : v)),
+    'Model',
+    { description: 'Image generation model id' },
+  ),
+  defaultAspectRatio: field.halfGrid(
+    z.string().optional().default('16:9'),
+    'Default aspect ratio',
+  ),
+  defaultQuality: field.select(
+    z.enum(['low', 'standard', 'high']).optional().default('standard'),
+    'Default quality',
+    [
+      { label: 'Low', value: 'low' },
+      { label: 'Standard', value: 'standard' },
+      { label: 'High', value: 'high' },
+    ],
+    { 'ui:options': { halfGrid: true } },
+  ),
+  defaultFormat: field.select(
+    z.enum(['png', 'jpeg', 'webp']).optional().default('png'),
+    'Default format',
+    [
+      { label: 'PNG', value: 'png' },
+      { label: 'JPEG', value: 'jpeg' },
+      { label: 'WebP', value: 'webp' },
+    ],
+    { 'ui:options': { halfGrid: true } },
+  ),
+})
+
+// ==================== TTS Options ====================
+export const TtsOptionsSchema = section('AI text to speech', {
+  enable: field.toggle(z.boolean().optional(), 'Enable AI narration'),
+  provider: field.select(
+    z.enum(['openrouter', 'openai', 'custom']).optional().default('openrouter'),
+    'Provider',
+    [
+      { label: 'OpenRouter', value: 'openrouter' },
+      { label: 'OpenAI', value: 'openai' },
+      { label: 'Custom', value: 'custom' },
+    ],
+    {
+      description:
+        'Endpoint preset. "custom" requires Endpoint to be set. The adapter appends /audio/speech.',
+    },
+  ),
+  apiKey: field.password(nullableStorageText(), 'API Key'),
+  endpoint: field.plain(nullableStorageText(), 'Endpoint', {
+    'ui:options': { showWhen: { provider: 'custom' } },
+  }),
+  model: field.plain(nullableStorageText(), 'Model', {
+    description: 'Speech model id, e.g. openai/gpt-4o-mini-tts-2025-12-15',
+  }),
+  voice: field.plain(nullableStorageText(), 'Voice', {
+    description: 'Voice id. Availability depends on the model.',
+  }),
+  speed: field.number(
+    z.coerce.number().min(0.25).max(4).optional().default(1),
+    'Speed',
+    { 'ui:options': { halfGrid: true } },
+  ),
+  maxCharsPerChunk: field.number(
+    z.coerce.number().int().min(200).max(4000).optional().default(1800),
+    'Max characters per request',
+    { 'ui:options': { halfGrid: true } },
+  ),
+  concurrency: field.number(
+    z.coerce.number().int().min(1).max(8).optional().default(3),
+    'Concurrent requests per task',
+    { 'ui:options': { halfGrid: true } },
+  ),
+  maxCharsPerRun: field.number(
+    z.coerce.number().int().min(1000).max(1000000).optional().default(120000),
+    'Max characters per run',
+    { 'ui:options': { halfGrid: true } },
+  ),
+})
+
+// ==================== File Upload Options ====================
+export const FileUploadOptionsSchema = section('File upload settings', {
+  enableCustomNaming: field.toggle(
+    z.boolean().optional(),
+    'Enable custom file naming',
+    {
+      description: 'When enabled, the naming templates below are applied',
+    },
+  ),
+  filenameTemplate: field.plain(z.string().optional(), 'Filename template', {
+    description:
+      'Supported placeholders: {Y} 4-digit year, {y} 2-digit year, {m} month, {d} day, {h} hour, {i} minute, {s} second, {ms} milliseconds, {timestamp} timestamp, {md5} random MD5, {md5-16} random MD5 (16 chars), {uuid} UUID, {str-<n>} random string of length n, {filename} original filename (with extension), {name} original filename (without extension), {ext} extension',
+  }),
+  pathTemplate: field.plain(z.string().optional(), 'File path template', {
+    description:
+      'Same placeholders as the filename template, plus {type} for file type and {localFolder:<n>} for the n-th original folder level',
+  }),
+  videoMaxSize: field.number(
+    z.preprocess(
+      (val) => (val ? Number(val) : val),
+      z.number().int().min(1).optional(),
+    ),
+    'Max video upload size on local storage (MB)',
+    {
+      'ui:options': { halfGrid: true },
+      description:
+        'Default 100. Applies to local-disk storage only; S3 storage uploads are unlimited',
+    },
+  ),
+})
+
+// ==================== Auth Security ====================
+export const AuthSecuritySchema = section(
+  'Auth security',
+  {
+    disablePasswordLogin: field.toggle(
+      z.boolean().optional(),
+      'Disable password login',
+      {
+        description:
+          'Disables password login, allowing sign-in only via Passkey or OAuth. Do not enable unless those methods are configured.',
+      },
+    ),
+  },
+  { 'ui:options': { type: 'hidden' } },
+)
+
+// ==================== AI Provider Config ====================
+const AIProviderCapabilitiesSchema = z.object({
+  decision: z.boolean().optional(),
+  text: z.boolean().optional().default(true),
+  image: z.boolean().optional().default(false),
+  speech: z.boolean().optional().default(false),
+})
+
+const AIProviderConfigSchema = withMeta(
+  z.object({
+    id: field.plain(z.string().min(1), 'Provider ID', {
+      description: 'Unique identifier, e.g. "openai-main", "deepseek"',
+    }),
+    name: field.plain(z.string().min(1), 'Display name'),
+    type: field.plain(z.enum(AIProviderType), 'Provider type', {
+      description: 'openai | openai-compatible | anthropic | openrouter',
+    }),
+    apiKey: field.password(z.string().min(1), 'API Key'),
+    endpoint: field.plain(z.string().optional(), 'Custom endpoint', {
+      description:
+        'Required for OpenAI-compatible services, e.g. https://api.deepseek.com',
+    }),
+    projectId: field.plain(z.string().optional(), 'Google Cloud project ID', {
+      description: 'Required when the provider type is google-vertex',
+    }),
+    modelListUrl: field.plain(z.string().optional(), 'Model list URL', {
+      description:
+        'Full URL to fetch the model list from (OpenAI format); leave empty to use the built-in registry',
+    }),
+    voiceListUrl: field.plain(z.string().optional(), 'Voice list URL', {
+      description:
+        'Full URL to fetch speech voices from; accepts an array or an object with a data/voices array',
+    }),
+    appendV1: field.toggle(z.boolean().optional(), 'Append /v1 to base URL', {
+      description:
+        'Append /v1 to the endpoint when missing; defaults to enabled',
+    }),
+    defaultModel: field.plain(
+      z.string().optional().default(''),
+      'Default model',
+      {
+        description: 'E.g. gpt-4o, deepseek-chat, claude-sonnet-4-20250514',
+      },
+    ),
+    enabled: field.toggle(z.boolean(), 'Enabled'),
+    contextWindow: field.plain(
+      z.number().int().positive().nullish(),
+      'Context window (tokens)',
+    ),
+    maxTokens: field.plain(
+      z.number().int().positive().nullish(),
+      'Max output tokens',
+    ),
+    capabilities: field.plain(
+      AIProviderCapabilitiesSchema.optional().default({
+        text: true,
+        image: false,
+        speech: false,
+      }),
+      'Provider capabilities',
+      {
+        description:
+          'Declares which runtime capabilities may reuse this provider connection',
+      },
+    ),
+  }),
+  { title: 'AI provider configuration', 'ui:options': { type: 'hidden' } },
+)
+
+const AIModelAssignmentSchema = withMeta(
+  z.object({
+    providerId: field.plain(z.string().optional(), 'Provider ID', {
+      description: 'References the id of a provider in `providers`',
+    }),
+    model: field.plain(z.string().optional(), 'Model override', {
+      description:
+        "Overrides the provider's default model; leave empty to use the provider default",
+    }),
+    reasoningEffort: field.plain(
+      z.enum(['none', 'low', 'medium', 'high']).optional(),
+      'Thinking / reasoning effort',
+      {
+        description:
+          'Controls extended thinking for models that support it; default none',
+      },
+    ),
+  }),
+  { title: 'AI model assignment', 'ui:options': { type: 'hidden' } },
+)
+
+const AIImageGenerationFeatureSchema = withMeta(
+  z.object({
+    enable: z.boolean().optional().default(false),
+    model: AIModelAssignmentSchema.nullish(),
+    defaultAspectRatio: z.string().optional().default('16:9'),
+    defaultQuality: z
+      .enum(['low', 'standard', 'high'])
+      .optional()
+      .default('standard'),
+    defaultFormat: z.enum(['png', 'jpeg', 'webp']).optional().default('png'),
+  }),
+  { title: 'AI image generation feature', 'ui:options': { type: 'hidden' } },
+)
+
+const AITtsFeatureSchema = withMeta(
+  z.object({
+    enable: z.boolean().optional().default(false),
+    model: AIModelAssignmentSchema.nullish(),
+    voice: nullableStorageText(),
+    speed: z.coerce.number().min(0.25).max(4).optional().default(1),
+    maxCharsPerChunk: z.coerce
+      .number()
+      .int()
+      .min(200)
+      .max(4000)
+      .optional()
+      .default(1800),
+    concurrency: z.coerce.number().int().min(1).max(8).optional().default(3),
+    maxCharsPerRun: z.coerce
+      .number()
+      .int()
+      .min(1000)
+      .max(1000000)
+      .optional()
+      .default(120000),
+  }),
+  { title: 'AI text to speech feature', 'ui:options': { type: 'hidden' } },
+)
+
+export const AISchema = section('AI settings', {
+  version: z.literal(2).optional().default(2),
+  providers: field.array(
+    z.array(AIProviderConfigSchema).optional(),
+    'AI providers',
+    { description: 'Configure multiple AI service providers' },
+  ),
+  decisionModel: field.plain(
+    AIModelAssignmentSchema.nullish(),
+    'Decision model',
+  ),
+  summaryModel: field.plain(AIModelAssignmentSchema.nullish(), 'Summary model'),
+  writerModel: field.plain(
+    AIModelAssignmentSchema.nullish(),
+    'Writing assistant model',
+  ),
+  enableSummary: field.toggle(z.boolean().optional(), 'Allow AI summary', {
+    description: 'Whether to allow calling AI to generate summaries',
+  }),
+  summaryTargetLanguages: field.array(
+    z.array(z.string()).optional(),
+    'AI summary target languages',
+    {
+      description:
+        'Target languages for auto-generated summaries, using [ISO 639-1 language codes](https://www.w3schools.com/tags/ref_language_codes.asp), e.g. ["zh", "en", "ja"]',
+    },
+  ),
+  translationModel: field.plain(
+    AIModelAssignmentSchema.nullish(),
+    'Translation model',
+  ),
+  enableTranslation: field.toggle(
+    z.boolean().optional(),
+    'Allow AI translation',
+    {
+      description: 'Whether to allow calling AI to generate translations',
+    },
+  ),
+  translationStyleHints: field.plain(
+    z.string().optional(),
+    'Translation style hints',
+    {
+      description:
+        'Freeform guidance injected into translation prompts, e.g. DOCUMENT_TYPE / AUDIENCE / REGISTER lines. Leave empty to disable.',
+      'ui:options': { type: 'textarea' },
+    },
+  ),
+  translationTargetLanguages: field.array(
+    z.array(z.string()).optional(),
+    'AI translation target languages',
+    {
+      description:
+        'Target languages for auto-generated translations, using [ISO 639-1 language codes](https://www.w3schools.com/tags/ref_language_codes.asp), e.g. ["en", "ja", "ko"]',
+    },
+  ),
+  translationLangConcurrency: field.number(
+    z.preprocess(
+      (val) =>
+        val === '' || val === null || val === undefined ? val : Number(val),
+      z.number().int().min(1).max(10).optional(),
+    ),
+    'Per-task translation language concurrency',
+    {
+      description:
+        'Parallel languages per Translation task. Default 3, range 1-10.',
+    },
+  ),
+  enableTranslationReview: field.toggle(
+    z.boolean().optional(),
+    'Enable translation review',
+    {
+      description:
+        'When enabled, translations go through an agent review loop: the model may request_review and apply issue-driven revisions.',
+    },
+  ),
+  translationReviewModel: field.plain(
+    AIModelAssignmentSchema.nullish(),
+    'Translation reviewer model',
+    {
+      description:
+        'AI model used by the translation reviewer (critique-only). Falls back to the translation model when empty.',
+    },
+  ),
+  fieldTranslationModel: field.plain(
+    AIModelAssignmentSchema.nullish(),
+    'Field translation model',
+    {
+      description:
+        'AI model used to translate short fields (category names, tags). Falls back to the translation model when empty.',
+    },
+  ),
+  insightsModel: field.plain(
+    AIModelAssignmentSchema.nullish(),
+    'Insights model',
+    {
+      description: 'AI model used to generate Insights',
+    },
+  ),
+  insightsTranslationModel: field.plain(
+    AIModelAssignmentSchema.nullish(),
+    'Insights translation model',
+    {
+      description:
+        'AI model used to translate Insights; falls back to the translation model when empty',
+    },
+  ),
+  enableInsights: field.toggle(z.boolean().optional(), 'Allow AI Insights', {
+    description: 'Master switch',
+  }),
+  enableAutoTranslateInsights: field.toggle(
+    z.boolean().optional(),
+    'Auto-translate Insights after generation',
+    {
+      description:
+        'Dispatches translation tasks based on insightsTargetLanguages',
+    },
+  ),
+  insightsTargetLanguages: field.array(
+    z.array(z.string()).optional(),
+    'Insights target languages',
+    {
+      description:
+        'ISO 639-1 list; the source language is automatically excluded',
+    },
+  ),
+  imageGeneration: AIImageGenerationFeatureSchema.optional(),
+  tts: AITtsFeatureSchema.optional(),
+})
+export type AIConfig = z.infer<typeof AISchema>
+
+// ==================== OAuth ====================
+const OAuthProviderSchema = z.object({
+  type: z.string().min(1),
+  enabled: z.boolean(),
+})
+
+export const OAuthSchema = section(
+  'OAuth',
+  {
+    providers: z.array(OAuthProviderSchema).optional(),
+    secrets: withMeta(
+      z.record(z.string(), z.record(z.string(), z.string())).optional(),
+      { encrypt: true },
+    ),
+    public: z.record(z.string(), z.record(z.string(), z.string())).optional(),
+  },
+  { 'ui:options': { type: 'hidden' } },
+)
+export type OAuthConfig = z.infer<typeof OAuthSchema>
+
+// ==================== Config Schema Mapping ====================
+export const configSchemaMapping = {
+  url: UrlSchema,
+  mailOptions: MailOptionsSchema,
+  imageStorageOptions: ImageStorageOptionsSchema,
+  imageGenerationOptions: ImageGenerationOptionsSchema,
+  ttsOptions: TtsOptionsSchema,
+  fileUploadOptions: FileUploadOptionsSchema,
+  authSecurity: AuthSecuritySchema,
+  ai: AISchema,
+  oauth: OAuthSchema,
+} as const
+
+export type ConfigSchemaMapping = typeof configSchemaMapping
+export type ConfigKeys = keyof ConfigSchemaMapping
+
+// ==================== Full Config Schema ====================
+export const FullConfigSchema = withMeta(z.object(configSchemaMapping), {
+  title: 'Settings',
+  description:
+    '* Sensitive fields are hidden; the backend does not return them by default, so they appear empty',
+})

@@ -1,0 +1,47 @@
+import type {
+  CallHandler,
+  ExecutionContext,
+  NestInterceptor,
+} from '@nestjs/common'
+import { Injectable, Logger, SetMetadata } from '@nestjs/common'
+import pc from 'picocolors'
+import { Observable } from 'rxjs'
+import { tap } from 'rxjs/operators'
+
+import { HTTP_REQUEST_TIME } from '~/constants/meta.constant'
+import {
+  getNestExecutionContextRequest,
+  isHttpExecutionContext,
+} from '~/transformers/get-req.transformer'
+
+@Injectable()
+export class LoggingInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(LoggingInterceptor.name, {
+    timestamp: false,
+  })
+
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler<any>,
+  ): Observable<any> {
+    if (!isHttpExecutionContext(context)) {
+      return next.handle()
+    }
+
+    const request = getNestExecutionContextRequest(context)
+    const content = `${request.method} ${request.url}`
+    this.logger.debug(`${pc.dim('→')} ${content}`)
+    const now = Date.now()
+
+    SetMetadata(HTTP_REQUEST_TIME, now)(request as any)
+
+    return next.handle().pipe(
+      tap(() => {
+        const statusCode = context.switchToHttp().getResponse()?.statusCode
+        this.logger.debug(
+          `${pc.dim('←')} ${content} ${pc.cyan(statusCode)} ${pc.yellow(`+${Date.now() - now}ms`)}`,
+        )
+      }),
+    )
+  }
+}

@@ -1,0 +1,68 @@
+import type { Provider } from '@nestjs/common'
+import { forwardRef, Global, Module } from '@nestjs/common'
+import { EventEmitterModule } from '@nestjs/event-emitter'
+import { ScheduleModule } from '@nestjs/schedule'
+import { ThrottlerModule } from '@nestjs/throttler'
+
+import { THROTTLE_OPTIONS } from '~/app.config'
+import { AiModule } from '~/modules/ai/ai.module'
+import { PostModule } from '~/modules/post/post.module'
+import { ReaderModule } from '~/modules/reader/reader.module'
+
+import { AssetService } from './helper.asset.service'
+import { CountingService } from './helper.counting.service'
+import { EmailService } from './helper.email.service'
+import { EventManagerService } from './helper.event.service'
+import { EventPayloadEnricherService } from './helper.event-payload.service'
+import { HttpService } from './helper.http.service'
+import { ImageService } from './helper.image.service'
+import { JWTService } from './helper.jwt.service'
+import { LexicalService } from './helper.lexical.service'
+import { TranslationService } from './helper.translation.service'
+import { UploadService } from './helper.upload.service'
+import { UrlBuilderService } from './helper.url-builder.service'
+
+const providers: Provider<any>[] = [
+  AssetService,
+  EventPayloadEnricherService,
+  LexicalService,
+  CountingService,
+  EmailService,
+  EventManagerService,
+  HttpService,
+  ImageService,
+  JWTService,
+  TranslationService,
+  UploadService,
+  UrlBuilderService,
+]
+
+@Module({
+  imports: [
+    ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([THROTTLE_OPTIONS]),
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      // the delimiter used to segment namespaces
+      delimiter: '.',
+      // set this to `true` if you want to emit the newListener event
+      newListener: false,
+      // set this to `true` if you want to emit the removeListener event
+      removeListener: false,
+      // the maximum amount of listeners that can be assigned to an event
+      maxListeners: 20,
+      // show event name in memory leak message when more than maximum amount of listeners is assigned
+      verboseMemoryLeak: isDev,
+      // disable throwing uncaughtException if an error event is emitted and it has no listeners
+      ignoreErrors: false,
+    }),
+
+    forwardRef(() => AiModule),
+    forwardRef(() => PostModule),
+    forwardRef(() => ReaderModule),
+  ],
+  providers,
+  exports: providers,
+})
+@Global()
+export class HelperModule {}

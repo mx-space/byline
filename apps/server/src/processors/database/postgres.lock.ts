@@ -1,0 +1,63 @@
+import type pkg from 'pg'
+
+/**
+ * Run `fn` while holding a Postgres session-level advisory lock.
+ *
+ * The lock is bound to the connection; releasing the connection releases the
+ * lock implicitly, so the explicit `pg_advisory_unlock` call in `finally` is
+ * just hygiene.
+ *
+ * `lock_timeout` is set on the session so a stuck lock fails fast instead of
+ * hanging forever.
+ */
+export async function withAdvisoryLock<T>(
+  pool: pkg.Pool,
+  key: bigint,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect()
+  try {
+    await client.query(`SET lock_timeout = '60s'`)
+    await client.query('SELECT pg_advisory_lock($1)', [key.toString()])
+    return await fn()
+  } finally {
+    try {
+      await client.query('SELECT pg_advisory_unlock($1)', [key.toString()])
+    } catch (e) {
+      console.warn(
+        '[advisory-lock] unlock failed (will release on disconnect):',
+        e,
+      )
+    }
+    client.release()
+  }
+}
+
+/**
+ * Project-specific advisory lock key for schema migrations.
+ *
+ * Derived from `sha256("mx-core:schema-migration:v1")`, taking the first 8
+ * bytes as a signed bigint. The constant is asserted in tests so that it is
+ * only changed deliberately.
+ */
+export const SCHEMA_MIGRATION_LOCK_KEY = 7607331879281575547n
+
+/**
+ * Project-specific advisory lock key for app-data migrations (data backfills,
+ * runtime transforms). Distinct from {@link SCHEMA_MIGRATION_LOCK_KEY} so the
+ * two runners can be coordinated independently.
+ *
+ * Derived from `sha256("mx-core:app-migration:v1")`, taking the first 8 bytes
+ * as a signed bigint.
+ */
+export const APP_MIGRATION_LOCK_KEY = 5183248167463294041n
+
+/**
+ * Project-specific advisory lock key for App Review demo provisioning, so two
+ * replicas cannot generate two different demo passwords.
+ *
+ * Derived from `sha256("mx-core:review-demo-sync:v1")`, taking the first 8
+ * bytes as a signed bigint. The constant is asserted in tests so that it is
+ * only changed deliberately.
+ */
+export const REVIEW_DEMO_SYNC_LOCK_KEY = -3216835155137105914n

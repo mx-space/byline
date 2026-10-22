@@ -1,0 +1,27 @@
+export type AiStreamEvent =
+  | { type: 'token'; data: string }
+  | { type: 'done'; data: { resultId: string } }
+  | { type: 'error'; data: { message: string } }
+  | {
+      type: 'partial'
+      data: {
+        lang?: string
+        segmentId?: string
+        partial: unknown
+        done?: boolean
+      }
+    }
+
+export interface AiInFlightOptions<T> {
+  key: string
+  lockTtlSec: number
+  resultTtlSec: number
+  streamMaxLen: number
+  readBlockMs: number
+  idleTimeoutMs: number
+  bypassResultCache?: boolean
+  onLeader: (ctx: {
+    push: (event: AiStreamEvent) => Promise<void>
+  }) => Promise<{ result: T; resultId: string }>
+  parseResult: (resultId: string) => Promise<T>
+}

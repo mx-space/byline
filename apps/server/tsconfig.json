@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "strict": false,
+    "target": "esnext",
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable",
+      "ES2022",
+      "ES2021"
+    ],
+    "emitDecoratorMetadata": true,
+    "moduleResolution": "bundler",
+    "experimentalDecorators": true,
+    "module": "esnext",
+    "paths": {
+      "~": [
+        "./src"
+      ],
+      "~/*": [
+        "./src/*"
+      ]
+    },
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "strictNullChecks": true,
+    "noImplicitAny": false,
+    "declaration": false,
+    "disableSizeLimit": true,
+    "noEmit": true,
+    "removeComments": true,
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/**/*",
+    "*.d.ts"
+  ],
+  "exclude": [
+    "dist",
+    "tmp",
+    "assets/types/type.declare.ts"
+  ]
+}

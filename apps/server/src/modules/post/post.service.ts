@@ -1,0 +1,559 @@
+import {
+  BadRequestException,
+  Injectable,
+  OnApplicationBootstrap,
+} from '@nestjs/common'
+import { ModuleRef } from '@nestjs/core'
+import { debounce, omit } from 'es-toolkit/compat'
+import slugify from 'slugify'
+
+import { AppErrorCode, createAppException } from '~/common/errors'
+import { ArticleTypeEnum } from '~/constants/article.constant'
+import { BusinessEvents, EventScope } from '~/constants/business-event.constant'
+import {
+  CATEGORY_SERVICE_TOKEN,
+  DRAFT_SERVICE_TOKEN,
+} from '~/constants/injection.constant'
+import type { MarkdownToLexicalMigrationDescriptor } from '~/modules/content-migration/content-migration.schema'
+import { ContentMigrationCommitService } from '~/modules/content-migration/content-migration-commit.service'
+import { FileReferenceType } from '~/modules/file/file-reference.enum'
+import { FileReferenceService } from '~/modules/file/file-reference.service'
+import { EventManagerService } from '~/processors/helper/helper.event.service'
+import { ImageService } from '~/processors/helper/helper.image.service'
+import { LexicalService } from '~/processors/helper/helper.lexical.service'
+import { ContentFormat } from '~/shared/types/content-format.type'
+import { contentIdentityChanged, isLexical } from '~/utils/content.util'
+import { scheduleManager } from '~/utils/schedule.util'
+import { getLessThanNow } from '~/utils/time.util'
+
+import type { CategoryService } from '../category/category.service'
+import { DraftRefType } from '../draft/draft.enum'
+import type { DraftService } from '../draft/draft.service'
+import { SlugTrackerService } from '../slug-tracker/slug-tracker.service'
+import { PostRepository } from './post.repository'
+import {
+  POST_PROTECTED_KEYS,
+  type PostListParams,
+  type PostModel,
+} from './post.types'
+
+@Injectable()
+export class PostService implements OnApplicationBootstrap {
+  private categoryService: CategoryService
+  private draftService: DraftService
+
+  constructor(
+    private readonly postRepository: PostRepository,
+    private readonly imageService: ImageService,
+    private readonly fileReferenceService: FileReferenceService,
+    private readonly eventManager: EventManagerService,
+    private readonly slugTrackerService: SlugTrackerService,
+    private readonly lexicalService: LexicalService,
+    private readonly contentMigrationCommitService: ContentMigrationCommitService,
+    private readonly moduleRef: ModuleRef,
+  ) {}
+
+  onApplicationBootstrap() {
+    this.categoryService = this.moduleRef.get(CATEGORY_SERVICE_TOKEN, {
+      strict: false,
+    })
+    this.draftService = this.moduleRef.get(DRAFT_SERVICE_TOKEN, {
+      strict: false,
+    })
+  }
+
+  public get repository() {
+    return this.postRepository
+  }
+
+  async list(params: PostListParams = {}) {
+    return this.postRepository.list(params)
+  }
+
+  async listPaginated(params: PostListParams = {}) {
+    return this.postRepository.list(params)
+  }
+
+  async findById(id: string) {
+    return this.postRepository.findById(id)
+  }
+
+  async findBySlug(slug: string) {
+    return this.postRepository.findBySlug(slug)
+  }
+
+  async findByCategoryAndSlug(
+    categoryId: string,
+    slug: string,
+    isAuthenticated?: boolean,
+  ) {
+    return this.postRepository.findByCategoryAndSlug(categoryId, slug, {
+      publishedOnly: !isAuthenticated,
+    })
+  }
+
+  async findRecent(
+    size: number,
+    options: { publishedOnly?: boolean; metaOnly?: boolean } = {},
+  ) {
+    return this.postRepository.findRecent(size, options)
+  }
+
+  async findManyByIds(ids: string[]) {
+    return this.postRepository.findManyByIds(ids)
+  }
+
+  async count() {
+    return this.postRepository.count()
+  }
+
+  async countByCategoryId(
+    categoryId: string,
+    options: { publishedOnly?: boolean } = {},
+  ) {
+    return this.postRepository.countByCategoryId(categoryId, options)
+  }
+
+  async listByCategory(
+    categoryId: string,
+    options: {
+      includeCategory?: boolean
+      limit?: number
+      publishedOnly?: boolean
+      metaOnly?: boolean
+    } = {},
+  ) {
+    return this.postRepository.listByCategory(categoryId, options)
+  }
+
+  async listByCategoryIds(
+    categoryIds: ReadonlyArray<string>,
+    options: {
+      includeCategory?: boolean
+      publishedOnly?: boolean
+      metaOnly?: boolean
+    } = {},
+  ) {
+    return this.postRepository.listByCategoryIds(categoryIds, options)
+  }
+
+  async findByCategoryId(categoryId: string) {
+    return this.listByCategory(categoryId)
+  }
+
+  async findByTag(
+    tag: string,
+    options: {
+      includeCategory?: boolean
+      metaOnly?: boolean
+      publishedOnly?: boolean
+    } = {},
+  ) {
+    return this.postRepository.findByTag(tag, options)
+  }
+
+  async aggregateAllTagCounts(options: { publishedOnly?: boolean } = {}) {
+    return this.postRepository.aggregateAllTagCounts(options)
+  }
+
+  async aggregateTagCountsByCategory(
+    categoryId: string,
+    options: { publishedOnly?: boolean } = {},
+  ) {
+    return this.postRepository.aggregateTagCountsByCategory(categoryId, options)
+  }
+
+  async findAdjacent(
+    direction: 'before' | 'after',
+    pivotDate: Date,
+    options: { publishedOnly?: boolean } = {},
+  ) {
+    return this.postRepository.findAdjacent(direction, pivotDate, options)
+  }
+
+  async create(post: PostModel) {
+    this.lexicalService.normalizeContentForStorage(post)
+
+    const { categoryId } = post
+    const category = await this.categoryService.findCategoryById(
+      categoryId as any as string,
+    )
+    if (!category) {
+      throw createAppException(AppErrorCode.CATEGORY_NOT_FOUND)
+    }
+
+    const slug = post.slug ? slugify(post.slug) : slugify(post.title)
+    if (!(await this.isAvailableSlug(slug))) {
+      throw createAppException(AppErrorCode.SLUG_NOT_AVAILABLE)
+    }
+
+    const relatedIds = await this.checkRelated(post)
+    const createdAt = getLessThanNow(post.createdAt ?? (post as any).created)
+    const pinAt = post.pinAt ?? (post as any).pin ?? null
+    let doc = await this.postRepository.create({
+      title: post.title,
+      slug,
+      createdAt,
+      text: post.text,
+      content: post.content,
+      contentFormat: post.contentFormat ?? ContentFormat.Markdown,
+      summary: post.summary,
+      images: post.images as unknown[],
+      meta: post.meta,
+      tags: post.tags,
+      categoryId: category.id,
+      copyright: post.copyright,
+      isPublished: post.isPublished,
+      isPremium: post.isPremium,
+      pinAt,
+      pinOrder: post.pinOrder,
+    })
+    if (createdAt && createdAt.valueOf() !== doc.createdAt.valueOf()) {
+      const refreshed = await this.postRepository.update(doc.id, {
+        modifiedAt: null,
+      })
+      if (refreshed) doc = refreshed
+    }
+
+    await this.relatedEachOther(doc, relatedIds)
+
+    scheduleManager.schedule(async () => {
+      await Promise.all([
+        this.fileReferenceService.activateReferences(
+          doc,
+          doc.id,
+          FileReferenceType.Post,
+        ),
+        !isLexical(doc) &&
+          this.imageService.saveImageDimensionsFromMarkdownText(
+            doc.text,
+            doc.images,
+            async (images) => {
+              await this.postRepository.setImages(doc.id, images)
+            },
+          ),
+        this.eventManager.emit(
+          BusinessEvents.POST_CREATE,
+          { id: doc.id },
+          {
+            scope: doc.isPublished
+              ? EventScope.TO_SYSTEM_VISITOR
+              : EventScope.TO_SYSTEM,
+          },
+        ),
+      ])
+    })
+
+    return doc
+  }
+
+  private async trackSlugChanges(
+    oldDocument: any,
+    newDocument: Partial<PostModel>,
+  ) {
+    const oldDocumentRefCategory = await this.categoryService.findCategoryById(
+      oldDocument.categoryId.toString(),
+    )
+    if (!oldDocumentRefCategory) {
+      throw createAppException(AppErrorCode.CATEGORY_NOT_FOUND)
+    }
+    const oldSlugMeta = {
+      slug: oldDocument.slug,
+      categorySlug: oldDocumentRefCategory.slug,
+    }
+
+    const createSlugChangeTracker = () =>
+      this.slugTrackerService.createTracker(
+        `/${oldSlugMeta.categorySlug}/${oldSlugMeta.slug}`,
+        ArticleTypeEnum.Post,
+        oldDocument.id,
+      )
+
+    if (newDocument.slug && oldSlugMeta.slug !== newDocument.slug) {
+      return createSlugChangeTracker()
+    }
+    if (
+      newDocument.categoryId &&
+      String(oldDocument.categoryId) !== String(newDocument.categoryId)
+    ) {
+      return createSlugChangeTracker()
+    }
+  }
+
+  async getPostBySlug(
+    categorySlug: string,
+    slug: string,
+    isAuthenticated?: boolean,
+  ) {
+    const findTrackedPost = async () => {
+      const tracked = await this.slugTrackerService.findTrackerBySlug(
+        `/${categorySlug}/${slug}`,
+        ArticleTypeEnum.Post,
+      )
+      return tracked ? this.findById(tracked.targetId) : null
+    }
+
+    const categoryDocument = await this.getCategoryBySlug(categorySlug)
+    if (!categoryDocument) {
+      const trackedPost = await findTrackedPost()
+      if (!trackedPost)
+        throw createAppException(AppErrorCode.CATEGORY_NOT_FOUND)
+      if (!isAuthenticated && !trackedPost.isPublished) {
+        throw createAppException(AppErrorCode.POST_NOT_FOUND, {
+          id: trackedPost.id,
+        })
+      }
+      return trackedPost
+    }
+
+    const postDocument = await this.findByCategoryAndSlug(
+      categoryDocument.id,
+      slug,
+      isAuthenticated,
+    )
+    if (postDocument) return postDocument
+
+    const trackedPost = await findTrackedPost()
+    if (trackedPost && !isAuthenticated && !trackedPost.isPublished) {
+      throw createAppException(AppErrorCode.POST_NOT_FOUND, {
+        id: trackedPost.id,
+      })
+    }
+    return trackedPost
+  }
+
+  async updateById(
+    id: string,
+    data: Partial<PostModel> & {
+      migration?: MarkdownToLexicalMigrationDescriptor
+      migrationBranchId?: string
+    },
+  ) {
+    this.lexicalService.normalizeContentForStorage(data)
+
+    const oldDocument = await this.findById(id)
+    if (!oldDocument) {
+      throw createAppException(AppErrorCode.POST_NOT_FOUND, { id })
+    }
+
+    const { migration, migrationBranchId } = data
+    const isMarkdownToLexical =
+      oldDocument.contentFormat === ContentFormat.Markdown &&
+      data.contentFormat === ContentFormat.Lexical
+    if (
+      oldDocument.contentFormat === ContentFormat.Lexical &&
+      data.contentFormat === ContentFormat.Markdown
+    ) {
+      throw new BadRequestException(
+        'Published Lexical content cannot be downgraded to Markdown',
+      )
+    }
+    if (isMarkdownToLexical && !migration) {
+      throw new BadRequestException(
+        'Markdown-to-Lexical writes require a migration descriptor',
+      )
+    }
+    if (migration && !isMarkdownToLexical) {
+      throw new BadRequestException(
+        'Migration descriptor is only valid for Markdown-to-Lexical writes',
+      )
+    }
+
+    const { categoryId } = data
+    if (categoryId && String(categoryId) !== String(oldDocument.categoryId)) {
+      const category = await this.categoryService.findCategoryById(
+        categoryId as any as string,
+      )
+      if (!category) throw createAppException(AppErrorCode.CATEGORY_NOT_FOUND)
+    }
+
+    if (contentIdentityChanged(oldDocument, data)) {
+      data.modifiedAt = new Date()
+    }
+
+    if (data.slug && data.slug !== oldDocument.slug) {
+      data.slug = slugify(data.slug)
+      if (!(await this.isAvailableSlug(data.slug))) {
+        throw createAppException(AppErrorCode.SLUG_NOT_AVAILABLE)
+      }
+    }
+
+    await this.trackSlugChanges(oldDocument, data)
+
+    const related = await this.checkRelated(data)
+    if (related.length > 0) {
+      await this.relatedEachOther(
+        oldDocument,
+        related.filter((rel) => rel !== id),
+      )
+    } else {
+      await this.removeRelatedEachOther(oldDocument)
+    }
+
+    const patch = omit(data, POST_PROTECTED_KEYS as any) as Partial<PostModel>
+    const createdAt = (data as any).created
+      ? getLessThanNow((data as any).created)
+      : patch.createdAt
+    const pinAt =
+      (data as any).pin !== undefined ? (data as any).pin : patch.pinAt
+    const repositoryPatch = {
+      title: patch.title,
+      slug: patch.slug,
+      createdAt,
+      text: patch.text,
+      content: patch.content,
+      contentFormat: patch.contentFormat,
+      summary: patch.summary,
+      images: patch.images as unknown[] | undefined,
+      meta: patch.meta,
+      tags: patch.tags,
+      categoryId: patch.categoryId as string | undefined,
+      copyright: patch.copyright,
+      isPublished: patch.isPublished,
+      isPremium: patch.isPremium,
+      pinAt,
+      pinOrder: patch.pinOrder,
+      modifiedAt: data.modifiedAt,
+    }
+
+    let updated
+    if (migration) {
+      if (!data.content || data.text === undefined) {
+        throw new BadRequestException(
+          'Lexical migration requires content and text',
+        )
+      }
+      await this.contentMigrationCommitService.commitMarkdownToLexical({
+        refType: DraftRefType.Post,
+        refId: id,
+        descriptor: migration,
+        branchId: migrationBranchId,
+        patch: repositoryPatch,
+        source: {
+          title: repositoryPatch.title ?? oldDocument.title,
+          text: data.text,
+          content: data.content,
+          contentFormat: ContentFormat.Lexical,
+          summary:
+            repositoryPatch.summary === undefined
+              ? oldDocument.summary
+              : repositoryPatch.summary,
+          tags:
+            repositoryPatch.tags === undefined
+              ? oldDocument.tags
+              : repositoryPatch.tags,
+          meta:
+            repositoryPatch.meta === undefined
+              ? oldDocument.meta
+              : repositoryPatch.meta,
+        },
+      })
+      updated = await this.postRepository.findById(id)
+    } else {
+      updated = await this.postRepository.update(id, repositoryPatch)
+    }
+
+    const wasPublished = oldDocument.isPublished
+    scheduleManager.schedule(() => this.afterUpdatePost(id, wasPublished))
+    return updated
+  }
+
+  afterUpdatePost = debounce(
+    async (id: string, wasPublished: boolean) => {
+      const doc = await this.findById(id)
+      if (doc) {
+        await this.fileReferenceService.updateReferencesForDocument(
+          doc,
+          doc.id,
+          FileReferenceType.Post,
+        )
+      }
+
+      await Promise.all([
+        doc?.text &&
+          !isLexical(doc) &&
+          this.imageService.saveImageDimensionsFromMarkdownText(
+            doc.text,
+            doc.images,
+            async (images) => {
+              await this.postRepository.setImages(id, images)
+            },
+          ),
+        doc &&
+          this.eventManager.emit(
+            wasPublished === doc.isPublished
+              ? BusinessEvents.POST_UPDATE
+              : doc.isPublished
+                ? BusinessEvents.POST_REPUBLISH
+                : BusinessEvents.POST_UNPUBLISH,
+            { id: doc.id },
+            {
+              scope:
+                wasPublished || doc.isPublished
+                  ? EventScope.TO_SYSTEM_VISITOR
+                  : EventScope.TO_SYSTEM,
+            },
+          ),
+      ])
+    },
+    1000,
+    { leading: false },
+  )
+
+  async deletePost(id: string) {
+    const deletedPost = await this.findById(id)
+    await Promise.all([
+      this.postRepository.deleteById(id),
+      this.draftService.deleteByRef(DraftRefType.Post, id),
+      this.removeRelatedEachOther(deletedPost),
+      this.slugTrackerService.deleteAllTracker(id),
+      this.fileReferenceService.removeReferencesForDocument(
+        id,
+        FileReferenceType.Post,
+      ),
+    ])
+    await this.eventManager.emit(
+      BusinessEvents.POST_DELETE,
+      { id },
+      {
+        scope: EventScope.TO_SYSTEM_VISITOR,
+        nextTick: true,
+      },
+    )
+  }
+
+  async getCategoryBySlug(slug: string) {
+    return this.categoryService.findBySlug(slug)
+  }
+
+  async isAvailableSlug(slug: string) {
+    return slug.length > 0 && !(await this.postRepository.findBySlug(slug))
+  }
+
+  async checkRelated<
+    T extends Partial<Pick<PostModel, 'id' | 'related' | 'relatedId'>>,
+  >(data: T): Promise<string[]> {
+    if (!data.relatedId || data.relatedId.length === 0) return []
+
+    const relatedPosts = await this.postRepository.findManyByIds(data.relatedId)
+    if (relatedPosts.length !== data.relatedId.length) {
+      throw createAppException(AppErrorCode.POST_RELATED_NOT_EXISTS)
+    }
+
+    return relatedPosts.map((post) => {
+      if (post.id === data.id) {
+        throw createAppException(AppErrorCode.POST_SELF_RELATION)
+      }
+      return post.id
+    })
+  }
+
+  async relatedEachOther(post: any, relatedIds: string[]) {
+    await this.postRepository.setRelatedPosts(post.id, relatedIds)
+  }
+
+  async removeRelatedEachOther(post: any | null) {
+    if (!post) return
+    await this.postRepository.setRelatedPosts(post.id, [])
+  }
+}

@@ -1,0 +1,315 @@
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  type OnModuleDestroy,
+  type OnModuleInit,
+} from '@nestjs/common'
+
+import { OperationContext } from '~/common/contexts/operation.context'
+
+import { TASK_QUEUE_LIMITS, TASK_QUEUE_TTL_MS } from './task-queue.constants'
+import { TaskQueueEmitter } from './task-queue.emitter'
+import { TaskQueueService } from './task-queue.service'
+import { TaskStreamBuffer } from './task-queue.stream-buffer'
+import {
+  type TaskExecuteContext,
+  type TaskHandler,
+  TaskStatus,
+} from './task-queue.types'
+
+@Injectable()
+export class TaskQueueProcessor implements OnModuleInit, OnModuleDestroy {
+  private static readonly REDIS_WARN_INTERVAL_MS = 30_000
+  private readonly logger = new Logger(TaskQueueProcessor.name)
+  private readonly workerId: string
+  private isRunning = false
+  private pollTimeoutId: NodeJS.Timeout | null = null
+  private activeAbortControllers = new Map<string, AbortController>()
+  private handlers = new Map<string, TaskHandler>()
+  private activeTaskCount = 0
+  private lastRedisUnavailableWarnAt = 0
+
+  constructor(
+    @Inject(forwardRef(() => TaskQueueService))
+    private readonly taskService: TaskQueueService,
+    private readonly emitter: TaskQueueEmitter,
+  ) {
+    this.workerId = `worker-${process.pid}-${Date.now().toString(36)}`
+  }
+
+  onModuleInit() {
+    this.start()
+  }
+
+  onModuleDestroy() {
+    this.stop()
+  }
+
+  registerHandler<TPayload = Record<string, unknown>>(
+    handler: TaskHandler<TPayload>,
+  ): void {
+    this.handlers.set(handler.type, handler as TaskHandler)
+    this.logger.log(`Registered handler for task type: ${handler.type}`)
+  }
+
+  unregisterHandler(type: string): void {
+    this.handlers.delete(type)
+    this.logger.log(`Unregistered handler for task type: ${type}`)
+  }
+
+  getRetryBuilder(type: string): TaskHandler['buildRetryTask'] | undefined {
+    return this.handlers.get(type)?.buildRetryTask
+  }
+
+  start() {
+    if (this.isRunning) return
+    this.isRunning = true
+    this.logger.log(`Task processor started: workerId=${this.workerId}`)
+    this.poll()
+  }
+
+  stop() {
+    this.isRunning = false
+    if (this.pollTimeoutId) {
+      clearTimeout(this.pollTimeoutId)
+      this.pollTimeoutId = null
+    }
+
+    for (const [taskId, controller] of this.activeAbortControllers) {
+      controller.abort()
+      this.logger.log(`Aborted task on shutdown: id=${taskId}`)
+    }
+    this.activeAbortControllers.clear()
+
+    this.logger.log('Task processor stopped')
+  }
+
+  private async poll() {
+    if (!this.isRunning) return
+
+    try {
+      if (!this.taskService.isRedisReady()) {
+        this.warnRedisUnavailable('Task processor waiting for Redis connection')
+        this.scheduleNextPoll()
+        return
+      }
+
+      if (this.activeTaskCount >= TASK_QUEUE_LIMITS.maxConcurrency) {
+        this.scheduleNextPoll()
+        return
+      }
+
+      const taskId = await this.taskService.acquireTask(this.workerId)
+      if (taskId) {
+        this.activeTaskCount++
+        this.processTask(taskId).finally(() => {
+          this.activeTaskCount--
+        })
+      }
+    } catch (error) {
+      if (this.taskService.isRedisUnavailableError(error)) {
+        this.warnRedisUnavailable('Task processor waiting for Redis connection')
+      } else {
+        this.logger.error(`Poll error: ${error.message}`, error.stack)
+      }
+    }
+
+    this.scheduleNextPoll()
+  }
+
+  private scheduleNextPoll() {
+    this.pollTimeoutId = setTimeout(
+      () => this.poll(),
+      TASK_QUEUE_LIMITS.processorPollIntervalMs,
+    )
+  }
+
+  private warnRedisUnavailable(message: string) {
+    const now = Date.now()
+    if (
+      now - this.lastRedisUnavailableWarnAt <
+      TaskQueueProcessor.REDIS_WARN_INTERVAL_MS
+    ) {
+      return
+    }
+
+    this.lastRedisUnavailableWarnAt = now
+    this.logger.warn(
+      JSON.stringify({
+        module: TaskQueueProcessor.name,
+        message,
+        redisStatus: this.taskService.getRedisStatus(),
+      }),
+    )
+  }
+
+  private async processTask(taskId: string) {
+    const task = await this.taskService.getTask(taskId)
+    if (!task) {
+      this.logger.warn(`Task not found after acquire: id=${taskId}`)
+      return
+    }
+
+    const handler = this.handlers.get(task.type)
+    if (!handler) {
+      this.logger.error(`No handler for task type: ${task.type}`)
+      await this.taskService.updateStatus(taskId, TaskStatus.Failed, {
+        completedAt: String(Date.now()),
+        error: `No handler registered for task type: ${task.type}`,
+      })
+      await this.taskService.releaseLock(taskId)
+      return
+    }
+
+    this.logger.log(
+      `Processing task: id=${taskId} type=${task.type} retry=${task.retryCount}`,
+    )
+
+    const controller = new AbortController()
+    this.activeAbortControllers.set(taskId, controller)
+
+    // Per-task stream coalescer bound to emitter.emitStream. groupId is
+    // captured here for emitter metadata only — stream phase always targets
+    // the detail room (see TaskQueueEmitter.emitStream).
+    const streamMeta = {
+      id: task.id,
+      type: task.type,
+      scope: task.scope ?? '',
+      groupId: task.groupId,
+    }
+    const buffer = new TaskStreamBuffer((frame) =>
+      this.emitter.emitStream(streamMeta, frame),
+    )
+
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        const renewed = await this.taskService.renewLock(taskId, this.workerId)
+        if (!renewed) {
+          this.logger.warn(`Failed to renew lock: id=${taskId}`)
+          controller.abort()
+        }
+      } catch (error) {
+        this.logger.error(`Heartbeat error: ${error.message}`)
+      }
+    }, TASK_QUEUE_TTL_MS.heartbeatInterval)
+
+    const cancelCheckInterval = setInterval(async () => {
+      try {
+        const isCancelled = await this.taskService.isTaskCancelled(taskId)
+        if (isCancelled) {
+          this.logger.log(`Task cancelled by user: id=${taskId}`)
+          controller.abort()
+        }
+      } catch (error) {
+        this.logger.error(`Cancel check error: ${error.message}`)
+      }
+    }, TASK_QUEUE_LIMITS.cancelCheckIntervalMs)
+
+    let handlerSetStatus: TaskStatus | null = null
+
+    const context: TaskExecuteContext = {
+      taskId,
+      signal: controller.signal,
+      updateProgress: (progress, message, completed, total) =>
+        this.taskService.updateProgress(
+          taskId,
+          progress,
+          message,
+          completed,
+          total,
+        ),
+      incrementTokens: (count = 1) =>
+        this.taskService.incrementTokens(taskId, count),
+      incrementCost: (usd) => this.taskService.incrementCost(taskId, usd),
+      appendLog: (level, message) =>
+        this.taskService.appendLog(taskId, level, message),
+      setResult: (result) => this.taskService.setResult(taskId, result),
+      setStatus: (status) => {
+        handlerSetStatus = status
+      },
+      isAborted: () => controller.signal.aborted,
+      streamPusher: (ev) =>
+        buffer.push(ev.lang, ev.segmentId, {
+          chunk: ev.chunk,
+          partial: ev.partial,
+          done: ev.done,
+        }),
+    }
+
+    try {
+      await OperationContext.run(`task:${taskId}`, () =>
+        handler.execute(task.payload, context),
+      )
+
+      const finalStatus = await this.taskService.isTaskCancelled(taskId)
+      if (finalStatus) {
+        await this.taskService.appendLog(
+          taskId,
+          'warn',
+          'Task cancelled but work completed',
+        )
+      } else {
+        const status = handlerSetStatus ?? TaskStatus.Completed
+
+        // Use appropriate progress message and log based on final status
+        const statusMessages: Record<
+          string,
+          { progress: string; log: string }
+        > = {
+          [TaskStatus.Completed]: {
+            progress: 'Completed',
+            log: 'Task completed',
+          },
+          [TaskStatus.PartialFailed]: {
+            progress: 'Completed with errors',
+            log: 'Task completed with partial failures',
+          },
+          [TaskStatus.Failed]: {
+            progress: 'Failed',
+            log: 'Task failed',
+          },
+        }
+        const messages =
+          statusMessages[status] ?? statusMessages[TaskStatus.Completed]
+
+        await this.taskService.updateProgress(taskId, 100, messages.progress)
+        await this.taskService.updateStatus(taskId, status, {
+          completedAt: String(Date.now()),
+        })
+        await this.taskService.appendLog(taskId, 'info', messages.log)
+      }
+
+      this.logger.log(
+        `Task finished: id=${taskId} status=${handlerSetStatus ?? TaskStatus.Completed}`,
+      )
+    } catch (error) {
+      if (error.name === 'AbortError' || controller.signal.aborted) {
+        this.logger.log(`Task aborted: id=${taskId}`)
+        await this.taskService.appendLog(taskId, 'info', 'Task aborted')
+      } else {
+        this.logger.error(
+          `Task failed: id=${taskId} error=${error.message}`,
+          error.stack,
+        )
+        await this.taskService.updateStatus(taskId, TaskStatus.Failed, {
+          completedAt: String(Date.now()),
+          error: error.message,
+        })
+        await this.taskService.appendLog(
+          taskId,
+          'error',
+          `Task failed: ${error.message}`,
+        )
+      }
+    } finally {
+      clearInterval(heartbeatInterval)
+      clearInterval(cancelCheckInterval)
+      buffer.flushAndDispose()
+      this.emitter.dispose(taskId)
+      this.activeAbortControllers.delete(taskId)
+      await this.taskService.releaseLock(taskId)
+    }
+  }
+}

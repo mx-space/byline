@@ -1,0 +1,72 @@
+export const PORT = process.env.PORT || 2333
+export const API_VERSION = 3
+
+export const CROSS_DOMAIN = {
+  allowedOrigins: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : [
+        'innei.ren',
+        '*.innei.ren',
+
+        'localhost:*',
+        '127.0.0.1',
+        'mbp.cc',
+        'local.innei.test',
+        '22333322.xyz',
+        '*.dev',
+      ],
+
+  // allowedReferer: 'innei.ren',
+}
+
+export const REDIS = {
+  host: 'localhost',
+  port: 6379,
+  password: null,
+  ttl: null,
+  httpCacheTTL: 5,
+  max: 5,
+  disableApiCache: true,
+}
+
+export const SECURITY = {
+  jwtSecret: process.env.JWT_SECRET,
+  jwtExpire: Number(process.env.JWT_EXPIRE) || 14,
+}
+
+export const CLUSTER = {
+  enable: process.env.CLUSTER === 'true',
+  workers: process.env.CLUSTER_WORKERS,
+}
+
+export const DEBUG_MODE = {
+  httpRequestVerbose: false,
+}
+
+export const SECRET_STORAGE_V2 = true
+export const ENCRYPT = {
+  key: '593f62860255feb0a914534a43814b9809cc7534da7f5485cd2e3d3c8609acab',
+  enable: true,
+}
+
+export const THROTTLE_OPTIONS = {
+  ttl: 10_000,
+  limit: 50,
+}
+
+export const SNOWFLAKE = {
+  workerId: Number(process.env.SNOWFLAKE_WORKER_ID ?? 1),
+  // 2026-05-02T00:00:00.000Z
+  epochMs: 1746144000000,
+}
+
+export const POSTGRES = {
+  connectionString: process.env.PG_URL || process.env.PG_CONNECTION_STRING,
+  host: process.env.PG_HOST || '127.0.0.1',
+  port: Number(process.env.PG_PORT || 5432),
+  user: process.env.PG_USER || 'mx',
+  password: process.env.PG_PASSWORD || 'mx',
+  database: process.env.PG_DATABASE || 'mx_core_test',
+  maxPoolSize: Number(process.env.PG_MAX_POOL_SIZE || 5),
+  ssl: false as const,
+}

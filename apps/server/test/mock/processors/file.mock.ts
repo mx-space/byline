@@ -1,0 +1,45 @@
+import { defineProvider } from 'test/helper/defineProvider'
+
+import { FileReferenceService } from '~/modules/file/file-reference.service'
+import { ImageService } from '~/processors/helper/helper.image.service'
+
+export const fileReferenceProvider = defineProvider({
+  provide: FileReferenceService,
+  useValue: {
+    async createPendingReference() {
+      return {}
+    },
+    async activateReferences() {},
+    async updateReferencesForDocument() {},
+    async removeReferencesForDocument() {},
+    async cleanupOrphanFiles() {
+      return { deletedCount: 0, totalOrphan: 0 }
+    },
+    async getFileReferences() {
+      return []
+    },
+    async getReferencesForDocument() {
+      return []
+    },
+    async getOrphanFilesCount() {
+      return 0
+    },
+  },
+})
+
+export const imageServiceProvider = defineProvider({
+  provide: ImageService,
+  useValue: {
+    onModuleInit() {},
+    async saveImageDimensionsFromMarkdownText() {
+      // Mock: do nothing, skip image processing in tests
+    },
+    async getOnlineImageSizeAndMeta() {
+      return {
+        size: { width: 100, height: 100, type: 'image/png' },
+        accent: '#ffffff',
+        thumbhash: '',
+      }
+    },
+  },
+})

@@ -1,0 +1,209 @@
+import {
+  Body,
+  Get,
+  Headers as RequestHeaders,
+  HttpCode,
+  Inject,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common'
+import { SkipThrottle } from '@nestjs/throttler'
+import ejs from 'ejs'
+import type { FastifyReply } from 'fastify'
+import { z } from 'zod'
+
+import { API_VERSION } from '~/app.config'
+import { ApiController } from '~/common/decorators/api-controller.decorator'
+import { HTTPDecorators } from '~/common/decorators/http.decorator'
+import { AppErrorCode, createAppException } from '~/common/errors'
+import { isDev } from '~/global/env.global'
+import { ConfigsService } from '~/modules/configs/configs.service'
+import { AssetService } from '~/processors/helper/helper.asset.service'
+
+import { AuthInstanceInjectKey } from './auth.constant'
+import type { InjectAuthInstance } from './auth.interface'
+import { AuthService } from './auth.service'
+
+export const DeviceVerifyBodySchema = z.object({
+  userCode: z.string().min(1),
+  action: z.enum(['approve', 'deny']),
+})
+
+export type DeviceVerifyDto = z.infer<typeof DeviceVerifyBodySchema>
+
+const deviceBasePath = isDev ? '/device' : `/api/v${API_VERSION}/device`
+const adminLoginPath = '/proxy/qaqdmin/#/login'
+
+const webTargets = {
+  admin: '/dashboard',
+  analytics: '/analyze',
+  comments: '/comments',
+  files: '/files',
+  notes: '/notes',
+  posts: '/posts',
+  recently: '/recently',
+  settings: '/settings',
+} as const
+
+type WebTarget = keyof typeof webTargets
+
+@ApiController('device')
+@SkipThrottle()
+export class DeviceController {
+  constructor(
+    private readonly assetService: AssetService,
+    private readonly authService: AuthService,
+    private readonly configsService: ConfigsService,
+    @Inject(AuthInstanceInjectKey)
+    private readonly authInstance: InjectAuthInstance,
+  ) {}
+
+  @Get('web-handoff')
+  @HTTPDecorators.RawResponse
+  async webHandoff(
+    @Query('token') token: string | undefined,
+    @Query('target') target: string | undefined,
+    @Res() reply: FastifyReply,
+  ) {
+    if (!token || !target || !(target in webTargets)) {
+      return reply.status(400).type('text/plain').send('Invalid handoff')
+    }
+
+    const auth = this.authInstance.get()
+    if (!auth) {
+      throw createAppException(AppErrorCode.AUTH_FAILED, {
+        message: 'auth not initialised',
+      })
+    }
+
+    const result = await auth.api.verifyOneTimeToken({
+      body: { token },
+      returnHeaders: true,
+    })
+    const setCookies = result.headers.getSetCookie()
+    if (setCookies.length > 0) reply.header('set-cookie', setCookies)
+
+    reply
+      .header('cache-control', 'no-store')
+      .header('referrer-policy', 'no-referrer')
+      .header('x-content-type-options', 'nosniff')
+
+    const { adminUrl } = await this.configsService.get('url')
+    const destination = new URL(adminUrl)
+    destination.hash = `#${webTargets[target as WebTarget]}`
+    return reply.redirect(destination.toString(), 302)
+  }
+
+  @Get('/')
+  @HTTPDecorators.RawResponse
+  async page(
+    @Query('user_code') userCode: string | undefined,
+    @RequestHeaders('cookie') cookie: string | undefined,
+    @Res() reply: FastifyReply,
+  ) {
+    const headers = new Headers()
+    if (cookie) headers.set('cookie', cookie)
+    const session = await this.authService.getSessionUserFromHeaders(headers)
+    const user = session?.user
+
+    if (!user || user.role !== 'owner') {
+      const returnUrl = `${deviceBasePath}${userCode ? `?user_code=${encodeURIComponent(userCode)}` : ''}`
+      const redirect = `${adminLoginPath}?redirect=${encodeURIComponent(returnUrl)}`
+      return reply.redirect(redirect, 302)
+    }
+
+    if (userCode) {
+      const auth = this.authInstance.get()
+      if (!auth) {
+        throw createAppException(AppErrorCode.AUTH_FAILED, {
+          message: 'auth not initialised',
+        })
+      }
+      await auth.api.deviceVerify({
+        query: { user_code: userCode.trim() },
+        headers,
+      })
+    }
+
+    const html = await this.renderPage({
+      userCode: userCode ?? '',
+      user,
+      siteTitle: 'Byline',
+    })
+    return reply.type('text/html').send(html)
+  }
+
+  @Post('verify')
+  @HttpCode(200)
+  @HTTPDecorators.RawResponse
+  async verify(
+    @Body({ schema: DeviceVerifyBodySchema }) body: DeviceVerifyDto,
+    @RequestHeaders('cookie') cookie: string | undefined,
+  ) {
+    const headers = new Headers()
+    if (cookie) headers.set('cookie', cookie)
+    const session = await this.authService.getSessionUserFromHeaders(headers)
+    if (!session?.user || session.user.role !== 'owner') {
+      throw createAppException(AppErrorCode.AUTH_NOT_LOGGED_IN)
+    }
+
+    const auth = this.authInstance.get()
+    if (!auth) {
+      throw createAppException(AppErrorCode.AUTH_FAILED, {
+        message: 'auth not initialised',
+      })
+    }
+
+    const userCode = body.userCode.trim()
+    try {
+      if (body.action === 'approve') {
+        await auth.api.deviceApprove({ body: { userCode }, headers })
+      } else {
+        await auth.api.deviceDeny({ body: { userCode }, headers })
+      }
+    } catch (error) {
+      const errAny = error as {
+        status?: number | string
+        body?: { error?: string; error_description?: string }
+        message?: string
+      }
+      const description =
+        errAny?.body?.error_description ||
+        errAny?.body?.error ||
+        errAny?.message ||
+        'device verification failed'
+      return {
+        ok: false,
+        code: errAny?.body?.error ?? 'device.verify.failed',
+        message: description,
+      }
+    }
+
+    return { ok: true, action: body.action }
+  }
+
+  private async renderPage(props: {
+    userCode: string
+    user: { id?: string; email?: string | null; name?: string | null }
+    siteTitle: string
+  }) {
+    const template = await this.loadTemplate()
+    return ejs.render(template, {
+      ...props,
+      verifyUrl: `${deviceBasePath}/verify`,
+    })
+  }
+
+  private async loadTemplate(): Promise<string> {
+    const template = (await this.assetService.getAsset('/render/device.ejs', {
+      encoding: 'utf-8',
+    })) as string
+    if (typeof template !== 'string' || template.length === 0) {
+      throw createAppException(AppErrorCode.AUTH_FAILED, {
+        message: 'device template missing',
+      })
+    }
+    return template
+  }
+}

@@ -1,0 +1,484 @@
+import { z } from 'zod'
+
+import { configSchemaMapping, FullConfigSchema } from './configs.schema'
+import { getMeta, type SchemaMetadata } from './configs.zod-schema.util'
+
+// ==================== DSL Type Definitions ====================
+
+export type UIComponent =
+  | 'input'
+  | 'password'
+  | 'textarea'
+  | 'number'
+  | 'switch'
+  | 'select'
+  | 'tags'
+  | 'action'
+
+export interface UIConfig {
+  component: UIComponent
+  halfGrid?: boolean
+  hidden?: boolean
+  placeholder?: string
+  options?: Array<{ label: string; value: string | number }>
+  /**
+   * Conditionally show this field based on sibling field values.
+   * When the condition is not met, the field and all its nested children are hidden.
+   */
+  showWhen?: Record<string, string | string[]>
+  /**
+   * Action button configuration (only used when component is 'action')
+   */
+  actionId?: string
+  actionLabel?: string
+  actionVariant?:
+    'default' | 'primary' | 'info' | 'success' | 'warning' | 'error'
+}
+
+export interface FormField {
+  key: string
+  title: string
+  description?: string
+  required?: boolean
+  ui: UIConfig
+  fields?: FormField[]
+  subsection?: { title: string; description?: string }
+}
+
+export interface FormSection {
+  key: string
+  title: string
+  description?: string
+  hidden?: boolean
+  fields: FormField[]
+}
+
+export interface FormGroup {
+  key: string
+  title: string
+  description: string
+  icon: string
+  sections: FormSection[]
+}
+
+export interface FormDSL {
+  title: string
+  description?: string
+  groups: FormGroup[]
+  defaults: Record<string, any>
+}
+
+// ==================== Group Configuration ====================
+
+interface GroupConfig {
+  key: string
+  title: string
+  description: string
+  icon: string
+  sectionKeys: string[]
+}
+
+const groupConfigs: GroupConfig[] = [
+  {
+    key: 'site',
+    title: 'Site',
+    description: 'Site URLs',
+    icon: 'globe',
+    sectionKeys: ['url'],
+  },
+  {
+    key: 'notification',
+    title: 'Email',
+    description: 'Invites and password reset email',
+    icon: 'bell',
+    sectionKeys: ['mailOptions'],
+  },
+  {
+    key: 'storage',
+    title: 'Storage',
+    description: 'Image hosting, file uploads',
+    icon: 'database',
+    sectionKeys: ['imageStorageOptions', 'fileUploadOptions'],
+  },
+  {
+    key: 'ai',
+    title: 'AI',
+    description: 'AI summary, translation, writing assistant, image generation',
+    icon: 'sparkles',
+    sectionKeys: ['ai'],
+  },
+]
+
+// ==================== Type Inference Utilities ====================
+
+function unwrapZodType(schema: z.ZodType): z.ZodType {
+  if (schema instanceof z.ZodOptional) {
+    return unwrapZodType(schema.unwrap() as unknown as z.ZodType)
+  }
+  if (schema instanceof z.ZodNullable) {
+    return unwrapZodType(schema.unwrap() as unknown as z.ZodType)
+  }
+  if (schema instanceof z.ZodDefault) {
+    return unwrapZodType(schema.unwrap() as unknown as z.ZodType)
+  }
+  if (schema instanceof z.ZodPipe) {
+    // `z.preprocess`, `transform`, etc.
+    return unwrapZodType(schema.out as unknown as z.ZodType)
+  }
+  return schema
+}
+
+interface ZodEnumLike {
+  enum?: Record<string, unknown>
+  options?: unknown[]
+}
+
+function asEnumLike(schema: z.ZodType): ZodEnumLike {
+  return schema as unknown as ZodEnumLike
+}
+
+function isEnumLikeSchema(schema: z.ZodType): boolean {
+  if (schema instanceof z.ZodEnum) return true
+  const candidate = asEnumLike(schema)
+  if (
+    'enum' in candidate &&
+    candidate.enum &&
+    typeof candidate.enum === 'object'
+  ) {
+    return true
+  }
+  // ZodUnion also has an `options` property, but it contains Zod schemas, not enum values
+  // We need to exclude ZodUnion to avoid misidentifying union types as enums
+  if (schema instanceof z.ZodUnion) return false
+  return 'options' in candidate && Array.isArray(candidate.options)
+}
+
+function inferUIComponent(
+  schema: z.ZodType,
+  meta: SchemaMetadata | undefined,
+): UIComponent {
+  const uiOptions = meta?.['ui:options']
+
+  if (uiOptions?.type === 'password') return 'password'
+  if (uiOptions?.type === 'textarea') return 'textarea'
+  if (uiOptions?.type === 'select') return 'select'
+  if (uiOptions?.type === 'action') return 'action'
+
+  const unwrapped = unwrapZodType(schema)
+
+  if (unwrapped instanceof z.ZodBoolean) return 'switch'
+  if (unwrapped instanceof z.ZodNumber) return 'number'
+  if (unwrapped instanceof z.ZodArray) return 'tags'
+  if (isEnumLikeSchema(unwrapped)) return 'select'
+
+  return 'input'
+}
+
+function getSelectOptions(
+  schema: z.ZodType,
+  meta: SchemaMetadata | undefined,
+): Array<{ label: string; value: string | number }> | undefined {
+  const uiOptions = meta?.['ui:options']
+  if (uiOptions?.values) {
+    return uiOptions.values
+  }
+
+  const unwrapped = unwrapZodType(schema)
+
+  if (unwrapped instanceof z.ZodEnum) {
+    return unwrapped.options
+      .filter((v) => typeof v === 'string' || typeof v === 'number')
+      .map((v) => ({ label: String(v), value: v }))
+  }
+
+  const enumObj = (unwrapped as any)?.enum
+  if (enumObj && typeof enumObj === 'object') {
+    return Object.entries(enumObj)
+      .filter(([key]) => Number.isNaN(Number(key)))
+      .filter(
+        ([, value]) => typeof value === 'string' || typeof value === 'number',
+      )
+      .map(([key, value]) => ({ label: key, value: value as string | number }))
+  }
+
+  const options = (unwrapped as any)?.options
+  if (Array.isArray(options)) {
+    return options
+      .filter((v: unknown) => typeof v === 'string' || typeof v === 'number')
+      .map((v: string | number) => ({ label: String(v), value: v }))
+  }
+
+  return undefined
+}
+
+function isRequired(schema: z.ZodType): boolean {
+  if (schema instanceof z.ZodOptional) return false
+  if (schema instanceof z.ZodDefault) return false
+  if (schema instanceof z.ZodPipe) {
+    return !schema.safeParse(undefined).success
+  }
+  return true
+}
+
+// ==================== Field Extraction ====================
+
+function extractField(key: string, schema: z.ZodType): FormField {
+  const meta = getMeta(schema)
+  const innerMeta =
+    schema instanceof z.ZodOptional
+      ? getMeta(schema.unwrap() as unknown as z.ZodType)
+      : undefined
+  const effectiveMeta = meta || innerMeta
+
+  const uiOptions = effectiveMeta?.['ui:options']
+  const component = inferUIComponent(schema, effectiveMeta)
+
+  const field: FormField = {
+    key,
+    title: effectiveMeta?.title || key,
+    ui: {
+      component,
+    },
+  }
+
+  if (effectiveMeta?.description) {
+    field.description = effectiveMeta.description
+  }
+
+  if (isRequired(schema)) {
+    field.required = true
+  }
+
+  if (uiOptions?.halfGrid) {
+    field.ui.halfGrid = true
+  }
+
+  if (uiOptions?.type === 'hidden' || uiOptions?.hide) {
+    field.ui.hidden = true
+  }
+
+  if (uiOptions?.showWhen) {
+    field.ui.showWhen = uiOptions.showWhen
+  }
+
+  if (component === 'select') {
+    const options = getSelectOptions(schema, effectiveMeta)
+    if (options) {
+      field.ui.options = options
+    }
+  }
+
+  if (component === 'action') {
+    if (uiOptions?.actionId) {
+      field.ui.actionId = uiOptions.actionId
+    }
+    if (uiOptions?.actionLabel) {
+      field.ui.actionLabel = uiOptions.actionLabel
+    }
+    if (uiOptions?.actionVariant) {
+      field.ui.actionVariant = uiOptions.actionVariant
+    }
+  }
+
+  const unwrapped = unwrapZodType(schema)
+  if (unwrapped instanceof z.ZodObject && component !== 'select') {
+    const nestedFields = extractFields(unwrapped)
+    if (nestedFields.length > 0) {
+      field.fields = nestedFields
+      const nestedMeta = getMeta(unwrapped)
+      if (nestedMeta?.title) {
+        field.subsection = {
+          title: nestedMeta.title,
+          description: nestedMeta.description,
+        }
+      }
+    }
+  }
+
+  return field
+}
+
+function extractFields(schema: z.ZodObject<any>): FormField[] {
+  const shape = schema.shape
+  const fields: FormField[] = []
+
+  for (const [key, propSchema] of Object.entries(shape)) {
+    const field = extractField(key, propSchema as z.ZodType)
+    if (field.ui.hidden) continue
+    fields.push(field)
+  }
+
+  return fields
+}
+
+// ==================== Section Conversion ====================
+
+export function zodToFormSection(
+  schema: z.ZodType,
+  sectionKey: string,
+): FormSection {
+  const meta = getMeta(schema)
+  const uiOptions = meta?.['ui:options']
+
+  const section: FormSection = {
+    key: sectionKey,
+    title: meta?.title || sectionKey,
+    fields: [],
+  }
+
+  if (meta?.description) {
+    section.description = meta.description
+  }
+
+  if (uiOptions?.type === 'hidden') {
+    section.hidden = true
+  }
+
+  const unwrapped = unwrapZodType(schema)
+  if (unwrapped instanceof z.ZodObject) {
+    section.fields = extractFields(unwrapped)
+  }
+
+  return section
+}
+
+// ==================== Full DSL Generation ====================
+
+export function generateFormDSL(): FormDSL {
+  const fullMeta = getMeta(FullConfigSchema)
+
+  // Build section map
+  const sectionMap = new Map<string, FormSection>()
+  for (const [key, schema] of Object.entries(configSchemaMapping)) {
+    const section = zodToFormSection(schema, key)
+    if (!section.hidden) {
+      sectionMap.set(key, section)
+    }
+  }
+
+  // Build groups
+  const groups: FormGroup[] = []
+  for (const groupConfig of groupConfigs) {
+    const sections: FormSection[] = []
+    for (const sectionKey of groupConfig.sectionKeys) {
+      const section = sectionMap.get(sectionKey)
+      if (section) {
+        sections.push(section)
+      }
+    }
+
+    if (sections.length > 0) {
+      groups.push({
+        key: groupConfig.key,
+        title: groupConfig.title,
+        description: groupConfig.description,
+        icon: groupConfig.icon,
+        sections,
+      })
+    }
+  }
+
+  const dsl: FormDSL = {
+    title: fullMeta?.title || 'Settings',
+    groups,
+    defaults: {},
+  }
+
+  if (fullMeta?.description) {
+    dsl.description = fullMeta.description
+  }
+
+  return dsl
+}
+
+// ==================== AI Provider Options Injection ====================
+
+export interface AIProviderInfo {
+  id: string
+  name?: string
+  type?: string
+}
+
+export function attachAiProviderOptionsToFormDSL(
+  dsl: FormDSL,
+  aiConfig: any,
+): void {
+  if (!aiConfig) return
+
+  const providers: AIProviderInfo[] = Array.isArray(aiConfig.providers)
+    ? aiConfig.providers
+    : []
+
+  const assignments = [
+    aiConfig.summaryModel?.providerId,
+    aiConfig.writerModel?.providerId,
+    aiConfig.commentReviewModel?.providerId,
+    aiConfig.translationModel?.providerId,
+  ].filter(Boolean) as string[]
+
+  const options: Array<{ label: string; value: string }> = []
+  const seen = new Set<string>()
+
+  const addOption = (id?: string, label?: string) => {
+    if (!id || seen.has(id)) return
+    seen.add(id)
+    options.push({ label: label || id, value: id })
+  }
+
+  for (const provider of providers) {
+    addOption(provider.id, formatProviderLabel(provider))
+  }
+
+  for (const providerId of assignments) {
+    addOption(providerId, providerId)
+  }
+
+  if (options.length === 0) return
+
+  // Find AI group and section
+  const aiGroup = dsl.groups.find((g) => g.key === 'ai')
+  if (!aiGroup) return
+
+  const aiSection = aiGroup.sections.find((s) => s.key === 'ai')
+  if (!aiSection) return
+
+  const providerIdFields = findProviderIdFields(aiSection.fields)
+  for (const field of providerIdFields) {
+    field.ui.component = 'select'
+    field.ui.options = options
+  }
+}
+
+function formatProviderLabel(provider: AIProviderInfo): string {
+  const name = provider.name?.trim() || ''
+  const type = provider.type || ''
+  const id = provider.id || ''
+
+  const nameLooksLikeUuid =
+    !!name && /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(name)
+
+  const displayName = !nameLooksLikeUuid && name ? name : ''
+
+  if (displayName && type) return `${displayName} (${type})`
+  if (displayName) return displayName
+  if (type) return type
+  return id || 'Unknown'
+}
+
+function findProviderIdFields(fields: FormField[]): FormField[] {
+  const matches: FormField[] = []
+
+  const visit = (fieldList: FormField[]) => {
+    for (const field of fieldList) {
+      if (field.key === 'providerId' && field.title === 'Provider ID') {
+        matches.push(field)
+      }
+      if (field.fields) {
+        visit(field.fields)
+      }
+    }
+  }
+
+  visit(fields)
+  return matches
+}

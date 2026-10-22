@@ -1,0 +1,128 @@
+import { Injectable } from '@nestjs/common'
+import jwt from 'jsonwebtoken'
+
+import { ENCRYPT, SECURITY } from '~/app.config'
+import { RedisKeys } from '~/constants/cache.constant'
+import { getRedisKey } from '~/utils/redis.util'
+import { md5 } from '~/utils/tool.util'
+
+import { RedisService } from '../redis/redis.service'
+
+const { sign, verify } = jwt
+
+@Injectable()
+export class JWTService {
+  private secret = ''
+
+  constructor(private readonly redisService: RedisService) {
+    this.init()
+  }
+
+  init() {
+    if (this.secret) {
+      return
+    }
+
+    const ENCRYPT_KEY = ENCRYPT.key
+
+    const secret =
+      SECURITY.jwtSecret ||
+      Buffer.from(ENCRYPT_KEY).toString('base64').slice(0, 15) ||
+      'asjhczxiucipoiopiqm2376'
+
+    this.secret = secret
+  }
+
+  async verify(token: string) {
+    try {
+      verify(token, this.secret)
+      return await this.isTokenInRedis(token)
+    } catch {
+      // Token verification failed, treat as invalid
+      return false
+    }
+  }
+
+  async isTokenInRedis(token: string) {
+    const redis = this.redisService.getClient()
+    const key = getRedisKey(RedisKeys.JWTStore)
+    const has = await redis.hexists(key, md5(token))
+    return !!has
+  }
+
+  async getAllSignSession(currentToken?: string) {
+    const redis = this.redisService.getClient()
+    const res = await redis.hgetall(getRedisKey(RedisKeys.JWTStore))
+    const hashedCurrent = currentToken && md5(currentToken)
+    return Object.entries(res).map(([k, v]) => {
+      return {
+        ...JSON.parse(v),
+        id: `jwt-${k}`,
+        current: hashedCurrent === k,
+      }
+    })
+  }
+
+  async revokeToken(token: string, delay?: number) {
+    const redis = this.redisService.getClient()
+    const key = getRedisKey(RedisKeys.JWTStore)
+    const field = token.startsWith('jwt-')
+      ? token.replace('jwt-', '')
+      : md5(token)
+    if (delay) {
+      // FIXME
+      setTimeout(() => redis.hdel(key, field), delay)
+    } else {
+      await redis.hdel(key, field)
+    }
+  }
+
+  async revokeAll(excludeTokens?: string[]) {
+    const redis = this.redisService.getClient()
+    const key = getRedisKey(RedisKeys.JWTStore)
+
+    if (!Array.isArray(excludeTokens) || excludeTokens.length === 0) {
+      await redis.del(key)
+      return
+    }
+
+    const allMd5Tokens = await redis.hkeys(key)
+    const excludedMd5Tokens = new Set(excludeTokens.map((t) => md5(t)))
+    const fieldsToDelete = allMd5Tokens.filter(
+      (md5Token) => !excludedMd5Tokens.has(md5Token),
+    )
+    if (fieldsToDelete.length > 0) {
+      await redis.hdel(key, ...fieldsToDelete)
+    }
+  }
+
+  async storeTokenInRedis(token: string, info?: any) {
+    const redis = this.redisService.getClient()
+    await redis.hset(
+      getRedisKey(RedisKeys.JWTStore),
+      md5(token),
+      JSON.stringify({
+        date: new Date().toISOString(),
+        ...info,
+      } as StoreJWTPayload),
+    )
+  }
+
+  public static readonly expiresDay = SECURITY.jwtExpire
+
+  async sign(id: string, info?: { ip: string; ua: string }) {
+    const token = sign({ id }, this.secret, {
+      expiresIn: `${JWTService.expiresDay}d`,
+    })
+    await this.storeTokenInRedis(token, info || {})
+    return token
+  }
+}
+
+export interface StoreJWTPayload {
+  /**
+   * ISODateString
+   */
+  date: string
+  [k: string]: any
+}

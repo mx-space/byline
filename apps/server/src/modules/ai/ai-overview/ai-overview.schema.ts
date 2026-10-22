@@ -1,0 +1,16 @@
+import { z } from 'zod'
+
+import { CollectionRefTypes } from '~/constants/db.constant'
+
+export const OVERVIEW_ARTICLE_TYPES = [CollectionRefTypes.Post] as const
+
+export const GetOverviewGroupedQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  size: z.coerce.number().int().min(1).max(50).default(20),
+  search: z.string().optional(),
+  type: z.enum(OVERVIEW_ARTICLE_TYPES).optional(),
+})
+
+export type GetOverviewGroupedQueryDto = z.infer<
+  typeof GetOverviewGroupedQuerySchema
+>

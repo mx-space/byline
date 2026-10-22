@@ -1,0 +1,377 @@
+import type { OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
+import { OnEvent } from '@nestjs/event-emitter'
+import { delay } from 'es-toolkit'
+import type Mail from 'nodemailer/lib/mailer'
+
+import { AppErrorCode, createAppException } from '~/common/errors'
+import { EventBusEvents } from '~/constants/event-bus.constant'
+import { ConfigsService } from '~/modules/configs/configs.service'
+import { OwnerService } from '~/modules/owner/owner.service'
+import {
+  ConfigVersionScopes,
+  ConfigVersionService,
+} from '~/processors/redis/config-version.service'
+
+import { AssetService } from './helper.asset.service'
+
+type AddressInput = string | { address?: string } | AddressInput[]
+
+type MailProvider = 'smtp' | 'resend'
+type MailClient = {
+  sendMail: (options: Mail.Options) => Promise<any>
+  verify?: (callback: (error?: Error | null) => void) => void
+  close?: () => void
+}
+
+@Injectable()
+export class EmailService implements OnModuleInit, OnModuleDestroy {
+  private instance?: MailClient
+  private provider: MailProvider = 'smtp'
+  private logger: Logger
+  private refreshPromise?: Promise<void>
+  private appliedMailVersion = 0
+  private mailConfigSynced = false
+  private pendingQueue: Array<{
+    options: Mail.Options
+    resolve: (value: any) => void
+    reject: (reason: any) => void
+    attempts: number
+  }> = []
+  private isProcessingQueue = false
+  private lastSendTime = 0
+  constructor(
+    private readonly configsService: ConfigsService,
+    private readonly assetService: AssetService,
+    private readonly configVersionService: ConfigVersionService,
+    private readonly ownerService: OwnerService,
+  ) {
+    this.logger = new Logger(EmailService.name)
+  }
+
+  onModuleInit() {
+    void this.ensureMailTransportFresh(true)
+  }
+
+  onModuleDestroy() {
+    this.teardown()
+  }
+
+  private emailTypeMap = {}
+  private emailTypeSet = new Set()
+
+  public registerEmailType(
+    type: string,
+    exampleRenderProps: Record<string, any>,
+  ) {
+    if (this.emailTypeSet.has(type)) {
+      this.logger.warn(`Duplicate email type registration: ${type}`)
+      return
+    }
+    this.emailTypeMap[type] = exampleRenderProps || {}
+    this.emailTypeSet.add(type)
+  }
+
+  public getExampleRenderProps(type: string) {
+    const props = this.emailTypeMap[type]
+    if (!props) throw createAppException(AppErrorCode.EMAIL_TEMPLATE_NOT_FOUND)
+    return props
+  }
+
+  readTemplate(type: string): Promise<string> {
+    return this.assetService.getAsset(`/email-template/${type}.template.ejs`, {
+      encoding: 'utf-8',
+    }) as Promise<string>
+  }
+
+  writeTemplate(type: string, source: string) {
+    return this.assetService.writeUserCustomAsset(
+      `/email-template/${type}.template.ejs`,
+      source,
+      {
+        encoding: 'utf-8',
+      },
+    )
+  }
+
+  async deleteTemplate(type: string) {
+    await this.assetService
+      .removeUserCustomAsset(`/email-template/${type}.template.ejs`)
+      .catch((error) => {
+        if ((error?.message as string).includes('no such file or directory'))
+          return
+        throw error
+      })
+  }
+
+  teardown() {
+    this.instance?.close?.()
+    this.instance = undefined
+  }
+
+  @OnEvent(EventBusEvents.EmailInit)
+  init() {
+    void this.ensureMailTransportFresh(true)
+  }
+
+  private async ensureMailTransportFresh(force = false) {
+    const nextVersion = await this.configVersionService.getVersion(
+      ConfigVersionScopes.Mail,
+      this.appliedMailVersion,
+    )
+    const isStale =
+      force || !this.mailConfigSynced || nextVersion !== this.appliedMailVersion
+
+    if (!isStale) {
+      return
+    }
+
+    if (this.refreshPromise) {
+      await this.refreshPromise
+      return
+    }
+
+    this.refreshPromise = this.refreshTransport(nextVersion).finally(() => {
+      this.refreshPromise = undefined
+    })
+
+    await this.refreshPromise
+  }
+
+  private async refreshTransport(nextVersion: number) {
+    try {
+      const { mailOptions } = await this.configsService.waitForConfigReady()
+      this.teardown()
+      this.provider = (mailOptions.provider || 'smtp') as MailProvider
+
+      if (this.provider === 'resend') {
+        const apiKey = mailOptions.resend?.apiKey
+        if (!apiKey) {
+          this.logger.warn(
+            'Resend API key not configured; email service not started',
+          )
+          this.appliedMailVersion = nextVersion
+          this.mailConfigSynced = true
+          return
+        }
+        const { Resend } = await import('resend')
+        const resend = new Resend(apiKey)
+        this.instance = {
+          sendMail: async (options: Mail.Options) => {
+            const from = this.normalizeSingleAddress(options.from)
+            const to = this.normalizeAddressList(options.to)
+            if (!from || !to) {
+              throw createAppException(AppErrorCode.INTERNAL_ERROR, {
+                message: 'Failed to send email',
+              })
+            }
+            const cc = this.normalizeAddressList(options.cc)
+            const bcc = this.normalizeAddressList(options.bcc)
+            const replyTo = this.normalizeSingleAddress(options.replyTo)
+            const html =
+              this.normalizeContent(options.html) ||
+              this.normalizeContent(options.text)
+            if (!html) {
+              throw createAppException(AppErrorCode.INTERNAL_ERROR, {
+                message: 'Failed to send email',
+              })
+            }
+
+            return resend.emails.send({
+              from,
+              to,
+              subject: options.subject as string,
+              html,
+              text: this.normalizeContent(options.text),
+              cc,
+              bcc,
+              replyTo,
+              headers: options.headers as Record<string, string> | undefined,
+            })
+          },
+        }
+      } else {
+        const { smtp } = mailOptions
+        const { user, pass, host, port, secure } = smtp || {}
+        if (!user && !pass) {
+          this.logger.warn('Email notifications are disabled')
+          this.appliedMailVersion = nextVersion
+          this.mailConfigSynced = true
+          return
+        }
+        const { createTransport } = await import('nodemailer')
+        this.instance = createTransport({
+          host: host || '',
+          port: Number.parseInt((port as any) || '465'),
+          secure,
+          auth: { user, pass },
+          tls: {
+            rejectUnauthorized: false,
+          },
+        })
+      }
+
+      this.appliedMailVersion = nextVersion
+      this.mailConfigSynced = true
+      const ready = await this.checkIsReady(false)
+      if (ready) {
+        this.logger.log('Mail delivery service is ready!')
+      }
+    } catch (error) {
+      this.logger.error(error instanceof Error ? error.message : String(error))
+    }
+  }
+
+  async checkIsReady(ensureFresh = true) {
+    if (ensureFresh) {
+      await this.ensureMailTransportFresh()
+    }
+    if (!this.instance) {
+      return false
+    }
+    if (this.provider === 'resend') {
+      return true
+    }
+    return await this.verifyClient()
+  }
+
+  // Verify the client is reachable
+  private verifyClient() {
+    return new Promise<boolean>((r) => {
+      if (!this.instance?.verify) {
+        r(false)
+        return
+      }
+      this.instance.verify((error) => {
+        if (error) {
+          this.logger.error(
+            'Failed to initialize the email client connection!',
+            error.message,
+          )
+          r(false)
+        } else {
+          r(true)
+        }
+      })
+    })
+  }
+
+  async sendTestEmail() {
+    const owner = await this.ownerService.getOwner()
+    const mailOptions = await this.configsService.get('mailOptions')
+    const senderEmail = mailOptions.from || mailOptions.smtp?.user
+    return this.send({
+      from: `"Byline" <${senderEmail}>`,
+      to: owner.mail,
+      subject: 'Test email',
+      text: 'This is a test email',
+    })
+  }
+
+  getInstance() {
+    return this.instance
+  }
+
+  async send(options: Mail.Options) {
+    return new Promise((resolve, reject) => {
+      this.pendingQueue.push({ options, resolve, reject, attempts: 0 })
+      void this.processQueue()
+    })
+  }
+
+  private async processQueue() {
+    if (this.isProcessingQueue) return
+    this.isProcessingQueue = true
+
+    try {
+      while (this.pendingQueue.length > 0) {
+        const { mailOptions } = await this.configsService.waitForConfigReady()
+        const rateLimit = mailOptions.rateLimit ?? 10
+        const minIntervalMs = 1000 / rateLimit
+
+        const now = Date.now()
+        const waitTime = this.lastSendTime + minIntervalMs - now
+        if (waitTime > 0) {
+          await delay(waitTime)
+        }
+
+        const item = this.pendingQueue.shift()
+        if (!item) continue
+
+        try {
+          await this.ensureMailTransportFresh()
+          if (!this.instance) {
+            throw new Error('Email service is not initialized')
+          }
+          const result = await this.instance.sendMail(item.options)
+          this.lastSendTime = Date.now()
+          item.resolve(result)
+        } catch (error) {
+          this.lastSendTime = Date.now()
+          const maxRetry = mailOptions.retryCount ?? 3
+          if (item.attempts < maxRetry) {
+            item.attempts++
+            this.logger.warn(
+              `Failed to send email, retry ${item.attempts}: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            await delay(1000 * item.attempts)
+            this.pendingQueue.push(item)
+            continue
+          }
+          this.logger.warn(
+            error instanceof Error ? error.message : String(error),
+          )
+          item.reject(
+            createAppException(AppErrorCode.INTERNAL_ERROR, {
+              message: 'Failed to send email',
+            }),
+          )
+        }
+      }
+    } finally {
+      this.isProcessingQueue = false
+    }
+  }
+
+  private collectAddresses(input: AddressInput | undefined): string[] {
+    if (!input) {
+      return []
+    }
+    if (typeof input === 'string') {
+      return [input]
+    }
+    if (Array.isArray(input)) {
+      return input.flatMap((item) => this.collectAddresses(item))
+    }
+    return input.address ? [input.address] : []
+  }
+
+  private normalizeSingleAddress(
+    input: AddressInput | undefined,
+  ): string | undefined {
+    return this.collectAddresses(input)[0]
+  }
+
+  private normalizeAddressList(
+    input: AddressInput | undefined,
+  ): string | string[] | undefined {
+    const list = this.collectAddresses(input)
+    if (list.length === 0) {
+      return undefined
+    }
+    return list.length === 1 ? list[0] : list
+  }
+
+  private normalizeContent(input: unknown): string | undefined {
+    if (!input) {
+      return undefined
+    }
+    if (typeof input === 'string') {
+      return input
+    }
+    if (Buffer.isBuffer(input)) {
+      return input.toString()
+    }
+    return undefined
+  }
+}

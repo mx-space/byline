@@ -1,0 +1,156 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import { createPgRepositoryMock } from '@/helper/pg-repository-mock'
+import type { TranslationEntryRepository } from '~/modules/ai/ai-translation/ai-translation.repository'
+import { TranslationEntryService } from '~/modules/ai/ai-translation/translation-entry.service'
+
+const createService = () => {
+  const repository = createPgRepositoryMock<TranslationEntryRepository>()
+  repository.listDistinctPostTags.mockResolvedValue([])
+  const categoryService = { findAllCategory: vi.fn().mockResolvedValue([]) }
+  const generateStructured = vi.fn()
+  const aiService = {
+    getFieldTranslationModel: vi.fn().mockResolvedValue({ generateStructured }),
+  }
+  const configService = { get: vi.fn() }
+  const pipeline = {
+    hset: vi.fn().mockReturnThis(),
+    hdel: vi.fn().mockReturnThis(),
+    expire: vi.fn().mockReturnThis(),
+    exec: vi.fn(),
+  }
+  const redis = {
+    hmget: vi.fn().mockResolvedValue([]),
+    pipeline: vi.fn(() => pipeline),
+  }
+  const redisService = { getClient: vi.fn(() => redis) }
+  const service = new TranslationEntryService(
+    repository as any,
+    categoryService as any,
+    aiService as any,
+    configService as any,
+    redisService as any,
+  )
+  return {
+    configService,
+    generateStructured,
+    pipeline,
+    redis,
+    repository,
+    service,
+  }
+}
+
+describe('TranslationEntryService', () => {
+  it('deduplicates entity lookup keys before querying the PG repository', async () => {
+    const { repository, service } = createService()
+    repository.listByBatch.mockResolvedValue([
+      {
+        keyType: 'entity',
+        keyPath: 'category.name',
+        lookupKey: 'cat-1',
+        translatedText: 'Category',
+      },
+    ])
+
+    const result = await service.getTranslations('category.name', 'en', [
+      'cat-1',
+      'cat-1',
+      '',
+    ])
+
+    expect(repository.listByBatch).toHaveBeenCalledWith('en', [
+      {
+        keyPath: 'category.name',
+        keyType: 'entity',
+        lookupKeys: ['cat-1'],
+      },
+    ])
+    expect(result.get('cat-1')).toBe('Category')
+  })
+
+  it('serves dictionary translations from Redis before falling back to PG rows', async () => {
+    const { redis, repository, service } = createService()
+    redis.hmget.mockResolvedValue(['Sunny'])
+
+    const result = await service.getTranslationsForDict('post.tag', 'en', [
+      '晴',
+    ])
+
+    expect(repository.listByBatch).not.toHaveBeenCalled()
+    expect(result.get('晴')).toBe('Sunny')
+  })
+
+  it('seeds post.tag dictionary entries from distinct post tags', async () => {
+    const { repository, service } = createService()
+    repository.listDistinctPostTags.mockResolvedValue(['机器学习', 'Rust'])
+
+    const values = await service.collectSourceValues()
+
+    const tags = values.filter((v) => v.keyPath === 'post.tag')
+    expect(tags.map((v) => v.sourceText)).toEqual(['机器学习', 'Rust'])
+    expect(tags.every((v) => v.keyType === 'dict')).toBe(true)
+    expect(tags[0].lookupKey).toBe(
+      TranslationEntryService.hashSourceText('机器学习'),
+    )
+  })
+
+  it('sends positional keys to the model and maps translations back by index', async () => {
+    const { configService, generateStructured, repository, service } =
+      createService()
+    configService.get.mockResolvedValue({ translationTargetLanguages: ['en'] })
+    repository.listDistinctPostTags.mockResolvedValue(['工程实践', 'Rust'])
+    repository.listFiltered.mockResolvedValue([])
+    generateStructured.mockResolvedValue({
+      output: { translations: { '0': 'Engineering Practice' } },
+    })
+
+    const result = await service.generateTranslations({
+      keyPaths: ['post.tag'],
+    })
+
+    expect(generateStructured.mock.calls[0][0].prompt).toContain(
+      JSON.stringify({ '0': '工程实践', '1': 'Rust' }),
+    )
+    expect(result).toEqual({ created: 1, skipped: 0 })
+    expect(repository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        keyPath: 'post.tag',
+        lookupKey: TranslationEntryService.hashSourceText('工程实践'),
+        translatedText: 'Engineering Practice',
+      }),
+    )
+  })
+
+  it('serves post.tag translations from the dictionary cache', async () => {
+    const { redis, repository, service } = createService()
+    redis.hmget.mockResolvedValue(['Machine Learning'])
+
+    const result = await service.getTranslationsForDict('post.tag', 'en', [
+      '机器学习',
+    ])
+
+    expect(repository.listByBatch).not.toHaveBeenCalled()
+    expect(result.get('机器学习')).toBe('Machine Learning')
+  })
+
+  it('updates dictionary cache after PG dictionary entry updates', async () => {
+    const { pipeline, repository, service } = createService()
+    repository.updateTranslatedText.mockResolvedValue({
+      keyType: 'dict',
+      keyPath: 'post.tag',
+      lang: 'en',
+      lookupKey: 'hash-1',
+      translatedText: 'Happy',
+    })
+
+    await service.updateEntry('entry-1', 'Happy')
+
+    expect(pipeline.hset).toHaveBeenCalledWith(
+      expect.any(String),
+      'hash-1',
+      'Happy',
+    )
+    expect(pipeline.exec).toHaveBeenCalled()
+  })
+})

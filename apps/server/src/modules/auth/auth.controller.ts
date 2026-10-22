@@ -1,0 +1,120 @@
+import {
+  Body,
+  Delete,
+  Get,
+  Inject,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
+import { omit } from 'es-toolkit/compat'
+import { z } from 'zod'
+
+import { ApiController } from '~/common/decorators/api-controller.decorator'
+import { Auth } from '~/common/decorators/auth.decorator'
+import { HttpCache } from '~/common/decorators/cache.decorator'
+import { AppErrorCode, createAppException } from '~/common/errors'
+import { EventBusEvents } from '~/constants/event-bus.constant'
+import { type StringIdDto, StringIdSchema } from '~/shared/dto/id.dto'
+import type { FastifyBizRequest } from '~/transformers/get-req.transformer'
+
+import { AuthInstanceInjectKey } from './auth.constant'
+import type { InjectAuthInstance } from './auth.interface'
+import { AuthService } from './auth.service'
+
+export const TokenSchema = z.object({
+  expired: z.preprocess(
+    (val) => (val ? new Date(val as string) : undefined),
+    z.date().optional(),
+  ),
+  name: z.string().min(1),
+})
+
+export type TokenDto = z.infer<typeof TokenSchema>
+@ApiController({
+  path: 'auth',
+})
+export class AuthController {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly eventEmitter: EventEmitter2,
+    @Inject(AuthInstanceInjectKey)
+    private readonly authInstance: InjectAuthInstance,
+  ) {}
+
+  @Get('token')
+  @Auth()
+  async getOrVerifyToken(
+    @Query('token') token?: string,
+    @Query('id') id?: string,
+  ) {
+    if (typeof token === 'string') {
+      const [isValid] = await this.authService.verifyCustomToken(token)
+      return isValid
+    }
+    if (typeof id === 'string') {
+      return await this.authService.getToken(id)
+    }
+    return await this.authService.getAllAccessToken()
+  }
+
+  @Post('token')
+  @Auth()
+  async generateToken(@Body({ schema: TokenSchema }) body: TokenDto) {
+    return this.authService.createAccessToken(body)
+  }
+
+  @Delete('token')
+  @Auth()
+  async deleteToken(@Query({ schema: StringIdSchema }) query: StringIdDto) {
+    const { id } = query
+    const secret = await this.authService.getToken(id)
+    if (!secret) {
+      throw createAppException(AppErrorCode.AUTH_TOKEN_NOT_FOUND)
+    }
+    await this.authService.deleteToken(id)
+
+    this.eventEmitter.emit(EventBusEvents.TokenExpired, id)
+    return 'OK'
+  }
+
+  @Patch('as-owner')
+  @Auth()
+  async oauthAsOwner() {
+    return this.authService.setCurrentOauthAsOwner()
+  }
+
+  @Get('session')
+  @HttpCache({
+    disable: true,
+  })
+  async getSession(@Req() req: FastifyBizRequest) {
+    const session = await this.authService.getSessionUser(req.raw)
+
+    if (!session) {
+      return null
+    }
+
+    const account = await this.authService.getOauthUserAccount(
+      session.providerAccountId,
+    )
+
+    return {
+      ...session.user,
+      ...account,
+      ...omit(session, ['session', 'user']),
+
+      id: session?.user?.id ?? session.providerAccountId,
+    }
+  }
+
+  @Get('providers')
+  @HttpCache({
+    disable: true,
+  })
+  async getProviders() {
+    return this.authInstance.get().api.getProviders()
+  }
+}

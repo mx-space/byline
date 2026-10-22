@@ -1,0 +1,357 @@
+import { mxLexicalToMarkdown } from '@mx-space/editor'
+import { Injectable } from '@nestjs/common'
+import { nanoid } from 'nanoid'
+
+import {
+  BLOCK_ID_STATE_KEY,
+  NODE_STATE_KEY,
+} from '~/constants/lexical.constant'
+import { ContentFormat } from '~/shared/types/content-format.type'
+import { extractLexicalTranslatableProperties } from '~/utils/lexical-translatable-property.util'
+import { truncateAtBoundary } from '~/utils/text-summary.util'
+import { md5 } from '~/utils/tool.util'
+
+const KNOWN_STRUCTURAL_PROPS = new Set([
+  'children',
+  'type',
+  'version',
+  'direction',
+  'format',
+  'indent',
+  'style',
+  'detail',
+  'mode',
+  'text',
+  'tag',
+  'listType',
+  'start',
+  'value',
+  'url',
+  'rel',
+  'target',
+  'colSpan',
+  'headerState',
+  'width',
+  NODE_STATE_KEY,
+])
+
+export interface LexicalRootBlock {
+  id: string | null
+  type: string
+  text: string
+  fingerprint: string
+  index: number
+}
+
+@Injectable()
+export class LexicalService {
+  private createBlockId() {
+    return nanoid(8)
+  }
+
+  private parseEditorState(content: string): any | null {
+    try {
+      return JSON.parse(content)
+    } catch {
+      return null
+    }
+  }
+
+  private getNodeState(node: any): Record<string, any> | null {
+    const state = node?.[NODE_STATE_KEY]
+    if (!state || typeof state !== 'object' || Array.isArray(state)) {
+      return null
+    }
+    return state
+  }
+
+  private readBlockId(node: any): string | null {
+    const state = this.getNodeState(node)
+    const blockId = state?.[BLOCK_ID_STATE_KEY]
+    if (typeof blockId !== 'string' || !blockId.trim()) {
+      return null
+    }
+    return blockId.trim()
+  }
+
+  private writeBlockId(node: any, blockId: string): boolean {
+    let changed = false
+
+    if (!node[NODE_STATE_KEY] || typeof node[NODE_STATE_KEY] !== 'object') {
+      node[NODE_STATE_KEY] = {}
+      changed = true
+    }
+
+    if (node[NODE_STATE_KEY][BLOCK_ID_STATE_KEY] !== blockId) {
+      node[NODE_STATE_KEY][BLOCK_ID_STATE_KEY] = blockId
+      changed = true
+    }
+
+    return changed
+  }
+
+  private normalizeText(text: string): string {
+    return text.replaceAll(/\s+/g, ' ').trim()
+  }
+
+  private isNestedEditorState(
+    value: unknown,
+  ): value is { root: { children: any[] } } {
+    return (
+      !!value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      'root' in value &&
+      !!value.root &&
+      typeof value.root === 'object' &&
+      'children' in value.root &&
+      Array.isArray(value.root.children)
+    )
+  }
+
+  private extractBlockText(node: any): string {
+    if (!node) return ''
+
+    if (node.type === 'text') {
+      return String(node.text || '')
+    }
+
+    if (node.type === 'linebreak') {
+      return '\n'
+    }
+
+    if (typeof node.code === 'string') {
+      return node.code
+    }
+
+    // Include snapshot content for fingerprinting (e.g., excalidraw)
+    if (typeof node.snapshot === 'string') {
+      return node.snapshot
+    }
+
+    const segments: string[] = extractLexicalTranslatableProperties(node).map(
+      ({ text }) => text,
+    )
+
+    if (
+      node.type === 'mermaid' &&
+      typeof node.diagram === 'string' &&
+      node.diagram.trim()
+    ) {
+      segments.push(node.diagram)
+    }
+
+    if (node.type === 'image') {
+      for (const field of ['caption', 'altText']) {
+        if (typeof node[field] === 'string' && node[field].trim()) {
+          segments.push(node[field])
+        }
+      }
+    }
+
+    if (node.type === 'gallery' && Array.isArray(node.images)) {
+      for (const image of node.images) {
+        if (typeof image?.alt === 'string' && image.alt.trim()) {
+          segments.push(image.alt)
+        }
+      }
+    }
+
+    if (node.type === 'poll') {
+      if (typeof node.question === 'string' && node.question.trim()) {
+        segments.push(node.question)
+      }
+
+      if (Array.isArray(node.options)) {
+        for (const option of node.options) {
+          if (
+            option &&
+            typeof option === 'object' &&
+            typeof option.label === 'string' &&
+            option.label.trim()
+          ) {
+            segments.push(option.label)
+          }
+        }
+      }
+    }
+
+    if (Array.isArray(node.children)) {
+      const childText = node.children
+        .map((child: any) => this.extractBlockText(child))
+        .join('')
+      if (childText) {
+        segments.push(childText)
+      }
+    }
+
+    for (const [key, rawValue] of Object.entries(
+      node as Record<string, unknown>,
+    )) {
+      const value = rawValue
+      if (KNOWN_STRUCTURAL_PROPS.has(key)) continue
+
+      if (this.isNestedEditorState(value)) {
+        const nested = value.root.children
+          .map((child: any) => this.extractBlockText(child))
+          .join('\n')
+        if (nested) {
+          segments.push(nested)
+        }
+        continue
+      }
+
+      if (Array.isArray(value)) {
+        const nestedSegments: string[] = []
+        for (const item of value) {
+          if (!this.isNestedEditorState(item)) continue
+          const nested = item.root.children
+            .map((child: any) => this.extractBlockText(child))
+            .join('\n')
+          if (nested) {
+            nestedSegments.push(nested)
+          }
+        }
+        if (nestedSegments.length) {
+          segments.push(nestedSegments.join('\n'))
+        }
+      }
+    }
+
+    return segments.join('\n')
+  }
+
+  normalizeBlockIds(content: string): { content: string; changed: boolean } {
+    const editorState = this.parseEditorState(content)
+    if (!editorState?.root || !Array.isArray(editorState.root.children)) {
+      return { content, changed: false }
+    }
+
+    let changed = false
+    const used = new Set<string>()
+
+    for (const child of editorState.root.children) {
+      if (!child || typeof child !== 'object') continue
+
+      let blockId = this.readBlockId(child)
+      if (!blockId || used.has(blockId)) {
+        blockId = this.createBlockId()
+      }
+
+      if (this.writeBlockId(child, blockId)) {
+        changed = true
+      }
+
+      used.add(blockId)
+    }
+
+    return changed
+      ? { content: JSON.stringify(editorState), changed: true }
+      : { content, changed: false }
+  }
+
+  extractRootBlockNodes(
+    content: string,
+  ): Array<{ id: string | null; type: string; node: any; index: number }> {
+    const editorState = this.parseEditorState(content)
+    if (!editorState?.root || !Array.isArray(editorState.root.children)) {
+      return []
+    }
+
+    return editorState.root.children
+      .map((child: any, index: number) => {
+        if (!child || typeof child !== 'object') return null
+        return {
+          id: this.readBlockId(child),
+          type: typeof child.type === 'string' ? child.type : 'unknown',
+          node: child,
+          index,
+        }
+      })
+      .filter(Boolean) as Array<{
+      id: string | null
+      type: string
+      node: any
+      index: number
+    }>
+  }
+
+  extractRootBlocks(content: string): LexicalRootBlock[] {
+    return this.extractRootBlockNodes(content).map(
+      ({ id, type, node, index }) => {
+        const text = this.extractBlockText(node)
+        const normalized = this.normalizeText(text)
+        return {
+          id,
+          type,
+          text,
+          fingerprint: md5(`${type}:${normalized}`),
+          index,
+        } satisfies LexicalRootBlock
+      },
+    )
+  }
+
+  lexicalToMarkdown(editorState: string): string {
+    return mxLexicalToMarkdown(editorState)
+  }
+
+  /**
+   * Extract a clean preview/summary from a Lexical editor state. Walks the
+   * root children, picks the first paragraph (or any first block carrying
+   * meaningful text if no paragraph exists), normalizes whitespace, and
+   * truncates to `maxLength` at a locale-aware sentence/word boundary so
+   * the teaser never ends mid-word (Latin) or mid-sentence (CJK).
+   * Returns `null` when the content is unparseable or no textual block is
+   * found, so callers can fall back to a different source (e.g. the
+   * markdown-rendered `text`).
+   */
+  extractSummaryFromLexical(
+    content: string,
+    maxLength = 150,
+    locale?: string,
+  ): string | null {
+    const editorState = this.parseEditorState(content)
+    if (!editorState?.root || !Array.isArray(editorState.root.children)) {
+      return null
+    }
+
+    const pickFromBlock = (child: any): string => {
+      const text = this.extractBlockText(child)
+      return this.normalizeText(text)
+    }
+
+    let firstNonEmpty: string | null = null
+    for (const child of editorState.root.children) {
+      if (!child || typeof child !== 'object') continue
+      const type = typeof child.type === 'string' ? child.type : ''
+      const text = pickFromBlock(child)
+      if (!text) continue
+      if (firstNonEmpty === null) {
+        firstNonEmpty = text
+      }
+      if (type === 'paragraph') {
+        return truncateAtBoundary(text, maxLength, locale)
+      }
+    }
+
+    if (!firstNonEmpty) return null
+    return truncateAtBoundary(firstNonEmpty, maxLength, locale)
+  }
+
+  normalizeContentForStorage<
+    T extends {
+      contentFormat?: ContentFormat | string | null
+      content?: string | null
+    },
+  >(doc: T): boolean {
+    if (doc.contentFormat === ContentFormat.Lexical && doc.content) {
+      const normalized = this.normalizeBlockIds(doc.content)
+      if (normalized.changed) {
+        doc.content = normalized.content
+      }
+      return normalized.changed
+    }
+    return false
+  }
+}
