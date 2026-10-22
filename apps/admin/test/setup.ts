@@ -14,8 +14,14 @@
 // tests opt back into specific values by reassigning before module import.
 // Guard for node-environment tests (e.g. `@vitest-environment node`) where
 // `window` is undefined; setup files run for every test regardless of env.
+import { MotionGlobalConfig } from 'motion/react'
 import { createElement, type PropsWithChildren } from 'react'
 import { vi } from 'vitest'
+
+// happy-dom's Animation.cancel() rejects `finished`, and motion never awaits
+// that promise when it stops an animation, so it surfaces as an unhandled
+// AbortError that fails the run.
+MotionGlobalConfig.skipAnimations = true
 
 if (typeof window !== 'undefined') {
   ;(window as unknown as { injectData?: Record<string, string> }).injectData ??=
