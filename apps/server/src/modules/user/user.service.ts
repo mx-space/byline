@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { hashPassword } from 'better-auth/crypto'
 
 import { AppErrorCode, createAppException } from '~/common/errors'
+import { EventBusEvents } from '~/constants/event-bus.constant'
 import { ApiCacheService } from '~/processors/redis/api-cache.service'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 import { getAvatar } from '~/utils/tool.util'
@@ -45,6 +47,7 @@ export class UserService {
     private readonly userRepository: UserRepository,
     private readonly snowflakeService: SnowflakeService,
     private readonly apiCache: ApiCacheService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   toDetail(row: UserRow) {
@@ -199,7 +202,13 @@ export class UserService {
     if (!row.deactivatedAt) {
       await this.userRepository.setDeactivatedAt(id, new Date())
     }
-    await this.userRepository.deleteSessionsForUser(id)
+    const [sessionTokens, apiKeyIds] = await Promise.all([
+      this.userRepository.deleteSessionsForUser(id),
+      this.userRepository.listApiKeyIds(id),
+    ])
+    for (const token of [...sessionTokens, ...apiKeyIds]) {
+      this.eventEmitter.emit(EventBusEvents.TokenExpired, token)
+    }
     await this.apiCache.invalidate()
     return this.getDetail(id)
   }
@@ -218,6 +227,7 @@ export class UserService {
     user: Omit<UserCreateInput, 'id' | 'isProfileOnly'>
     password: string
     claimInviteId?: string
+    onlyIfFirst?: boolean
   }) {
     const username = input.user.username?.trim().toLowerCase() || null
     await this.assertIdentityAvailable(username, input.user.email)
@@ -228,6 +238,7 @@ export class UserService {
         accountId: this.snowflakeService.nextId(),
         passwordHash: await hashPassword(input.password),
         claimInviteId: input.claimInviteId,
+        onlyIfFirst: input.onlyIfFirst,
       })
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -291,7 +302,11 @@ export class UserService {
         url: dto.url || null,
       },
       password: dto.password,
+      onlyIfFirst: true,
     })
-    return this.toDetail(created!)
+    if (!created) {
+      throw createAppException(AppErrorCode.USER_ALREADY_EXISTS)
+    }
+    return this.toDetail(created)
   }
 }

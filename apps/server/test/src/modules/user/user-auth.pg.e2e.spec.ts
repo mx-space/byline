@@ -5,6 +5,7 @@ import {
 } from 'test/helper/pg-verify-url'
 
 import { AppErrorCode } from '~/common/errors'
+import { EventBusEvents } from '~/constants/event-bus.constant'
 import { accounts, categories, postAuthors, posts } from '~/database/schema'
 import { CreateAuth } from '~/modules/auth/auth.implement'
 import { UserRepository } from '~/modules/user/user.repository'
@@ -22,6 +23,7 @@ describe('users, invites and sign-in gates (PostgreSQL)', () => {
   let users: UserService
   let invites: UserInviteService
   const snowflake = new SnowflakeService()
+  const eventEmitter = { emit: vi.fn() }
 
   const signIn = (email: string, password = PASSWORD) =>
     auth.api.signInEmail({ body: { email, password } })
@@ -35,9 +37,12 @@ describe('users, invites and sign-in gates (PostgreSQL)', () => {
       'http://127.0.0.1:2333',
       snowflake,
     ))
-    users = new UserService(new UserRepository(context.db), snowflake, {
-      invalidate: async () => {},
-    } as any)
+    users = new UserService(
+      new UserRepository(context.db),
+      snowflake,
+      { invalidate: async () => {} } as any,
+      eventEmitter as any,
+    )
     invites = new UserInviteService(
       new UserInviteRepository(context.db),
       users,
@@ -148,8 +153,13 @@ describe('users, invites and sign-in gates (PostgreSQL)', () => {
       [snowflake.nextId(), writer.id],
     )
 
+    eventEmitter.emit.mockClear()
     const deactivated = await users.deactivate(writer.id)
     expect(deactivated.deactivatedAt).not.toBeNull()
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      EventBusEvents.TokenExpired,
+      'stale-session',
+    )
     const remaining = await context.pool.query(
       'SELECT count(*)::int AS count FROM sessions WHERE user_id = $1',
       [writer.id],

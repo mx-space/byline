@@ -20,6 +20,7 @@ describe('public authors (PostgreSQL)', () => {
       new UserRepository(context.db),
       new SnowflakeService(),
       { invalidate: async () => {} } as any,
+      { emit: () => true } as any,
     )
     await context.db.insert(users).values([
       {

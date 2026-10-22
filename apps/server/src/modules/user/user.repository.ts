@@ -18,6 +18,7 @@ import {
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import {
   accounts,
+  apiKeys,
   postAuthors,
   posts,
   sessions,
@@ -300,8 +301,19 @@ export class UserRepository extends BaseRepository {
     accountId: string
     passwordHash: string
     claimInviteId?: string
+    onlyIfFirst?: boolean
   }): Promise<UserRow | null> {
     return this.db.transaction(async (tx) => {
+      if (input.onlyIfFirst) {
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended('users:first-login-user', 0))`,
+        )
+        const [{ count }] = await tx
+          .select({ count: sql<number>`count(*)::int` })
+          .from(users)
+          .where(eq(users.isProfileOnly, false))
+        if (Number(count) > 0) return null
+      }
       if (input.claimInviteId) {
         const claimed = await tx
           .update(userInvites)
@@ -449,7 +461,19 @@ export class UserRepository extends BaseRepository {
     return row ? mapRow(row) : null
   }
 
-  async deleteSessionsForUser(userId: string): Promise<void> {
-    await this.db.delete(sessions).where(eq(sessions.userId, userId))
+  async deleteSessionsForUser(userId: string): Promise<string[]> {
+    const rows = await this.db
+      .delete(sessions)
+      .where(eq(sessions.userId, userId))
+      .returning({ token: sessions.token })
+    return rows.map((row) => row.token)
+  }
+
+  async listApiKeyIds(userId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ id: apiKeys.id })
+      .from(apiKeys)
+      .where(or(eq(apiKeys.referenceId, userId), eq(apiKeys.userId, userId)))
+    return rows.map((row) => row.id)
   }
 }

@@ -1,4 +1,5 @@
 import { AppErrorCode } from '~/common/errors'
+import { EventBusEvents } from '~/constants/event-bus.constant'
 import type { UserRepository } from '~/modules/user/user.repository'
 import { UserService } from '~/modules/user/user.service'
 import type { UserRow } from '~/modules/user/user.types'
@@ -29,12 +30,14 @@ const createService = (row: UserRow) => {
     updateProfile: vi.fn(async () => row),
   }
   const apiCache = { invalidate: vi.fn() }
+  const eventEmitter = { emit: vi.fn() }
   const service = new UserService(
     repository as unknown as UserRepository,
     new SnowflakeService(),
     apiCache as any,
+    eventEmitter as any,
   )
-  return { service, repository, apiCache }
+  return { service, repository, apiCache, eventEmitter }
 }
 
 describe('UserService.updateProfile sign-in identity', () => {
@@ -110,5 +113,35 @@ describe('UserService public cache invalidation', () => {
     ).rejects.toMatchObject({ code: AppErrorCode.USER_IDENTITY_LOCKED })
 
     expect(apiCache.invalidate).not.toHaveBeenCalled()
+  })
+})
+
+describe('UserService.deactivate', () => {
+  it('expires every session token and API key of the user so open sockets drop', async () => {
+    const { service, repository, eventEmitter } = createService(baseRow)
+    Object.assign(repository, {
+      setDeactivatedAt: vi.fn(async () => baseRow),
+      deleteSessionsForUser: vi.fn(async () => ['session-a', 'session-b']),
+      listApiKeyIds: vi.fn(async () => ['key-1']),
+    })
+
+    await service.deactivate('2', '1')
+
+    expect(
+      eventEmitter.emit.mock.calls.map(([event, token]) => [event, token]),
+    ).toEqual([
+      [EventBusEvents.TokenExpired, 'session-a'],
+      [EventBusEvents.TokenExpired, 'session-b'],
+      [EventBusEvents.TokenExpired, 'key-1'],
+    ])
+  })
+
+  it('does not expire anything when deactivating yourself is refused', async () => {
+    const { service, eventEmitter } = createService(baseRow)
+
+    await expect(service.deactivate('2', '2')).rejects.toMatchObject({
+      code: AppErrorCode.INVALID_PARAMETER,
+    })
+    expect(eventEmitter.emit).not.toHaveBeenCalled()
   })
 })
