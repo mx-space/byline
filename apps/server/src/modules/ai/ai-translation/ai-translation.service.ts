@@ -1241,10 +1241,18 @@ export class AiTranslationService
     const { document, type } =
       await this.resolveArticleForTranslation(articleId)
     const source = this.toArticleContent(document)
+    const postSourceLang = normalizeTargetLangs([
+      this.getMetaLang(document) ?? '',
+    ])[0]
     const sourceLang =
       (data.sourceLang && normalizeTargetLangs([data.sourceLang])[0]) ||
-      this.getMetaLang(document) ||
+      postSourceLang ||
       'unknown'
+    if (lang === sourceLang || lang === postSourceLang) {
+      throw createAppException(AppErrorCode.INVALID_PARAMETER, {
+        message: `Cannot translate a post into its own source language: ${lang}`,
+      })
+    }
     const existing = await this.aiTranslationRepository.findByRef(
       articleId,
       type,

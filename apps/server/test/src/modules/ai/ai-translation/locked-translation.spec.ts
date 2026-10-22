@@ -173,6 +173,48 @@ describe('locked translations', () => {
     expect(eventManager.emit).toHaveBeenCalledTimes(1)
   })
 
+  it.each(['zh', 'ZH', ' zh '])(
+    'rejects a manual translation into the post source language (%s)',
+    async (lang) => {
+      const { repository, service } = buildService()
+
+      await expect(
+        service.writeManualTranslation('7001', lang, {
+          title: '标题',
+          content: lexicalContent,
+        }),
+      ).rejects.toMatchObject({ code: 'INVALID_PARAMETER', status: 400 })
+      expect(repository.upsert).not.toHaveBeenCalled()
+    },
+  )
+
+  it('rejects a manual translation into the source language it declares', async () => {
+    const { document, repository, service } = buildService()
+    document.meta = {} as any
+
+    await expect(
+      service.writeManualTranslation('7001', 'en', {
+        title: 'Title',
+        content: lexicalContent,
+        sourceLang: 'en',
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_PARAMETER' })
+    expect(repository.upsert).not.toHaveBeenCalled()
+  })
+
+  it('accepts a regional target of the source base language', async () => {
+    const { repository, service } = buildService()
+
+    await service.writeManualTranslation('7001', 'zh-TW', {
+      title: '標題',
+      content: lexicalContent,
+    })
+
+    expect(repository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ lang: 'zh-TW', sourceLang: 'zh' }),
+    )
+  })
+
   it('keeps a locked translation fresh after the source changes', () => {
     const consistency = new TranslationConsistencyService({} as any)
     const article = {
