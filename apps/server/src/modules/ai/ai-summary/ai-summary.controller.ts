@@ -25,7 +25,6 @@ import {
   CreateSummaryTranslationTaskSchema,
 } from '~/modules/ai/ai-task/ai-task.dto'
 import { AiTaskService } from '~/modules/ai/ai-task/ai-task.service'
-import { PostMetaBuilder } from '~/modules/post/post-meta-builder'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 import { type BasicPagerDto, BasicPagerSchema } from '~/shared/dto/pager.dto'
 import { endSse, initSse, sendSseEvent } from '~/utils/sse.util'
@@ -97,7 +96,7 @@ export class AiSummaryController {
     const result = await this.service.getAllSummaries(query)
     return withMeta(
       result.data,
-      new PostMetaBuilder()
+      new MetaObjectBuilder()
         .pagination(result.pagination)
         .articles(result.articles)
         .build(),

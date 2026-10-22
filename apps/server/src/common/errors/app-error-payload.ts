@@ -125,9 +125,6 @@ export type AppErrorPayloadMap = {
   [AppErrorCode.INIT_FORBIDDEN]: undefined
   [AppErrorCode.INIT_INVALID_BODY]: undefined
 
-  // note
-  [AppErrorCode.NOTE_FORBIDDEN]: undefined
-
   // user
   [AppErrorCode.USER_NOT_EXISTS]: undefined
   [AppErrorCode.USER_ALREADY_EXISTS]: undefined

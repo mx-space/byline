@@ -32,15 +32,12 @@ export const GlossaryMetaSchema = z
   })
   .strict()
 
-export const RelatedRefSchema = z
-  .object({
-    id: z.string(),
-    title: z.string(),
-    slug: z.string().optional(),
-    nid: z.number().optional(),
-    type: z.string().optional(),
-  })
-  .loose()
+export const ArticleRefSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string().optional(),
+  type: z.string().optional(),
+})
 
 export const InsightsMetaSchema = z
   .object({ hasInLocale: z.boolean() })
@@ -75,11 +72,11 @@ export const BaseResponseMetaSchema = z.object({
     ])
     .optional(),
   glossary: GlossaryMetaSchema.optional(),
+  articles: z.record(z.string(), ArticleRefSchema).optional(),
 })
 
 export const PostResponseMetaSchema = BaseResponseMetaSchema.extend({
   insights: InsightsMetaSchema.optional(),
-  articles: z.record(z.string(), RelatedRefSchema).optional(),
   summary: SummaryMetaSchema.optional(),
   tts: TtsMetaSchema.optional(),
 })
@@ -90,8 +87,8 @@ export type Pagination = z.infer<typeof PaginationSchema>
 export type ArticleTranslation = z.infer<typeof ArticleTranslationSchema>
 export type EntryTranslation = z.infer<typeof EntryTranslationSchema>
 export type GlossaryMeta = z.infer<typeof GlossaryMetaSchema>
-export type RelatedRef = z.infer<typeof RelatedRefSchema>
-export type ArticleRefMap = Record<string, RelatedRef>
+export type ArticleRef = z.infer<typeof ArticleRefSchema>
+export type ArticleRefMap = Record<string, ArticleRef>
 export type InsightsMeta = z.infer<typeof InsightsMetaSchema>
 export type TtsMeta = z.infer<typeof TtsMetaSchema>
 export type SummaryMeta = z.infer<typeof SummaryMetaSchema>

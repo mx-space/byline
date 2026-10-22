@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createAiGenerationMetricsMock } from '@/helper/ai-generation-metrics-mock'
 import { createPgRepositoryMock, now } from '@/helper/pg-repository-mock'
+import { AppErrorCode } from '~/common/errors'
 import { AppException } from '~/common/errors/exception.types'
 import { BusinessEvents, EventScope } from '~/constants/business-event.constant'
 import { CollectionRefTypes } from '~/constants/db.constant'
@@ -1073,5 +1074,20 @@ describe('AiTranslationService — language read fallback', () => {
     const titles = await service.findCachedTitlesByRefIds(['a', 'b'], 'pt-BR')
 
     expect(Object.fromEntries(titles)).toEqual({ a: 'Olá BR', b: 'Oi' })
+  })
+})
+
+describe('AiTranslationService — hidden articles', () => {
+  it('refuses public reads of an unpublished post with POST_HIDDEN_OR_ENCRYPTED', async () => {
+    const { databaseService, service } = createService()
+    databaseService.findGlobalById.mockResolvedValue({
+      document: articleDocument({ isPublished: false }),
+      type: CollectionRefTypes.Post,
+    })
+
+    await expect(
+      service.getTranslationForArticle('post-1', 'en'),
+    ).rejects.toMatchObject({ code: 'POST_HIDDEN_OR_ENCRYPTED' })
+    expect(Object.values(AppErrorCode)).not.toContain('NOTE_FORBIDDEN')
   })
 })

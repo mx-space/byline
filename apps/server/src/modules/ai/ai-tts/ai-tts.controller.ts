@@ -7,7 +7,6 @@ import { CurrentReaderId } from '~/common/decorators/current-user.decorator'
 import { HasAdminAccess } from '~/common/decorators/role.decorator'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
-import { PostMetaBuilder } from '~/modules/post/post-meta-builder'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 import { type BasicPagerDto, BasicPagerSchema } from '~/shared/dto/pager.dto'
 
@@ -88,7 +87,7 @@ export class AiTtsController {
     const result = await this.queryService.list(query)
     return withMeta(
       z.array(AiTtsViews.listItem).parse(result.data),
-      new PostMetaBuilder()
+      new MetaObjectBuilder()
         .pagination(result.pagination)
         .articles(result.articles)
         .build(),

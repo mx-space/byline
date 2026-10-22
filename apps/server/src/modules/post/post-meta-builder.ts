@@ -1,5 +1,4 @@
 import type {
-  ArticleRefMap,
   InsightsMeta,
   PostResponseMeta,
   SummaryMeta,
@@ -17,11 +16,6 @@ export class PostMetaBuilder extends MetaObjectBuilder<
 
   insights(value: InsightsMeta): this {
     ;(this.meta as PostResponseMeta).insights = value
-    return this
-  }
-
-  articles(value: ArticleRefMap): this {
-    ;(this.meta as PostResponseMeta).articles = value
     return this
   }
 

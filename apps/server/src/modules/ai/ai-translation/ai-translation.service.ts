@@ -1342,10 +1342,7 @@ export class AiTranslationService
     }
 
     if (!options?.ignoreVisibility && !this.isArticleVisible(article)) {
-      if (article.type === CollectionRefTypes.Post) {
-        throw createAppException(AppErrorCode.POST_HIDDEN_OR_ENCRYPTED)
-      }
-      throw createAppException(AppErrorCode.NOTE_FORBIDDEN)
+      throw createAppException(AppErrorCode.POST_HIDDEN_OR_ENCRYPTED)
     }
 
     return { article, document: article.document as ArticleDocument }

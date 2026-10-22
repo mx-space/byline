@@ -18,7 +18,6 @@ import { HasAdminAccess } from '~/common/decorators/role.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
-import { PostMetaBuilder } from '~/modules/post/post-meta-builder'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 import { type BasicPagerDto, BasicPagerSchema } from '~/shared/dto/pager.dto'
 import { endSse, initSse, sendSseEvent } from '~/utils/sse.util'
@@ -93,7 +92,7 @@ export class AiInsightsController {
     const result = await this.service.getAllInsights(query)
     return withMeta(
       result.data,
-      new PostMetaBuilder()
+      new MetaObjectBuilder()
         .pagination(result.pagination)
         .articles(result.articles)
         .build(),

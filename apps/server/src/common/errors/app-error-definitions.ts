@@ -422,12 +422,6 @@ export const APP_ERROR_DEFINITIONS = {
     message: 'Request body must be an object',
   },
 
-  // note
-  [AppErrorCode.NOTE_FORBIDDEN]: {
-    status: 403,
-    message: 'Please do not peek at private notes',
-  },
-
   // user
   [AppErrorCode.USER_NOT_EXISTS]: {
     status: 400,

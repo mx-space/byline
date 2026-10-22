@@ -76,10 +76,10 @@ describe('MetaObjectBuilder', () => {
     })
   })
 
-  test('PostMetaBuilder.articles sets a ref map', () => {
-    const meta = new PostMetaBuilder()
+  test('articles sets a ref map on any builder and drops legacy keys', () => {
+    const meta = new MetaObjectBuilder()
       .articles({
-        1: { id: '1', title: 'Article', type: 'post' },
+        1: { id: '1', title: 'Article', type: 'post', nid: 3 } as any,
       })
       .build()
 

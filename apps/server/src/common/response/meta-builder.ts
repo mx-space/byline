@@ -1,6 +1,10 @@
 import type { z } from 'zod'
 
-import type { EntryTranslation, GlossaryMeta } from './meta.types'
+import type {
+  ArticleRefMap,
+  EntryTranslation,
+  GlossaryMeta,
+} from './meta.types'
 import { BaseResponseMetaSchema } from './meta.types'
 
 type LegacyPaginationLike = {
@@ -57,6 +61,11 @@ export class MetaObjectBuilder<
 
   glossary(value: GlossaryMeta): this {
     ;(this.meta as Record<string, unknown>).glossary = value
+    return this
+  }
+
+  articles(value: ArticleRefMap): this {
+    ;(this.meta as Record<string, unknown>).articles = value
     return this
   }
 
