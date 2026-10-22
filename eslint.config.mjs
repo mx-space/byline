@@ -73,6 +73,10 @@ export default defineConfig(
     rules: { 'unused-imports/no-unused-vars': 0 },
   },
   {
+    files: ['apps/admin/**/*.{ts,tsx}'],
+    rules: { 'unicorn/better-regex': 0 },
+  },
+  {
     files: ['apps/server/test/**/*.ts'],
     rules: {
       'import/no-default-export': 'off',
