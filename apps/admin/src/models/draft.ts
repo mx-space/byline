@@ -1,6 +1,7 @@
 import type { PublishAiResourceRequest } from '~/api/publish-jobs'
 
 import type { Image, Pager } from './base'
+import type { PostSeo } from './post'
 
 export enum DraftRefType {
   Post = 'post',
@@ -93,10 +94,14 @@ export interface DraftResponse {
 }
 
 export interface PostSpecificData {
+  authors?: Array<string | { id: string }>
   categoryId?: string
+  image?: string | null
   pin?: boolean | string | null
   pinOrder?: number
+  seo?: PostSeo | null
   slug?: string
+  sourceLang?: string | null
   summary?: string | null
   tags?: string[]
 }

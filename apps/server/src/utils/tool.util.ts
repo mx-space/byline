@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { installPackage } from '@antfu/install-pkg'
 
-import { NODE_REQUIRE_PATH } from '~/constants/path.constant'
+import { DATA_DIR, NODE_REQUIRE_PATH } from '~/constants/path.constant'
 import { logger } from '~/global/consola.global'
 
 export const md5 = (text: string) =>
@@ -107,7 +107,7 @@ export const requireDepsWithInstall = async (deps: string) => {
     return require(require.resolve(deps))
   } catch {
     logger.info(`Installing ${deps}...`)
-    await installPackage(deps, { silent: false, cwd: NODE_REQUIRE_PATH })
+    await installPackage(deps, { silent: false, cwd: DATA_DIR })
     return require(deps)
   }
 }

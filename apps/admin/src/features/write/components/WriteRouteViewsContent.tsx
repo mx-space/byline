@@ -13,11 +13,14 @@ import {
   Image as ImageIcon,
   Loader2,
   Pencil,
+  Search,
   Send,
   SlidersHorizontal,
+  Users,
   WandSparkles,
 } from 'lucide-react'
 import type {
+  ComponentProps,
   CSSProperties,
   Dispatch,
   FormEvent,
@@ -41,7 +44,7 @@ import {
 } from 'react-router'
 import { toast } from 'sonner'
 
-import { AiQueryType, writerGenerate } from '~/api/ai'
+import { AiQueryType, getTranslationsByRef, writerGenerate } from '~/api/ai'
 import { getCategories, getTags } from '~/api/categories'
 import type { DraftWriteData } from '~/api/drafts'
 import {
@@ -61,6 +64,7 @@ import { getPostById } from '~/api/posts'
 import type { PublishAiResourceRequest, PublishTask } from '~/api/publish-jobs'
 import { createPublishJob } from '~/api/publish-jobs'
 import { AITaskStatus, getTask } from '~/api/tasks'
+import { getMe, getUsers } from '~/api/users'
 import { API_URL, WEB_URL } from '~/constants/env'
 import {
   APP_SHELL_HEADER_HEIGHT_CLASS,
@@ -90,6 +94,11 @@ import {
   type DraftRecoveryReviewData,
 } from '~/features/write/components/DraftRecoveryReview'
 import {
+  AuthorsPicker,
+  SeoFields,
+  SourceLangField,
+} from '~/features/write/components/PostBylineFields'
+import {
   normalizeTaskAiResources,
   publishAiResourceLabels,
 } from '~/features/write/components/publish-ai-choices'
@@ -100,6 +109,13 @@ import { VersionTreePanel } from '~/features/write/components/VersionTreePanel'
 import { MetaPresetSection } from '~/features/write/meta-presets'
 import type { DraftMergeConflict } from '~/features/write/utils/merge-draft-conflict'
 import { mergeDraftConflict } from '~/features/write/utils/merge-draft-conflict'
+import type { PostBylineState } from '~/features/write/utils/post-byline-state'
+import {
+  emptyPostBylineState,
+  postBylineFromModel,
+  postBylineFromSpecific,
+  postBylineToSpecific,
+} from '~/features/write/utils/post-byline-state'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import { useI18n } from '~/i18n'
@@ -145,7 +161,7 @@ import {
 
 type WriteKind = 'post'
 
-interface WriteFormState {
+interface WriteFormState extends PostBylineState {
   categoryId: string
   content: string
   images: NonNullable<RevisionSnapshot['images']>
@@ -173,6 +189,7 @@ interface ActiveDraftConflict {
 }
 
 const emptyState: WriteFormState = {
+  ...emptyPostBylineState,
   categoryId: '',
   content: '',
   images: [],
@@ -205,6 +222,15 @@ const POST_META_SCHEMA: MetaFieldsSchema = {
   tags: { description: 'Post tag list', type: 'string[]' },
   summary: {
     description: 'Post summary; leave empty to auto-generate.',
+    type: 'string',
+  },
+  seoTitle: {
+    description:
+      'SEO title for search engines; leave empty to use the post title.',
+    type: 'string',
+  },
+  seoDescription: {
+    description: 'SEO meta description, about 150 characters.',
     type: 'string',
   },
   pin: { description: 'Whether the post is pinned', type: 'boolean' },
@@ -743,6 +769,21 @@ function WritePage(props: { kind: WriteKind }) {
     queryKey: adminQueryKeys.ai.publishOptions(),
     staleTime: 5 * 60_000,
   })
+  const siteOptionsQuery = useQuery({
+    queryFn: () => getOption<{ defaultSourceLang?: string }>('site'),
+    queryKey: adminQueryKeys.settings.site(),
+    staleTime: 5 * 60_000,
+  })
+  const meQuery = useQuery({
+    queryFn: getMe,
+    queryKey: adminQueryKeys.users.me(),
+    staleTime: 5 * 60_000,
+  })
+  const authorsQuery = useQuery({
+    queryFn: () => getUsers({ page: 1, size: 100, status: 'all' }),
+    queryKey: adminQueryKeys.users.authors(),
+    staleTime: 60_000,
+  })
   const postDetailQuery = useCollectionDetailQuery(postsCollection, {
     enabled: isEditing,
     queryFn: () => getPostById(id),
@@ -837,6 +878,18 @@ function WritePage(props: { kind: WriteKind }) {
       routeBaseRevisionId,
     ],
   })
+  const translationsQuery = useQuery({
+    enabled: isEditing && publishConfirmOpen,
+    queryFn: () => getTranslationsByRef(id),
+    queryKey: adminQueryKeys.ai.lockedTranslations(id),
+  })
+  const lockedTranslationLangs = useMemo(
+    () =>
+      (translationsQuery.data?.translations ?? [])
+        .filter((translation) => translation.isLocked)
+        .map((translation) => translation.lang),
+    [translationsQuery.data],
+  )
   const newDraftsQuery = useQuery({
     enabled: !isEditing,
     queryFn: () => getNewDrafts(draftRefType),
@@ -935,6 +988,15 @@ function WritePage(props: { kind: WriteKind }) {
 
   const categories = categoriesList.items
   const tags = tagsQuery.data ?? []
+  const siteDefaultLang = siteOptionsQuery.data?.defaultSourceLang || ''
+  const meId = meQuery.data?.id
+  const authorCandidates = useMemo(() => {
+    const byId = new Map(
+      (detailModel?.authors ?? []).map((author) => [author.id, author]),
+    )
+    for (const user of authorsQuery.data?.data ?? []) byId.set(user.id, user)
+    return [...byId.values()]
+  }, [authorsQuery.data, detailModel?.authors])
   const activeNewDrafts = useMemo(
     () =>
       (newDraftsQuery.data ?? []).filter((draft) => draft.status === 'active'),
@@ -1048,6 +1110,19 @@ function WritePage(props: { kind: WriteKind }) {
   ])
 
   useEffect(() => {
+    if (isEditing) return
+    setState((previous) => {
+      const authors =
+        previous.authors.length > 0 || !meId ? previous.authors : [meId]
+      const sourceLang = previous.sourceLang || siteDefaultLang
+      if (authors === previous.authors && sourceLang === previous.sourceLang) {
+        return previous
+      }
+      return { ...previous, authors, sourceLang }
+    })
+  }, [isEditing, meId, siteDefaultLang])
+
+  useEffect(() => {
     const revision = baseRevisionQuery.data
     if (!revision || !detailModel || !isDetailLoaded || routeDraftId) return
     if (
@@ -1140,9 +1215,17 @@ function WritePage(props: { kind: WriteKind }) {
       taskId: string
     },
     unknown,
-    { aiResources: PublishAiResourceRequest[]; confirmDiverged: boolean }
+    {
+      aiResources: PublishAiResourceRequest[]
+      confirmDiverged: boolean
+      regenerateLockedTranslations: boolean
+    }
   >({
-    mutationFn: async ({ aiResources, confirmDiverged }) => {
+    mutationFn: async ({
+      aiResources,
+      confirmDiverged,
+      regenerateLockedTranslations,
+    }) => {
       const currentDraftId = draftId || routeDraftId
       const { baseline, data, fingerprint } =
         draftSession.getPublishInput(currentDraftId)
@@ -1165,6 +1248,7 @@ function WritePage(props: { kind: WriteKind }) {
         branchId: draft.id,
         confirmDiverged,
         expectedPublishedRevisionId: draft.document.publishedRevisionId,
+        regenerateLockedTranslations,
         revisionId: draft.headRevisionId,
       })
       return { draft, fingerprint, taskId: task.taskId }
@@ -1691,7 +1775,9 @@ function WritePage(props: { kind: WriteKind }) {
               onSaveDraft={saveDraftNow}
               postFields={
                 <PostFields
+                  authorCandidates={authorCandidates}
                   categories={categories}
+                  siteDefaultLang={siteDefaultLang}
                   state={state}
                   tags={tags}
                   updateField={updateField}
@@ -1733,11 +1819,13 @@ function WritePage(props: { kind: WriteKind }) {
           activeDocumentBranches.length - (selectedBranch ? 1 : 0),
         )}
         onClose={() => setPublishConfirmOpen(false)}
-        onConfirm={(resources) => {
+        lockedTranslationLangs={lockedTranslationLangs}
+        onConfirm={(resources, options) => {
           setPublishConfirmOpen(false)
           saveMutation.mutate({
             aiResources: resources,
             confirmDiverged: publishIsDiverged,
+            regenerateLockedTranslations: options.regenerateLockedTranslations,
           })
         }}
         onReviewDiff={
@@ -2255,7 +2343,9 @@ function SlugPill(props: {
 }
 
 function PostFields(props: {
+  authorCandidates: ComponentProps<typeof AuthorsPicker>['candidates']
   categories: CategoryEntity[]
+  siteDefaultLang: string
   state: WriteFormState
   tags: Array<{ count: number; name: string }>
   updateField: <TKey extends keyof WriteFormState>(
@@ -2271,6 +2361,23 @@ function PostFields(props: {
 
   return (
     <>
+      <PanelBlock
+        description={t('write.authors.description')}
+        icon={Users}
+        title={t('write.authors.title')}
+      >
+        <AuthorsPicker
+          candidates={props.authorCandidates}
+          onChange={(authors) => props.updateField('authors', authors)}
+          value={props.state.authors}
+        />
+        <SourceLangField
+          onChange={(value) => props.updateField('sourceLang', value)}
+          siteDefault={props.siteDefaultLang}
+          value={props.state.sourceLang}
+        />
+      </PanelBlock>
+
       <PanelBlock title={t('write.postFields.section.category')}>
         <Field label={t('write.postFields.category')} required>
           <SelectField
@@ -2348,6 +2455,18 @@ function PostFields(props: {
           />
         ) : null}
       </PanelBlock>
+
+      <PanelBlock
+        description={t('write.seo.sectionDescription')}
+        icon={Search}
+        title={t('write.seo.sectionTitle')}
+      >
+        <SeoFields
+          onChange={(key, value) => props.updateField(key, value)}
+          titlePlaceholder={props.state.title}
+          value={props.state}
+        />
+      </PanelBlock>
     </>
   )
 }
@@ -2363,7 +2482,7 @@ function MediaAndMetaFields(props: {
 }) {
   const { t } = useI18n()
   const images = buildWriteImages(props.state)
-  const cover = getMetaString(props.state.meta, 'cover')
+  const cover = props.state.image
 
   return (
     <>
@@ -2376,12 +2495,7 @@ function MediaAndMetaFields(props: {
           controlClassName="h-9 focus:border-neutral-400"
           label={t('write.section.image.coverLabel')}
           list="page-cover-image-options"
-          onChange={(value) =>
-            props.updateField(
-              'meta',
-              setMetaValue(props.state.meta, 'cover', value),
-            )
-          }
+          onChange={(value) => props.updateField('image', value)}
           placeholder={t('write.section.image.coverPlaceholder')}
           value={cover}
         />
@@ -2404,12 +2518,7 @@ function MediaAndMetaFields(props: {
         <CoverGenerationEntry
           currentCover={cover}
           draftId={props.draftId}
-          onSelectCover={(url) =>
-            props.updateField(
-              'meta',
-              setMetaValue(props.state.meta, 'cover', url),
-            )
-          }
+          onSelectCover={(url) => props.updateField('image', url)}
           refId={props.refId}
           summary={props.state.summary}
           text={props.state.text}
@@ -2469,27 +2578,6 @@ function asRecord(
   return isRecord(value) ? value : fallback
 }
 
-function getMetaString(meta: Record<string, unknown>, key: string) {
-  const value = meta[key]
-  return typeof value === 'string' ? value : ''
-}
-
-function setMetaValue(
-  meta: Record<string, unknown>,
-  key: string,
-  value: unknown,
-) {
-  const next = { ...meta }
-
-  if (value == null || value === '') {
-    delete next[key]
-  } else {
-    next[key] = value
-  }
-
-  return next
-}
-
 function buildWriteImages(state: WriteFormState): ImageModel[] {
   const images = new Map<string, ImageModel>()
   const addImage = (image: ImageModel | null | undefined) => {
@@ -2508,7 +2596,7 @@ function buildWriteImages(state: WriteFormState): ImageModel[] {
 
   for (const image of state.images) addImage(image)
   for (const src of pickImagesFromMarkdown(state.text)) addImageSrc(src)
-  addImageSrc(getMetaString(state.meta, 'cover'))
+  addImageSrc(state.image)
 
   return [...images.values()]
 }
@@ -2609,6 +2697,7 @@ function getPublishedContent(model: WriteModel): PublishedWriteContent {
 function fromModel(_kind: WriteKind, post: WriteModel): WriteFormState {
   return {
     ...emptyState,
+    ...postBylineFromModel(post),
     categoryId: post.categoryId,
     content: post.content ?? '',
     images: post.images ?? [],
@@ -2631,6 +2720,7 @@ function fromRevision(
   const specific = (draft.typeSpecificData ?? {}) as Record<string, any>
   return {
     ...previous,
+    ...postBylineFromSpecific(specific, previous),
     content: draft.content ?? '',
     images: draft.images ?? previous.images,
     meta: asRecord(draft.meta, previous.meta),
@@ -2730,6 +2820,36 @@ function buildDraftRecoveryReviewData(
     ancestorState?.images,
   )
   add('write.recovery.field.meta', current.meta, next.meta, ancestorState?.meta)
+  add(
+    'write.authors.title',
+    current.authors,
+    next.authors,
+    ancestorState?.authors,
+  )
+  add(
+    'write.sourceLang.label',
+    current.sourceLang,
+    next.sourceLang,
+    ancestorState?.sourceLang,
+  )
+  add(
+    'write.section.image.coverLabel',
+    current.image,
+    next.image,
+    ancestorState?.image,
+  )
+  add(
+    'write.seo.sectionTitle',
+    [current.seoTitle, current.seoDescription, current.seoImage],
+    [next.seoTitle, next.seoDescription, next.seoImage],
+    ancestorState
+      ? [
+          ancestorState.seoTitle,
+          ancestorState.seoDescription,
+          ancestorState.seoImage,
+        ]
+      : undefined,
+  )
 
   const bodyChanged = current.content !== next.content
 
@@ -2828,6 +2948,7 @@ function toDraftData(
     text: state.text,
     title: state.title.trim() || state.title,
     typeSpecificData: {
+      ...postBylineToSpecific(state),
       categoryId: state.categoryId,
       pin: state.pin,
       pinOrder: state.pin ? Number(state.pinOrder) || 1 : undefined,
@@ -3076,6 +3197,8 @@ function getWriteAgentMetaFields(state: WriteFormState) {
   return {
     pin: state.pin,
     pinOrder: Number(state.pinOrder) || 0,
+    seoDescription: state.seoDescription,
+    seoTitle: state.seoTitle,
     slug: state.slug,
     summary: state.summary,
     tags: splitCommaList(state.tags),
@@ -3095,6 +3218,10 @@ function applyWriteAgentMetaUpdates(
     next.tags = updates.tags.map((tag) => String(tag)).join(', ')
   }
   if ('summary' in updates) next.summary = String(updates.summary ?? '')
+  if ('seoTitle' in updates) next.seoTitle = String(updates.seoTitle ?? '')
+  if ('seoDescription' in updates) {
+    next.seoDescription = String(updates.seoDescription ?? '')
+  }
   if ('pin' in updates) {
     next.pin = Boolean(updates.pin)
     if (!next.pin) next.pinOrder = '0'

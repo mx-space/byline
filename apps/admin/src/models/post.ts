@@ -1,3 +1,5 @@
+import type { AuthorProfile } from '~/api/users'
+
 import type { Image, Pager } from './base'
 
 export interface PostResponse {
@@ -5,7 +7,17 @@ export interface PostResponse {
   pagination: Pager
 }
 
+export interface PostSeo {
+  description?: string | null
+  image?: string | null
+  title?: string | null
+}
+
 export interface PostModel {
+  authors?: AuthorProfile[]
+  image?: string | null
+  seo?: PostSeo | null
+  sourceLang?: string | null
   tags: string[]
   id: string
   text: string
