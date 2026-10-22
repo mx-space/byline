@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
-import { authBackdropStyle } from '~/lib/auth-backdrop'
+import { authBackdropClassName, authBackdropStyle } from '~/lib/auth-backdrop'
+import { cn } from '~/utils/cn'
 
 import faviconUrl from '../../../../favicon.png'
 
@@ -11,21 +12,19 @@ export function AuthScreen(props: {
 }) {
   return (
     <main
-      className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-neutral-950 p-4 text-white"
+      className={cn(authBackdropClassName, 'flex items-center justify-center')}
       style={authBackdropStyle}
     >
       <section className="flex w-full max-w-sm flex-col items-center">
         <img
           alt=""
-          className="mb-4 size-16 rounded-xl shadow-2xl ring-4 ring-white/20"
+          className="mb-4 size-16 rounded-xl shadow-brand"
           decoding="async"
           src={faviconUrl}
         />
-        <h1 className="text-xl font-medium tracking-wide drop-shadow-lg">
-          {props.title}
-        </h1>
+        <h1 className="text-xl font-medium tracking-wide">{props.title}</h1>
         {props.subtitle ? (
-          <p className="mt-1 text-center text-sm text-white/70">
+          <p className="mt-1 text-center text-sm text-fg-muted">
             {props.subtitle}
           </p>
         ) : null}
@@ -38,7 +37,10 @@ export function AuthScreen(props: {
 }
 
 export const authInputClassName =
-  'h-[38px] rounded-full border-0 bg-white/20 px-4 text-center text-sm text-white backdrop-blur-md placeholder:text-white/60 focus:bg-white/25 focus:ring-2 focus:ring-white/50 dark:border-0 dark:bg-white/20 dark:text-white'
+  'h-[38px] rounded-full px-4 text-center text-sm focus-visible:ring-accent/25'
 
 export const authPrimaryButtonClassName =
-  'h-[38px] w-full rounded-full bg-white/90 text-sm font-medium text-neutral-900 transition-colors hover:bg-white disabled:opacity-60'
+  'h-[38px] w-full rounded-full bg-accent text-sm font-medium text-white shadow-xs transition-colors hover:bg-accent-hover focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-accent/30 disabled:opacity-60'
+
+export const authLinkClassName =
+  'text-center text-xs text-fg-muted transition-colors hover:text-fg'

@@ -21,6 +21,7 @@ import { buildHashRouteUrl, readErrorMessage } from '../utils/login'
 import { AppleIcon } from './AppleIcon'
 import {
   authInputClassName,
+  authLinkClassName,
   authPrimaryButtonClassName,
   AuthScreen,
 } from './AuthScreen'
@@ -178,10 +179,7 @@ export function LoginRouteViewContent() {
               t('auth.login.submit')
             )}
           </button>
-          <Link
-            className="text-center text-xs text-white/70 hover:text-white"
-            to="/reset-password"
-          >
+          <Link className={authLinkClassName} to="/reset-password">
             {t('auth.login.forgotPassword')}
           </Link>
         </form>
@@ -228,7 +226,7 @@ export function LoginRouteViewContent() {
       ) : null}
 
       {allowLoginQuery.isLoading ? (
-        <div className="mt-6 flex items-center gap-2 text-xs text-white/70">
+        <div className="mt-6 flex items-center gap-2 text-xs text-fg-muted">
           <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
           {t('auth.login.loadingProfile')}
         </div>

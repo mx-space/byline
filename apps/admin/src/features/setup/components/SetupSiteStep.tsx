@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { patchInitConfig } from '~/api/system'
 import { useI18n } from '~/i18n'
 
+import { cardClassName } from '../constants'
 import type { SetupUrls } from '../types/setup'
 import { getErrorMessage } from '../utils/setup'
 import { StepActions, UrlInput } from './SetupPrimitives'
@@ -40,7 +41,7 @@ export function SetupSiteStep(props: {
   }
 
   return (
-    <div className="rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-xl">
+    <div className={cardClassName}>
       <form onSubmit={submit}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">

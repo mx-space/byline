@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { useI18n } from '~/i18n'
 import { TextInput } from '~/ui/primitives/text-field'
 import { authClient } from '~/utils/authjs/auth'
+import { cn } from '~/utils/cn'
 
 import {
   buildHashRouteUrl,
@@ -15,6 +16,7 @@ import {
 } from '../utils/login'
 import {
   authInputClassName,
+  authLinkClassName,
   authPrimaryButtonClassName,
   AuthScreen,
 } from './AuthScreen'
@@ -36,10 +38,7 @@ export function ResetPasswordRouteView() {
       title={t('auth.reset.title')}
     >
       {token ? <ResetForm token={token} /> : <RequestForm />}
-      <Link
-        className="mt-4 text-center text-xs text-white/70 hover:text-white"
-        to="/login"
-      >
+      <Link className={cn(authLinkClassName, 'mt-4')} to="/login">
         {t('auth.invite.backToLogin')}
       </Link>
     </AuthScreen>
@@ -75,7 +74,7 @@ function RequestForm() {
 
   if (sent) {
     return (
-      <p className="max-w-[280px] text-center text-sm text-white/80">
+      <p className="max-w-[280px] text-center text-sm text-fg-muted">
         {t('auth.reset.sent')}
       </p>
     )

@@ -14,6 +14,7 @@ import { TextInput } from '~/ui/primitives/text-field'
 import { readErrorMessage } from '../utils/login'
 import {
   authInputClassName,
+  authLinkClassName,
   authPrimaryButtonClassName,
   AuthScreen,
 } from './AuthScreen'
@@ -77,7 +78,10 @@ export function InviteAcceptRouteView() {
   if (inviteQuery.isLoading) {
     return (
       <AuthScreen title={t('auth.invite.title')}>
-        <Loader2 aria-hidden="true" className="size-5 animate-spin" />
+        <Loader2
+          aria-hidden="true"
+          className="size-5 animate-spin text-accent"
+        />
       </AuthScreen>
     )
   }
@@ -92,7 +96,7 @@ export function InviteAcceptRouteView() {
         subtitle={t(INVITE_ERROR_KEYS[code] ?? 'auth.invite.error.notFound')}
         title={t('auth.invite.title')}
       >
-        <Link className="text-sm text-white/80 hover:text-white" to="/login">
+        <Link className={authLinkClassName} to="/login">
           {t('auth.invite.backToLogin')}
         </Link>
       </AuthScreen>
