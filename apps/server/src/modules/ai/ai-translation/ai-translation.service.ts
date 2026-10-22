@@ -24,6 +24,7 @@ import {
   TaskStatus,
 } from '~/processors/task-queue'
 import { ContentFormat } from '~/shared/types/content-format.type'
+import { languageFallbackChain } from '~/utils/lang.util'
 import { md5 } from '~/utils/tool.util'
 
 import { ConfigsService } from '../../configs/configs.service'
@@ -1104,16 +1105,20 @@ export class AiTranslationService
     refIds: string[],
     lang: string,
   ): Promise<Map<string, string>> {
-    if (!refIds.length || !lang) return new Map()
-    const rows = await this.aiTranslationRepository.listByRefIdsAndLang(
-      refIds,
-      lang,
-    )
     const map = new Map<string, string>()
-    for (const row of rows) {
-      if (row.refId && row.title) {
-        map.set(row.refId, row.title)
+    let pending = refIds
+    for (const candidate of languageFallbackChain(lang)) {
+      if (!pending.length) break
+      const rows = await this.aiTranslationRepository.listByRefIdsAndLang(
+        pending,
+        candidate,
+      )
+      for (const row of rows) {
+        if (row.refId && row.title && !map.has(String(row.refId))) {
+          map.set(String(row.refId), row.title)
+        }
       }
+      pending = pending.filter((id) => !map.has(id))
     }
     return map
   }
@@ -1343,36 +1348,46 @@ export class AiTranslationService
     targetLang: string,
     options?: { ignoreVisibility?: boolean },
   ): Promise<AITranslationModel | null> {
-    const [{ document }, translation] = await Promise.all([
-      this.loadVisibleArticleOrThrow(articleId, options),
-      this.aiTranslationRepository.findByRefAndLang(articleId, targetLang),
-    ])
-
-    if (!translation) {
-      return null
-    }
-
+    const { document } = await this.loadVisibleArticleOrThrow(
+      articleId,
+      options,
+    )
     const snapshot = this.buildSnapshotFromDocument(articleId, document)
+
+    for (const lang of languageFallbackChain(targetLang)) {
+      const translation = await this.aiTranslationRepository.findByRefAndLang(
+        articleId,
+        lang,
+      )
+      if (!translation) continue
+      const usable = this.resolveServableTranslation(
+        snapshot,
+        document,
+        translation,
+      )
+      if (usable) return usable
+    }
+    return null
+  }
+
+  private resolveServableTranslation(
+    snapshot: TranslationSourceSnapshot,
+    document: ArticleDocument,
+    translation: AITranslationModel,
+  ): AITranslationModel | null {
     const status =
       this.translationConsistencyService.evaluateTranslationFreshness(
         snapshot,
         translation,
       )
-
-    if (status === 'valid') {
-      return translation
-    }
-
-    if (status !== 'stale') {
-      return null
-    }
-
-    const partial = this.lexicalPartialTranslationBuilder.build(
-      this.toArticleContent(document),
-      translation,
+    if (status === 'valid') return translation
+    if (status !== 'stale') return null
+    return (
+      this.lexicalPartialTranslationBuilder.build(
+        this.toArticleContent(document),
+        translation,
+      )?.translation ?? null
     )
-
-    return partial?.translation ?? null
   }
 
   async getValidTranslationsForArticles(
@@ -1382,10 +1397,31 @@ export class AiTranslationService
     validTranslations: Map<string, AITranslationModel>
     staleRefIds: string[]
   }> {
-    if (!articles.length) {
-      return { validTranslations: new Map(), staleRefIds: [] }
+    const validTranslations = new Map<string, AITranslationModel>()
+    const staleRefIds = new Set<string>()
+    let pending = articles
+    for (const lang of languageFallbackChain(targetLang)) {
+      if (!pending.length) break
+      const result = await this.getValidTranslationsForLang(pending, lang)
+      for (const [refId, translation] of result.validTranslations) {
+        validTranslations.set(refId, translation)
+        staleRefIds.delete(refId)
+      }
+      for (const refId of result.staleRefIds) {
+        if (!validTranslations.has(refId)) staleRefIds.add(refId)
+      }
+      pending = pending.filter((article) => !validTranslations.has(article.id))
     }
+    return { validTranslations, staleRefIds: [...staleRefIds] }
+  }
 
+  private async getValidTranslationsForLang(
+    articles: TranslationSourceSnapshot[],
+    targetLang: string,
+  ): Promise<{
+    validTranslations: Map<string, AITranslationModel>
+    staleRefIds: string[]
+  }> {
     const translations = await this.aiTranslationRepository.listByRefIdsAndLang(
       articles.map((article) => article.id),
       targetLang,
@@ -1489,9 +1525,9 @@ export class AiTranslationService
     const sourceLang = translations[0]?.sourceLang ?? null
 
     const snapshot = this.buildSnapshotFromDocument(articleId, document)
+    const candidates = languageFallbackChain(targetLang)
     const validLangs: string[] = []
-    const staleLangs: string[] = []
-    let matchedTranslation: AITranslationModel | null = null
+    const servable = new Map<string, AITranslationModel>()
 
     for (const t of translations) {
       const status =
@@ -1501,25 +1537,21 @@ export class AiTranslationService
         )
       if (status === 'valid') {
         validLangs.push(t.lang)
-        if (targetLang === t.lang) {
-          matchedTranslation = t
-        }
-      } else if (status === 'stale') {
-        staleLangs.push(t.lang)
-        if (targetLang === t.lang) {
-          matchedTranslation =
-            this.lexicalPartialTranslationBuilder.build(
-              this.toArticleContent(document),
-              t,
-            )?.translation ?? null
-        }
+        if (candidates.includes(t.lang)) servable.set(t.lang, t)
+      } else if (status === 'stale' && candidates.includes(t.lang)) {
+        const partial = this.lexicalPartialTranslationBuilder.build(
+          this.toArticleContent(document),
+          t,
+        )?.translation
+        if (partial) servable.set(t.lang, partial)
       }
     }
 
+    const servedLang = candidates.find((lang) => servable.has(lang))
     return {
       availableTranslations: validLangs,
       sourceLang,
-      translation: matchedTranslation,
+      translation: servedLang ? servable.get(servedLang)! : null,
     }
   }
 }

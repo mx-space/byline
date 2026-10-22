@@ -154,3 +154,50 @@ describe('TranslationEntryService', () => {
     expect(pipeline.exec).toHaveBeenCalled()
   })
 })
+
+describe('TranslationEntryService language fallback', () => {
+  it('fills entries missing in the regional language from the base language only', async () => {
+    const { repository, service } = createService()
+    repository.listByBatch.mockImplementation(async (lang: string) =>
+      lang === 'zh-HK'
+        ? [
+            {
+              keyType: 'entity',
+              keyPath: 'category.name',
+              lookupKey: 'cat-1',
+              translatedText: '港式分類',
+            },
+          ]
+        : lang === 'zh'
+          ? [
+              {
+                keyType: 'entity',
+                keyPath: 'category.name',
+                lookupKey: 'cat-1',
+                translatedText: '分类',
+              },
+              {
+                keyType: 'entity',
+                keyPath: 'category.name',
+                lookupKey: 'cat-2',
+                translatedText: '另一个',
+              },
+            ]
+          : [],
+    )
+
+    const result = await service.getTranslations('category.name', 'zh-HK', [
+      'cat-1',
+      'cat-2',
+    ])
+
+    expect(Object.fromEntries(result)).toEqual({
+      'cat-1': '港式分類',
+      'cat-2': '另一个',
+    })
+    expect(
+      repository.listByBatch.mock.calls.map((call: unknown[]) => call[0]),
+    ).toEqual(expect.arrayContaining(['zh-HK', 'zh']))
+    expect(repository.listByBatch).toHaveBeenCalledTimes(2)
+  })
+})

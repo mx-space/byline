@@ -6,7 +6,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { RedisKeys } from '~/constants/cache.constant'
 import { CategoryService } from '~/modules/category/category.service'
 import { RedisService } from '~/processors/redis/redis.service'
-import { normalizeLanguageCode } from '~/utils/lang.util'
+import { languageFallbackChain, normalizeLanguageCode } from '~/utils/lang.util'
 import { getRedisKey } from '~/utils/redis.util'
 
 import { ConfigsService } from '../../configs/configs.service'
@@ -51,6 +51,22 @@ type DictCacheEntry = Pick<
   'keyPath' | 'lang' | 'lookupKey' | 'translatedText'
 >
 
+const fillMissing = (
+  target: Map<TranslationEntryKeyPath, Map<string, string>>,
+  source: Map<TranslationEntryKeyPath, Map<string, string>>,
+) => {
+  for (const [keyPath, entries] of source) {
+    const existing = target.get(keyPath)
+    if (!existing) {
+      target.set(keyPath, entries)
+      continue
+    }
+    for (const [key, value] of entries) {
+      if (!existing.has(key)) existing.set(key, value)
+    }
+  }
+}
+
 @Injectable()
 export class TranslationEntryService {
   private readonly logger = new Logger(TranslationEntryService.name)
@@ -93,6 +109,28 @@ export class TranslationEntryService {
   }
 
   async getTranslationsBatch(
+    lang: string,
+    options: {
+      entityLookups?: TranslationBatchEntityLookup[]
+      dictLookups?: TranslationBatchDictLookup[]
+    },
+  ): Promise<TranslationBatchResult> {
+    const chain = languageFallbackChain(lang)
+    if (chain.length < 2) return this.getTranslationsBatchForLang(lang, options)
+
+    const [exact, ...fallbacks] = await Promise.all(
+      chain.map((candidate) =>
+        this.getTranslationsBatchForLang(candidate, options),
+      ),
+    )
+    for (const fallback of fallbacks) {
+      fillMissing(exact.entityMaps, fallback.entityMaps)
+      fillMissing(exact.dictMaps, fallback.dictMaps)
+    }
+    return exact
+  }
+
+  private async getTranslationsBatchForLang(
     lang: string,
     options: {
       entityLookups?: TranslationBatchEntityLookup[]

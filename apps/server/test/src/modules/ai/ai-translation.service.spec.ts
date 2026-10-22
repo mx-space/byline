@@ -947,3 +947,131 @@ describe('AiTranslationService — per-locale SEO', () => {
     })
   })
 })
+
+describe('AiTranslationService — language read fallback', () => {
+  const setup = (langs: string[]) => {
+    const ctx = createService()
+    ctx.databaseService.findGlobalById.mockResolvedValue({
+      document: articleDocument(),
+      type: CollectionRefTypes.Post,
+    })
+    const rows = langs.map((lang) => row({ lang, title: `title-${lang}` }))
+    ctx.repository.listByRefId.mockResolvedValue(rows)
+    ctx.repository.findByRefAndLang.mockImplementation(
+      async (_id: string, lang: string) =>
+        rows.find((item) => item.lang === lang) ?? null,
+    )
+    return ctx
+  }
+
+  it.each([
+    ['en-US', ['en-US', 'en'], 'en-US'],
+    ['en-US', ['en', 'ja'], 'en'],
+    ['zh-HK', ['zh', 'zh-TW'], 'zh'],
+    ['zh-TW', ['zh-TW', 'zh'], 'zh-TW'],
+  ])('serves %s from rows %j as %s', async (requested, langs, served) => {
+    const { service } = setup(langs)
+
+    const detail = await service.getTranslationAndAvailableLanguages(
+      'post-1',
+      requested,
+    )
+    const direct = await service.getTranslationForArticle('post-1', requested)
+
+    expect(detail.translation?.lang).toBe(served)
+    expect(direct?.lang).toBe(served)
+  })
+
+  it('does not serve a sibling region when the base row is missing', async () => {
+    const { service } = setup(['zh-TW', 'zh-CN'])
+
+    const detail = await service.getTranslationAndAvailableLanguages(
+      'post-1',
+      'zh-HK',
+    )
+
+    expect(detail.translation).toBeNull()
+    expect(detail.availableTranslations).toEqual(['zh-TW', 'zh-CN'])
+    await expect(
+      service.getTranslationForArticle('post-1', 'zh-HK'),
+    ).resolves.toBeNull()
+  })
+
+  it('falls back to the base row when the exact row is unusable', async () => {
+    const { service, translationConsistencyService } = setup(['en-US', 'en'])
+    translationConsistencyService.evaluateTranslationFreshness.mockImplementation(
+      (_snapshot: unknown, translation: any) =>
+        translation.lang === 'en-US' ? 'invalid' : 'valid',
+    )
+
+    const detail = await service.getTranslationAndAvailableLanguages(
+      'post-1',
+      'en-US',
+    )
+
+    expect(detail.translation?.lang).toBe('en')
+  })
+
+  it('resolves list translations per article, exact first then base', async () => {
+    const { repository, service, translationConsistencyService } =
+      createService()
+    const rowsByLang: Record<string, ReturnType<typeof row>[]> = {
+      'en-US': [row({ refId: 'a' as any, lang: 'en-US' })],
+      en: [
+        row({ refId: 'a' as any, lang: 'en' }),
+        row({ refId: 'b' as any, lang: 'en' }),
+      ],
+    }
+    repository.listByRefIdsAndLang.mockImplementation(
+      async (ids: string[], lang: string) =>
+        (rowsByLang[lang] ?? []).filter((item) =>
+          ids.includes(String(item.refId)),
+        ),
+    )
+    translationConsistencyService.partitionValidAndStaleTranslations.mockImplementation(
+      (_articles: unknown, translations: any[]) => ({
+        validTranslations: new Map(
+          translations.map((item) => [String(item.refId), item]),
+        ),
+        staleRefIds: [],
+        unknownTranslations: new Map(),
+      }),
+    )
+    const articles = ['a', 'b', 'c'].map((id) => ({
+      id,
+      title: id,
+      text: id,
+    }))
+
+    const { validTranslations } = await service.getValidTranslationsForArticles(
+      articles as any,
+      'en-US',
+    )
+
+    expect(validTranslations.get('a')?.lang).toBe('en-US')
+    expect(validTranslations.get('b')?.lang).toBe('en')
+    expect(validTranslations.has('c')).toBe(false)
+    expect(repository.listByRefIdsAndLang).toHaveBeenNthCalledWith(
+      2,
+      ['b', 'c'],
+      'en',
+    )
+  })
+
+  it('prefers the exact row for cached titles and fills the rest from the base', async () => {
+    const { repository, service } = createService()
+    repository.listByRefIdsAndLang.mockImplementation(
+      async (_ids: string[], lang: string) =>
+        lang === 'pt-BR'
+          ? [row({ refId: 'a' as any, lang, title: 'Olá BR' })]
+          : [
+              row({ refId: 'a' as any, lang, title: 'Olá' }),
+              row({ refId: 'b' as any, lang, title: 'Oi' }),
+            ],
+    )
+
+    const titles = await service.findCachedTitlesByRefIds(['a', 'b'], 'pt-BR')
+
+    expect(Object.fromEntries(titles)).toEqual({ a: 'Olá BR', b: 'Oi' })
+  })
+})

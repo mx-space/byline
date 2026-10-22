@@ -5,6 +5,15 @@ export const normalizeLanguageCode = (
 ): string | undefined =>
   normalizeSharedLanguageCode(input, { foldRegion: false })
 
+// A regional request falls back to its bare base language only. Sibling
+// regions are never substituted: zh-HK must not be served zh-TW or zh-CN.
+export const languageFallbackChain = (input?: string | null): string[] => {
+  const normalized = normalizeLanguageCode(input)
+  if (!normalized) return []
+  const base = normalized.split('-')[0]
+  return base !== normalized ? [normalized, base] : [normalized]
+}
+
 export const resolveRequestedLanguage = (
   input: unknown,
   fallback?: string,

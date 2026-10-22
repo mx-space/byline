@@ -1224,3 +1224,37 @@ describe('per-locale SEO on translated reads', () => {
     })
   })
 })
+
+describe('language read fallback reporting', () => {
+  it('reports the served base language when a regional request falls back', async () => {
+    const ai = createMockAiTranslationService()
+    const service = new TranslationService(ai as any, {} as any)
+    ai.getTranslationAndAvailableLanguages.mockResolvedValue({
+      availableTranslations: ['en'],
+      sourceLang: 'zh',
+      translation: {
+        lang: 'en',
+        sourceLang: 'zh',
+        title: 'Hello',
+        text: 'Body',
+        createdAt: new Date(),
+      },
+    })
+
+    const result = await service.translateArticle({
+      articleId: '1',
+      targetLang: 'en-us',
+      originalData: { title: '你好', text: '正文' },
+    })
+
+    expect(ai.getTranslationAndAvailableLanguages).toHaveBeenCalledWith(
+      '1',
+      'en-US',
+      undefined,
+    )
+    expect(buildArticleTranslationMeta(result, 'en-US')).toMatchObject({
+      isTranslated: true,
+      targetLang: 'en',
+    })
+  })
+})
