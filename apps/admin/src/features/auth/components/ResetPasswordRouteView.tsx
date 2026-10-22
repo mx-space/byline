@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 
 import { useI18n } from '~/i18n'
+import { Button } from '~/ui/primitives/button'
 import { TextInput } from '~/ui/primitives/text-field'
 import { authClient } from '~/utils/authjs/auth'
 import { cn } from '~/utils/cn'
@@ -14,12 +15,7 @@ import {
   readErrorMessage,
   readHashSearchParam,
 } from '../utils/login'
-import {
-  authInputClassName,
-  authLinkClassName,
-  authPrimaryButtonClassName,
-  AuthScreen,
-} from './AuthScreen'
+import { authFormClassName, authLinkClassName, AuthScreen } from './AuthScreen'
 
 export function ResetPasswordRouteView() {
   const { t } = useI18n()
@@ -74,38 +70,29 @@ function RequestForm() {
 
   if (sent) {
     return (
-      <p className="max-w-[280px] text-center text-sm text-fg-muted">
+      <p className="text-center text-base text-fg-muted">
         {t('auth.reset.sent')}
       </p>
     )
   }
 
   return (
-    <form
-      className="flex w-full max-w-[280px] flex-col gap-3"
-      onSubmit={submit}
-    >
+    <form className={authFormClassName} onSubmit={submit}>
       <TextInput
         aria-label={t('auth.reset.email')}
         autoComplete="email"
         autoFocus
-        controlClassName={authInputClassName}
         onChange={setEmail}
         placeholder={t('auth.reset.email')}
         type="email"
         value={email}
       />
-      <button
-        className={authPrimaryButtonClassName}
-        disabled={pending}
-        type="submit"
-      >
+      <Button className="w-full" disabled={pending} type="submit">
         {pending ? (
-          <Loader2 aria-hidden="true" className="mx-auto size-4 animate-spin" />
-        ) : (
-          t('auth.reset.requestSubmit')
-        )}
-      </button>
+          <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+        ) : null}
+        {t('auth.reset.requestSubmit')}
+      </Button>
     </form>
   )
 }
@@ -153,15 +140,11 @@ function ResetForm(props: { token: string }) {
   }
 
   return (
-    <form
-      className="flex w-full max-w-[280px] flex-col gap-3"
-      onSubmit={submit}
-    >
+    <form className={authFormClassName} onSubmit={submit}>
       <TextInput
         aria-label={t('auth.invite.password')}
         autoComplete="new-password"
         autoFocus
-        controlClassName={authInputClassName}
         onChange={setPassword}
         placeholder={t('auth.invite.password')}
         type="password"
@@ -170,23 +153,17 @@ function ResetForm(props: { token: string }) {
       <TextInput
         aria-label={t('auth.invite.confirmPassword')}
         autoComplete="new-password"
-        controlClassName={authInputClassName}
         onChange={setConfirm}
         placeholder={t('auth.invite.confirmPassword')}
         type="password"
         value={confirm}
       />
-      <button
-        className={authPrimaryButtonClassName}
-        disabled={pending}
-        type="submit"
-      >
+      <Button className="w-full" disabled={pending} type="submit">
         {pending ? (
-          <Loader2 aria-hidden="true" className="mx-auto size-4 animate-spin" />
-        ) : (
-          t('auth.reset.submit')
-        )}
-      </button>
+          <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+        ) : null}
+        {t('auth.reset.submit')}
+      </Button>
     </form>
   )
 }

@@ -5,7 +5,6 @@ import { toast } from 'sonner'
 import { patchInitConfig } from '~/api/system'
 import { useI18n } from '~/i18n'
 
-import { cardClassName } from '../constants'
 import type { SetupUrls } from '../types/setup'
 import { getErrorMessage } from '../utils/setup'
 import { StepActions, UrlInput } from './SetupPrimitives'
@@ -41,47 +40,45 @@ export function SetupSiteStep(props: {
   }
 
   return (
-    <div className={cardClassName}>
-      <form onSubmit={submit}>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <UrlInput
-              label={t('setup.site.webUrlLabel')}
-              onChange={(value) =>
-                setUrls((current) => ({ ...current, webUrl: value }))
-              }
-              value={urls.webUrl}
-            />
-            <UrlInput
-              label={t('setup.site.apiUrlLabel')}
-              onChange={(value) =>
-                setUrls((current) => ({ ...current, serverUrl: value }))
-              }
-              value={urls.serverUrl}
-            />
-            <UrlInput
-              label={t('setup.site.adminUrlLabel')}
-              onChange={(value) =>
-                setUrls((current) => ({ ...current, adminUrl: value }))
-              }
-              value={urls.adminUrl}
-            />
-            <UrlInput
-              label={t('setup.site.gatewayUrlLabel')}
-              onChange={(value) =>
-                setUrls((current) => ({ ...current, wsUrl: value }))
-              }
-              value={urls.wsUrl}
-            />
-          </div>
+    <form onSubmit={submit}>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <UrlInput
+            label={t('setup.site.webUrlLabel')}
+            onChange={(value) =>
+              setUrls((current) => ({ ...current, webUrl: value }))
+            }
+            value={urls.webUrl}
+          />
+          <UrlInput
+            label={t('setup.site.apiUrlLabel')}
+            onChange={(value) =>
+              setUrls((current) => ({ ...current, serverUrl: value }))
+            }
+            value={urls.serverUrl}
+          />
+          <UrlInput
+            label={t('setup.site.adminUrlLabel')}
+            onChange={(value) =>
+              setUrls((current) => ({ ...current, adminUrl: value }))
+            }
+            value={urls.adminUrl}
+          />
+          <UrlInput
+            label={t('setup.site.gatewayUrlLabel')}
+            onChange={(value) =>
+              setUrls((current) => ({ ...current, wsUrl: value }))
+            }
+            value={urls.wsUrl}
+          />
         </div>
+      </div>
 
-        <StepActions
-          canSubmit={canSubmit}
-          onPrev={props.onPrev}
-          submitting={submitting}
-        />
-      </form>
-    </div>
+      <StepActions
+        canSubmit={canSubmit}
+        onPrev={props.onPrev}
+        submitting={submitting}
+      />
+    </form>
   )
 }

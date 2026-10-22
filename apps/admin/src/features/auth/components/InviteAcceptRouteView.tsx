@@ -9,15 +9,11 @@ import { ApiRequestError } from '~/api/http'
 import { acceptInvite, getPublicInvite } from '~/api/users'
 import { useI18n } from '~/i18n'
 import type { TranslationKey } from '~/i18n/types'
+import { Button } from '~/ui/primitives/button'
 import { TextInput } from '~/ui/primitives/text-field'
 
 import { readErrorMessage } from '../utils/login'
-import {
-  authInputClassName,
-  authLinkClassName,
-  authPrimaryButtonClassName,
-  AuthScreen,
-} from './AuthScreen'
+import { authFormClassName, authLinkClassName, AuthScreen } from './AuthScreen'
 
 const INVITE_ERROR_KEYS: Record<string, TranslationKey> = {
   INVITE_ALREADY_ACCEPTED: 'auth.invite.error.accepted',
@@ -110,13 +106,9 @@ export function InviteAcceptRouteView() {
       subtitle={t('auth.invite.subtitle', { email: invite.email })}
       title={t('auth.invite.title')}
     >
-      <form
-        className="flex w-full max-w-[280px] flex-col gap-3"
-        onSubmit={submit}
-      >
+      <form className={authFormClassName} onSubmit={submit}>
         <TextInput
           aria-label={t('auth.invite.displayName')}
-          controlClassName={authInputClassName}
           onChange={setDisplayName}
           placeholder={t('auth.invite.displayName')}
           value={displayName ?? invite.displayName ?? ''}
@@ -125,7 +117,6 @@ export function InviteAcceptRouteView() {
           aria-label={t('auth.invite.username')}
           autoComplete="username"
           autoFocus
-          controlClassName={authInputClassName}
           onChange={setUsername}
           placeholder={t('auth.invite.username')}
           value={username}
@@ -133,7 +124,6 @@ export function InviteAcceptRouteView() {
         <TextInput
           aria-label={t('auth.invite.password')}
           autoComplete="new-password"
-          controlClassName={authInputClassName}
           onChange={setPassword}
           placeholder={t('auth.invite.password')}
           type="password"
@@ -142,26 +132,21 @@ export function InviteAcceptRouteView() {
         <TextInput
           aria-label={t('auth.invite.confirmPassword')}
           autoComplete="new-password"
-          controlClassName={authInputClassName}
           onChange={setConfirm}
           placeholder={t('auth.invite.confirmPassword')}
           type="password"
           value={confirm}
         />
-        <button
-          className={authPrimaryButtonClassName}
+        <Button
+          className="w-full"
           disabled={acceptMutation.isPending}
           type="submit"
         >
           {acceptMutation.isPending ? (
-            <Loader2
-              aria-hidden="true"
-              className="mx-auto size-4 animate-spin"
-            />
-          ) : (
-            t('auth.invite.submit')
-          )}
-        </button>
+            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+          ) : null}
+          {t('auth.invite.submit')}
+        </Button>
       </form>
     </AuthScreen>
   )

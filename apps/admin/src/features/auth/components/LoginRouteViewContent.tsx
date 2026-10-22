@@ -8,8 +8,10 @@ import { toast } from 'sonner'
 import { getAllowLogin } from '~/api/users'
 import { SESSION_WITH_LOGIN } from '~/constants/keys'
 import { useI18n } from '~/i18n'
+import { Button } from '~/ui/primitives/button'
 import { TextInput } from '~/ui/primitives/text-field'
 import { authClient } from '~/utils/authjs/auth'
+import { cn } from '~/utils/cn'
 
 import {
   allowLoginQueryKey,
@@ -19,12 +21,7 @@ import {
 import { checkIsInit } from '../utils/check-init'
 import { buildHashRouteUrl, readErrorMessage } from '../utils/login'
 import { AppleIcon } from './AppleIcon'
-import {
-  authInputClassName,
-  authLinkClassName,
-  authPrimaryButtonClassName,
-  AuthScreen,
-} from './AuthScreen'
+import { authFormClassName, authLinkClassName, AuthScreen } from './AuthScreen'
 import { GithubIcon } from './GithubIcon'
 import { GoogleIcon } from './GoogleIcon'
 import { LoginIconButton } from './LoginIconButton'
@@ -141,14 +138,10 @@ export function LoginRouteViewContent() {
   return (
     <AuthScreen subtitle={t('auth.login.subtitle')} title="Byline">
       {showPasswordInput ? (
-        <form
-          className="flex w-full max-w-[280px] flex-col gap-3"
-          onSubmit={handlePasswordLogin}
-        >
+        <form className={authFormClassName} onSubmit={handlePasswordLogin}>
           <TextInput
             aria-label={t('auth.login.identifierLabel')}
             autoComplete="username"
-            controlClassName={authInputClassName}
             disabled={isLoggingIn}
             onChange={setIdentifier}
             placeholder={t('auth.login.identifierPlaceholder')}
@@ -158,41 +151,40 @@ export function LoginRouteViewContent() {
           <TextInput
             aria-label={t('auth.login.passwordLabel')}
             autoComplete="current-password"
-            controlClassName={authInputClassName}
             disabled={isLoggingIn}
             onChange={setPassword}
             placeholder={t('auth.login.passwordPlaceholder')}
             type="password"
             value={password}
           />
-          <button
-            className={authPrimaryButtonClassName}
-            disabled={isLoggingIn}
-            type="submit"
-          >
+          <Button className="w-full" disabled={isLoggingIn} type="submit">
             {isLoggingIn ? (
-              <Loader2
-                aria-hidden="true"
-                className="mx-auto size-4 animate-spin"
-              />
-            ) : (
-              t('auth.login.submit')
-            )}
-          </button>
-          <Link className={authLinkClassName} to="/reset-password">
+              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+            ) : null}
+            {t('auth.login.submit')}
+          </Button>
+          <Link
+            className={cn(authLinkClassName, 'self-center')}
+            to="/reset-password"
+          >
             {t('auth.login.forgotPassword')}
           </Link>
         </form>
       ) : null}
 
       {hasAlternativeAuth ? (
-        <div className="mt-6 flex justify-center gap-4">
+        <div
+          className={cn(
+            'flex w-full justify-center gap-2',
+            showPasswordInput ? 'mt-6 border-t border-border pt-6' : 'mt-6',
+          )}
+        >
           {settings?.passkey ? (
             <LoginIconButton
               label={t('auth.login.passkey')}
               onClick={handlePasskeyLogin}
             >
-              <KeyRound aria-hidden="true" className="!size-5" />
+              <KeyRound aria-hidden="true" className="size-4" />
             </LoginIconButton>
           ) : null}
 
@@ -226,7 +218,7 @@ export function LoginRouteViewContent() {
       ) : null}
 
       {allowLoginQuery.isLoading ? (
-        <div className="mt-6 flex items-center gap-2 text-xs text-fg-muted">
+        <div className="mt-6 flex items-center gap-2 text-sm text-fg-muted">
           <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
           {t('auth.login.loadingProfile')}
         </div>

@@ -1,30 +1,18 @@
-import { Rocket } from 'lucide-react'
-
 import { useI18n } from '~/i18n'
-
-import { iconTileClassName, primaryButtonClassName } from '../constants'
+import { authDescriptionClassName } from '~/lib/auth-backdrop'
+import { Button } from '~/ui/primitives/button'
 
 export function SetupStartStep(props: { onNext: () => void }) {
   const { t } = useI18n()
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className={iconTileClassName}>
-        <Rocket aria-hidden="true" className="size-12" />
-      </div>
+    <div>
+      <p className={authDescriptionClassName}>{t('setup.start.description')}</p>
 
-      <p className="mb-4 text-center text-sm text-fg-muted">
-        {t('setup.start.description')}
-      </p>
-
-      <div className="flex w-full max-w-xs gap-3">
-        <button
-          className={`${primaryButtonClassName} flex-1`}
-          onClick={props.onNext}
-          type="button"
-        >
+      <div className="mt-6 flex justify-end">
+        <Button onClick={props.onNext} type="button">
           {t('setup.start.beginButton')}
-        </button>
+        </Button>
       </div>
     </div>
   )
