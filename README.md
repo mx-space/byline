@@ -16,7 +16,7 @@ A slim, multi-author, AI-native headless CMS for product sites and landing-page 
 
 Requirements: Docker with Compose v2.
 
-1. Build the image. The shared `@mx-space/*` packages are not on npm yet, so the build script stages a local [mx-core-shared](https://github.com/mx-space/core) checkout as a named build context. It finds the checkout from the `link:` overrides in `pnpm-workspace.yaml`. Set `MX_CORE_SHARED_DIR` if yours lives elsewhere.
+1. Build the image. Set `BYLINE_IMAGE` to use another tag; extra arguments go to `docker build`.
 
    ```sh
    ./scripts/docker-build.sh            # tags byline:latest
@@ -175,8 +175,6 @@ Required repository secrets:
 | --- | --- |
 | `DOCKERHUB_USERNAME` | Docker Hub login for the image push |
 | `DOCKERHUB_TOKEN` | Docker Hub access token with write access to `innei/byline` |
-
-Both workflows install from the registry, so the `link:` overrides for `@mx-space/*` in `pnpm-workspace.yaml` must be replaced with published versions before CI or a release can pass.
 
 ## License
 

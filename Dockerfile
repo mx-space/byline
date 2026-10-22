@@ -1,10 +1,5 @@
 # syntax=docker/dockerfile:1.7
 
-# Empty unless a build passes `--build-context mx-core-shared=<dir>`; see
-# scripts/docker-build.sh. Needed only while the shared @mx-space packages are
-# consumed through `link:` overrides instead of the npm registry.
-FROM scratch AS mx-core-shared
-
 FROM node:26-alpine AS builder
 ENV REDISMS_DISABLE_POSTINSTALL=1
 ENV MONGOMS_DISABLE_POSTINSTALL=1
@@ -14,11 +9,9 @@ RUN apk add --no-cache git python3 make g++ bash
 RUN npm i -g corepack@0.36.0 && corepack enable
 WORKDIR /app
 
-COPY --from=mx-core-shared / /opt/mx-core-shared/
 COPY . .
 
-RUN ./scripts/docker/link-shared-packages.sh /opt/mx-core-shared
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 RUN pnpm -C apps/server run bundle
 RUN pnpm -C apps/admin run build
 
