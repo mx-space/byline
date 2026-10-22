@@ -36,6 +36,7 @@ import { ALL_PERMISSIONS } from '~/constants/permission.constant'
 import type { SnowflakeGenerator } from '~/database/id'
 import * as authSchema from '~/database/schema'
 import { db } from '~/processors/database/postgres.provider'
+import { parseOriginHost } from '~/utils/cors.util'
 
 import { APPLE_ORIGIN } from './apple-client-secret'
 import { HASHED_API_KEY_CONFIG_ID } from './auth.constant'
@@ -217,6 +218,13 @@ const isAllowedOrigin = (origin: string | undefined): boolean => {
   return getOriginMatchers(allowed).some((match) => match(host))
 }
 
+const getSameHostOrigin = (request: Request | undefined): string | null => {
+  const origin = request?.headers.get('origin')
+  const host = request?.headers.get('host')
+  if (!origin || !host) return null
+  return parseOriginHost(origin) === host ? origin : null
+}
+
 export async function CreateAuth(
   providers: BetterAuthOptions['socialProviders'],
   passkeyOptions?: PasskeyOptions,
@@ -262,6 +270,7 @@ export async function CreateAuth(
         }
       }
 
+      const sameHostOrigin = getSameHostOrigin(request)
       return CROSS_DOMAIN.allowedOrigins.reduce(
         (acc: string[], origin: string) => {
           if (origin.startsWith('http')) {
@@ -272,7 +281,9 @@ export async function CreateAuth(
           }
           return [...acc, `https://${origin}`, `http://${origin}`]
         },
-        alwaysTrustedOrigins,
+        sameHostOrigin
+          ? [sameHostOrigin, ...alwaysTrustedOrigins]
+          : alwaysTrustedOrigins,
       )
     },
     account: {
