@@ -57,6 +57,19 @@ export const UserListQuerySchema = z.object({
 
 export type UserListQueryDto = z.infer<typeof UserListQuerySchema>
 
+export const AuthorListQuerySchema = z.object({
+  page: zPaginationPage,
+  size: z.coerce.number().int().positive().max(100).default(20),
+})
+
+export type AuthorListQueryDto = z.infer<typeof AuthorListQuerySchema>
+
+export const AuthorIdentitySchema = z.object({
+  idOrUsername: z.string().trim().min(1).max(64),
+})
+
+export type AuthorIdentityDto = z.infer<typeof AuthorIdentitySchema>
+
 export const CreateInviteSchema = z.object({
   email: z.email(),
   displayName: z.string().trim().min(1).max(120).optional(),

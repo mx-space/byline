@@ -4,6 +4,7 @@ import {
   asc,
   desc,
   eq,
+  exists,
   ilike,
   inArray,
   isNotNull,
@@ -15,7 +16,14 @@ import {
 } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
-import { accounts, sessions, userInvites, users } from '~/database/schema'
+import {
+  accounts,
+  postAuthors,
+  posts,
+  sessions,
+  userInvites,
+  users,
+} from '~/database/schema'
 import {
   BaseRepository,
   type PaginationResult,
@@ -192,6 +200,74 @@ export class UserRepository extends BaseRepository {
       })),
       pagination: this.paginationOf(Number(count ?? 0), page, size),
     }
+  }
+
+  private publicAuthorCondition() {
+    return and(
+      isNull(users.deactivatedAt),
+      or(
+        eq(users.isProfileOnly, true),
+        exists(
+          this.db
+            .select({ postId: postAuthors.postId })
+            .from(postAuthors)
+            .innerJoin(posts, eq(posts.id, postAuthors.postId))
+            .where(
+              and(
+                eq(postAuthors.userId, users.id),
+                eq(posts.isPublished, true),
+              ),
+            ),
+        ),
+      ),
+    )!
+  }
+
+  async listPublicAuthors(params: {
+    page: number
+    size: number
+  }): Promise<PaginationResult<UserRow>> {
+    const where = this.publicAuthorCondition()
+    const [rows, [{ count }]] = await Promise.all([
+      this.db
+        .select()
+        .from(users)
+        .where(where)
+        .orderBy(
+          sql`lower(coalesce(${users.name}, ${users.username}, ''))`,
+          asc(users.id),
+        )
+        .limit(params.size)
+        .offset((params.page - 1) * params.size),
+      this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(users)
+        .where(where),
+    ])
+    return {
+      data: rows.map(mapRow),
+      pagination: this.paginationOf(
+        Number(count ?? 0),
+        params.page,
+        params.size,
+      ),
+    }
+  }
+
+  async findPublicAuthor(idOrUsername: string): Promise<UserRow | null> {
+    const username = idOrUsername.toLowerCase()
+    const rows = await this.db
+      .select()
+      .from(users)
+      .where(
+        and(
+          or(eq(users.id, idOrUsername), eq(users.username, username)),
+          this.publicAuthorCondition(),
+        ),
+      )
+      .limit(2)
+    const row = rows.find((item) => item.id === idOrUsername) ?? rows[0]
+    return row ? mapRow(row) : null
   }
 
   async findByIdDetailed(id: string): Promise<UserRow | null> {

@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common'
 
+import { AuthorController } from './author.controller'
 import { UserController } from './user.controller'
 import { UserRepository } from './user.repository'
 import { UserService } from './user.service'
@@ -9,7 +10,7 @@ import { UserInviteService } from './user-invite.service'
 
 @Global()
 @Module({
-  controllers: [UserController, UserInviteController],
+  controllers: [AuthorController, UserController, UserInviteController],
   providers: [
     UserService,
     UserRepository,

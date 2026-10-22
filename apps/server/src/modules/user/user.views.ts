@@ -10,6 +10,10 @@ const PublicProfileSchema = z.object({
   url: z.string().nullable(),
 })
 
+const AuthorSchema = PublicProfileSchema.extend({
+  username: z.string().nullable(),
+}).strip()
+
 const UserDetailSchema = PublicProfileSchema.extend({
   email: z.string().nullable(),
   username: z.string().nullable(),
@@ -46,6 +50,7 @@ const PublicInviteSchema = z.object({
 
 export const UserViews = {
   publicProfile: PublicProfileSchema,
+  author: AuthorSchema,
   detail: UserDetailSchema,
   invite: InviteSchema,
   createdInvite: CreatedInviteSchema,

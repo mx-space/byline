@@ -69,6 +69,31 @@ export class UserService {
     }
   }
 
+  toAuthor(row: UserRow) {
+    return UserViews.author.parse({
+      ...toPublicProfile(row),
+      username: row.username,
+    })
+  }
+
+  async listAuthors(query: { page: number; size: number }) {
+    const result = await this.userRepository.listPublicAuthors(query)
+    return {
+      data: result.data.map((row) => this.toAuthor(row)),
+      pagination: result.pagination,
+    }
+  }
+
+  async getAuthor(idOrUsername: string) {
+    const row = await this.userRepository.findPublicAuthor(idOrUsername)
+    if (!row) {
+      throw createAppException(AppErrorCode.USER_NOT_FOUND, {
+        id: idOrUsername,
+      })
+    }
+    return this.toAuthor(row)
+  }
+
   async getDetail(id: string) {
     const row = await this.userRepository.findByIdDetailed(id)
     if (!row) throw createAppException(AppErrorCode.USER_NOT_FOUND, { id })
