@@ -25,8 +25,10 @@ function CreateAuthorModal() {
         <UserProfileForm
           onSubmit={async (input) => {
             try {
+              const { email, ...profile } = input
               const created = await createProfileOnlyUser({
-                ...input,
+                ...profile,
+                ...(email ? { email } : {}),
                 displayName: input.displayName ?? '',
               })
               modal.close(created)

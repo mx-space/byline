@@ -45,8 +45,15 @@ export function PendingInvites() {
               className="size-4 shrink-0 text-fg-subtle"
             />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm text-fg">
-                {invite.displayName || invite.email}
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate text-sm text-fg">
+                  {invite.displayName || invite.email}
+                </span>
+                {invite.userId ? (
+                  <span className="shrink-0 rounded-full bg-surface-card px-1.5 py-0.5 text-xs text-fg-muted">
+                    {t('users.invite.linkedAuthor')}
+                  </span>
+                ) : null}
               </div>
               <div className="truncate text-xs text-fg-muted">
                 {expired
@@ -55,7 +62,6 @@ export function PendingInvites() {
                       time: new Date(invite.expiresAt).toLocaleString(),
                     })}
                 {invite.displayName ? ` · ${invite.email}` : ''}
-                {invite.userId ? ` · ${t('users.invite.linkedAuthor')}` : ''}
               </div>
             </div>
             <button
