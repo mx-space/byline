@@ -17,6 +17,7 @@ import { API_VERSION } from '~/app.config'
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { HTTPDecorators } from '~/common/decorators/http.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
+import { ADMIN_MOUNT_PATH } from '~/constants/path.constant'
 import { isDev } from '~/global/env.global'
 import { ConfigsService } from '~/modules/configs/configs.service'
 import { AssetService } from '~/processors/helper/helper.asset.service'
@@ -33,7 +34,7 @@ export const DeviceVerifyBodySchema = z.object({
 export type DeviceVerifyDto = z.infer<typeof DeviceVerifyBodySchema>
 
 const deviceBasePath = isDev ? '/device' : `/api/v${API_VERSION}/device`
-const adminLoginPath = '/proxy/qaqdmin/#/login'
+const adminLoginPath = `${ADMIN_MOUNT_PATH}/#/login`
 
 const webTargets = {
   admin: '/dashboard',

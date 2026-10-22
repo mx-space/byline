@@ -3,7 +3,7 @@ import type { IConfig } from './configs.interface'
 export const generateDefaultConfig: () => IConfig = () => ({
   url: {
     wsUrl: 'http://localhost:2333',
-    adminUrl: 'http://localhost:2333/proxy/qaqdmin',
+    adminUrl: 'http://localhost:2333/admin/',
     serverUrl: 'http://localhost:2333',
     webUrl: 'http://localhost:2323',
   },

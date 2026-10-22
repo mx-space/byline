@@ -6,7 +6,6 @@ import {
   DATA_DIR,
   STATIC_FILE_DIR,
   TEMP_DIR,
-  THEME_DIR,
   USER_ASSET_DIR,
 } from '~/constants/path.constant'
 
@@ -20,7 +19,6 @@ export async function setup() {
   mkdirSync(TEMP_DIR, { recursive: true })
   mkdirSync(USER_ASSET_DIR, { recursive: true })
   mkdirSync(STATIC_FILE_DIR, { recursive: true })
-  mkdirSync(THEME_DIR, { recursive: true })
 
   // Initialize Redis and PostgreSQL test container.
   await Promise.all([RedisMemoryServer.create(), startPgTestContainer()]).then(

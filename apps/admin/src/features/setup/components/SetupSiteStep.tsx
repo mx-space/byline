@@ -15,8 +15,8 @@ export function SetupSiteStep(props: {
 }) {
   const { t } = useI18n()
   const [urls, setUrls] = useState<SetupUrls>({
-    adminUrl: `${location.origin}/qaqdmin`,
-    serverUrl: `${location.origin}/api/v2`,
+    adminUrl: `${location.origin}/admin/`,
+    serverUrl: `${location.origin}/api/v3`,
     webUrl: location.origin,
     wsUrl: location.origin,
   })

@@ -9,6 +9,7 @@ import pc from 'picocolors'
 
 import { CROSS_DOMAIN, DEBUG_MODE, PORT } from './app.config'
 import { AppModule } from './app.module'
+import { registerAdminSpa } from './common/adapters/admin-spa.adapter'
 import { fastifyApp } from './common/adapters/fastify.adapter'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor'
 import { requestCaseNormalizationPipeInstance } from './common/pipes/case-normalization.pipe'
@@ -75,6 +76,7 @@ export async function bootstrap() {
     standardSchemaValidationPipeInstance,
   )
   app.useWebSocketAdapter(createWsAdapter(app))
+  registerAdminSpa(app)
 
   // Dev runs app-data migrations inline; prod boots them via the standalone
   // `app-migrate.ts` CLI invoked by docker `mx-migrate`. Both paths share the

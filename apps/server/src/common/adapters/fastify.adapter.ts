@@ -9,6 +9,7 @@ import {
   FASTIFY_ROUTE_OPTIONS_CONFIG,
   type FastifyRouteOptions,
 } from '~/common/decorators/fastify-route-options.decorator'
+import { ADMIN_MOUNT_PATH } from '~/constants/path.constant'
 import { getIp } from '~/utils/ip.util'
 
 const logger = new Logger('Fastify')
@@ -140,7 +141,7 @@ app.getInstance().addHook('onRequest', (request, reply, done) => {
     logWarn('PHP is the best language in the world!!!!!', request, 'GodPHP')
 
     return reply.code(418).send()
-  } else if (/\/(?:adminer|admin|wp-login|phpmyadmin|\.env)$/i.test(url)) {
+  } else if (/\/(?:adminer|wp-login|phpmyadmin|\.env)$/i.test(url)) {
     const isMxSpaceClient = ua?.match('mx-space')
     reply.raw.statusMessage = 'Hey, What the fuck are you doing!'
     reply.raw.statusCode = isMxSpaceClient ? 666 : 200
@@ -153,7 +154,10 @@ app.getInstance().addHook('onRequest', (request, reply, done) => {
     return reply.send('Check request header to find an egg.')
   }
 
-  if (/favicon\.ico$/.test(url) || /manifest\.json$/.test(url)) {
+  if (
+    !url.startsWith(`${ADMIN_MOUNT_PATH}/`) &&
+    (/favicon\.ico$/.test(url) || /manifest\.json$/.test(url))
+  ) {
     return reply.code(204).send()
   }
 

@@ -138,7 +138,7 @@ describe('DeviceController (e2e)', () => {
 
     expect(res.statusCode).toBe(302)
     const location = res.headers.location as string
-    expect(location).toContain('/proxy/qaqdmin')
+    expect(location).toContain('/admin/#/login')
     expect(location).toContain('redirect=')
     expect(decodeURIComponent(location)).toContain('/device')
     expect(decodeURIComponent(location)).toContain('user_code=XYZ123')
