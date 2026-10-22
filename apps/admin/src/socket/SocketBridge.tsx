@@ -3,8 +3,6 @@ import { createWsClient } from '@mx-space/ws-client'
 import type { QueryClient } from '@tanstack/react-query'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import type { NavigateFunction } from 'react-router'
-import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 
 import type { AITask } from '~/api/tasks'
@@ -57,7 +55,6 @@ function toWsOrigin(url: string): string {
 }
 
 export function SocketBridge() {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -84,23 +81,6 @@ export function SocketBridge() {
           )
           break
         }
-        case EventTypes.COMMENT_CREATE: {
-          void queryClient.invalidateQueries({
-            queryKey: adminQueryKeys.comments.root,
-          })
-          void queryClient.invalidateQueries({
-            queryKey: adminQueryKeys.aggregate.root,
-          })
-          notifyNewComment(payload, navigate)
-          break
-        }
-        case EventTypes.LINK_APPLY: {
-          void queryClient.invalidateQueries({
-            queryKey: adminQueryKeys.links.root,
-          })
-          notifyLinkApply(payload, navigate)
-          break
-        }
         case EventTypes.ADMIN_NOTIFICATION: {
           notifyAdmin(payload)
           break
@@ -119,29 +99,7 @@ export function SocketBridge() {
             queryKey: adminQueryKeys.posts.root,
           })
           void queryClient.invalidateQueries({
-            queryKey: adminQueryKeys.aggregate.root,
-          })
-          break
-        }
-        case EventTypes.NOTE_CREATE:
-        case EventTypes.NOTE_UPDATE:
-        case EventTypes.NOTE_DELETE: {
-          void queryClient.invalidateQueries({
-            queryKey: adminQueryKeys.notes.root,
-          })
-          void queryClient.invalidateQueries({
-            queryKey: adminQueryKeys.aggregate.root,
-          })
-          break
-        }
-        case EventTypes.SAY_CREATE:
-        case EventTypes.SAY_UPDATE:
-        case EventTypes.SAY_DELETE: {
-          void queryClient.invalidateQueries({
-            queryKey: adminQueryKeys.says.root,
-          })
-          void queryClient.invalidateQueries({
-            queryKey: adminQueryKeys.aggregate.root,
+            queryKey: ['dashboard'],
           })
           break
         }
@@ -198,71 +156,9 @@ export function SocketBridge() {
       unsubscribeState()
       client.close()
     }
-  }, [navigate, queryClient])
+  }, [queryClient])
 
   return null
-}
-
-function notifyNewComment(payload: unknown, navigate: NavigateFunction) {
-  const comment = asRecord(payload)
-  const author = readString(comment.author) || translate('socket.anonymous')
-  const text = readString(comment.text)
-  const body = text ? `${author}: ${text}` : author
-  const toastId = toast.success(translate('socket.newComment'), {
-    action: {
-      label: translate('common.view'),
-      onClick: () => {
-        navigate('/comments?state=0')
-        toast.dismiss(toastId)
-      },
-    },
-    description: body,
-    duration: 10000,
-  })
-
-  void showBrowserNotification(
-    translate('socket.notificationCommentTitle'),
-    body,
-    () => {
-      if (document.hasFocus()) {
-        navigate('/comments?state=0')
-      } else {
-        window.open(
-          `${window.location.origin}${window.location.pathname}#/comments?state=0`,
-        )
-      }
-    },
-  )
-}
-
-function notifyLinkApply(payload: unknown, navigate: NavigateFunction) {
-  const sitename =
-    readString(asRecord(payload).name) || translate('socket.newLinkApply')
-  const toastId = toast.success(translate('socket.newLinkApply'), {
-    action: {
-      label: translate('common.view'),
-      onClick: () => {
-        navigate('/friends?state=1')
-        toast.dismiss(toastId)
-      },
-    },
-    description: sitename,
-    duration: 10000,
-  })
-
-  void showBrowserNotification(
-    translate('socket.notificationLinkApplyTitle'),
-    sitename,
-    () => {
-      if (document.hasFocus()) {
-        navigate('/friends?state=1')
-      } else {
-        window.open(
-          `${window.location.origin}${window.location.pathname}#/friends?state=1`,
-        )
-      }
-    },
-  )
 }
 
 function notifyAdmin(payload: unknown) {
@@ -289,29 +185,10 @@ function notifyByType(type: NotificationTypes | '', message: string) {
       toast.warning(message)
       break
     }
-    case 'info':
     default: {
       toast.info(message)
     }
   }
-}
-
-async function showBrowserNotification(
-  title: string,
-  body: string,
-  onClick: () => void,
-) {
-  if (!('Notification' in window) || document.hasFocus()) return
-
-  const permission =
-    Notification.permission === 'default'
-      ? await Notification.requestPermission()
-      : Notification.permission
-
-  if (permission !== 'granted') return
-
-  const notification = new Notification(title, { body })
-  notification.addEventListener('click', onClick)
 }
 
 function readPayloadMessage(payload: unknown, fallback: string) {

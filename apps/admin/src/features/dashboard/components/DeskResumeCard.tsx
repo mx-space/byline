@@ -1,7 +1,6 @@
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router'
 
-import { refTypeMeta } from '~/features/drafts/constants'
 import { useI18n } from '~/i18n'
 import { Badge } from '~/ui/primitives/badge'
 import { ButtonLink } from '~/ui/primitives/button'
@@ -38,9 +37,6 @@ export function DeskResumeCard(props: {
         </p>
       ) : null}
       <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-fg-subtle">
-        <Badge size="sm" tone={refTypeMeta[item.refType].tone}>
-          {t(refTypeMeta[item.refType].labelKey)}
-        </Badge>
         <Badge size="sm" tone={status.tone}>
           {t(status.labelKey)}
         </Badge>
@@ -51,7 +47,7 @@ export function DeskResumeCard(props: {
             })}
           </span>
         ) : null}
-        {item.branchCount > 1 && item.draftId ? (
+        {item.branchCount > 1 ? (
           <Link
             className={`tabular-nums transition-colors hover:text-accent ${deskFocusClassName}`}
             to={`/drafts/${item.draftId}`}

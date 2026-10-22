@@ -1,6 +1,5 @@
-import type { PostModel } from '~/models/post'
-
 import { useI18n } from '~/i18n'
+import type { PostModel } from '~/models/post'
 
 import { PostListRow } from './PostListRow'
 

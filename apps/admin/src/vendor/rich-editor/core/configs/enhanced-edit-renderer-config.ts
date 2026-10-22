@@ -28,17 +28,11 @@ import { MermaidEditRenderer } from '@haklex/rich-renderer-mermaid'
 import { RubyEditRenderer } from '@haklex/rich-renderer-ruby'
 import { VideoEditRenderer } from '@haklex/rich-renderer-video'
 
-import {
-  AFILMORY_NODE_KEY,
-  AfilmoryBlockConnected,
-} from '../../extensions/afilmory'
-import { MAP_NODE_KEY, MapBlockConnected } from '../../extensions/map'
 import { enhancedRendererConfig } from './enhanced-renderer-config'
 import { TagEditRenderer } from './TagEditRenderer'
 
 export const enhancedEditRendererConfig: RendererConfig = {
   ...enhancedRendererConfig,
-  [AFILMORY_NODE_KEY]: AfilmoryBlockConnected,
   [ALERT_NODE_KEY]: AlertEditRenderer,
   [BANNER_NODE_KEY]: BannerEditRenderer,
   [CHAT_NODE_KEY]: ChatEditRenderer,
@@ -47,7 +41,6 @@ export const enhancedEditRendererConfig: RendererConfig = {
   [FOOTNOTE_NODE_KEY]: FootnoteRenderer,
   [GALLERY_NODE_KEY]: GalleryEditRenderer,
   [IMAGE_NODE_KEY]: ImageEditRenderer,
-  [MAP_NODE_KEY]: MapBlockConnected,
   [MENTION_NODE_KEY]: MentionEditRenderer,
   [MERMAID_NODE_KEY]: MermaidEditRenderer,
   [RUBY_NODE_KEY]: RubyEditRenderer,

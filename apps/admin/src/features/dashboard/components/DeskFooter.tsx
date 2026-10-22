@@ -6,8 +6,6 @@ import { formatVersionLabel } from '../utils/desk'
 export function DeskFooter(props: {
   adminVersion: string
   className?: string
-  onCheckUpdates: () => void
-  refreshing: boolean
   systemVersion: string
 }) {
   const { t } = useI18n()
@@ -19,21 +17,11 @@ export function DeskFooter(props: {
         props.className,
       )}
     >
-      <span className="inline-flex items-center gap-2">
-        <span>
-          {t('dashboard.footer.versions', {
-            admin: formatVersionLabel(props.adminVersion),
-            system: formatVersionLabel(props.systemVersion),
-          })}
-        </span>
-        <button
-          className="focus-visible:outline-hidden rounded-xs transition-colors hover:text-fg focus-visible:ring-[3px] focus-visible:ring-accent/15 disabled:opacity-50"
-          disabled={props.refreshing}
-          onClick={props.onCheckUpdates}
-          type="button"
-        >
-          {t('dashboard.footer.checkUpdates')}
-        </button>
+      <span>
+        {t('dashboard.footer.versions', {
+          admin: formatVersionLabel(props.adminVersion),
+          system: formatVersionLabel(props.systemVersion),
+        })}
       </span>
     </footer>
   )

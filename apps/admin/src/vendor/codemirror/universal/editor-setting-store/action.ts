@@ -1,8 +1,8 @@
 import type { StoreSetter } from '~/store/types'
-import type { GeneralSettingDto } from '../editor-config'
-import type { EditorSettingStore } from './store'
 
+import type { GeneralSettingDto } from '../editor-config'
 import { GeneralSettingSchema } from '../editor-config'
+import type { EditorSettingStore } from './store'
 
 type Setter = StoreSetter<EditorSettingStore>
 

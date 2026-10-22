@@ -1,7 +1,6 @@
+import { EventScope } from '~/api/webhooks'
 import type { TranslationKey } from '~/i18n/types'
 import type { BadgeTone } from '~/ui/primitives/badge'
-
-import { EventScope } from '~/api/webhooks'
 
 type Translator = (key: TranslationKey) => string
 

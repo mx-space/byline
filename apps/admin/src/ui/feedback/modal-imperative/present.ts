@@ -1,12 +1,12 @@
 import type { ComponentType } from 'react'
+
+import { modalStore } from './store'
 import type {
   ModalHandle,
   ModalInstance,
   PresentOptions,
   ResolvedPresentOptions,
 } from './types'
-
-import { modalStore } from './store'
 
 function resolveOptions(options?: PresentOptions): ResolvedPresentOptions {
   return {
@@ -47,7 +47,7 @@ export function present<P extends object, T = unknown>(
     close,
     dismiss,
     update,
-    // eslint-disable-next-line unicorn/no-thenable -- PromiseLike by design: `await handle` should yield the close value.
+
     then: (onFulfilled, onRejected) => promise.then(onFulfilled, onRejected),
   }
 

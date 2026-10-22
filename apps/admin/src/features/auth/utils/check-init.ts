@@ -1,7 +1,6 @@
-import type { InitResponse } from '../types/login'
-
 import { API_URL } from '~/constants/env'
 
+import type { InitResponse } from '../types/login'
 import { isInitEnvelope } from './login'
 
 export async function checkIsInit() {
@@ -20,8 +19,7 @@ export async function checkIsInit() {
 
   try {
     const data = (await response.json()) as
-      | InitResponse
-      | { data?: InitResponse }
+      InitResponse | { data?: InitResponse }
     if (isInitEnvelope(data)) return data.data?.isInit === true
 
     return data.isInit === true

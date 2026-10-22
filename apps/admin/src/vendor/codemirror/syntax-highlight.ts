@@ -1,6 +1,5 @@
-import type { Extension } from '@codemirror/state'
-
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import type { Extension } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 

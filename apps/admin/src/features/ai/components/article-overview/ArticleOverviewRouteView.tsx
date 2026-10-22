@@ -3,7 +3,6 @@ import { Inbox, Loader2, RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 
-import type { OverviewArticleType } from '~/api/ai-overview'
 import { getOverviewGrouped } from '~/api/ai-overview'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
@@ -12,7 +11,6 @@ import { MasterDetailShell } from '~/ui/layout/master-detail-shell'
 import { MobileHeaderAffordance } from '~/ui/layout/mobile-header-affordance'
 import { AppPage, HeaderActions } from '~/ui/layout/page-layout'
 import { Scroll } from '~/ui/primitives/scroll'
-import { SegmentedControl } from '~/ui/primitives/segmented-control'
 
 import { groupedPageSize } from '../../constants'
 import { ArticleDetailEmptyState } from '../article-grouped/ArticleDetailEmptyState'
@@ -39,9 +37,6 @@ export function ArticleOverviewRouteView() {
 
   const [inputSearch, setInputSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState<OverviewArticleType | 'all'>(
-    'all',
-  )
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
@@ -60,7 +55,6 @@ export function ArticleOverviewRouteView() {
         page: pageParam,
         search: debouncedSearch || undefined,
         size: groupedPageSize,
-        type: typeFilter === 'all' ? undefined : typeFilter,
       }),
     getNextPageParam: (lastPage) => {
       const pagination = lastPage.pagination
@@ -69,7 +63,7 @@ export function ArticleOverviewRouteView() {
     },
     queryKey: adminQueryKeys.ai.overviewList({
       search: debouncedSearch,
-      type: typeFilter,
+      type: 'post',
     }),
   })
 
@@ -140,21 +134,6 @@ export function ArticleOverviewRouteView() {
                     disabled: listQuery.isFetching,
                   },
                 ]}
-              />
-            </div>
-
-            <div className="shrink-0 border-b border-border px-2 py-2">
-              <SegmentedControl
-                aria-label={t('ai.overview.typeFilterLabel')}
-                fill
-                onValueChange={setTypeFilter}
-                options={[
-                  { label: t('ai.overview.type.all'), value: 'all' },
-                  { label: t('ai.overview.type.post'), value: 'post' },
-                  { label: t('ai.overview.type.note'), value: 'note' },
-                  { label: t('ai.overview.type.page'), value: 'page' },
-                ]}
-                value={typeFilter}
               />
             </div>
 

@@ -2,12 +2,7 @@ import type { RichEditorVariant } from '@haklex/rich-editor'
 import type { Klass, LexicalNode, SerializedEditorState } from 'lexical'
 
 import type { RichEditorProps } from '../core'
-import type {
-  FileUpload,
-  ImageUpload,
-  TrackUpload,
-  VideoUpload,
-} from '../types'
+import type { FileUpload, ImageUpload, VideoUpload } from '../types'
 
 export type BuildRichEditorPropsInput = {
   initialValue?: SerializedEditorState
@@ -22,7 +17,6 @@ export type BuildRichEditorPropsInput = {
   editorStyle?: Record<string, string | number>
   fileUpload?: FileUpload
   imageUpload?: ImageUpload
-  trackUpload?: TrackUpload
   videoUpload?: VideoUpload
 }
 
@@ -50,8 +44,6 @@ export function buildRichEditorProps(
   if (input.editorStyle !== undefined) editorProps.style = input.editorStyle
   if (input.imageUpload !== undefined)
     editorProps.imageUpload = input.imageUpload
-  if (input.trackUpload !== undefined)
-    editorProps.trackUpload = input.trackUpload
   if (input.videoUpload !== undefined)
     editorProps.videoUpload = input.videoUpload
   if (input.fileUpload !== undefined) editorProps.fileUpload = input.fileUpload

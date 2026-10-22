@@ -24,13 +24,9 @@ import {
   toPublishAiRequests,
 } from './publish-ai-choices'
 
-type ContentFormat = 'lexical' | 'markdown'
-
 export function PublishConfirmationDialog(props: {
   aiConfig?: AIConfig
-  contentFormat: ContentFormat
   diverged: boolean
-  kind: 'note' | 'page' | 'post'
   onClose: () => void
   onConfirm: (resources: PublishAiResourceRequest[]) => void
   onReviewDiff?: () => void
@@ -52,9 +48,8 @@ export function PublishConfirmationDialog(props: {
   }, [props.open, props.rememberedResources])
 
   const isAvailable = (resource: PublishAiResource) =>
-    !getUnavailableKey(resource, props.aiConfig, props.contentFormat)
-  const requests =
-    props.kind === 'page' ? [] : toPublishAiRequests(choices, isAvailable)
+    !getUnavailableKey(resource, props.aiConfig)
+  const requests = toPublishAiRequests(choices, isAvailable)
   const confirm = () => props.onConfirm(requests)
   const choiceOptions: { label: string; value: PublishAiChoice }[] = [
     { label: t('write.publishAi.modeNone'), value: 'none' },
@@ -130,72 +125,66 @@ export function PublishConfirmationDialog(props: {
           </span>
         </div>
 
-        {props.kind !== 'page' ? (
-          <section className="mt-5">
-            <h3 className="text-sm font-medium text-fg">
-              {t('write.publishConfirm.aiTitle')}
-            </h3>
-            <p className="mt-1 text-xs leading-5 text-fg-muted">
-              {t('write.publishConfirm.aiDescription')}
-            </p>
-            <div className="mt-3 flex flex-col divide-y divide-border rounded-lg border border-border">
-              {publishAiResourceOrder.map((resource) => {
-                const unavailable = getUnavailableKey(
-                  resource,
-                  props.aiConfig,
-                  props.contentFormat,
-                )
-                return (
-                  <div
-                    className={cn(
-                      'flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 text-sm',
-                      unavailable && 'pointer-events-none opacity-55',
-                    )}
-                    key={resource}
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-medium text-fg">
-                        {t(publishAiResourceLabels[resource])}
-                      </span>
-                      {unavailable ? (
-                        <span className="mt-0.5 block text-xs text-fg-muted">
-                          {t(unavailable)}
-                        </span>
-                      ) : null}
+        <section className="mt-5">
+          <h3 className="text-sm font-medium text-fg">
+            {t('write.publishConfirm.aiTitle')}
+          </h3>
+          <p className="mt-1 text-xs leading-5 text-fg-muted">
+            {t('write.publishConfirm.aiDescription')}
+          </p>
+          <div className="mt-3 flex flex-col divide-y divide-border rounded-lg border border-border">
+            {publishAiResourceOrder.map((resource) => {
+              const unavailable = getUnavailableKey(resource, props.aiConfig)
+              return (
+                <div
+                  className={cn(
+                    'flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 text-sm',
+                    unavailable && 'pointer-events-none opacity-55',
+                  )}
+                  key={resource}
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium text-fg">
+                      {t(publishAiResourceLabels[resource])}
                     </span>
-                    <SegmentedControl
-                      aria-label={t(publishAiResourceLabels[resource])}
-                      onValueChange={(value) =>
-                        setChoices((current) => ({
-                          ...current,
-                          [resource]: value,
-                        }))
-                      }
-                      options={choiceOptions}
-                      value={choices[resource]}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-            <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-lg bg-surface-inset px-3 py-2.5 text-xs">
-              <dt className="text-fg-muted">
-                {t('write.publishAi.summaryWait')}
-              </dt>
-              <dd className="min-w-0 text-fg">
-                {namesFor('sync').join('、') ||
-                  t('write.publishAi.summaryWaitNone')}
-              </dd>
-              <dt className="text-fg-muted">
-                {t('write.publishAi.summaryLater')}
-              </dt>
-              <dd className="min-w-0 text-fg">
-                {namesFor('async').join('、') ||
-                  t('write.publishAi.summaryLaterNone')}
-              </dd>
-            </dl>
-          </section>
-        ) : null}
+                    {unavailable ? (
+                      <span className="mt-0.5 block text-xs text-fg-muted">
+                        {t(unavailable)}
+                      </span>
+                    ) : null}
+                  </span>
+                  <SegmentedControl
+                    aria-label={t(publishAiResourceLabels[resource])}
+                    onValueChange={(value) =>
+                      setChoices((current) => ({
+                        ...current,
+                        [resource]: value,
+                      }))
+                    }
+                    options={choiceOptions}
+                    value={choices[resource]}
+                  />
+                </div>
+              )
+            })}
+          </div>
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-lg bg-surface-inset px-3 py-2.5 text-xs">
+            <dt className="text-fg-muted">
+              {t('write.publishAi.summaryWait')}
+            </dt>
+            <dd className="min-w-0 text-fg">
+              {namesFor('sync').join('、') ||
+                t('write.publishAi.summaryWaitNone')}
+            </dd>
+            <dt className="text-fg-muted">
+              {t('write.publishAi.summaryLater')}
+            </dt>
+            <dd className="min-w-0 text-fg">
+              {namesFor('async').join('、') ||
+                t('write.publishAi.summaryLaterNone')}
+            </dd>
+          </dl>
+        </section>
       </div>
       <ModalFooter>
         {props.diverged && props.onReviewDiff ? (
@@ -228,11 +217,7 @@ export function PublishConfirmationDialog(props: {
 function getUnavailableKey(
   resource: PublishAiResource,
   config: AIConfig | undefined,
-  contentFormat: ContentFormat,
 ): TranslationKey | undefined {
-  if (resource === 'tts' && contentFormat !== 'lexical') {
-    return 'write.publishAi.ttsRequiresLexical'
-  }
   if (!config) return 'write.publishAi.unavailable'
   if (resource === 'summary' && !config.enableSummary) {
     return 'write.publishAi.unavailable'

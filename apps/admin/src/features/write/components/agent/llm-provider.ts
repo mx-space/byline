@@ -19,7 +19,7 @@ interface CreateProviderOptions {
 }
 
 /**
- * Build an `LLMProvider` that drives haklex's agent loop through mx-core's
+ * Build an `LLMProvider` that drives haklex's agent loop through the server's
  * JSON-framed `AiAgentSseEvent` SSE endpoint. We bypass haklex's
  * `createProvider`/`TransportAdapter` (which expects raw provider SSE bytes)
  * and translate `AiAgentSseEvent` → `LLMChunk` directly here.

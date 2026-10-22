@@ -6,10 +6,7 @@ export interface PostResponse {
 }
 
 export interface PostModel {
-  copyright: boolean
   tags: string[]
-  readCount: number
-  likeCount: number
   id: string
   text: string
   title: string
@@ -24,20 +21,8 @@ export interface PostModel {
   summary?: string | null
   pinAt?: string | null
   pinOrder?: number | null
-  related?: Pick<
-    PostModel,
-    | 'id'
-    | 'title'
-    | 'slug'
-    | 'categoryId'
-    | 'modifiedAt'
-    | 'createdAt'
-    | 'category'
-    | 'summary'
-  >[]
   meta?: any
   isPublished?: boolean
-  isPremium?: boolean
 }
 
 export interface Category {

@@ -1,27 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useMemo, useRef } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 
 import { deleteDraft, getDrafts } from '~/api/drafts'
 import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
 import { useI18n } from '~/i18n'
-import type { DraftModel, DraftRefType } from '~/models/draft'
+import type { DraftModel } from '~/models/draft'
+import { DraftRefType } from '~/models/draft'
 import { adminQueryKeys } from '~/query/keys'
 import { confirmDialog } from '~/ui/feedback/confirm'
 import { FocusScope } from '~/ui/focus-scope'
 import { MasterDetailShell } from '~/ui/layout/master-detail-shell'
 import { MobileHeaderAffordance } from '~/ui/layout/mobile-header-affordance'
 import { useListKeyboard } from '~/ui/list-actions'
-import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
-import { Button } from '~/ui/primitives/button'
+import { Button, ButtonLink } from '~/ui/primitives/button'
 import { Checkbox } from '~/ui/primitives/checkbox'
 import { Scroll } from '~/ui/primitives/scroll'
 import { cn } from '~/utils/cn'
 
-import { draftsQueryKey, filterOptionKeys } from '../constants'
-import { parseDraftFilterType } from '../utils/draft-filter'
+import { draftsQueryKey } from '../constants'
 import { getErrorMessage } from '../utils/errors'
 import { buildDraftActions } from './buildDraftActions'
 import { DraftDetailEmpty } from './DraftDetailEmpty'
@@ -39,29 +38,16 @@ export function DraftsRouteViewContent() {
   const params = useParams<{ id?: string }>()
   const detailId = params.id ?? null
   const [searchParams] = useSearchParams()
-  const filterType = parseDraftFilterType(searchParams.get('type'))
-
-  const setFilter = useCallback(
-    (next: DraftRefType | 'all') => {
-      const sp = new URLSearchParams(searchParams)
-      if (next === 'all') sp.delete('type')
-      else sp.set('type', next)
-      const qs = sp.toString()
-      // Filter change closes detail and resets to list root.
-      navigate(`/drafts${qs ? `?${qs}` : ''}`, { replace: true })
-    },
-    [navigate, searchParams],
-  )
 
   const draftsQuery = useQuery({
     placeholderData: (previous) => previous,
     queryFn: () =>
       getDrafts({
         page: 1,
-        refType: filterType === 'all' ? undefined : filterType,
+        refType: DraftRefType.Post,
         size: 50,
       }),
-    queryKey: adminQueryKeys.drafts.list(filterType),
+    queryKey: adminQueryKeys.drafts.list(DraftRefType.Post),
   })
 
   const drafts = draftsQuery.data?.data ?? []
@@ -159,7 +145,6 @@ export function DraftsRouteViewContent() {
       const draft = drafts.find((d) => d.id === id)
       if (draft) openDraft(draft)
     },
-    resetOn: [filterType],
     scopeId: FOCUS_SCOPE_ID,
   })
   selectionClearRef.current = selection.clear
@@ -207,27 +192,10 @@ export function DraftsRouteViewContent() {
                 </h2>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <DropdownMenu>
-                  <DropdownMenu.Trigger
-                    aria-label={t('drafts.newPost')}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-inset hover:text-fg focus-visible:ring-[3px] focus-visible:ring-accent/15 data-[popup-open]:bg-surface-inset"
-                    type="button"
-                  >
-                    <Plus aria-hidden="true" className="size-4" />
-                    {t('common.add')}
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content align="end">
-                    <DropdownMenu.Item render={<Link to="/posts/edit" />}>
-                      {t('drafts.newPost')}
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item render={<Link to="/notes/edit" />}>
-                      {t('drafts.newNote')}
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item render={<Link to="/pages/edit" />}>
-                      {t('drafts.newPage')}
-                    </DropdownMenu.Item>
-                  </DropdownMenu.Content>
-                </DropdownMenu>
+                <ButtonLink to="/posts/edit" variant="subtle">
+                  <Plus aria-hidden="true" className="size-4" />
+                  {t('drafts.newPost')}
+                </ButtonLink>
                 <Button
                   aria-label={t('common.refresh')}
                   disabled={draftsQuery.isFetching}
@@ -245,24 +213,6 @@ export function DraftsRouteViewContent() {
                   />
                 </Button>
               </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-              {filterOptionKeys.map((option) => (
-                <button
-                  className={cn(
-                    'rounded border px-2.5 py-1 text-xs transition-colors',
-                    filterType === option.value
-                      ? 'border-neutral-950 bg-neutral-950 text-white dark:border-neutral-50 dark:bg-neutral-50 dark:text-neutral-950'
-                      : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900',
-                  )}
-                  key={option.value}
-                  onClick={() => setFilter(option.value)}
-                  type="button"
-                >
-                  {t(option.labelKey)}
-                </button>
-              ))}
             </div>
 
             {drafts.length > 0 ? (

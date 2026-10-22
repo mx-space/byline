@@ -1,11 +1,7 @@
-import { css, html, LitElement } from 'lit'
-import { unsafeHTML } from 'lit/directives/unsafe-html.js'
-import type { Range, Text } from '@codemirror/state'
-import type { DecorationSet } from '@codemirror/view'
-
 import { history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
+import type { Range, Text } from '@codemirror/state'
 import {
   Annotation,
   Compartment,
@@ -14,8 +10,11 @@ import {
   StateField,
 } from '@codemirror/state'
 import { oneDark } from '@codemirror/theme-one-dark'
+import type { DecorationSet } from '@codemirror/view'
 import { Decoration, EditorView, keymap, WidgetType } from '@codemirror/view'
 import { githubLight } from '@ddietr/codemirror-themes/theme/github-light'
+import { css, html, LitElement } from 'lit'
+import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 
 import { languageSvgIcons } from '../language-icons'
 import { blockDetectorFacet, isHiddenSeparatorLine } from './block-registry'
@@ -986,14 +985,15 @@ class CodeBlockElement extends LitElement {
     const totalItems = filtered.length + (showCustom ? 1 : 0)
 
     switch (event.key) {
-      case 'ArrowDown':
+      case 'ArrowDown': {
         event.preventDefault()
         this.highlightedIndex =
           (this.highlightedIndex + 1) % Math.max(1, totalItems)
         this.updateDropdownHighlight()
         this.scrollToHighlighted()
         break
-      case 'ArrowUp':
+      }
+      case 'ArrowUp': {
         event.preventDefault()
         this.highlightedIndex =
           (this.highlightedIndex - 1 + Math.max(1, totalItems)) %
@@ -1001,7 +1001,8 @@ class CodeBlockElement extends LitElement {
         this.updateDropdownHighlight()
         this.scrollToHighlighted()
         break
-      case 'Enter':
+      }
+      case 'Enter': {
         event.preventDefault()
         if (this.highlightedIndex < filtered.length) {
           this.selectLanguage(filtered[this.highlightedIndex])
@@ -1009,10 +1010,12 @@ class CodeBlockElement extends LitElement {
           this.selectLanguage(this.searchQuery.trim())
         }
         break
-      case 'Escape':
+      }
+      case 'Escape': {
         event.preventDefault()
         this.closeDropdown()
         break
+      }
     }
   }
 

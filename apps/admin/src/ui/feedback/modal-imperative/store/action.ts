@@ -1,4 +1,5 @@
 import type { StoreSetter } from '~/store/types'
+
 import type { ModalInstance } from '../types'
 import type { ModalStore } from './store'
 

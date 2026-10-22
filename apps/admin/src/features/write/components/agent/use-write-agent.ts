@@ -73,7 +73,7 @@ function isSelectedAgentModelAvailable(
 }
 
 function deriveDocumentSessionId(
-  documentKind: 'note' | 'page' | 'post',
+  documentKind: 'post',
   documentId: string | undefined,
 ): string | undefined {
   if (!documentId) return undefined
@@ -83,7 +83,7 @@ function deriveDocumentSessionId(
 export function useWriteAgent(opts: {
   agentVisible: boolean
   documentId?: string
-  documentKind: 'note' | 'page' | 'post'
+  documentKind: 'post'
 }): WriteAgentController {
   const { t } = useI18n()
 

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { resetAllCollections } from '~/data/resource/collection'
-import { IpInfoPopover } from '~/features/_shared/components/ip-info-popover'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { Button } from '~/ui/primitives/button'
@@ -135,19 +134,13 @@ export function SessionSection() {
                           : t('settings.session.badge.other')}
                       </span>
                       {session.ip ? (
-                        <IpInfoPopover
-                          className="inline-flex min-w-0 items-center gap-1 text-xs text-neutral-500 hover:underline dark:text-neutral-400"
-                          ip={session.ip}
-                          trigger={
-                            <>
-                              <Globe
-                                aria-hidden="true"
-                                className="size-3 shrink-0 text-neutral-400"
-                              />
-                              <span>{session.ip}</span>
-                            </>
-                          }
-                        />
+                        <span className="inline-flex min-w-0 items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
+                          <Globe
+                            aria-hidden="true"
+                            className="size-3 shrink-0 text-neutral-400"
+                          />
+                          <span>{session.ip}</span>
+                        </span>
                       ) : null}
                     </div>
                     <p className="mt-2 truncate font-mono text-xs text-neutral-600 dark:text-neutral-300">

@@ -1,7 +1,8 @@
-import { FileText, StickyNote } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { FileText } from 'lucide-react'
+
 import type { ArticleInfo } from '~/api/ai'
 import type { TranslationKey } from '~/i18n/types'
-import type { LucideIcon } from 'lucide-react'
 
 export interface RefTypeMeta {
   icon: LucideIcon
@@ -20,21 +21,6 @@ const META_BY_TYPE: Record<ArticleInfo['type'], RefTypeMeta> = {
     icon: FileText,
     labelKey: 'ai.refType.post',
     editPath: (id: string) => `/posts/edit?id=${id}`,
-  },
-  Note: {
-    icon: StickyNote,
-    labelKey: 'ai.refType.note',
-    editPath: (id: string) => `/notes/edit?id=${id}`,
-  },
-  Page: {
-    icon: FileText,
-    labelKey: 'ai.refType.page',
-    editPath: (id: string) => `/pages/edit?id=${id}`,
-  },
-  Recently: {
-    icon: FileText,
-    labelKey: 'ai.refType.recently',
-    editPath: null,
   },
 }
 

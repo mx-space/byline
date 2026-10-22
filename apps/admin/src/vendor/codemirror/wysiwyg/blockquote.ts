@@ -1,6 +1,5 @@
 import type { EditorState, Range } from '@codemirror/state'
 import type { DecorationSet, EditorView } from '@codemirror/view'
-
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view'
 
 type GithubAlertType = 'NOTE' | 'TIP' | 'IMPORTANT' | 'WARNING' | 'CAUTION'
@@ -166,7 +165,7 @@ class AlertMarkerWidget extends WidgetType {
 
 // Pattern for blockquote detection: > at start, possibly nested
 const blockquotePattern = /^(\s*)((?:>\s*)+)/
-const githubAlertPattern = /^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i
+const githubAlertPattern = /^\s*\[!(note|tip|important|warning|caution)\]\s*/i
 
 interface BlockquoteMatch {
   lineFrom: number
@@ -290,7 +289,7 @@ const buildBlockquoteDecorations = (state: EditorState): DecorationSet => {
     const info = lineInfos[i]
     if (!info.blockquote) continue
 
-    const { blockquote, alertType, alertLevel } = info
+    const { blockquote, alertType } = info
     const prev = i > 0 ? lineInfos[i - 1] : null
     const next = i < lineInfos.length - 1 ? lineInfos[i + 1] : null
 

@@ -1,7 +1,8 @@
-import { FileIcon, ImageIcon, Smile, User } from 'lucide-react'
-import type { CommentUploadStatus, FileType } from '~/api/files'
-import type { TranslationKey } from '~/i18n/types'
 import type { LucideIcon } from 'lucide-react'
+import { FileIcon, ImageIcon, Smile, User } from 'lucide-react'
+
+import type { FileType } from '~/api/files'
+import type { TranslationKey } from '~/i18n/types'
 import { adminQueryKeys } from '~/query/keys'
 
 export const filesQueryKey = adminQueryKeys.files.root
@@ -38,16 +39,6 @@ export const fileTypeOptions: FileTypeOption[] = [
     labelKey: 'files.fileType.file',
     value: 'file',
   },
-]
-
-export const commentStatusOptions: Array<{
-  labelKey: TranslationKey
-  value: CommentUploadStatus
-}> = [
-  { labelKey: 'files.commentStatus.all', value: '' },
-  { labelKey: 'files.commentStatus.active', value: 'active' },
-  { labelKey: 'files.commentStatus.pending', value: 'pending' },
-  { labelKey: 'files.commentStatus.detached', value: 'detached' },
 ]
 
 export const FILES_PAGE_SIZE = 24

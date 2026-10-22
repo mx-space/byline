@@ -2,25 +2,12 @@ import type { TranslationKey } from '~/i18n/types'
 import type { ContentRevision } from '~/models/draft'
 
 const FIELD_LABEL: Record<string, TranslationKey> = {
-  bookmark: 'write.recovery.field.bookmark',
   categoryId: 'write.recovery.field.category',
-  coordinates: 'write.recovery.field.coordinates',
-  copyright: 'write.recovery.field.copyright',
-  isPremium: 'write.recovery.field.premium',
-  location: 'write.recovery.field.location',
-  mood: 'write.recovery.field.mood',
-  order: 'write.recovery.field.order',
-  password: 'write.recovery.field.passwordProtected',
   pin: 'write.recovery.field.pin',
   pinOrder: 'write.recovery.field.pinOrder',
-  publicAt: 'write.recovery.field.publicAt',
-  relatedId: 'write.recovery.field.related',
   slug: 'write.recovery.field.slug',
-  subtitle: 'write.recovery.field.subtitle',
   summary: 'write.recovery.field.summary',
   tags: 'write.recovery.field.tags',
-  topicId: 'write.recovery.field.topic',
-  weather: 'write.recovery.field.weather',
 }
 
 export interface RevisionChangeSummary {

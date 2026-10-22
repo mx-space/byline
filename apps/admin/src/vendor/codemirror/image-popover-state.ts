@@ -1,5 +1,5 @@
-import { atom, getDefaultStore, useAtomValue } from 'jotai'
 import type { EditorView } from '@codemirror/view'
+import { atom, getDefaultStore, useAtomValue } from 'jotai'
 
 export interface ImagePopoverSnapshot {
   visible: boolean

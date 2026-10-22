@@ -1,5 +1,6 @@
 import type { TranslationKey } from '~/i18n/types'
 import { adminQueryKeys } from '~/query/keys'
+
 import type { PostSortKey } from './types/posts'
 
 export const allCategoriesValue = '__all__'

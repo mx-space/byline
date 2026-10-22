@@ -14,12 +14,10 @@ import {
 } from 'lucide-react'
 
 import type { ConfigFormField } from '~/api/options'
-import type { SearchIndexRebuildResult } from '~/api/search-index'
 import { translate as t } from '~/i18n/translate'
 import type { TranslationKey, TranslationValues } from '~/i18n/types'
-import type { CreateMetaPresetDto, MetaPresetField } from '~/models/meta-preset'
 
-import { aiProviderTypeOptions, typesWithOptions } from '../constants'
+import { aiProviderTypeOptions } from '../constants'
 import type {
   AIConfig,
   AIProviderConfig,
@@ -92,7 +90,7 @@ export function setPathImmutable<T extends Record<string, unknown>>(
 }
 
 export function cloneJson<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value ?? {})) as T
+  return structuredClone(value ?? {}) as T
 }
 
 export function isDeepEqual(left: unknown, right: unknown) {
@@ -374,53 +372,4 @@ export function mergeModelOptions(
 export function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error && error.message) return error.message
   return fallback
-}
-
-export function formatSearchIndexStats(result: SearchIndexRebuildResult) {
-  return t('settings.maintenance.searchIndex.stats', {
-    created: result.created,
-    deleted: result.deleted,
-    skipped: result.skipped,
-    total: result.total,
-    updated: result.updated,
-  })
-}
-
-export function emptyMetaPreset(): CreateMetaPresetDto {
-  return {
-    enabled: true,
-    key: '',
-    label: '',
-    scope: 'both',
-    type: 'text',
-  }
-}
-
-export function metaPresetToForm(preset: MetaPresetField): CreateMetaPresetDto {
-  return {
-    allowCustomOption: preset.allowCustomOption,
-    children: preset.children,
-    description: preset.description ?? '',
-    enabled: preset.enabled,
-    key: preset.key,
-    label: preset.label,
-    options: preset.options,
-    placeholder: preset.placeholder ?? '',
-    scope: preset.scope,
-    type: preset.type,
-  }
-}
-
-export function validateMetaPreset(t: Translator, form: CreateMetaPresetDto) {
-  if (!form.key.trim()) return t('settings.meta.validation.needKey')
-  if (!/^[\w-]+$/.test(form.key))
-    return t('settings.meta.validation.invalidKey')
-  if (!form.label.trim()) return t('settings.meta.validation.needLabel')
-  if (typesWithOptions.includes(form.type) && !form.options?.length) {
-    return t('settings.meta.validation.needOption')
-  }
-  if (form.type === 'object' && !form.children?.length) {
-    return t('settings.meta.validation.needChildren')
-  }
-  return null
 }

@@ -2,12 +2,12 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import { shallow } from 'zustand/shallow'
 import { createWithEqualityFn } from 'zustand/traditional'
 import type { StateCreator } from 'zustand/vanilla'
-import type { FocusScopeAction } from './action'
-import type { FocusScopeState } from './initial-state'
 
 import { flattenActions } from '~/store/utils/flatten-actions'
 
+import type { FocusScopeAction } from './action'
 import { createFocusScopeSlice } from './action'
+import type { FocusScopeState } from './initial-state'
 import { initialFocusScopeState } from './initial-state'
 
 export interface FocusScopeStore extends FocusScopeState, FocusScopeAction {}

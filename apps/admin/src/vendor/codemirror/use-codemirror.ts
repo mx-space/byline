@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-
 import {
   defaultKeymap,
   history,
@@ -17,6 +15,7 @@ import {
   keymap,
   lineNumbers,
 } from '@codemirror/view'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
   setEditorView as setStoreEditorView,
@@ -74,8 +73,7 @@ export function useCodeMirror<T extends Element = HTMLDivElement>(
   const containerRef = useCallback((node: T | null) => {
     if (viewRef.current) {
       const handler = (viewRef.current as any).__pasteHandler as
-        | ((e: ClipboardEvent) => void)
-        | undefined
+        ((e: ClipboardEvent) => void) | undefined
       if (handler) viewRef.current.dom.removeEventListener('paste', handler)
       viewRef.current.destroy()
       if (enableStoreRef.current) setStoreEditorView(undefined)
@@ -202,8 +200,7 @@ export function useCodeMirror<T extends Element = HTMLDivElement>(
       const current = viewRef.current
       if (current) {
         const handler = (current as any).__pasteHandler as
-          | ((e: ClipboardEvent) => void)
-          | undefined
+          ((e: ClipboardEvent) => void) | undefined
         if (handler) current.dom.removeEventListener('paste', handler)
         current.destroy()
         if (enableStoreRef.current) setStoreEditorView(undefined)

@@ -1,9 +1,8 @@
 import type { EditorState, Range } from '@codemirror/state'
-import type { DecorationSet } from '@codemirror/view'
-import type { Root } from 'react-dom/client'
-
 import { Prec, StateField } from '@codemirror/state'
+import type { DecorationSet } from '@codemirror/view'
 import { Decoration, EditorView, keymap, WidgetType } from '@codemirror/view'
+import type { Root } from 'react-dom/client'
 
 import { blockDetectorFacet, isHiddenSeparatorLine } from './block-registry'
 
@@ -563,8 +562,7 @@ function updateDetailsElement(
       state.editorMountEl.style.minHeight = `${estimateDetailsEditorHeight(content)}px`
     }
     const updateFn = (el as any).__updateContent as
-      | ((c: string) => void)
-      | undefined
+      ((c: string) => void) | undefined
     updateFn?.(content)
   }
 }
@@ -750,8 +748,7 @@ const focusDetailsEditor = (
     ) as HTMLElement | null
     if (!el) return false
     const focusFn = (el as any).__focusEditor as
-      | ((p: 'start' | 'end') => void)
-      | undefined
+      ((p: 'start' | 'end') => void) | undefined
     if (!focusFn) return false
     focusFn(position)
     return true

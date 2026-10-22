@@ -1,5 +1,4 @@
 import type { ContextMenuItem } from '../types'
-
 import { useContextMenuStore } from './store'
 
 export type { ContextMenuAction } from './action'

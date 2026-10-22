@@ -1,9 +1,8 @@
-import { codeToHtml } from 'shiki'
 import type { EditorState, Range } from '@codemirror/state'
-import type { DecorationSet } from '@codemirror/view'
-
 import { StateField } from '@codemirror/state'
+import type { DecorationSet } from '@codemirror/view'
 import { Decoration, EditorView, WidgetType } from '@codemirror/view'
+import { codeToHtml } from 'shiki'
 
 import { imageHeightChangedEffect, ImageWidget } from './image'
 
@@ -281,7 +280,7 @@ const findInlinePatterns = (
 
   // Italic: *text* or _text_ (but not ** or __)
   const italicRegex =
-    /(?<!\*)\*(?!\*)(?!\s)([^*]+?)(?<!\s)\*(?!\*)|(?<!_)_(?!_)(?!\s)([^_]+?)(?<!\s)_(?!_)/g
+    /(?<!\*)\*(?!\s)([^*]+)(?<!\s)\*(?!\*)|(?<!_)_(?!\s)([^_]+)(?<!\s)_(?!_)/g
   while ((match = italicRegex.exec(lineText)) !== null) {
     const marker = match[0].startsWith('*') ? '*' : '_'
     const content = match[1] || match[2]

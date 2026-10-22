@@ -15,7 +15,6 @@ import { toast } from 'sonner'
 import { uploadFile } from '~/api/files'
 import type { UpdateOwnerData } from '~/api/options'
 import { getOwner, updateOwner } from '~/api/options'
-import { IpInfoPopover } from '~/features/_shared/components/ip-info-popover'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { Button } from '~/ui/primitives/button'
@@ -196,19 +195,13 @@ export function OwnerSettings(props: { onSaved: () => Promise<unknown> }) {
                 </span>
               ) : null}
               {ownerQuery.data?.lastLoginIp ? (
-                <IpInfoPopover
-                  className="inline-flex min-w-0 items-center gap-1.5 hover:underline"
-                  ip={ownerQuery.data.lastLoginIp}
-                  trigger={
-                    <>
-                      <Globe
-                        aria-hidden="true"
-                        className="size-3.5 shrink-0 text-neutral-400"
-                      />
-                      <span>{ownerQuery.data.lastLoginIp}</span>
-                    </>
-                  }
-                />
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <Globe
+                    aria-hidden="true"
+                    className="size-3.5 shrink-0 text-neutral-400"
+                  />
+                  <span>{ownerQuery.data.lastLoginIp}</span>
+                </span>
               ) : null}
             </div>
           </div>

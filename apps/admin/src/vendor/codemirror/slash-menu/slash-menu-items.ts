@@ -1,3 +1,4 @@
+import type { EditorView } from '@codemirror/view'
 import {
   Bold,
   ChevronDown,
@@ -21,7 +22,6 @@ import {
   Strikethrough,
   Table,
 } from 'lucide-react'
-import type { EditorView } from '@codemirror/view'
 import type { ComponentType, SVGProps } from 'react'
 
 import { commands, setHeadingLevel } from '../toolbar/markdown-commands'

@@ -1,6 +1,5 @@
 import type { EditorState, Range } from '@codemirror/state'
 import type { DecorationSet, EditorView } from '@codemirror/view'
-
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view'
 
 import { isLineBreakTagLine, isLineInBlock } from './block-registry'

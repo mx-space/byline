@@ -15,7 +15,7 @@ export interface PublishTaskPayload {
   documentId: string
   operation: 'first-publish' | 'online-update' | 'republish'
   refId: null | string
-  refType: 'note' | 'page' | 'post'
+  refType: 'post'
   revisionId: string
   snapshot: { title: string }
 }

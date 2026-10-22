@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+
 import type { ModalHandle } from './types'
 
 const ModalInstanceContext = createContext<ModalHandle<any> | null>(null)

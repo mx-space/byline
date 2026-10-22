@@ -1,6 +1,6 @@
-import type { AiAgentSseEvent } from '@mx-space/ai'
-
 import { API_URL } from '~/constants/env'
+
+import type { AiAgentSseEvent } from './agent-sse-event'
 
 export type AdminAiAgentSseEvent = AiAgentSseEvent
 

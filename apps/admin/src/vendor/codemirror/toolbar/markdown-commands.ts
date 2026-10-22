@@ -38,7 +38,7 @@ const findInlineMatches = (
   }
 
   if (format === 'bold') {
-    const regex = /(\*\*|__)(?!\s)(.+?)(?<!\s)\1/g
+    const regex = /(\*\*|__)(?!\s).+?(?<!\s)\1/g
     while ((match = regex.exec(lineText)) !== null) {
       const marker = match[1]
       const start = lineFrom + match.index
@@ -74,7 +74,7 @@ const findInlineMatches = (
 
   if (format === 'italic') {
     const regex =
-      /(?<!\*)\*(?!\*)(?!\s)([^*]+?)(?<!\s)\*(?!\*)|(?<!_)_(?!_)(?!\s)([^_]+?)(?<!\s)_(?!_)/g
+      /(?<!\*)\*(?!\s)[^*]+(?<!\s)\*(?!\*)|(?<!_)_(?!\s)[^_]+(?<!\s)_(?!_)/g
     while ((match = regex.exec(lineText)) !== null) {
       const marker = match[0].startsWith('*') ? '*' : '_'
       const start = lineFrom + match.index

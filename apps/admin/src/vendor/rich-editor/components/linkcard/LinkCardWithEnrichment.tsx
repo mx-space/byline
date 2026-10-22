@@ -1,12 +1,11 @@
-import { useMemo } from 'react'
 import type { LinkCardRendererProps } from '@haklex/rich-editor/renderers'
 import type {
   LinkCardApiAdapter,
   LinkCardFetchContext,
 } from '@haklex/rich-renderer-linkcard'
-import type { FC } from 'react'
-
 import { LinkCardRenderer } from '@haklex/rich-renderer-linkcard'
+import type { FC } from 'react'
+import { useMemo } from 'react'
 
 import { useEnrichmentFetcher } from '../EnrichmentLinkCardContext'
 import { createEnrichmentPlugin } from './enrichment-plugin'

@@ -1,5 +1,4 @@
 import type { ConfigFormField } from '~/api/options'
-
 import { Button } from '~/ui/primitives/button'
 import { SelectField } from '~/ui/primitives/select'
 import { TextArea, TextInput } from '~/ui/primitives/text-field'
@@ -17,7 +16,7 @@ export function renderConfigControl(props: {
   const placeholder = field.ui.placeholder
 
   switch (field.ui.component) {
-    case 'password':
+    case 'password': {
       return (
         <TextInput
           onChange={props.onChange as (value: string) => void}
@@ -26,7 +25,8 @@ export function renderConfigControl(props: {
           value={stringValue(props.value)}
         />
       )
-    case 'textarea':
+    }
+    case 'textarea': {
       return (
         <TextArea
           controlClassName="min-h-24"
@@ -35,7 +35,8 @@ export function renderConfigControl(props: {
           value={stringValue(props.value)}
         />
       )
-    case 'number':
+    }
+    case 'number': {
       return (
         <TextInput
           inputMode="decimal"
@@ -51,7 +52,8 @@ export function renderConfigControl(props: {
           }
         />
       )
-    case 'select':
+    }
+    case 'select': {
       return (
         <SelectField<number | string>
           aria-label={field.title}
@@ -64,14 +66,16 @@ export function renderConfigControl(props: {
           }
         />
       )
-    case 'tags':
+    }
+    case 'tags': {
       return (
         <TagsEditor
           onChange={props.onChange}
           value={Array.isArray(props.value) ? props.value.map(String) : []}
         />
       )
-    case 'action':
+    }
+    case 'action': {
       return (
         <div>
           <Button
@@ -85,8 +89,8 @@ export function renderConfigControl(props: {
           </Button>
         </div>
       )
-    case 'input':
-    default:
+    }
+    default: {
       return (
         <TextInput
           onChange={props.onChange as (value: string) => void}
@@ -94,5 +98,6 @@ export function renderConfigControl(props: {
           value={stringValue(props.value)}
         />
       )
+    }
   }
 }

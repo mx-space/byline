@@ -1,8 +1,7 @@
-import { useEffect } from 'react'
-import type { EditorView } from '@codemirror/view'
-
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import type { EditorView } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
+import { useEffect } from 'react'
 
 import { codemirrorReconfigureExtensionMap } from './extension'
 import { useEditorConfig } from './universal/use-editor-setting'

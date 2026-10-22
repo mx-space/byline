@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { tinykeys } from 'tinykeys'
 import type { KeybindingsMap } from 'tinykeys'
-import type { ListAction } from './types'
+import { tinykeys } from 'tinykeys'
 
 import { getActiveScopeId } from '~/ui/focus-scope'
+
+import type { ListAction } from './types'
 
 export interface UseListShortcutsOptions<T> {
   /** The focus-scope id this shortcut set belongs to. */

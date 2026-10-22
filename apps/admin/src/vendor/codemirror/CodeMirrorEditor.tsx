@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react'
-import type { EditorState } from '@codemirror/state'
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
-import type { RenderMode } from './universal/props'
+import 'katex/dist/katex.min.css'
+import './codemirror.css'
+import './universal/index.css'
 
+import type { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useRef } from 'react'
 
 import {
   codemirrorReconfigureExtensionMap,
@@ -12,17 +14,13 @@ import {
 import { ImageEditPopover } from './ImageEditPopover'
 import { SlashMenu, slashMenuExtension } from './slash-menu'
 import { FloatingToolbar, useSelectionPosition } from './toolbar'
+import styles from './universal/editor.module.css'
+import type { RenderMode } from './universal/props'
 import { useEditorConfig } from './universal/use-editor-setting'
 import { useCodeMirrorConfigureFonts } from './use-auto-fonts'
 import { useCodeMirrorAutoToggleTheme } from './use-auto-theme'
 import { useCodeMirror } from './use-codemirror'
 import { wysiwygExtensions } from './wysiwyg'
-
-import 'katex/dist/katex.min.css'
-import './codemirror.css'
-import './universal/index.css'
-
-import styles from './universal/editor.module.css'
 
 export interface CodeMirrorEditorProps {
   text: string

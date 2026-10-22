@@ -1,10 +1,9 @@
-import type { SerializedEditorState } from 'lexical'
-
 import { DialogStackProvider } from '@haklex/rich-editor-ui'
 import {
   NestedDocDialogEditorProvider,
   nestedDocEditNodes,
 } from '@haklex/rich-ext-nested-doc'
+import type { SerializedEditorState } from 'lexical'
 
 import { NestedDocDialogEditor } from '~/vendor/rich-editor/components/NestedDocDialogEditor'
 import { RichEditor } from '~/vendor/rich-editor/core'

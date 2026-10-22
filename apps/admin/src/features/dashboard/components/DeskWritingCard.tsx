@@ -1,6 +1,5 @@
 import { Link } from 'react-router'
 
-import { refTypeMeta } from '~/features/drafts/constants'
 import { useI18n } from '~/i18n'
 import type { TranslationKey } from '~/i18n/types'
 import type { BadgeTone } from '~/ui/primitives/badge'
@@ -17,10 +16,6 @@ export const writingStatusMeta: Record<
     labelKey: 'dashboard.desk.writing.status.modified',
     tone: 'warning',
   },
-  scheduled: {
-    labelKey: 'dashboard.desk.writing.status.scheduled',
-    tone: 'neutral',
-  },
   unpublished: {
     labelKey: 'dashboard.desk.writing.status.unpublished',
     tone: 'accent',
@@ -32,7 +27,7 @@ export function DeskWritingCard(props: {
   items: DeskWritingItem[]
   total: number
 }) {
-  const { format, t } = useI18n()
+  const { t } = useI18n()
 
   return (
     <DeskSection
@@ -42,13 +37,7 @@ export function DeskWritingCard(props: {
     >
       <ul>
         {props.items.map((item) => {
-          const time =
-            item.status === 'scheduled'
-              ? format.dateTime(item.time, {
-                  dateStyle: 'medium',
-                  timeStyle: undefined,
-                })
-              : relativeTimeFromNow(item.time)
+          const time = relativeTimeFromNow(item.time)
           return (
             <li
               className="border-b border-border last:border-b-0"
@@ -69,7 +58,6 @@ export function DeskWritingCard(props: {
                   ) : null}
                 </span>
                 <span className="whitespace-nowrap text-xs text-fg-subtle phone:col-start-1 phone:row-start-2">
-                  {t(refTypeMeta[item.refType].labelKey)} ·{' '}
                   {t(writingStatusMeta[item.status].labelKey)}
                 </span>
                 <span className="text-right text-xs tabular-nums text-fg-subtle phone:col-start-2 phone:row-span-2 phone:row-start-1">

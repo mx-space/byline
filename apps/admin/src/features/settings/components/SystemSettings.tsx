@@ -6,7 +6,6 @@ import { toast } from 'sonner'
 import { sendTestEmail } from '~/api/health'
 import type { ConfigFormGroup, ConfigFormSchema } from '~/api/options'
 import { getAllOptions, patchOption } from '~/api/options'
-import { presentEnableBackupEncryption } from '~/features/backup/components/BackupKeyModals'
 import { useI18n } from '~/i18n'
 import { messages } from '~/i18n/resources'
 import type { TranslationKey } from '~/i18n/types'
@@ -14,7 +13,6 @@ import { adminQueryKeys } from '~/query/keys'
 import { Button } from '~/ui/primitives/button'
 
 import { settingsQueryKey, systemGroupTranslationKeys } from '../constants'
-import type { MembershipConfigValue } from '../utils/membership'
 import {
   cloneJson,
   getErrorMessage,
@@ -24,9 +22,6 @@ import {
 } from '../utils/settings'
 import { AIConfigEditor } from './ai/AIConfigEditor'
 import { ConfigSectionFields } from './config/ConfigSectionFields'
-import { MembershipConfigEditor } from './membership/MembershipConfigEditor'
-import { presentTestAiReview } from './modals/TestAiReviewModal'
-import { SeoConfigEditor } from './seo/SeoConfigEditor'
 import { useSettingsActionBarSetter } from './SettingsActionBar'
 import { SettingsSection, SettingsSkeleton } from './SettingsPrimitives'
 
@@ -105,34 +100,14 @@ export function SystemSettings(props: {
   })
 
   const updateValue = (path: string, value: unknown) => {
-    if (path === 'backupOptions.encryptionEnabled' && value === true) {
-      void (async () => {
-        const publicKey = await presentEnableBackupEncryption()
-        if (!publicKey) return
-        setConfigs((current) =>
-          setPathImmutable(
-            setPathImmutable(
-              current,
-              'backupOptions.encryptionPublicKey',
-              publicKey,
-            ),
-            path,
-            true,
-          ),
-        )
-      })()
-      return
-    }
     setConfigs((current) => setPathImmutable(current, path, value))
   }
 
   const handleFieldAction = useCallback(
     (actionId: string) => {
-      if (actionId === 'test-ai-review') void presentTestAiReview()
-      else
-        toast.warning(
-          t('settings.common.section.unknownAction', { action: actionId }),
-        )
+      toast.warning(
+        t('settings.common.section.unknownAction', { action: actionId }),
+      )
     },
     [t],
   )
@@ -218,20 +193,6 @@ export function SystemSettings(props: {
                   modelCacheKey={adminQueryKeys.settings.aiModels()}
                   onChange={(value) => updateValue(section.key, value)}
                   value={normalizeAIConfig(configs[section.key])}
-                />
-              ) : section.key === 'seo' ? (
-                <SeoConfigEditor
-                  fields={section.fields}
-                  formData={configs}
-                  onAction={handleFieldAction}
-                  prefix={section.key}
-                  updateValue={updateValue}
-                />
-              ) : section.key === 'membership' ? (
-                <MembershipConfigEditor
-                  fields={section.fields}
-                  onChange={(value) => updateValue(section.key, value)}
-                  value={(configs[section.key] ?? {}) as MembershipConfigValue}
                 />
               ) : (
                 <ConfigSectionFields

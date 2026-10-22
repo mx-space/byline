@@ -1,4 +1,4 @@
-import { BookOpen, Pin, ThumbsUp } from 'lucide-react'
+import { Pin } from 'lucide-react'
 
 import { WEB_URL } from '~/constants/env'
 import {
@@ -74,14 +74,6 @@ export function PostRow(props: {
           {post.tags?.length ? (
             <span className="max-w-64 truncate">{post.tags.join('、')}</span>
           ) : null}
-          <span className="inline-flex items-center gap-1">
-            <BookOpen aria-hidden="true" className="size-3" />
-            {post.readCount ?? 0}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <ThumbsUp aria-hidden="true" className="size-3" />
-            {post.likeCount ?? 0}
-          </span>
         </>
       }
       onSelect={(mode) => props.onSelect(post.id, mode)}

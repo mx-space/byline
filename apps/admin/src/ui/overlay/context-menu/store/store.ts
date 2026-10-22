@@ -2,12 +2,12 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import { shallow } from 'zustand/shallow'
 import { createWithEqualityFn } from 'zustand/traditional'
 import type { StateCreator } from 'zustand/vanilla'
-import type { ContextMenuAction } from './action'
-import type { ContextMenuState } from './initial-state'
 
 import { flattenActions } from '~/store/utils/flatten-actions'
 
+import type { ContextMenuAction } from './action'
 import { createContextMenuSlice } from './action'
+import type { ContextMenuState } from './initial-state'
 import { initialContextMenuState } from './initial-state'
 
 export interface ContextMenuStore extends ContextMenuState, ContextMenuAction {}

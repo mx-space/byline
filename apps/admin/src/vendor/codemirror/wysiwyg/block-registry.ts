@@ -1,5 +1,4 @@
 import type { EditorState } from '@codemirror/state'
-
 import { Facet, StateField } from '@codemirror/state'
 
 export interface BlockRange {

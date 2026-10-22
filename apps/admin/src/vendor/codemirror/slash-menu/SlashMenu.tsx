@@ -1,10 +1,10 @@
+import './slash-menu.css'
+
+import type { EditorView } from '@codemirror/view'
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import type { EditorView } from '@codemirror/view'
 
 import { useSlashMenu } from './use-slash-menu'
-
-import './slash-menu.css'
 
 interface SlashMenuProps {
   editorView: EditorView | undefined

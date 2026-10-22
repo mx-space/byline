@@ -4,6 +4,7 @@ import type {
   UrlMatchResult,
 } from '@haklex/rich-renderer-linkcard'
 import type { ReactNode } from 'react'
+
 import type { EnrichmentAttribute, EnrichmentResult } from '../../types'
 
 const cache = new Map<string, EnrichmentResult>()
@@ -12,25 +13,31 @@ const inflight = new Map<string, Promise<EnrichmentResult>>()
 function formatAttr(a: EnrichmentAttribute): string {
   const v = a.value
   switch (a.format) {
-    case 'rating':
+    case 'rating': {
       return typeof v === 'number' ? `★ ${v.toFixed(1)}` : `★ ${v}`
-    case 'percent':
+    }
+    case 'percent': {
       return typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : `${v}`
-    case 'date':
+    }
+    case 'date': {
       return typeof v === 'string'
         ? new Date(v).toLocaleDateString('zh-CN')
         : String(v)
-    case 'duration':
+    }
+    case 'duration': {
       if (typeof v === 'number') {
         const m = Math.floor(v / 60)
         const s = Math.floor(v % 60)
         return `${m}:${s.toString().padStart(2, '0')}`
       }
       return String(v)
-    case 'number':
+    }
+    case 'number': {
       return typeof v === 'number' ? v.toLocaleString() : String(v)
-    default:
+    }
+    default: {
       return String(v)
+    }
   }
 }
 

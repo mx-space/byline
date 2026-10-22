@@ -2,13 +2,13 @@ import { persist, subscribeWithSelector } from 'zustand/middleware'
 import { shallow } from 'zustand/shallow'
 import { createWithEqualityFn } from 'zustand/traditional'
 import type { StateCreator } from 'zustand/vanilla'
-import type { EditorSettingAction } from './action'
-import type { EditorSettingState } from './initial-state'
 
 import { flattenActions } from '~/store/utils/flatten-actions'
 
 import { GeneralSettingSchema } from '../editor-config'
+import type { EditorSettingAction } from './action'
 import { createEditorSettingSlice } from './action'
+import type { EditorSettingState } from './initial-state'
 import { initialEditorSettingState } from './initial-state'
 
 export interface EditorSettingStore

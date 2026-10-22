@@ -24,19 +24,23 @@ describe('parseLangInput', () => {
     expect(parseLangInput('')).toEqual([])
   })
 
-  it('folds a region suffix into its 2-letter primary tag, so zh-CN and zh dedupe together', () => {
-    expect(parseLangInput('zh-CN, zh')).toEqual(['zh'])
+  it('keeps regional locales distinct and canonicalizes their casing', () => {
+    expect(parseLangInput('zh-cn, zh, ZH-TW, zh_CN')).toEqual([
+      'zh-CN',
+      'zh',
+      'zh-TW',
+    ])
   })
 
-  it('treats underscore as a hyphen when folding a region suffix', () => {
-    expect(parseLangInput('en_US, EN')).toEqual(['en'])
+  it('treats underscore as a hyphen', () => {
+    expect(parseLangInput('en_US, en-us')).toEqual(['en-US'])
   })
 
-  it('leaves a 3-letter primary tag (and any suffix) untouched', () => {
-    expect(parseLangInput('FIL-PH, jam')).toEqual(['fil-ph', 'jam'])
+  it('keeps a 3-letter primary tag that has no 2-letter form', () => {
+    expect(parseLangInput('FIL-PH, jam')).toEqual(['fil-PH', 'jam'])
   })
 
-  it('folds an alias onto the code the server will store, so jp and ja are one language', () => {
+  it('folds an alias onto the canonical code, so jp and ja are one language', () => {
     expect(parseLangInput('jp, ja')).toEqual(['ja'])
   })
 
@@ -44,8 +48,12 @@ describe('parseLangInput', () => {
     expect(parseLangInput('eng')).toEqual(['en'])
   })
 
-  it('folds a script or region variant the server also folds', () => {
-    expect(parseLangInput('zh-Hant, pt-BR, kr')).toEqual(['zh', 'pt', 'ko'])
+  it('canonicalizes script and region subtags', () => {
+    expect(parseLangInput('zh-hant, pt-br, kr')).toEqual([
+      'zh-Hant',
+      'pt-BR',
+      'ko',
+    ])
   })
 
   it('returns a single value when there is no separator', () => {

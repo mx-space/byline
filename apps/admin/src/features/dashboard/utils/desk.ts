@@ -1,28 +1,25 @@
-import type { DeskDraft, DeskScheduledNote } from '~/api/aggregate'
 import { getEditPathForDraft } from '~/features/drafts/utils/draft-edit-path'
-import { DraftRefType } from '~/models/draft'
+import type { DraftModel } from '~/models/draft'
 
 import { deskWritingItemLimit } from '../constants'
 
-export type DeskWritingStatus = 'modified' | 'scheduled' | 'unpublished'
+export type DeskWritingStatus = 'modified' | 'unpublished'
 
 export interface DeskWritingItem {
   branchCount: number
   chars: number
-  draftId: string | null
+  draftId: string
   excerpt: string
   id: string
-  refType: DraftRefType
   status: DeskWritingStatus
   time: string
   title: string
   to: string
 }
 
-export function buildWritingItems(
-  drafts: DeskDraft[],
-  scheduledNotes: DeskScheduledNote[],
-): DeskWritingItem[] {
+const EXCERPT_LENGTH = 160
+
+export function buildWritingItems(drafts: DraftModel[]): DeskWritingItem[] {
   const byDocument = new Map<string, DeskWritingItem>()
   for (const draft of drafts) {
     if (draft.status !== 'active' || draft.relationToPublished === 'same')
@@ -32,36 +29,23 @@ export function buildWritingItems(
       existing.branchCount += 1
       continue
     }
+    const text = draft.headRevision.text ?? ''
     byDocument.set(draft.documentId, {
       branchCount: 1,
-      chars: draft.headRevision.chars,
+      chars: text.length,
       draftId: draft.id,
-      excerpt: draft.headRevision.excerpt,
+      excerpt: text.replaceAll(/\s+/g, ' ').trim().slice(0, EXCERPT_LENGTH),
       id: draft.documentId,
-      refType: draft.document.refType,
       status: draft.document.refId ? 'modified' : 'unpublished',
       time: draft.updatedAt ?? draft.createdAt,
       title: draft.headRevision.title,
       to: getEditPathForDraft(draft),
     })
   }
-  const scheduledItems = scheduledNotes.map<DeskWritingItem>((note) => ({
-    branchCount: 0,
-    chars: 0,
-    draftId: null,
-    excerpt: '',
-    id: note.id,
-    refType: DraftRefType.Note,
-    status: 'scheduled',
-    time: note.publicAt,
-    title: note.title ?? '',
-    to: `/notes/edit?id=${encodeURIComponent(note.id)}`,
-  }))
 
-  const draftItems = [...byDocument.values()].sort((a, b) =>
-    b.time.localeCompare(a.time),
-  )
-  return [...draftItems, ...scheduledItems].slice(0, deskWritingItemLimit)
+  return [...byDocument.values()]
+    .sort((a, b) => b.time.localeCompare(a.time))
+    .slice(0, deskWritingItemLimit)
 }
 
 export function resolveGreetingKey(hour: number) {

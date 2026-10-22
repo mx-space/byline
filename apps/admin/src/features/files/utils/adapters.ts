@@ -1,12 +1,6 @@
-import type {
-  CommentUploadFile,
-  CommentUploadStatus,
-  FileItem,
-  OrphanFile,
-} from '~/api/files'
+import type { FileItem, OrphanFile } from '~/api/files'
 import type { TranslationKey, TranslationValues } from '~/i18n/types'
 import type { BadgeTone } from '~/ui/primitives/badge'
-
 import { relativeTimeFromNow } from '~/utils/time'
 
 import { formatBytes } from './format'
@@ -59,7 +53,7 @@ export function adaptOrphanFile(
   const ref =
     item.refType && item.refId
       ? `${item.refType}/${item.refId}`
-      : t('files.commentImages.unbound')
+      : t('files.orphans.unbound')
 
   return {
     id: item.id,
@@ -80,57 +74,17 @@ export function adaptOrphanFile(
 
 function orphanStatusTone(status: OrphanFile['status']): BadgeTone {
   switch (status) {
-    case 'active':
+    case 'active': {
       return 'neutral'
-    case 'pending':
+    }
+    case 'pending': {
       return 'warning'
-    case 'detached':
+    }
+    case 'detached': {
       return 'danger'
-    default:
+    }
+    default: {
       return 'neutral'
-  }
-}
-
-export function adaptCommentUpload(
-  item: CommentUploadFile,
-  t: Translator,
-  statusLabels: Record<Exclude<CommentUploadStatus, ''>, string>,
-): FileRowItem<CommentUploadFile> {
-  const meta = [formatBytes(item.byteSize), item.mimeType ?? undefined]
-    .filter(Boolean)
-    .join(' · ')
-  const ref =
-    item.refType && item.refId
-      ? `${item.refType}/${item.refId}`
-      : t('files.commentImages.unbound')
-
-  return {
-    id: item.id,
-    name: item.fileName,
-    url: item.fileUrl,
-    thumbhash: item.thumbhash,
-    palette: item.palette,
-    primary: item.fileName,
-    secondary: meta,
-    tertiary: ref,
-    status: {
-      label: statusLabels[item.status],
-      tone: commentStatusTone(item.status),
-    },
-    createdAt: item.createdAt,
-    raw: item,
-  }
-}
-
-function commentStatusTone(status: CommentUploadFile['status']): BadgeTone {
-  switch (status) {
-    case 'active':
-      return 'neutral'
-    case 'pending':
-      return 'warning'
-    case 'detached':
-      return 'danger'
-    default:
-      return 'neutral'
+    }
   }
 }

@@ -1,10 +1,9 @@
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { $getNearestNodeFromDOMNode } from 'lexical'
-import type { TagRendererProps } from '@haklex/rich-editor/static'
-
 import { useRendererMode } from '@haklex/rich-editor'
+import type { TagRendererProps } from '@haklex/rich-editor/static'
 import { getTagBgColor, TagRenderer } from '@haklex/rich-editor/static'
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
+import { $getNearestNodeFromDOMNode } from 'lexical'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export function TagEditRenderer(props: TagRendererProps) {
   const mode = useRendererMode()

@@ -43,10 +43,8 @@ export const slashMenuStateField = StateField.define<SlashMenuState>({
       if (effect.is(closeSlashMenuEffect)) {
         next = emptyState
       }
-      if (effect.is(updateSlashMenuQueryEffect)) {
-        if (next.active) {
-          next = { ...next, query: effect.value }
-        }
+      if (effect.is(updateSlashMenuQueryEffect) && next.active) {
+        next = { ...next, query: effect.value }
       }
     }
 

@@ -1,4 +1,9 @@
 import { mergeProps } from '@base-ui/react/merge-props'
+import type {
+  HTMLAttributes,
+  MouseEvent as ReactMouseEvent,
+  ReactNode,
+} from 'react'
 import {
   Children,
   cloneElement,
@@ -7,16 +12,11 @@ import {
   useCallback,
   useId,
 } from 'react'
-import type {
-  HTMLAttributes,
-  MouseEvent as ReactMouseEvent,
-  ReactNode,
-} from 'react'
-import type { ContextMenuItem } from './types'
 
 import { cn } from '~/utils/cn'
 
 import { showContextMenu, useContextMenuStore } from './store'
+import type { ContextMenuItem } from './types'
 
 export type ContextMenuTriggerProps = {
   children: ReactNode

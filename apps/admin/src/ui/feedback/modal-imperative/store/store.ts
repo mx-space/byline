@@ -2,12 +2,12 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import { shallow } from 'zustand/shallow'
 import { createWithEqualityFn } from 'zustand/traditional'
 import type { StateCreator } from 'zustand/vanilla'
-import type { ModalAction } from './action'
-import type { ModalStoreState } from './initial-state'
 
 import { flattenActions } from '~/store/utils/flatten-actions'
 
+import type { ModalAction } from './action'
 import { createModalSlice } from './action'
+import type { ModalStoreState } from './initial-state'
 import { initialModalStoreState } from './initial-state'
 
 export interface ModalStore extends ModalStoreState, ModalAction {}

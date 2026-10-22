@@ -23,22 +23,3 @@ export function LegacyTaskDetailRedirect() {
     <Navigate replace to={`/tasks/${id}${location.search}${location.hash}`} />
   )
 }
-
-export function LegacyPageRedirect() {
-  const location = useLocation()
-  const nextPath = location.pathname.replace(/^\/page(?=\/|$)/, '/pages')
-  return (
-    <Navigate replace to={`${nextPath}${location.search}${location.hash}`} />
-  )
-}
-
-export function LegacyExtraRedirect() {
-  const location = useLocation()
-  const nextPath = location.pathname.replace(/^\/extra(?=\/|$)/, '')
-  return (
-    <Navigate
-      replace
-      to={`${nextPath || '/'}${location.search}${location.hash}`}
-    />
-  )
-}

@@ -1,13 +1,13 @@
+import './floating-toolbar.css'
+
+import type { EditorView } from '@codemirror/view'
 import { Bold, Code, Italic, Link, Strikethrough } from 'lucide-react'
+import type { ComponentType, SVGProps } from 'react'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { EditorView } from '@codemirror/view'
-import type { ComponentType, SVGProps } from 'react'
-import type { SelectionPosition } from './use-selection-position'
 
 import { commands, isInlineFormatActive } from './markdown-commands'
-
-import './floating-toolbar.css'
+import type { SelectionPosition } from './use-selection-position'
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
 

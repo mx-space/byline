@@ -109,9 +109,7 @@ export interface AiOverviewDetail {
   coverage: ArticleCoverage
 }
 
-export const OVERVIEW_ARTICLE_TYPES = ['post', 'note', 'page'] as const
-
-export type OverviewArticleType = (typeof OVERVIEW_ARTICLE_TYPES)[number]
+export type OverviewArticleType = 'post'
 
 export function getOverviewGrouped(params?: {
   page?: number

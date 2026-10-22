@@ -1,7 +1,7 @@
 import type { TranslationKey, TranslationValues } from '~/i18n/types'
-import type { AccountSession } from '../types/settings'
-
 import { authClient } from '~/utils/authjs/auth'
+
+import type { AccountSession } from '../types/settings'
 
 type Translator = (key: TranslationKey, values?: TranslationValues) => string
 

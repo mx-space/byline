@@ -19,9 +19,6 @@ export function buildDocumentBashSystemMessages(): ChatMessage[] {
     '- xml is XML only. Never write Markdown syntax inside it: no **bold**, *italic*, `code`, # heading, - item, or [text](url).',
     '- Inline: <b>, <i>, <s>, <u>, <code>, <sub>, <sup>, <mark>, <a href="...">.',
     '- Blocks: <p>, <h1>–<h6>, <ul><li><p>…</p></li></ul>, <ol>, <blockquote>, <codeblock lang="...">.</codeblock>',
-    '- Mx custom blocks use <node type="..." data="{...}" />. data is a JSON string escaped as an XML attribute. Do not invent <map> or <afilmory> tags.',
-    '- Map: <node type="map" data="{...}" /> with title, pois, track, view.',
-    '- Afilmory: <node type="afilmory" data="{...}" /> with baseUrl, source, layout, title, caption.',
   ].join('\n')
 
   return [{ content, cacheBreakpoint: true, role: 'system' }]

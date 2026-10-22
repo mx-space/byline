@@ -1,4 +1,5 @@
 import type { StoreSetter } from '~/store/types'
+
 import type { ThemeMode } from './initial-state'
 import type { ThemeStore } from './store'
 

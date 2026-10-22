@@ -1,14 +1,14 @@
+import type { EditorView } from '@codemirror/view'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { shallow } from 'zustand/shallow'
 import { createWithEqualityFn } from 'zustand/traditional'
-import type { EditorView } from '@codemirror/view'
 import type { StateCreator } from 'zustand/vanilla'
-import type { EditorStoreAction } from './action'
-import type { EditorStoreState } from './initial-state'
 
 import { flattenActions } from '~/store/utils/flatten-actions'
 
+import type { EditorStoreAction } from './action'
 import { createEditorStoreSlice } from './action'
+import type { EditorStoreState } from './initial-state'
 import { initialEditorStoreState } from './initial-state'
 
 export interface EditorStore extends EditorStoreState, EditorStoreAction {}

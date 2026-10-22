@@ -10,9 +10,9 @@ export function formatBytes(bytes: null | number | undefined): string {
 export function isPreviewColor(value: string | undefined): boolean {
   if (!value) return false
   return (
-    /^#[0-9a-f]{3,8}$/i.test(value) ||
-    /^rgba?\([\d\s.,%]+\)$/i.test(value) ||
-    /^hsla?\([\d\s.,%a-z-]+\)$/i.test(value)
+    /^#[\da-f]{3,8}$/i.test(value) ||
+    /^rgba?\([\d\s%,.]+\)$/i.test(value) ||
+    /^hsla?\([\d\s%,.a-z-]+\)$/i.test(value)
   )
 }
 

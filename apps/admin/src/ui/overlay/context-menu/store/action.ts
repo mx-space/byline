@@ -1,4 +1,5 @@
 import type { StoreSetter } from '~/store/types'
+
 import type { ContextMenuItem } from '../types'
 import type { VirtualElement } from './initial-state'
 import type { ContextMenuStore } from './store'

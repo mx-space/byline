@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import type { GeneralSettingDto } from './editor-config'
 
+import type { GeneralSettingDto } from './editor-config'
 import { GeneralSettingSchema } from './editor-config'
 import { useEditorSettingStore } from './editor-setting-store'
 

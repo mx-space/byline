@@ -4,8 +4,6 @@ import type { Image, Pager } from './base'
 
 export enum DraftRefType {
   Post = 'post',
-  Note = 'note',
-  Page = 'page',
 }
 
 export type RevisionRelation = 'same' | 'ancestor' | 'descendant' | 'diverged'
@@ -96,37 +94,11 @@ export interface DraftResponse {
 
 export interface PostSpecificData {
   categoryId?: string
-  copyright?: boolean
-  isPremium?: boolean
   pin?: boolean | string | null
   pinOrder?: number
-  relatedId?: string[]
   slug?: string
   summary?: string | null
   tags?: string[]
 }
 
-export interface NoteSpecificData {
-  bookmark?: boolean
-  coordinates?: {
-    latitude: number
-    longitude: number
-  } | null
-  location?: string
-  mood?: string
-  password?: string | null
-  publicAt?: string | null
-  slug?: string
-  topicId?: string | null
-  weather?: string
-}
-
-export interface PageSpecificData {
-  order?: number
-  slug?: string
-  subtitle?: string | null
-}
-
-export type TypeSpecificData = PostSpecificData &
-  NoteSpecificData &
-  PageSpecificData
+export type TypeSpecificData = PostSpecificData

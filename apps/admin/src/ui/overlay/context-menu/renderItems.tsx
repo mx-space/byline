@@ -1,13 +1,22 @@
 import { ContextMenu } from '@base-ui/react/context-menu'
-import { Check, ChevronRight } from 'lucide-react'
-import { isValidElement } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import { Check, ChevronRight } from 'lucide-react'
 import type {
   Key,
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
   ReactNode,
 } from 'react'
+import { isValidElement } from 'react'
+
+import { useI18n } from '~/i18n'
+import {
+  useFloatLayerContainer,
+  useLayerZIndex,
+} from '~/ui/overlay/floating-layer'
+import { menuStyles } from '~/ui/overlay/menu-styles'
+import { cn } from '~/utils/cn'
+
 import type {
   ContextMenuCheckboxItemType,
   ContextMenuDividerType,
@@ -17,14 +26,6 @@ import type {
   ContextMenuSubmenuType,
   MenuClickInfo,
 } from './types'
-
-import { useI18n } from '~/i18n'
-import {
-  useFloatLayerContainer,
-  useLayerZIndex,
-} from '~/ui/overlay/floating-layer'
-import { menuStyles } from '~/ui/overlay/menu-styles'
-import { cn } from '~/utils/cn'
 
 export interface RenderOptions {
   /** Reserve a fixed-width icon slot for every item to align rows. */
@@ -110,9 +111,7 @@ interface ItemContentOptions {
 
 function renderItemContent(
   item:
-    | ContextMenuItemType
-    | ContextMenuCheckboxItemType
-    | ContextMenuSubmenuType,
+    ContextMenuItemType | ContextMenuCheckboxItemType | ContextMenuSubmenuType,
   options: ItemContentOptions,
 ): ReactNode {
   const label = getItemLabel(item)

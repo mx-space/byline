@@ -1,7 +1,6 @@
-import type { Locale, TranslationKey } from './types'
-
 import { enUS } from './resources/en-US'
 import { zhCN } from './resources/zh-CN'
+import type { Locale, TranslationKey } from './types'
 
 export const DEFAULT_LOCALE: Locale = 'zh-CN'
 

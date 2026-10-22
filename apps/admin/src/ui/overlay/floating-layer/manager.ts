@@ -1,5 +1,4 @@
 import type { LayerTier } from './constants'
-
 import { Z_INDEX_LAYER } from './constants'
 
 let mainTop = 0

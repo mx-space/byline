@@ -163,51 +163,51 @@ describe('handleTaskUpdate — phase routing', () => {
   })
 
   it("'created' skips list caches whose filter params conflict with the payload", () => {
-    const cronParams = { ...TASKS_PARAMS, scope: 'cron' }
-    const enrichmentParams = { ...TASKS_PARAMS, scope: 'enrichment' }
+    const aiParams = { ...TASKS_PARAMS, scope: 'ai' }
+    const contentParams = { ...TASKS_PARAMS, scope: 'content' }
     queryClient.setQueryData(
       adminQueryKeys.tasks.tasks(TASKS_PARAMS),
       makeListResponse([]),
     )
     queryClient.setQueryData(
-      adminQueryKeys.tasks.tasks(cronParams),
+      adminQueryKeys.tasks.tasks(aiParams),
       makeListResponse([]),
     )
     queryClient.setQueryData(
-      adminQueryKeys.tasks.tasks(enrichmentParams),
+      adminQueryKeys.tasks.tasks(contentParams),
       makeListResponse([]),
     )
 
     const fresh = makeTask({
-      id: 'enrich-1',
-      scope: 'enrichment',
-      type: 'enrichment:probe' as AITaskType,
+      id: 'content-1',
+      scope: 'content',
+      type: 'content:reconcile' as AITaskType,
     })
     handleTaskUpdate(queryClient, {
       id: fresh.id,
       type: fresh.type,
-      scope: 'enrichment',
+      scope: 'content',
       phase: 'created',
       patch: fresh,
     })
 
     expect(
       queryClient.getQueryData<AITasksResponse>(
-        adminQueryKeys.tasks.tasks(cronParams),
+        adminQueryKeys.tasks.tasks(aiParams),
       )?.data,
     ).toEqual([])
     expect(
       queryClient
         .getQueryData<AITasksResponse>(adminQueryKeys.tasks.tasks(TASKS_PARAMS))
         ?.data.map((t) => t.id),
-    ).toEqual(['enrich-1'])
+    ).toEqual(['content-1'])
     expect(
       queryClient
         .getQueryData<AITasksResponse>(
-          adminQueryKeys.tasks.tasks(enrichmentParams),
+          adminQueryKeys.tasks.tasks(contentParams),
         )
         ?.data.map((t) => t.id),
-    ).toEqual(['enrich-1'])
+    ).toEqual(['content-1'])
   })
 
   it("'created' respects multi-status filter params on list caches", () => {
@@ -659,7 +659,7 @@ describe('SocketBridge — transport wiring', () => {
     expect(getAdminSocket()).toBeNull()
   })
 
-  it('dispatches an incoming business event to a window CustomEvent and to its cache/toast handler', () => {
+  it('dispatches an incoming business event to a window CustomEvent and to its cache handler', () => {
     renderSocketBridge(harness)
     const client = instances[0]
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
@@ -670,21 +670,20 @@ describe('SocketBridge — transport wiring', () => {
     }
     window.addEventListener('mx-admin:socket-event', listener)
     try {
-      client.emit(EventTypes.COMMENT_CREATE, { author: 'a', text: 'hi' })
+      client.emit(EventTypes.POST_UPDATE, { id: 'p1' })
     } finally {
       window.removeEventListener('mx-admin:socket-event', listener)
     }
 
     expect(events).toEqual([
-      { payload: { author: 'a', text: 'hi' }, type: EventTypes.COMMENT_CREATE },
+      { payload: { id: 'p1' }, type: EventTypes.POST_UPDATE },
     ])
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: adminQueryKeys.comments.root,
+      queryKey: adminQueryKeys.posts.root,
     })
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: adminQueryKeys.aggregate.root,
+      queryKey: ['dashboard'],
     })
-    expect(toast.success).toHaveBeenCalled()
   })
 
   it('routes a TASK_UPDATE event through handleTaskUpdate', () => {

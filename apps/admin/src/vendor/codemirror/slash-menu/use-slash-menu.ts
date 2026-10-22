@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Fuse from 'fuse.js'
 import type { EditorView } from '@codemirror/view'
-import type { SlashMenuGroup, SlashMenuItemWithGroup } from './slash-menu-items'
+import Fuse from 'fuse.js'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   closeSlashMenuEffect,
   slashMenuCommandAnnotation,
   slashMenuStateField,
 } from './slash-menu-extension'
+import type { SlashMenuGroup, SlashMenuItemWithGroup } from './slash-menu-items'
 import { slashMenuGroups, slashMenuItems } from './slash-menu-items'
 
 interface SlashMenuPosition {

@@ -1,7 +1,7 @@
-import type { ScopeOption } from './types/webhooks'
-
 import { EventScope } from '~/api/webhooks'
 import { adminQueryKeys } from '~/query/keys'
+
+import type { ScopeOption } from './types/webhooks'
 
 export const webhooksQueryKey = adminQueryKeys.webhooks.root
 

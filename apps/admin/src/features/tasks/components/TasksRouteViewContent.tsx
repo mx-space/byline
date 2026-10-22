@@ -5,7 +5,6 @@ import { useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 
 import { createTtsTask } from '~/api/ai'
-import { getCronTaskDefinitions } from '~/api/cron-tasks'
 import type { AITask, TaskScope } from '~/api/tasks'
 import {
   AITaskStatus,
@@ -173,13 +172,6 @@ export function TasksRouteView() {
     [setListState],
   )
 
-  const cronDefinitionsQuery = useQuery({
-    enabled: scopeFilter === 'cron',
-    queryFn: getCronTaskDefinitions,
-    queryKey: adminQueryKeys.cron.definitions(),
-    staleTime: 5 * 60 * 1000,
-  })
-
   const retryMutation = useMutation({
     mutationFn: retryTask,
     onError: (error: unknown) =>
@@ -256,19 +248,8 @@ export function TasksRouteView() {
         value: option.value,
       }))
     }
-    if (scopeFilter === 'cron') {
-      const definitions = cronDefinitionsQuery.data ?? []
-      if (definitions.length === 0) return null
-      return [
-        { label: t('tasks.filter.allType'), value: '' },
-        ...definitions.map((definition) => ({
-          label: definition.name,
-          value: definition.type,
-        })),
-      ]
-    }
     return null
-  }, [cronDefinitionsQuery.data, scopeFilter, t])
+  }, [scopeFilter, t])
 
   const headerActions: HeaderAction[] = [
     {

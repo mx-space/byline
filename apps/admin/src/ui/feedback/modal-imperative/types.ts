@@ -1,5 +1,6 @@
-import type { ModalProps } from '~/ui/feedback/modal'
 import type { ComponentType } from 'react'
+
+import type { ModalProps } from '~/ui/feedback/modal'
 
 export type ModalPropsOverride = Partial<
   Omit<

@@ -1,8 +1,8 @@
+import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import type { CreateOwnerData } from '~/api/system'
-import type { FormEvent } from 'react'
 
+import type { CreateOwnerData } from '~/api/system'
 import { createOwner } from '~/api/system'
 import { useI18n } from '~/i18n'
 import { TextInput } from '~/ui/primitives/text-field'

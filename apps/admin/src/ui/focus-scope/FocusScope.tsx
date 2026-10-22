@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef } from 'react'
 import type { HTMLAttributes, Ref } from 'react'
+import { useEffect, useId, useRef } from 'react'
 
 import { cn } from '~/utils/cn'
 
@@ -61,7 +61,7 @@ export function FocusScope({
   useEffect(() => {
     if (!DEV) return
     if (!isActive) return
-    // eslint-disable-next-line no-console
+
     console.info('[FocusScope] active →', scopeId, ref.current)
   }, [scopeId, isActive])
 

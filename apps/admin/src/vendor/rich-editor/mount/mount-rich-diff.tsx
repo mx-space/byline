@@ -1,5 +1,5 @@
-import { createRoot } from 'react-dom/client'
-import type { SerializedEditorState } from 'lexical'
+import '@haklex/rich-diff/style.css'
+import '../components/setup-enrichment-linkcard'
 
 import { RichDiff } from '@haklex/rich-diff'
 import { codeSnippetNodes } from '@haklex/rich-ext-code-snippet/static'
@@ -7,16 +7,12 @@ import { embedNodes } from '@haklex/rich-ext-embed/static'
 import { ExcalidrawNode } from '@haklex/rich-ext-excalidraw/static'
 import { galleryNodes } from '@haklex/rich-ext-gallery/static'
 import { nestedDocNodes } from '@haklex/rich-ext-nested-doc/static'
-
-import { enhancedRendererConfig } from '../core'
-
-import '@haklex/rich-diff/style.css'
+import type { SerializedEditorState } from 'lexical'
+import { createRoot } from 'react-dom/client'
 
 import type { EnrichmentFetcher } from '../components/EnrichmentLinkCardContext'
-
 import { EnrichmentFetcherProvider } from '../components/EnrichmentLinkCardContext'
-
-import '../components/setup-enrichment-linkcard'
+import { enhancedRendererConfig } from '../core'
 
 const extraNodes = [
   ExcalidrawNode,
@@ -36,8 +32,8 @@ export interface MountRichDiffOptions {
 }
 
 export interface RichDiffHandle {
-  update(opts: MountRichDiffOptions): void
-  unmount(): void
+  update: (opts: MountRichDiffOptions) => void
+  unmount: () => void
 }
 
 export function mountRichDiff(

@@ -1,3 +1,4 @@
+import type { PropsWithChildren } from 'react'
 import {
   createContext,
   useCallback,
@@ -5,12 +6,11 @@ import {
   useMemo,
   useState,
 } from 'react'
-import type { PropsWithChildren } from 'react'
-import type { Locale, TranslationKey, TranslationValues } from './types'
 
 import { UI_LOCALE_STORAGE_KEY } from '../constants/keys'
 import { formatDateTime, formatNumber, formatRelativeTime } from './formatters'
 import { DEFAULT_LOCALE, messages, SUPPORTED_LOCALES } from './resources'
+import type { Locale, TranslationKey, TranslationValues } from './types'
 
 interface I18nContextValue {
   format: {
@@ -47,7 +47,7 @@ export function I18nProvider(props: PropsWithChildren) {
 
       if (!values) return template
 
-      return template.replace(/\{(\w+)\}/g, (match, name: string) =>
+      return template.replaceAll(/\{(\w+)\}/g, (match, name: string) =>
         Object.hasOwn(values, name) ? String(values[name]) : match,
       )
     },

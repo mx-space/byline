@@ -11,8 +11,6 @@ export type SaveExcalidrawSnapshot = (
 // Admin-safe alias so consumers don't need to depend on React-bound types
 export type ImageUpload = NonNullable<RichEditorProps['imageUpload']>
 
-export type TrackUpload = (file: File) => Promise<{ url: string }>
-
 export type VideoUpload = (
   file: File,
   opts?: { onProgress?: (percent: number) => void },

@@ -42,7 +42,6 @@ export interface AIModelAssignment {
 export interface AIConfig {
   version?: 2
   decisionModel?: AIModelAssignment | null
-  commentReviewModel?: AIModelAssignment | null
   enableAutoTranslateInsights?: boolean
   enableInsights?: boolean
   enableSummary?: boolean
@@ -92,14 +91,7 @@ export interface AIModelPricing {
   unit: 'character' | 'token'
 }
 
-export interface SeoI18nOverlay {
-  description?: string
-  keywords?: string[]
-  title?: string
-}
-
-export type SettingsGroupType =
-  'account' | 'maintenance' | 'meta-preset' | 'system' | 'user'
+export type SettingsGroupType = 'account' | 'system' | 'user'
 export type OauthProviderType = 'apple' | 'github' | 'google'
 
 export interface OauthOptions {

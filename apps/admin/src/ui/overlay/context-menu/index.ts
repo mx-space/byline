@@ -4,8 +4,8 @@ export {
   showContextMenu,
   updateContextMenuItems,
 } from './store'
-export { ContextMenuTrigger } from './trigger'
 export type { ContextMenuTriggerProps } from './trigger'
+export { ContextMenuTrigger } from './trigger'
 export type {
   ContextMenuCheckboxItemType,
   ContextMenuDividerType,

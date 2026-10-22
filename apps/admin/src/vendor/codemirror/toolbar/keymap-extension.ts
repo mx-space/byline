@@ -1,5 +1,4 @@
 import type { EditorView, KeyBinding } from '@codemirror/view'
-
 import { keymap } from '@codemirror/view'
 
 import { commands } from './markdown-commands'

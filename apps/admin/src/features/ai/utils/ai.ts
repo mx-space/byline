@@ -1,8 +1,7 @@
-import { normalizeTargetLang } from '@mx-space/ai'
-
 import type { AIInsights, AISummary, AITranslation } from '~/api/ai'
 import { updateInsights, updateSummary, updateTranslation } from '~/api/ai'
 import type { TranslationKey, TranslationValues } from '~/i18n/types'
+import { normalizeTargetLang } from '~/lib/lang'
 
 export { getErrorMessage } from '~/features/tasks/utils/tasks'
 

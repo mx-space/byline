@@ -20,7 +20,7 @@ export interface AIWriterGenerateResponse {
 export interface ArticleInfo {
   id: string
   title: string
-  type: 'Note' | 'Page' | 'Post' | 'Recently'
+  type: 'Post'
 }
 
 export interface PaginationInfo {
@@ -72,7 +72,7 @@ export interface GroupedSummaryResponse {
 export interface SummaryByRefResponse {
   article: {
     document: { title: string }
-    type: 'Note' | 'Page' | 'Post' | 'Recently'
+    type: 'Post'
   }
   summaries: AISummary[]
 }
@@ -103,7 +103,7 @@ export interface GroupedInsightsResponse {
 export interface InsightsByRefResponse {
   article: {
     document: { title: string }
-    type: 'Note' | 'Page' | 'Post' | 'Recently'
+    type: 'Post'
   } | null
   insights: AIInsights[]
 }
@@ -143,7 +143,7 @@ export interface GroupedTranslationResponse {
 export interface TranslationByRefResponse {
   article: {
     document: { title: string }
-    type: 'Note' | 'Page' | 'Post' | 'Recently'
+    type: 'Post'
   }
   translations: AITranslation[]
 }
@@ -513,7 +513,7 @@ export function createTtsTask(data: {
 export interface TtsByRefResponse {
   article: {
     document: { title: string }
-    type: 'Note' | 'Page' | 'Post' | 'Recently'
+    type: 'Post'
   } | null
   rows: AITtsRow[]
 }

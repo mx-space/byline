@@ -1,5 +1,5 @@
-import { Separator } from 'react-resizable-panels'
 import type { SeparatorProps } from 'react-resizable-panels'
+import { Separator } from 'react-resizable-panels'
 
 import { cn } from '~/utils/cn'
 

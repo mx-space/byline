@@ -216,7 +216,7 @@ function ProcessDetail(props: { onDismiss: () => void; task: PublishTask }) {
   const progress = getPublishProgress(task)
   const articleId = task.result?.articleId ?? task.payload.refId
   const editPath = articleId
-    ? `/${task.payload.refType === 'post' ? 'posts' : task.payload.refType === 'note' ? 'notes' : 'pages'}/edit?id=${encodeURIComponent(articleId)}`
+    ? `/posts/edit?id=${encodeURIComponent(articleId)}`
     : null
 
   const refresh = () =>

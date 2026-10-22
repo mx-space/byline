@@ -140,7 +140,6 @@ export function AIConfigEditor(props: {
       props.value.decisionModel,
       props.value.summaryModel,
       props.value.writerModel,
-      props.value.commentReviewModel,
       props.value.translationModel,
       props.value.translationReviewModel,
       props.value.fieldTranslationModel,
@@ -589,15 +588,6 @@ export function AIConfigEditor(props: {
               onChange={(writerModel) => updateConfig({ writerModel })}
               providers={providers}
               value={props.value.writerModel}
-            />
-            <AIModelAssignmentField
-              label={t('settings.ai.assignment.commentReviewLabel')}
-              models={providerModels}
-              onChange={(commentReviewModel) =>
-                updateConfig({ commentReviewModel })
-              }
-              providers={providers}
-              value={props.value.commentReviewModel}
             />
           </div>
         </SettingsSection>

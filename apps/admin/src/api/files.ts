@@ -67,29 +67,7 @@ export interface FileReferenceReconciliationResult {
   usages: number
 }
 
-export interface CommentUploadFile {
-  thumbhash?: null | string
-  byteSize?: number
-  createdAt: string
-  detachedAt?: string
-  fileName: string
-  fileUrl: string
-  id: string
-  mimeType?: string
-  readerId?: string
-  refId?: string
-  refType?: string
-  palette?: { dominant?: string; swatches?: string[] } | null
-  status: 'active' | 'detached' | 'pending'
-}
-
-export interface CommentUploadListResponse {
-  data: CommentUploadFile[]
-  pagination: FileListPagination
-}
-
 export type FileType = 'avatar' | 'file' | 'icon' | 'image' | 'video'
-export type CommentUploadStatus = '' | 'active' | 'detached' | 'pending'
 
 export function getFilesByType(type: FileType) {
   return getJson<FileItem[]>(`/files/${type}`)
@@ -190,26 +168,6 @@ export function batchDeleteOrphanFiles(
     '/files/orphans/batch',
     options,
   )
-}
-
-export function getCommentUploads(params: {
-  page?: number
-  readerId?: string
-  refId?: string
-  size?: number
-  status?: Exclude<CommentUploadStatus, ''>
-}) {
-  return getJson<CommentUploadListResponse>('/files/comment-uploads/list', {
-    page: params.page,
-    readerId: params.readerId,
-    refId: params.refId,
-    size: params.size,
-    status: params.status,
-  })
-}
-
-export function deleteCommentUpload(id: string) {
-  return deleteJson<{ storageRemoved: boolean }>(`/files/comment-uploads/${id}`)
 }
 
 function readXhrJson(text: string) {

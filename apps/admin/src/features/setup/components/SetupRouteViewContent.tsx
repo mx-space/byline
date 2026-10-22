@@ -2,8 +2,7 @@ import { Check } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-import type { InitDefaultConfigs } from '~/api/system'
-import { checkInit, getInitDefaultConfigs } from '~/api/system'
+import { checkInit } from '~/api/system'
 import { bgUrl } from '~/constants/env'
 import { useI18n } from '~/i18n'
 import { cn } from '~/utils/cn'
@@ -18,7 +17,6 @@ import { SetupStartStep } from './SetupStartStep'
 export function SetupRouteViewContent() {
   const { t } = useI18n()
   const [step, setStep] = useState(0)
-  const [defaultConfigs, setDefaultConfigs] = useState<InitDefaultConfigs>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -30,8 +28,6 @@ export function SetupRouteViewContent() {
         if (typeof injected !== 'boolean') {
           await checkInit()
         }
-        const configs = await getInitDefaultConfigs()
-        if (!cancelled) setDefaultConfigs(configs)
       } catch (error) {
         toast.error(getErrorMessage(error, t('setup.route.configReadError')))
       } finally {
@@ -111,11 +107,7 @@ export function SetupRouteViewContent() {
         ) : step === 0 ? (
           <SetupStartStep onNext={() => setStep(1)} />
         ) : step === 1 ? (
-          <SetupSiteStep
-            defaultConfigs={defaultConfigs}
-            onNext={() => setStep(2)}
-            onPrev={() => setStep(0)}
-          />
+          <SetupSiteStep onNext={() => setStep(2)} onPrev={() => setStep(0)} />
         ) : step === 2 ? (
           <SetupOwnerStep onNext={() => setStep(3)} onPrev={() => setStep(1)} />
         ) : (

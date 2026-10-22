@@ -1,6 +1,5 @@
 import type { EditorState, Range } from '@codemirror/state'
 import type { DecorationSet, EditorView } from '@codemirror/view'
-
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view'
 
 // Unordered list marker widget
@@ -126,9 +125,9 @@ interface ListMatch {
 }
 
 // Patterns for list detection
-const unorderedListPattern = /^(\s*)([-*+])\s+/
+const unorderedListPattern = /^(\s*)([*+-])\s+/
 const orderedListPattern = /^(\s*)(\d+)\.\s+/
-const taskListPattern = /^(\s*)([-*+])\s+\[([ xX])\]\s+/
+const taskListPattern = /^(\s*)([*+-])\s+\[([ x])\]\s+/i
 
 // Find list items in a line
 const findListItem = (
@@ -192,16 +191,6 @@ const findListItem = (
   }
 
   return null
-}
-
-// Check if cursor is on a line
-const isCursorOnLine = (
-  state: EditorState,
-  lineFrom: number,
-  lineTo: number,
-): boolean => {
-  const { from, to } = state.selection.main
-  return from <= lineTo && to >= lineFrom
 }
 
 const buildListDecorations = (state: EditorState): DecorationSet => {

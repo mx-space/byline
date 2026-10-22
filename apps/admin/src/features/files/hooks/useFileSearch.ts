@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+
 import type { FileRowItem } from '../utils/adapters'
 
 interface UseFileSearchResult<T> {

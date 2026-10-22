@@ -9,21 +9,9 @@ export enum EventTypes {
 
   AUTH_FAILED = 'auth.failed',
 
-  COMMENT_CREATE = 'comment.create',
-
   POST_CREATE = 'post.create',
   POST_UPDATE = 'post.update',
   POST_DELETE = 'post.delete',
-
-  NOTE_CREATE = 'note.create',
-  NOTE_UPDATE = 'note.update',
-  NOTE_DELETE = 'note.delete',
-
-  SAY_CREATE = 'say.create',
-  SAY_DELETE = 'say.delete',
-  SAY_UPDATE = 'say.update',
-
-  LINK_APPLY = 'link.apply',
 
   CONTENT_REFRESH = 'content.refresh',
 
@@ -105,5 +93,5 @@ export interface DraftUpdatePayload {
   documentId: string
   headRevisionId: string
   refId: null | string
-  refType: 'note' | 'page' | 'post'
+  refType: 'post'
 }

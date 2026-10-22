@@ -1,4 +1,5 @@
 import { ExternalLink, Pencil, Trash2 } from 'lucide-react'
+
 import type { TranslationKey, TranslationValues } from '~/i18n/types'
 import type { PostModel } from '~/models/post'
 import type { ListAction } from '~/ui/list-actions'

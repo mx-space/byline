@@ -1,8 +1,7 @@
-import { css, html, LitElement } from 'lit'
-import type { EditorView } from '@codemirror/view'
-
 import { StateEffect } from '@codemirror/state'
+import type { EditorView } from '@codemirror/view'
 import { WidgetType } from '@codemirror/view'
+import { css, html, LitElement } from 'lit'
 
 import { showImagePopover } from '../image-popover-state'
 import { getPendingUpload, isPendingUploadId } from '../upload-store'
@@ -369,45 +368,47 @@ class ImageElement extends LitElement {
             alt=${this.alt || '上传中'}
           />
           <div class="uploading-overlay">
-            ${this.uploadError
-              ? html`
-                  <div class="uploading-error-icon">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="15" x2="9" y1="9" y2="15" />
-                      <line x1="9" x2="15" y1="9" y2="15" />
-                    </svg>
-                  </div>
-                  <span class="uploading-text">上传失败</span>
-                `
-              : html`
-                  <div class="uploading-spinner">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                  </div>
-                  <span class="uploading-text">上传中...</span>
-                `}
+            ${
+              this.uploadError
+                ? html`
+                    <div class="uploading-error-icon">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="15" x2="9" y1="9" y2="15" />
+                        <line x1="9" x2="15" y1="9" y2="15" />
+                      </svg>
+                    </div>
+                    <span class="uploading-text">上传失败</span>
+                  `
+                : html`
+                    <div class="uploading-spinner">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                    </div>
+                    <span class="uploading-text">上传中...</span>
+                  `
+            }
           </div>
         </div>
       `

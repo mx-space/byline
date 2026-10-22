@@ -1,5 +1,4 @@
 import type { GeneralSettingDto } from '../editor-config'
-
 import { GeneralSettingSchema } from '../editor-config'
 
 export interface EditorSettingState {

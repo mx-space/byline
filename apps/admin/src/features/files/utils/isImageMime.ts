@@ -36,33 +36,45 @@ export function mimeFromName(name: string): string | undefined {
   const ext = name.slice(dot + 1).toLowerCase()
   switch (ext) {
     case 'apng':
-    case 'png':
+    case 'png': {
       return 'image/png'
-    case 'avif':
+    }
+    case 'avif': {
       return 'image/avif'
-    case 'bmp':
+    }
+    case 'bmp': {
       return 'image/bmp'
-    case 'gif':
+    }
+    case 'gif': {
       return 'image/gif'
-    case 'heic':
+    }
+    case 'heic': {
       return 'image/heic'
-    case 'heif':
+    }
+    case 'heif': {
       return 'image/heif'
-    case 'ico':
+    }
+    case 'ico': {
       return 'image/x-icon'
+    }
     case 'jfif':
     case 'jpe':
     case 'jpeg':
-    case 'jpg':
+    case 'jpg': {
       return 'image/jpeg'
-    case 'svg':
+    }
+    case 'svg': {
       return 'image/svg+xml'
+    }
     case 'tif':
-    case 'tiff':
+    case 'tiff': {
       return 'image/tiff'
-    case 'webp':
+    }
+    case 'webp': {
       return 'image/webp'
-    default:
+    }
+    default: {
       return undefined
+    }
   }
 }

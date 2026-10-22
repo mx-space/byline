@@ -1,6 +1,7 @@
 import { PartyPopper, Rocket, Settings, User } from 'lucide-react'
-import type { TranslationKey } from '~/i18n/types'
 import type { ComponentType } from 'react'
+
+import type { TranslationKey } from '~/i18n/types'
 
 export const inputClassName =
   'h-[42px] w-full rounded-full border-0 bg-white/20 px-4 text-sm text-white backdrop-blur-md transition-all placeholder:text-white/60 focus-visible:bg-white/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-50'

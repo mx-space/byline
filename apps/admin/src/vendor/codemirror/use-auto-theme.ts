@@ -1,8 +1,7 @@
-import { useEffect } from 'react'
-import type { EditorView } from '@codemirror/view'
-
 import { oneDark } from '@codemirror/theme-one-dark'
+import type { EditorView } from '@codemirror/view'
 import { githubLight } from '@ddietr/codemirror-themes/theme/github-light'
+import { useEffect } from 'react'
 
 import { useThemeMode } from '~/theme'
 

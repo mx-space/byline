@@ -33,10 +33,6 @@ import type { Klass, LexicalNode, SerializedEditorState } from 'lexical'
 import type { ReactNode } from 'react'
 import { useCallback, useMemo } from 'react'
 
-import { AfilmoryNode, AfilmoryPlugin } from '../extensions/afilmory'
-import { MapNode, MapPlugin } from '../extensions/map'
-import { StockNode, StockPlugin } from '../extensions/stock'
-import type { TrackUpload } from '../types'
 import { enhancedEditRendererConfig } from './configs/enhanced-edit-renderer-config'
 import { RichRenderer } from './RichRenderer'
 
@@ -49,9 +45,6 @@ const defaultExtraNodes = [
   ...galleryEditNodes,
   ...codeSnippetEditNodes,
   ...chatEditNodes,
-  AfilmoryNode,
-  MapNode,
-  StockNode,
 ]
 
 export interface RichEditorProps extends Omit<
@@ -64,8 +57,6 @@ export interface RichEditorProps extends Omit<
   /** Extra controls rendered in the floating selection toolbar (e.g. Ask AI). */
   floatingToolbarActions?: ReactNode
   selfHostnames?: string[]
-  /** Strategy for uploading dropped/pasted GPX tracks. Returns the public URL. */
-  trackUpload?: TrackUpload
 }
 
 export function RichEditor({
@@ -75,7 +66,6 @@ export function RichEditor({
   children,
   selfHostnames,
   extraMentionPlatforms,
-  trackUpload,
   variant = 'article',
   theme = 'light',
   ...props
@@ -139,9 +129,6 @@ export function RichEditor({
         <DynamicPlugin />
         <ExcalidrawPlugin />
         <EmbedPlugin selfHostnames={selfHostnames} />
-        <MapPlugin trackUpload={trackUpload} />
-        <AfilmoryPlugin />
-        <StockPlugin />
         <PasteLinkCardPlugin />
         <TableRowColumnHandlesPlugin />
         <TableCellResizerPlugin />

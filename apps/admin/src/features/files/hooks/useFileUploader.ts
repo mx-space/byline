@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { FileType } from '~/api/files'
 
+import type { FileType } from '~/api/files'
 import { uploadFileWithProgress } from '~/api/files'
 
 import { getErrorMessage } from '../utils/format'

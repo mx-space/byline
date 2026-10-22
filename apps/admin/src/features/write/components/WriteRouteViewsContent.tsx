@@ -1,38 +1,21 @@
 import { projectAgentDiffNodesToFactualState } from '@haklex/rich-ext-ai-agent/static'
-import {
-  analyzeMxMarkdown,
-  createMxLitexmlRegistry,
-  mxLexicalToMarkdown,
-} from '@mx-space/editor'
+import { createMxLitexmlRegistry, mxLexicalToMarkdown } from '@mx-space/editor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { load } from 'js-yaml'
 import type { SerializedEditorState } from 'lexical'
 import type { LucideIcon } from 'lucide-react'
 import {
-  ArrowLeftRight,
-  BadgeAlert,
-  BookOpen,
   Bot,
   Braces,
-  Bug,
   Clock,
-  Copy,
-  File as FileIcon,
   FileText,
   GitBranch,
-  Hash,
   History,
   Image as ImageIcon,
   Loader2,
-  MapPin,
   Pencil,
-  RefreshCw,
-  Search,
   Send,
   SlidersHorizontal,
-  Sparkles,
   WandSparkles,
-  X,
 } from 'lucide-react'
 import type {
   CSSProperties,
@@ -60,11 +43,6 @@ import { toast } from 'sonner'
 
 import { AiQueryType, writerGenerate } from '~/api/ai'
 import { getCategories, getTags } from '~/api/categories'
-import {
-  dryRunMarkdownToLexical,
-  type MarkdownMigrationDryRunResponse,
-  type MarkdownMigrationIssue,
-} from '~/api/content-migrations'
 import type { DraftWriteData } from '~/api/drafts'
 import {
   compareRevisions,
@@ -78,15 +56,11 @@ import {
 } from '~/api/drafts'
 import { uploadFile, uploadFileWithProgress } from '~/api/files'
 import { ApiRequestError } from '~/api/http'
-import { getNoteById } from '~/api/notes'
 import { getOption } from '~/api/options'
-import { getPageById } from '~/api/pages'
-import { getPostById, getPosts } from '~/api/posts'
+import { getPostById } from '~/api/posts'
 import type { PublishAiResourceRequest, PublishTask } from '~/api/publish-jobs'
 import { createPublishJob } from '~/api/publish-jobs'
-import { callBuiltInFunction } from '~/api/system'
 import { AITaskStatus, getTask } from '~/api/tasks'
-import { getTopics } from '~/api/topics'
 import { API_URL, WEB_URL } from '~/constants/env'
 import {
   APP_SHELL_HEADER_HEIGHT_CLASS,
@@ -101,12 +75,8 @@ import {
 import { serializeListKey } from '~/data/resource/key'
 import type { CategoryEntity } from '~/data/resources/category'
 import { categories as categoriesCollection } from '~/data/resources/category'
-import { notes as notesCollection } from '~/data/resources/note'
-import { publishNote } from '~/data/resources/note.mutations'
-import { pages as pagesCollection } from '~/data/resources/page'
 import { posts as postsCollection } from '~/data/resources/post'
 import { publishPost } from '~/data/resources/post.mutations'
-import { topics as topicsCollection } from '~/data/resources/topic'
 import { DraftStatusTag } from '~/features/drafts/components/draft-status-tag'
 import type { AIConfig } from '~/features/settings/types/settings'
 import { useTaskDetailSubscription } from '~/features/tasks/hooks/useTaskSubscription'
@@ -120,32 +90,21 @@ import {
   type DraftRecoveryReviewData,
 } from '~/features/write/components/DraftRecoveryReview'
 import {
-  DEFAULT_FREE_WINDOW_HOURS,
-  DEFAULT_PREVIEW_BLOCKS,
-  getPaywallMeta,
-  parseFreeWindowHours,
-  resolvePaywallMeta,
-} from '~/features/write/components/premium/paywall-meta'
-import { PremiumArticlePanel } from '~/features/write/components/premium/PremiumArticlePanel'
-import {
   normalizeTaskAiResources,
   publishAiResourceLabels,
 } from '~/features/write/components/publish-ai-choices'
 import { PublishConfirmationDialog } from '~/features/write/components/PublishConfirmationDialog'
 import { openPublishProcessDock } from '~/features/write/components/PublishProcessDock'
-import { SkillPicker } from '~/features/write/components/SkillPicker'
 import { TtsGenerationEntry } from '~/features/write/components/tts/TtsGenerationEntry'
 import { VersionTreePanel } from '~/features/write/components/VersionTreePanel'
 import { MetaPresetSection } from '~/features/write/meta-presets'
 import type { DraftMergeConflict } from '~/features/write/utils/merge-draft-conflict'
 import { mergeDraftConflict } from '~/features/write/utils/merge-draft-conflict'
 import { useDocumentTitle } from '~/hooks/use-document-title'
-import { useLocalStorageState } from '~/hooks/use-local-storage-state'
 import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import { useI18n } from '~/i18n'
 import { translate } from '~/i18n/translate'
 import type { TranslationKey } from '~/i18n/types'
-import type { Amap, AMapSearch } from '~/models/amap'
 import type { Image as ImageModel } from '~/models/base'
 import type {
   DraftModel,
@@ -153,16 +112,11 @@ import type {
   VersionTreeNode,
 } from '~/models/draft'
 import { DraftRefType } from '~/models/draft'
-import type { NoteModel } from '~/models/note'
-import type { PageModel } from '~/models/page'
 import type { PostModel } from '~/models/post'
-import type { TopicModel } from '~/models/topic'
 import { adminQueryKeys } from '~/query/keys'
 import { subscribeDraftUpdate } from '~/socket/draft-update-signal'
 import type { DraftUpdatePayload } from '~/socket/types'
 import { confirmDialog } from '~/ui/feedback/confirm'
-import { Drawer } from '~/ui/feedback/drawer'
-import { Modal, ModalFooter, ModalHeader } from '~/ui/feedback/modal'
 import {
   AsidePanel,
   ContentLayout,
@@ -171,15 +125,11 @@ import {
 import { HeaderBackButton } from '~/ui/layout/header-back-button'
 import { Popover } from '~/ui/overlay/popover'
 import { Button } from '~/ui/primitives/button'
-import { DateTimePicker } from '~/ui/primitives/datetime-picker'
 import { Scroll } from '~/ui/primitives/scroll'
 import { SelectField } from '~/ui/primitives/select'
 import { FormSwitch } from '~/ui/primitives/switch'
 import { TextArea, TextInput } from '~/ui/primitives/text-field'
 import { cn } from '~/utils/cn'
-import { getDayOfYear } from '~/utils/time'
-import { CodeMirrorEditor, ImageDropZone } from '~/vendor/codemirror'
-import { getEditorView } from '~/vendor/codemirror/editor-store'
 import type {
   RichEditorWithAgentProps,
   RichEditorWithAgentRef,
@@ -193,42 +143,20 @@ import {
   buildMetaTools,
 } from '~/vendor/rich-editor/utils/meta-tools'
 
-type WriteKind = 'note' | 'page' | 'post'
-type ContentFormat = 'lexical' | 'markdown'
-type NoteCoordinates = { latitude: number; longitude: number }
+type WriteKind = 'post'
 
 interface WriteFormState {
-  bookmark: boolean
   categoryId: string
   content: string
-  contentFormat: ContentFormat
-  coordinatesLat: string
-  coordinatesLng: string
-  copyright: boolean
-  freeUntil: string
-  freeWindowHours: string
-  isPremium: boolean
   images: NonNullable<RevisionSnapshot['images']>
-  location: string
   meta: Record<string, unknown>
-  mood: string
-  order: string
-  password: string
-  passwordProtected: boolean
   pin: boolean
   pinOrder: string
-  previewBlocks: string
-  publicAt: string
-  purchaseEnabled: boolean
-  relatedId: string
   slug: string
-  subtitle: string
   summary: string
   tags: string
   text: string
   title: string
-  topicId: string
-  weather: string
 }
 
 interface DraftSaveVariables {
@@ -244,57 +172,20 @@ interface ActiveDraftConflict {
   remote: DraftModel
 }
 
-type FormatActionState =
-  | { type: 'empty-switch' }
-  | { type: 'migration-available' }
-  | { type: 'migration-checking' }
-  | { type: 'migration-blocked'; issueCount: number }
-  | { type: 'migration-staged' }
-  | { type: 'migration-committing' }
-  | { type: 'lexical' }
-
-interface MarkdownMigrationSession {
-  dryRun?: MarkdownMigrationDryRunResponse
-  issues: MarkdownMigrationIssue[]
-  sourceMarkdown: string
-  staged: boolean
-}
-
 const emptyState: WriteFormState = {
-  bookmark: false,
   categoryId: '',
   content: '',
-  contentFormat: 'markdown',
-  coordinatesLat: '',
-  coordinatesLng: '',
-  copyright: true,
-  freeUntil: '',
-  freeWindowHours: String(DEFAULT_FREE_WINDOW_HOURS),
-  isPremium: false,
   images: [],
-  location: '',
   meta: {},
-  mood: '',
-  order: '',
-  password: '',
-  passwordProtected: false,
   pin: false,
   pinOrder: '1',
-  previewBlocks: String(DEFAULT_PREVIEW_BLOCKS),
-  publicAt: '',
-  purchaseEnabled: true,
-  relatedId: '',
   slug: '',
-  subtitle: '',
   summary: '',
   tags: '',
   text: '',
   title: '',
-  topicId: '',
-  weather: '',
 }
 
-const PREFERRED_CONTENT_FORMAT_STORAGE_KEY = 'preferred-content-format'
 const RichEditorWithAgent = lazy(() =>
   import('~/vendor/rich-editor/components/RichEditorWithAgent').then(
     (module) => ({
@@ -302,40 +193,6 @@ const RichEditorWithAgent = lazy(() =>
     }),
   ),
 )
-
-interface PresetOption {
-  labelKey: TranslationKey
-  value: string
-}
-
-// Mood/weather values are persisted as Chinese strings in the backend; we keep
-// them as escape sequences so this source file stays free of inline CJK while
-// still mapping to the existing API contract. Display labels come from i18n.
-const MOOD_SET: readonly PresetOption[] = [
-  { labelKey: 'write.mood.delight', value: '\u5F00\u5FC3' },
-  { labelKey: 'write.mood.sad', value: '\u4F24\u5FC3' },
-  { labelKey: 'write.mood.determined', value: '\u51B3\u5FC3' },
-  { labelKey: 'write.mood.firm', value: '\u575A\u5B9A' },
-  { labelKey: 'write.mood.hatred', value: '\u75DB\u6068' },
-  { labelKey: 'write.mood.irritated', value: '\u751F\u6C14' },
-  { labelKey: 'write.mood.grief', value: '\u60B2\u54C0' },
-  { labelKey: 'write.mood.bitter', value: '\u75DB\u82E6' },
-  { labelKey: 'write.mood.scared', value: '\u53EF\u6015' },
-  { labelKey: 'write.mood.unease', value: '\u4E0D\u5FEB' },
-  { labelKey: 'write.mood.loathed', value: '\u53EF\u6076' },
-  { labelKey: 'write.mood.dread', value: '\u62C5\u5FC3' },
-  { labelKey: 'write.mood.depressed', value: '\u7EDD\u671B' },
-  { labelKey: 'write.mood.tense', value: '\u7126\u8651' },
-  { labelKey: 'write.mood.excited', value: '\u6FC0\u52A8' },
-] as const
-const WEATHER_SET: readonly PresetOption[] = [
-  { labelKey: 'write.weather.sunny', value: '\u6674' },
-  { labelKey: 'write.weather.cloudy', value: '\u591A\u4E91' },
-  { labelKey: 'write.weather.rain', value: '\u96E8' },
-  { labelKey: 'write.weather.overcast', value: '\u9634' },
-  { labelKey: 'write.weather.snow', value: '\u96EA' },
-  { labelKey: 'write.weather.thunderstorm', value: '\u96F7\u96E8' },
-] as const
 
 const POST_META_SCHEMA: MetaFieldsSchema = {
   title: { description: 'Post title', type: 'string' },
@@ -350,10 +207,6 @@ const POST_META_SCHEMA: MetaFieldsSchema = {
     description: 'Post summary; leave empty to auto-generate.',
     type: 'string',
   },
-  copyright: {
-    description: 'Whether to show the copyright notice at the end.',
-    type: 'boolean',
-  },
   pin: { description: 'Whether the post is pinned', type: 'boolean' },
   pinOrder: {
     description:
@@ -362,84 +215,10 @@ const POST_META_SCHEMA: MetaFieldsSchema = {
   },
 }
 
-const NOTE_META_SCHEMA: MetaFieldsSchema = {
-  title: { description: 'Note title', type: 'string' },
-  slug: {
-    description: 'URL path segment; may be empty (then the nid path is used).',
-    type: 'string',
-  },
-  mood: { description: 'Mood', type: 'string' },
-  weather: { description: 'Weather', type: 'string' },
-  bookmark: {
-    description: 'Whether to mark as a bookmarked memory.',
-    type: 'boolean',
-  },
-  location: { description: 'Location text (optional).', type: 'string' },
-}
-
-const PAGE_META_SCHEMA: MetaFieldsSchema = {
-  title: { description: 'Page title', type: 'string' },
-  slug: {
-    description:
-      'URL path segment; prefer lowercase English words joined with hyphens.',
-    example: 'about',
-    type: 'string',
-  },
-  subtitle: { description: 'Subtitle', type: 'string' },
-  order: {
-    description: 'Navigation order; smaller numbers come first.',
-    type: 'number',
-  },
-}
-
-interface KindConfig {
-  description: string
-  icon: LucideIcon
-  listPath: string
-  title: string
-}
-
-function getKindConfig(kind: WriteKind): KindConfig {
-  if (kind === 'note') {
-    return {
-      description: translate('write.kindDescription.note'),
-      icon: BookOpen,
-      listPath: '/notes',
-      title: translate('write.header.titleNote'),
-    }
-  }
-  if (kind === 'page') {
-    return {
-      description: translate('write.kindDescription.page'),
-      icon: FileIcon,
-      listPath: '/pages',
-      title: translate('write.header.titlePage'),
-    }
-  }
-  return {
-    description: translate('write.kindDescription.post'),
-    icon: FileText,
-    listPath: '/posts',
-    title: translate('write.header.titlePost'),
-  }
-}
-
-function getDraftKindLabel(kind: WriteKind) {
-  if (kind === 'note') return translate('write.kind.note')
-  if (kind === 'page') return translate('write.kind.page')
-  return translate('write.kind.post')
-}
+const POST_LIST_PATH = '/posts'
 
 export function PostWritePageContent() {
   return <WritePageRoute kind="post" />
-}
-
-export function NoteWritePageContent() {
-  return <WritePageRoute kind="note" />
-}
-
-export function PageWritePageContent() {
-  return <WritePageRoute kind="page" />
 }
 
 function WritePageRoute(props: { kind: WriteKind }) {
@@ -922,23 +701,13 @@ function WritePage(props: { kind: WriteKind }) {
   const { t } = useI18n()
   const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
   const navigate = useNavigate()
-  const config = getKindConfig(props.kind)
-  const Icon = config.icon
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const id = searchParams.get('id') ?? ''
   const routeDraftId = searchParams.get('draftId') ?? ''
   const routeBaseRevisionId = searchParams.get('baseRevisionId') ?? ''
   const isEditing = Boolean(id)
-  const [preferredContentFormat, setPreferredContentFormat] =
-    useLocalStorageState<ContentFormat>(
-      PREFERRED_CONTENT_FORMAT_STORAGE_KEY,
-      'lexical',
-    )
-  const [state, setState] = useState<WriteFormState>(() => ({
-    ...emptyState,
-    contentFormat: preferredContentFormat,
-  }))
+  const [state, setState] = useState<WriteFormState>(emptyState)
   const [publishTaskId, setPublishTaskId] = useState<string | null>(null)
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false)
   useDocumentTitle(state.title)
@@ -950,21 +719,13 @@ function WritePage(props: { kind: WriteKind }) {
   const draftsPanelOpen = asidePanel === 'drafts'
   const toggleAsidePanel = (panel: 'agent' | 'meta' | 'drafts') =>
     setAsidePanel((current) => (current === panel ? null : panel))
-  const [pageParseDialogOpen, setPageParseDialogOpen] = useState(false)
-  const [pageLexicalDebugOpen, setPageLexicalDebugOpen] = useState(false)
   const [draftListHintDismissed, setDraftListHintDismissed] = useState(false)
   const [reviewingDraft, setReviewingDraft] = useState<DraftModel | null>(null)
   const appliedRouteDraftIdRef = useRef<string | null>(null)
   const formSeededKeyRef = useRef<string | null>(null)
-  const [markdownMigration, setMarkdownMigration] =
-    useState<MarkdownMigrationSession | null>(null)
-  const [migrationDiagnosticsOpen, setMigrationDiagnosticsOpen] =
-    useState(false)
-  const reconstructedMigrationKeyRef = useRef<string | null>(null)
   const draftRefType = draftRefTypeByKind[props.kind]
 
   useCollectionListQuery(categoriesCollection, {
-    enabled: props.kind === 'post',
     queryFn: () => getCategories({ type: 'Category' }),
     queryKey: adminQueryKeys.categories.list(),
     toPage: (result) => ({ items: result }),
@@ -973,95 +734,24 @@ function WritePage(props: { kind: WriteKind }) {
     categoriesCollection,
     adminQueryKeys.categories.list(),
   )
-  useCollectionListQuery(topicsCollection, {
-    enabled: props.kind === 'note',
-    queryFn: () => getTopics({ page: 1, size: 100 }),
-    queryKey: adminQueryKeys.topics.list({ page: 1, size: 100 }),
-    toPage: (result) => ({
-      items: result.data,
-      pagination: result.pagination,
-    }),
-  })
-  const topicsList = useEntityList(
-    topicsCollection,
-    adminQueryKeys.topics.list({ page: 1, size: 100 }),
-  )
   const tagsQuery = useQuery({
-    enabled: props.kind === 'post',
     queryFn: getTags,
     queryKey: adminQueryKeys.categories.tags(),
   })
   const aiPublishOptionsQuery = useQuery({
-    enabled: props.kind !== 'page',
     queryFn: () => getOption<AIConfig>('ai'),
     queryKey: adminQueryKeys.ai.publishOptions(),
     staleTime: 5 * 60_000,
   })
-  useCollectionListQuery(postsCollection, {
-    enabled: props.kind === 'post',
-    queryFn: () =>
-      getPosts({
-        page: 1,
-        size: 100,
-        sort_by: 'createdAt',
-        sort_order: 'desc',
-      }),
-    queryKey: adminQueryKeys.posts.relatedOptions('write'),
-    toPage: (result) => ({
-      items: result.data,
-      pagination: result.pagination,
-    }),
-  })
-  const relatedPostsList = useEntityList(
-    postsCollection,
-    adminQueryKeys.posts.relatedOptions('write'),
-  )
   const postDetailQuery = useCollectionDetailQuery(postsCollection, {
-    enabled: isEditing && props.kind === 'post',
+    enabled: isEditing,
     queryFn: () => getPostById(id),
     queryKey: adminQueryKeys.write.detail({ id, kind: 'post' }),
   })
-  const postEntity = useEntity(
-    postsCollection,
-    props.kind === 'post' && isEditing ? id : undefined,
-  )
-  const noteDetailQuery = useCollectionDetailQuery(notesCollection, {
-    enabled: isEditing && props.kind === 'note',
-    queryFn: () => getNoteById(id, { single: true }),
-    queryKey: adminQueryKeys.write.detail({ id, kind: 'note' }),
-  })
-  const noteEntity = useEntity(
-    notesCollection,
-    props.kind === 'note' && isEditing ? id : undefined,
-  )
-  const pageDetailQuery = useCollectionDetailQuery(pagesCollection, {
-    enabled: isEditing && props.kind === 'page',
-    queryFn: () => getPageById(id),
-    queryKey: adminQueryKeys.write.detail({ id, kind: 'page' }),
-  })
-  const pageEntity = useEntity(
-    pagesCollection,
-    props.kind === 'page' && isEditing ? id : undefined,
-  )
-  const storeEntity =
-    props.kind === 'note'
-      ? noteEntity
-      : props.kind === 'page'
-        ? pageEntity
-        : postEntity
-  const storeDetailQuery =
-    props.kind === 'note'
-      ? noteDetailQuery
-      : props.kind === 'page'
-        ? pageDetailQuery
-        : postDetailQuery
-  const detailModel: WriteModel | undefined = storeEntity
-  const isPublished =
-    props.kind === 'page'
-      ? Boolean(detailModel)
-      : Boolean((detailModel as NoteModel | PostModel | undefined)?.isPublished)
-  const isDetailLoaded = storeDetailQuery.isSuccess
-  const detailLoading = storeDetailQuery.isLoading
+  const detailModel = useEntity(postsCollection, isEditing ? id : undefined)
+  const isPublished = Boolean(detailModel?.isPublished)
+  const isDetailLoaded = postDetailQuery.isSuccess
+  const detailLoading = postDetailQuery.isLoading
   const currentDraftData = useMemo(
     () => toDraftData(props.kind, state, isEditing ? id : undefined),
     [id, isEditing, props.kind, state],
@@ -1154,9 +844,8 @@ function WritePage(props: { kind: WriteKind }) {
   })
   const publicationMutation = useMutation({
     mutationFn: async (published: boolean) => {
-      if (!id || props.kind === 'page') return
-      if (props.kind === 'post') await publishPost(id, published)
-      else await publishNote(id, published)
+      if (!id) return
+      await publishPost(id, published)
     },
     onError: (error: unknown) =>
       toast.error(getErrorMessage(error, t('write.toast.saveFailed'))),
@@ -1246,8 +935,6 @@ function WritePage(props: { kind: WriteKind }) {
 
   const categories = categoriesList.items
   const tags = tagsQuery.data ?? []
-  const topics = topicsList.items
-  const relatedPosts = relatedPostsList.items
   const activeNewDrafts = useMemo(
     () =>
       (newDraftsQuery.data ?? []).filter((draft) => draft.status === 'active'),
@@ -1273,23 +960,7 @@ function WritePage(props: { kind: WriteKind }) {
         Date.parse(a.updatedAt ?? a.createdAt),
     )[0]
   }, [activeDocumentBranches, activeNewDrafts, isEditing])
-  const publishedContent = useMemo(
-    () => (detailModel ? getPublishedContent(detailModel) : null),
-    [detailModel],
-  )
-  const defaultNoteTitle = useMemo(() => {
-    if (props.kind === 'note' && detailModel) {
-      return getDefaultNoteTitle(new Date((detailModel as NoteModel).createdAt))
-    }
-
-    return getDefaultNoteTitle()
-  }, [detailModel, props.kind])
-  const notePublicPath =
-    props.kind === 'note'
-      ? buildNotePublicPath(state, detailModel as NoteModel | undefined)
-      : ''
-  const postPublicPath =
-    props.kind === 'post' ? buildPostPublicPath(state, activeCategory) : ''
+  const postPublicPath = buildPostPublicPath(state, activeCategory)
   const publishedFingerprint = useMemo(
     () =>
       detailModel
@@ -1344,7 +1015,7 @@ function WritePage(props: { kind: WriteKind }) {
 
   useEffect(() => {
     if (!detailModel || !isDetailLoaded) {
-      if (props.kind !== 'post' || !firstCategoryId) return
+      if (!firstCategoryId) return
       setState((previous) =>
         previous.categoryId
           ? previous
@@ -1362,9 +1033,6 @@ function WritePage(props: { kind: WriteKind }) {
     if (formSeededKeyRef.current === seedKey) return
     formSeededKeyRef.current = seedKey
 
-    setMarkdownMigration(null)
-    setMigrationDiagnosticsOpen(false)
-    reconstructedMigrationKeyRef.current = null
     const modelState = fromModel(props.kind, detailModel)
     const fingerprint = getDraftFingerprint(props.kind, modelState, id)
     draftSession.accept(null, fingerprint, { draftId: '' })
@@ -1446,8 +1114,6 @@ function WritePage(props: { kind: WriteKind }) {
       draft.document.refId ?? (isEditing ? id : undefined),
     )
     draftSession.accept(draft, fingerprint, { draftId: draft.id })
-    setMarkdownMigration(null)
-    reconstructedMigrationKeyRef.current = null
     setState(nextState)
 
     if (draft.document.refId && !id) {
@@ -1467,84 +1133,6 @@ function WritePage(props: { kind: WriteKind }) {
     state,
   ])
 
-  const migrationCheckMutation = useMutation<
-    MarkdownMigrationDryRunResponse,
-    unknown,
-    { preserveLexical?: boolean; sourceMarkdown: string }
-  >({
-    mutationFn: ({ sourceMarkdown }) =>
-      dryRunMarkdownToLexical({
-        branchId: draftId || undefined,
-        profile: 'yohaku-v1',
-        refId: id,
-        refType: draftRefType,
-        sourceText: sourceMarkdown,
-      }),
-    onError: (error: unknown) =>
-      toast.error(
-        getErrorMessage(error, t('write.migration.toast.checkFailed')),
-      ),
-    onSuccess: (result, variables) => {
-      const convertible = result.status === 'convertible'
-      setMarkdownMigration({
-        dryRun: result,
-        issues: result.issues,
-        sourceMarkdown: variables.sourceMarkdown,
-        staged: convertible || Boolean(variables.preserveLexical),
-      })
-
-      if (
-        result.status !== 'convertible' ||
-        result.source.status !== 'convertible'
-      ) {
-        setMigrationDiagnosticsOpen(true)
-        return
-      }
-      if (variables.preserveLexical) return
-
-      const source = result.source
-      draftSession.markDirty()
-      setPreferredContentFormat('lexical')
-      setState((previous) => ({
-        ...previous,
-        content: JSON.stringify(source.content),
-        contentFormat: 'lexical',
-        text: source.text,
-      }))
-      toast.success(t('write.migration.toast.staged'))
-    },
-  })
-
-  useEffect(() => {
-    if (
-      !isEditing ||
-      publishedContent?.contentFormat !== 'markdown' ||
-      state.contentFormat !== 'lexical' ||
-      markdownMigration ||
-      migrationCheckMutation.isPending
-    ) {
-      return
-    }
-
-    const reconstructionKey = `${props.kind}:${id}:${draftId || routeDraftId}`
-    if (reconstructedMigrationKeyRef.current === reconstructionKey) return
-    reconstructedMigrationKeyRef.current = reconstructionKey
-    migrationCheckMutation.mutate({
-      preserveLexical: true,
-      sourceMarkdown: publishedContent.text,
-    })
-  }, [
-    draftId,
-    id,
-    isEditing,
-    markdownMigration,
-    migrationCheckMutation,
-    props.kind,
-    publishedContent,
-    routeDraftId,
-    state.contentFormat,
-  ])
-
   const saveMutation = useMutation<
     {
       draft: DraftModel
@@ -1555,36 +1143,6 @@ function WritePage(props: { kind: WriteKind }) {
     { aiResources: PublishAiResourceRequest[]; confirmDiverged: boolean }
   >({
     mutationFn: async ({ aiResources, confirmDiverged }) => {
-      const requiresMigration =
-        isEditing &&
-        publishedContent?.contentFormat === 'markdown' &&
-        state.contentFormat === 'lexical'
-
-      if (requiresMigration) {
-        const sourceMarkdown =
-          markdownMigration?.sourceMarkdown ?? publishedContent.text
-        const dryRun = await dryRunMarkdownToLexical({
-          branchId: draftId || undefined,
-          profile: 'yohaku-v1',
-          refId: id,
-          refType: draftRefType,
-          sourceText: sourceMarkdown,
-        })
-        setMarkdownMigration({
-          dryRun,
-          issues: dryRun.issues,
-          sourceMarkdown,
-          staged: true,
-        })
-        if (
-          dryRun.status !== 'convertible' ||
-          dryRun.source.status !== 'convertible'
-        ) {
-          setMigrationDiagnosticsOpen(true)
-          throw new Error(t('write.migration.toast.blocked'))
-        }
-      }
-
       const currentDraftId = draftId || routeDraftId
       const { baseline, data, fingerprint } =
         draftSession.getPublishInput(currentDraftId)
@@ -1603,7 +1161,7 @@ function WritePage(props: { kind: WriteKind }) {
             refType: draftRefType,
           })
       const task = await createPublishJob({
-        aiResources: props.kind === 'page' ? [] : aiResources,
+        aiResources,
         branchId: draft.id,
         confirmDiverged,
         expectedPublishedRevisionId: draft.document.publishedRevisionId,
@@ -1625,8 +1183,6 @@ function WritePage(props: { kind: WriteKind }) {
       )
     },
     onSuccess: async (result) => {
-      setMarkdownMigration(null)
-      setMigrationDiagnosticsOpen(false)
       draftSession.accept(result.draft, result.fingerprint, {
         dirty: draftSession.latestFingerprint() !== result.fingerprint,
         draftId: result.draft.id,
@@ -1679,8 +1235,8 @@ function WritePage(props: { kind: WriteKind }) {
   })
 
   const validationError = useMemo(
-    () => validateState(props.kind, state, categories, isEditing),
-    [categories, isEditing, props.kind, state],
+    () => validateState(state, categories),
+    [categories, state],
   )
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -1700,180 +1256,11 @@ function WritePage(props: { kind: WriteKind }) {
     setState((previous) => ({ ...previous, [key]: value }))
   }
 
-  const updateContentFormat = (format: ContentFormat) => {
-    setPreferredContentFormat(format)
-    updateField('contentFormat', format)
-    if (format !== 'lexical' && state.isPremium) {
-      updateField('isPremium', false)
-    }
-  }
-
-  useEffect(() => {
-    if (
-      state.contentFormat === 'markdown' &&
-      markdownMigration &&
-      !markdownMigration.staged &&
-      markdownMigration.sourceMarkdown !== state.text
-    ) {
-      setMarkdownMigration(null)
-    }
-  }, [markdownMigration, state.contentFormat, state.text])
-
-  const stageLocalMarkdownMigration = (sourceMarkdown: string) => {
-    const result = analyzeMxMarkdown(sourceMarkdown, {
-      profile: 'yohaku-v1',
-    })
-    if (result.status === 'blocked') {
-      const issues: MarkdownMigrationIssue[] = result.issues.map((issue) => ({
-        ...issue,
-        member: 'source',
-        memberId: 'new',
-      }))
-      setMarkdownMigration({
-        issues,
-        sourceMarkdown,
-        staged: false,
-      })
-      setMigrationDiagnosticsOpen(true)
-      return
-    }
-
-    draftSession.markDirty()
-    setPreferredContentFormat('lexical')
-    setMarkdownMigration({
-      issues: [],
-      sourceMarkdown,
-      staged: true,
-    })
-    setState((previous) => ({
-      ...previous,
-      content: JSON.stringify(result.content),
-      contentFormat: 'lexical',
-      text: result.text,
-    }))
-    toast.success(t('write.migration.toast.staged'))
-  }
-
-  const formatActionState: FormatActionState = (() => {
-    if (migrationCheckMutation.isPending) {
-      return { type: 'migration-checking' }
-    }
-    if (
-      saveMutation.isPending &&
-      state.contentFormat === 'lexical' &&
-      publishedContent?.contentFormat === 'markdown'
-    ) {
-      return { type: 'migration-committing' }
-    }
-    if (state.contentFormat === 'markdown') {
-      if (!state.text.trim()) return { type: 'empty-switch' }
-      if (
-        markdownMigration &&
-        !markdownMigration.staged &&
-        markdownMigration.issues.length > 0
-      ) {
-        return {
-          type: 'migration-blocked',
-          issueCount: markdownMigration.issues.length,
-        }
-      }
-      return { type: 'migration-available' }
-    }
-    if (isEditing && publishedContent?.contentFormat === 'markdown') {
-      if (markdownMigration?.issues.length) {
-        return {
-          type: 'migration-blocked',
-          issueCount: markdownMigration.issues.length,
-        }
-      }
-      return { type: 'migration-staged' }
-    }
-    if (!isEditing && !hasLexicalContent(state.content)) {
-      return { type: 'empty-switch' }
-    }
-    return { type: 'lexical' }
-  })()
-
-  const runMigrationCheck = (preserveLexical = false) => {
-    const sourceMarkdown =
-      preserveLexical && markdownMigration
-        ? markdownMigration.sourceMarkdown
-        : state.text
-    if (!isEditing) {
-      stageLocalMarkdownMigration(sourceMarkdown)
-      return
-    }
-    migrationCheckMutation.mutate({ preserveLexical, sourceMarkdown })
-  }
-
-  const handleFormatAction = () => {
-    switch (formatActionState.type) {
-      case 'empty-switch': {
-        if (
-          isEditing &&
-          publishedContent?.contentFormat === 'markdown' &&
-          state.contentFormat === 'markdown'
-        ) {
-          runMigrationCheck()
-          return
-        }
-        setMarkdownMigration(null)
-        updateContentFormat(
-          state.contentFormat === 'lexical' ? 'markdown' : 'lexical',
-        )
-        return
-      }
-      case 'migration-available': {
-        runMigrationCheck()
-        return
-      }
-      case 'migration-blocked':
-      case 'migration-staged': {
-        setMigrationDiagnosticsOpen(true)
-        return
-      }
-      case 'lexical':
-      case 'migration-checking':
-      case 'migration-committing': {
-        return
-      }
-    }
-  }
-
-  const restoreOriginalMarkdown = () => {
-    if (!markdownMigration?.staged) return
-    draftSession.markDirty()
-    setPreferredContentFormat('markdown')
-    setState((previous) => ({
-      ...previous,
-      content: '',
-      contentFormat: 'markdown',
-      isPremium: false,
-      text: markdownMigration.sourceMarkdown,
-    }))
-    setMarkdownMigration(null)
-    setMigrationDiagnosticsOpen(false)
-  }
-
-  const locateMigrationIssue = (issue: MarkdownMigrationIssue) => {
-    if (issue.member !== 'source' || state.contentFormat !== 'markdown') return
-    setMigrationDiagnosticsOpen(false)
-    window.requestAnimationFrame(() => {
-      const view = getEditorView()
-      if (!view) return
-      const anchor = Math.min(issue.range.start.offset, view.state.doc.length)
-      view.dispatch({ selection: { anchor } })
-      view.focus()
-    })
-  }
-
-  const getAgentMetaFields = () => getWriteAgentMetaFields(props.kind, state)
+  const getAgentMetaFields = () => getWriteAgentMetaFields(state)
 
   const applyAgentMetaUpdates = (updates: Record<string, unknown>) => {
     draftSession.markDirty()
-    setState((previous) =>
-      applyWriteAgentMetaUpdates(props.kind, previous, updates),
-    )
+    setState((previous) => applyWriteAgentMetaUpdates(previous, updates))
   }
 
   const applyDraft = (draft: DraftModel) => {
@@ -1885,8 +1272,6 @@ function WritePage(props: { kind: WriteKind }) {
     )
     draftSession.accept(draft, fingerprint, { draftId: draft.id })
     setDraftConflict(null)
-    setMarkdownMigration(null)
-    reconstructedMigrationKeyRef.current = null
     setState(nextState)
     const nextParams = new URLSearchParams(searchParams)
     nextParams.set('draftId', draft.id)
@@ -1932,8 +1317,6 @@ function WritePage(props: { kind: WriteKind }) {
     const fingerprint = getDraftFingerprint(props.kind, nextState, id)
     draftSession.accept(null, fingerprint, { draftId: '' })
     setDraftConflict(null)
-    setMarkdownMigration(null)
-    reconstructedMigrationKeyRef.current = null
     setState(nextState)
     const nextParams = new URLSearchParams(searchParams)
     nextParams.delete('baseRevisionId')
@@ -1956,7 +1339,7 @@ function WritePage(props: { kind: WriteKind }) {
       if (deletedCurrent) {
         const nextState = detailModel
           ? fromModel(props.kind, detailModel)
-          : { ...emptyState, contentFormat: preferredContentFormat }
+          : emptyState
         const fingerprint = getDraftFingerprint(
           props.kind,
           nextState,
@@ -1997,22 +1380,9 @@ function WritePage(props: { kind: WriteKind }) {
     writerGenerateMutation.mutate()
   }
 
-  const useRemoteConflictDraft = () => {
-    draftSession.useRemoteConflictDraft()
-    setMarkdownMigration(null)
-    reconstructedMigrationKeyRef.current = null
-  }
+  const useRemoteConflictDraft = draftSession.useRemoteConflictDraft
 
   const keepLocalConflictDraft = draftSession.keepLocalConflictDraft
-
-  const copyPageUrl = () => {
-    if (!state.slug.trim()) return
-
-    void navigator.clipboard
-      .writeText(`${WEB_URL}/${state.slug.trim()}`)
-      .then(() => toast.success(t('write.editor.copyLinkOk')))
-      .catch(() => toast.error(t('write.toast.copyFailed')))
-  }
 
   const latestDraftCandidate = draftSession.latestDraft()
   const latestDraft =
@@ -2044,7 +1414,7 @@ function WritePage(props: { kind: WriteKind }) {
       selectedBranch.relationToPublished === 'diverged'
     : baseRelationQuery.data?.relation === 'descendant' ||
       baseRelationQuery.data?.relation === 'diverged'
-  const draftKindText = getDraftKindLabel(props.kind)
+  const draftKindText = t('write.kind.post')
   const isDirty = draftSession.hasUnsavedChanges()
   const metaStatus = computeMetaStatus({
     hasConflict: Boolean(draftConflict),
@@ -2058,35 +1428,12 @@ function WritePage(props: { kind: WriteKind }) {
       : undefined,
   })
 
-  const slugPathPrefix =
-    props.kind === 'post'
-      ? `/posts/${activeCategory?.slug ?? ''}/`
-      : props.kind === 'page'
-        ? '/'
-        : ''
+  const slugPathPrefix = `/posts/${activeCategory?.slug ?? ''}/`
   const slugDisplayPath = state.slug.trim()
     ? `${slugPathPrefix}${state.slug.trim()}`
     : ''
   const aiButtonVisible =
-    state.text.trim().length > 0 &&
-    (props.kind === 'note' ||
-      (props.kind === 'post' && (!state.title.trim() || !state.slug.trim())) ||
-      (props.kind === 'page' && !state.slug.trim()))
-
-  const titlePlaceholder =
-    props.kind === 'note'
-      ? defaultNoteTitle
-      : t('write.editor.titlePlaceholder')
-
-  const subtitleNode: ReactNode =
-    props.kind === 'page' ? (
-      <input
-        className="outline-hidden mt-1 w-full border-0 bg-transparent px-0 text-base text-neutral-500 placeholder:text-neutral-300 dark:text-neutral-400 dark:placeholder:text-neutral-700"
-        onChange={(event) => updateField('subtitle', event.target.value)}
-        placeholder={t('write.editor.subtitlePlaceholder')}
-        value={state.subtitle}
-      />
-    ) : null
+    state.text.trim().length > 0 && (!state.title.trim() || !state.slug.trim())
 
   return (
     <form className="flex h-full min-h-0 flex-col" onSubmit={onSubmit}>
@@ -2107,17 +1454,11 @@ function WritePage(props: { kind: WriteKind }) {
           <div className="flex min-w-0 items-center gap-2">
             <HeaderBackButton
               label={t('write.header.backToList')}
-              to={config.listPath}
+              to={POST_LIST_PATH}
             />
             <h2 className="inline-flex min-w-0 items-center gap-2 text-lg font-semibold text-neutral-950 dark:text-neutral-50">
-              <Icon aria-hidden="true" className="size-4 shrink-0" />
-              <span className="truncate">
-                {props.kind === 'page'
-                  ? isEditing
-                    ? t('write.header.editPage')
-                    : t('write.header.newPage')
-                  : config.title}
-              </span>
+              <FileText aria-hidden="true" className="size-4 shrink-0" />
+              <span className="truncate">{t('write.header.titlePost')}</span>
             </h2>
             <DraftStatusTag
               className="hidden md:inline-flex"
@@ -2125,123 +1466,57 @@ function WritePage(props: { kind: WriteKind }) {
               isSaving={draftMutation.isPending || draftConflictResolving}
             />
           </div>
-          {props.kind === 'page' ? (
-            <div className="flex shrink-0 items-center gap-1.5">
-              {state.contentFormat === 'markdown' ? (
-                <WriteHeaderIconButton
-                  onClick={() => setPageParseDialogOpen(true)}
-                  title={t('write.pill.parseMd')}
-                  type="button"
-                >
-                  <Hash aria-hidden="true" className="size-4" />
-                </WriteHeaderIconButton>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <WriteHeaderIconButton
+              badge={versionBranchCount}
+              onClick={() => toggleAsidePanel('drafts')}
+              title={versionTreeTriggerTitle}
+              type="button"
+              variant={draftsPanelOpen ? 'active' : 'default'}
+            >
+              <GitBranch aria-hidden="true" className="size-4" />
+            </WriteHeaderIconButton>
+            <WriteHeaderIconButton
+              onClick={() => toggleAsidePanel('agent')}
+              title={
+                agentVisible ? t('write.pill.hideAi') : t('write.pill.showAi')
+              }
+              type="button"
+              variant={agentVisible ? 'active' : 'default'}
+            >
+              <Bot aria-hidden="true" className="size-4" />
+            </WriteHeaderIconButton>
+            <WriteHeaderIconButton
+              onClick={() => toggleAsidePanel('meta')}
+              title={
+                metaPanelOpen
+                  ? t('write.pill.hidePostSettings')
+                  : t('write.pill.postSettings')
+              }
+              type="button"
+              variant={metaPanelOpen ? 'active' : 'default'}
+            >
+              <SlidersHorizontal aria-hidden="true" className="size-4" />
+            </WriteHeaderIconButton>
+            <WriteHeaderIconButton
+              disabled={
+                saveMutation.isPending ||
+                draftMutation.isPending ||
+                detailLoading ||
+                draftConflictResolving ||
+                !canSubmitPublication
+              }
+              title={t(publishActionKey)}
+              type="submit"
+              variant="primary"
+            >
+              {saveMutation.isPending ? (
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
               ) : (
-                <WriteHeaderIconButton
-                  onClick={() => setPageLexicalDebugOpen(true)}
-                  title={t('write.pill.lexicalDebug')}
-                  type="button"
-                >
-                  <Bug aria-hidden="true" className="size-4" />
-                </WriteHeaderIconButton>
+                <Send aria-hidden="true" className="size-4" />
               )}
-              <WriteHeaderIconButton
-                badge={versionBranchCount}
-                onClick={() => toggleAsidePanel('drafts')}
-                title={versionTreeTriggerTitle}
-                type="button"
-                variant={draftsPanelOpen ? 'active' : 'default'}
-              >
-                <GitBranch aria-hidden="true" className="size-4" />
-              </WriteHeaderIconButton>
-              <WriteHeaderIconButton
-                onClick={() => toggleAsidePanel('meta')}
-                title={
-                  metaPanelOpen
-                    ? t('write.pageHeader.hidePageSettings')
-                    : t('write.pageHeader.pageSettings')
-                }
-                type="button"
-                variant={metaPanelOpen ? 'active' : 'default'}
-              >
-                <SlidersHorizontal aria-hidden="true" className="size-4" />
-              </WriteHeaderIconButton>
-              <WriteHeaderIconButton
-                disabled={
-                  saveMutation.isPending ||
-                  draftMutation.isPending ||
-                  detailLoading ||
-                  draftConflictResolving ||
-                  !canSubmitPublication
-                }
-                title={t(publishActionKey)}
-                type="submit"
-                variant="primary"
-              >
-                {saveMutation.isPending ? (
-                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                ) : (
-                  <Send aria-hidden="true" className="size-4" />
-                )}
-              </WriteHeaderIconButton>
-            </div>
-          ) : (
-            <div className="flex shrink-0 items-center gap-1.5">
-              <WriteHeaderIconButton
-                badge={versionBranchCount}
-                onClick={() => toggleAsidePanel('drafts')}
-                title={versionTreeTriggerTitle}
-                type="button"
-                variant={draftsPanelOpen ? 'active' : 'default'}
-              >
-                <GitBranch aria-hidden="true" className="size-4" />
-              </WriteHeaderIconButton>
-              <WriteHeaderIconButton
-                disabled={state.contentFormat !== 'lexical'}
-                onClick={() => toggleAsidePanel('agent')}
-                title={
-                  agentVisible ? t('write.pill.hideAi') : t('write.pill.showAi')
-                }
-                type="button"
-                variant={agentVisible ? 'active' : 'default'}
-              >
-                <Bot aria-hidden="true" className="size-4" />
-              </WriteHeaderIconButton>
-              <WriteHeaderIconButton
-                onClick={() => toggleAsidePanel('meta')}
-                title={
-                  metaPanelOpen
-                    ? props.kind === 'post'
-                      ? t('write.pill.hidePostSettings')
-                      : t('write.pill.hideNoteSettings')
-                    : props.kind === 'post'
-                      ? t('write.pill.postSettings')
-                      : t('write.pill.noteSettings')
-                }
-                type="button"
-                variant={metaPanelOpen ? 'active' : 'default'}
-              >
-                <SlidersHorizontal aria-hidden="true" className="size-4" />
-              </WriteHeaderIconButton>
-              <WriteHeaderIconButton
-                disabled={
-                  saveMutation.isPending ||
-                  draftMutation.isPending ||
-                  detailLoading ||
-                  draftConflictResolving ||
-                  !canSubmitPublication
-                }
-                title={t(publishActionKey)}
-                type="submit"
-                variant="primary"
-              >
-                {saveMutation.isPending ? (
-                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                ) : (
-                  <Send aria-hidden="true" className="size-4" />
-                )}
-              </WriteHeaderIconButton>
-            </div>
-          )}
+            </WriteHeaderIconButton>
+          </div>
         </div>
 
         <ContentLayout
@@ -2255,7 +1530,7 @@ function WritePage(props: { kind: WriteKind }) {
         >
           {detailLoading ? (
             <div className="min-h-0 flex-1">
-              <WriteSkeleton kind={props.kind} />
+              <WriteSkeleton />
             </div>
           ) : (
             <Scroll
@@ -2309,79 +1584,50 @@ function WritePage(props: { kind: WriteKind }) {
                     aiButtonPending={writerGenerateMutation.isPending}
                     aiButtonVisible={aiButtonVisible}
                     branchCount={editorBranchCount}
-                    formatAction={formatActionState}
-                    format={state.contentFormat}
                     onAiGenerate={generateTitleOrSlug}
-                    onFormatAction={handleFormatAction}
                     onOpenVersionTree={() => setAsidePanel('drafts')}
                     status={metaStatus.status}
                     statusText={metaStatus.text}
                   />
                   <EditorTitleArea
                     autoFocus={!isEditing}
-                    copyPageUrl={
-                      props.kind === 'page' ? copyPageUrl : undefined
-                    }
                     displayPath={slugDisplayPath}
                     onSlugChange={(value) => updateField('slug', value)}
                     onTitleChange={(value) => updateField('title', value)}
-                    placeholder={titlePlaceholder}
-                    required={props.kind !== 'note'}
-                    showSlugPill={props.kind !== 'note'}
+                    placeholder={t('write.editor.titlePlaceholder')}
                     slug={state.slug}
-                    slugPlaceholder={
-                      props.kind === 'page' ? 'slug' : 'slug-of-this-post'
-                    }
+                    slugPlaceholder="slug-of-this-post"
                     slugPrefix={slugPathPrefix}
-                    subtitle={subtitleNode}
                     title={state.title}
                   />
                   <hr className="my-4 border-0 border-t border-neutral-100 dark:border-neutral-900" />
                 </div>
 
-                <div
-                  className={cn(
-                    'flex min-h-0 flex-1 flex-col',
-                    state.contentFormat !== 'lexical' && 'pb-[200px]',
-                  )}
-                >
+                <div className="flex min-h-0 flex-1 flex-col">
                   <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-3">
-                    {state.contentFormat === 'lexical' ? (
-                      <RichWriteSurface
-                        agentVisible={agentVisible}
-                        autoFocus={isEditing}
-                        content={state.content}
-                        contentClassName="!min-h-[60dvh] flex-1 px-0 pt-3 pb-[200px]"
-                        kind={props.kind}
-                        key={`${props.kind}:${id || 'new'}:${state.contentFormat}`}
-                        getMetaFields={getAgentMetaFields}
-                        metaFieldsSchema={getWriteAgentMetaSchema(props.kind)}
-                        onContentChange={(content) =>
-                          updateField('content', content)
-                        }
-                        onMetaFieldsUpdate={applyAgentMetaUpdates}
-                        onPinSelection={() => setAsidePanel('agent')}
-                        onTextChange={(text) => updateField('text', text)}
-                        refId={isEditing ? id : routeDraftId || undefined}
-                        surfaceClassName="flex min-h-[70dvh] flex-1 flex-col rounded-none border-0 bg-transparent dark:bg-transparent"
-                        surfaceStyle={
-                          {
-                            '--rc-max-width': 'none',
-                          } as CSSProperties
-                        }
-                      />
-                    ) : (
-                      <>
-                        <CodeMirrorEditor
-                          autoFocus={isEditing}
-                          className="min-h-136 rounded-none border-0 bg-transparent px-0 py-6 phone:py-3"
-                          onChange={(value) => updateField('text', value)}
-                          style={{ minHeight: '34rem' }}
-                          text={state.text}
-                        />
-                        <ImageDropZone />
-                      </>
-                    )}
+                    <RichWriteSurface
+                      agentVisible={agentVisible}
+                      autoFocus={isEditing}
+                      content={state.content}
+                      contentClassName="!min-h-[60dvh] flex-1 px-0 pt-3 pb-[200px]"
+                      kind={props.kind}
+                      key={`${props.kind}:${id || 'new'}`}
+                      getMetaFields={getAgentMetaFields}
+                      metaFieldsSchema={POST_META_SCHEMA}
+                      onContentChange={(content) =>
+                        updateField('content', content)
+                      }
+                      onMetaFieldsUpdate={applyAgentMetaUpdates}
+                      onPinSelection={() => setAsidePanel('agent')}
+                      onTextChange={(text) => updateField('text', text)}
+                      refId={isEditing ? id : routeDraftId || undefined}
+                      surfaceClassName="flex min-h-[70dvh] flex-1 flex-col rounded-none border-0 bg-transparent dark:bg-transparent"
+                      surfaceStyle={
+                        {
+                          '--rc-max-width': 'none',
+                        } as CSSProperties
+                      }
+                    />
                   </div>
                 </div>
               </main>
@@ -2421,121 +1667,53 @@ function WritePage(props: { kind: WriteKind }) {
             />
           </ContentLayoutSlot>
           <ContentLayoutSlot active={metaPanelOpen} id="meta">
-            {props.kind === 'page' ? (
-              <PageSettingsPanel
-                draftId={draftId || routeDraftId || undefined}
-                refId={isEditing ? id : undefined}
-                state={state}
-                updateField={updateField}
-              />
-            ) : (
-              <ContentSettingsPanel
-                availableDraft={availableDraft}
-                draftId={draftId || routeDraftId || undefined}
-                draftMutationData={draftMutation.data}
-                draftMutationPending={draftMutation.isPending}
-                kind={props.kind}
-                noteFields={
-                  props.kind === 'note' ? (
-                    <NoteFields
-                      state={state}
-                      topics={topics}
-                      updateField={updateField}
-                    />
-                  ) : null
+            <ContentSettingsPanel
+              availableDraft={availableDraft}
+              draftId={draftId || routeDraftId || undefined}
+              draftMutationData={draftMutation.data}
+              draftMutationPending={draftMutation.isPending}
+              onApplyDraft={applyDraft}
+              onGenerateTitleOrSlug={generateTitleOrSlug}
+              onPublishedChange={(published) => {
+                if (published) {
+                  publicationMutation.mutate(true)
+                  return
                 }
-                onApplyDraft={applyDraft}
-                onGenerateTitleOrSlug={generateTitleOrSlug}
-                onPublishedChange={(published) => {
-                  if (published) {
-                    publicationMutation.mutate(true)
-                    return
-                  }
-                  void confirmDialog({
-                    confirmText: t('write.publication.unpublishAction'),
-                    description: t('write.publication.unpublishDescription'),
-                    destructive: true,
-                    title: t('write.publication.unpublishTitle'),
-                  }).then((confirmed) => {
-                    if (confirmed) publicationMutation.mutate(false)
-                  })
-                }}
-                onSaveDraft={saveDraftNow}
-                postFields={
-                  props.kind === 'post' ? (
-                    <PostFields
-                      categories={categories}
-                      currentPostId={id}
-                      isPublished={isPublished}
-                      relatedPosts={relatedPosts}
-                      state={state}
-                      tags={tags}
-                      updateField={updateField}
-                    />
-                  ) : null
-                }
-                publicPath={
-                  props.kind === 'note'
-                    ? notePublicPath
-                      ? `${WEB_URL}${notePublicPath}`
-                      : t('write.notePublicPath.fallback')
-                    : postPublicPath
-                      ? `${WEB_URL}${postPublicPath}`
-                      : t('write.postPublicPath.fallback')
-                }
-                publicationPending={publicationMutation.isPending}
-                published={isPublished}
-                hasArticle={isEditing}
-                refId={isEditing ? id : undefined}
-                state={state}
-                updateField={updateField}
-                writerGeneratePending={writerGenerateMutation.isPending}
-              />
-            )}
+                void confirmDialog({
+                  confirmText: t('write.publication.unpublishAction'),
+                  description: t('write.publication.unpublishDescription'),
+                  destructive: true,
+                  title: t('write.publication.unpublishTitle'),
+                }).then((confirmed) => {
+                  if (confirmed) publicationMutation.mutate(false)
+                })
+              }}
+              onSaveDraft={saveDraftNow}
+              postFields={
+                <PostFields
+                  categories={categories}
+                  state={state}
+                  tags={tags}
+                  updateField={updateField}
+                />
+              }
+              publicPath={
+                postPublicPath
+                  ? `${WEB_URL}${postPublicPath}`
+                  : t('write.postPublicPath.fallback')
+              }
+              publicationPending={publicationMutation.isPending}
+              published={isPublished}
+              hasArticle={isEditing}
+              refId={isEditing ? id : undefined}
+              state={state}
+              updateField={updateField}
+              writerGeneratePending={writerGenerateMutation.isPending}
+            />
           </ContentLayoutSlot>
         </ContentLayout>
       </section>
 
-      {props.kind === 'page' ? (
-        <PageParseMarkdownDialog
-          onApply={(parsed) => {
-            setState((previous) => applyParsedPageMarkdown(previous, parsed))
-            setPageParseDialogOpen(false)
-            toast.success(t('write.parseMd.success'))
-          }}
-          onClose={() => setPageParseDialogOpen(false)}
-          open={pageParseDialogOpen}
-        />
-      ) : null}
-      {props.kind === 'page' ? (
-        <PageLexicalDebugDialog
-          content={state.content}
-          onClose={() => setPageLexicalDebugOpen(false)}
-          open={pageLexicalDebugOpen}
-        />
-      ) : null}
-      <MarkdownMigrationDialog
-        checking={migrationCheckMutation.isPending}
-        issues={markdownMigration?.issues ?? []}
-        onClose={() => setMigrationDiagnosticsOpen(false)}
-        onIssueClick={locateMigrationIssue}
-        onRecheck={() => {
-          if (state.contentFormat === 'lexical' && markdownMigration) {
-            migrationCheckMutation.mutate({
-              preserveLexical: true,
-              sourceMarkdown: markdownMigration.sourceMarkdown,
-            })
-            return
-          }
-          setMarkdownMigration(null)
-          runMigrationCheck()
-        }}
-        onRestore={
-          markdownMigration?.staged ? restoreOriginalMarkdown : undefined
-        }
-        open={migrationDiagnosticsOpen}
-        staged={Boolean(markdownMigration?.staged)}
-      />
       <DraftRecoveryReview
         data={recoveryReviewData}
         onClose={() => setReviewingDraft(null)}
@@ -2549,13 +1727,11 @@ function WritePage(props: { kind: WriteKind }) {
       />
       <PublishConfirmationDialog
         aiConfig={aiPublishOptionsQuery.data}
-        contentFormat={state.contentFormat}
         diverged={publishIsDiverged}
         otherBranchCount={Math.max(
           0,
           activeDocumentBranches.length - (selectedBranch ? 1 : 0),
         )}
-        kind={props.kind}
         onClose={() => setPublishConfirmOpen(false)}
         onConfirm={(resources) => {
           setPublishConfirmOpen(false)
@@ -2598,136 +1774,12 @@ function WritePage(props: { kind: WriteKind }) {
   )
 }
 
-function MarkdownMigrationDialog(props: {
-  checking: boolean
-  issues: MarkdownMigrationIssue[]
-  onClose: () => void
-  onIssueClick: (issue: MarkdownMigrationIssue) => void
-  onRecheck: () => void
-  onRestore?: () => void
-  open: boolean
-  staged: boolean
-}) {
-  const { t } = useI18n()
-  const groups = useMemo(() => {
-    const grouped = new Map<string, MarkdownMigrationIssue[]>()
-    for (const issue of props.issues) {
-      const key =
-        issue.member === 'translation'
-          ? `translation:${issue.lang ?? issue.memberId}`
-          : issue.member
-      grouped.set(key, [...(grouped.get(key) ?? []), issue])
-    }
-    return [...grouped.entries()]
-  }, [props.issues])
-
-  return (
-    <Modal
-      className="max-h-[min(80svh,44rem)] w-[min(92vw,42rem)]"
-      onClose={props.onClose}
-      open={props.open}
-    >
-      <ModalHeader
-        icon={props.issues.length > 0 ? BadgeAlert : ArrowLeftRight}
-        subtitle={
-          props.staged ? t('write.migration.dialog.stagedSubtitle') : undefined
-        }
-        title={t('write.migration.dialog.title')}
-      />
-      <Scroll className="min-h-0 flex-1">
-        <div className="space-y-4 p-4">
-          {props.issues.length === 0 ? (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
-              {t('write.migration.dialog.ready')}
-            </div>
-          ) : (
-            groups.map(([group, issues]) => (
-              <section className="space-y-2" key={group}>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">
-                  {group.startsWith('translation:')
-                    ? t('write.migration.dialog.translationGroup', {
-                        lang: group.slice('translation:'.length),
-                      })
-                    : group === 'draft'
-                      ? t('write.migration.dialog.draftGroup')
-                      : t('write.migration.dialog.sourceGroup')}
-                </h3>
-                <div className="divide-y divide-border overflow-hidden rounded-md border border-border">
-                  {issues.map((issue, index) => {
-                    const canLocate = issue.member === 'source' && !props.staged
-                    return (
-                      <button
-                        className={cn(
-                          'block w-full bg-surface-card p-3 text-left',
-                          canLocate &&
-                            'transition-colors hover:bg-surface-inset',
-                        )}
-                        disabled={!canLocate}
-                        key={`${issue.code}:${issue.range.start.offset}:${index}`}
-                        onClick={() => props.onIssueClick(issue)}
-                        type="button"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium text-fg">
-                              {issue.feature}
-                            </div>
-                            <p className="mt-1 text-xs leading-relaxed text-fg-muted">
-                              {issue.message}
-                            </p>
-                          </div>
-                          <code className="shrink-0 text-[11px] text-fg-subtle">
-                            {t('write.migration.dialog.line', {
-                              line: issue.range.start.line,
-                            })}
-                          </code>
-                        </div>
-                        <div className="mt-2 text-[11px] text-fg-subtle">
-                          {issue.code}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </section>
-            ))
-          )}
-        </div>
-      </Scroll>
-      <ModalFooter className="justify-between">
-        <div>
-          {props.onRestore ? (
-            <Button onClick={props.onRestore} type="button" variant="ghost">
-              {t('write.migration.action.restore')}
-            </Button>
-          ) : null}
-        </div>
-        <Button
-          disabled={props.checking}
-          onClick={props.onRecheck}
-          type="button"
-          variant="secondary"
-        >
-          {props.checking ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : (
-            <RefreshCw aria-hidden="true" className="size-4" />
-          )}
-          {t('write.migration.action.recheck')}
-        </Button>
-      </ModalFooter>
-    </Modal>
-  )
-}
-
 function ContentSettingsPanel(props: {
   availableDraft?: DraftModel
   draftId?: string
   draftMutationData?: DraftModel
   draftMutationPending: boolean
   hasArticle: boolean
-  kind: Exclude<WriteKind, 'page'>
-  noteFields: ReactNode
   onApplyDraft: (draft: DraftModel) => void
   onGenerateTitleOrSlug: () => void
   onPublishedChange: (published: boolean) => void
@@ -2834,7 +1886,7 @@ function ContentSettingsPanel(props: {
             controlClassName="h-9 font-mono focus:border-neutral-400"
             label="Slug"
             onChange={(value) => props.updateField('slug', value)}
-            required={props.kind !== 'note'}
+            required
             value={props.state.slug}
           />
           <Button
@@ -2859,10 +1911,8 @@ function ContentSettingsPanel(props: {
         </PanelBlock>
 
         {props.postFields}
-        {props.noteFields}
         <MediaAndMetaFields
           draftId={props.draftId}
-          kind={props.kind}
           refId={props.refId}
           state={props.state}
           updateField={props.updateField}
@@ -2874,7 +1924,6 @@ function ContentSettingsPanel(props: {
 
 interface PublishedWriteContent {
   content?: string
-  contentFormat?: ContentFormat
   text: string
   title: string
   updatedAt: string
@@ -3046,10 +2095,7 @@ function EditorMetaStrip(props: {
   aiButtonPending: boolean
   aiButtonVisible: boolean
   branchCount: number
-  format: ContentFormat
-  formatAction: FormatActionState
   onAiGenerate: () => void
-  onFormatAction: () => void
   onOpenVersionTree: () => void
   status: MetaStatus
   statusText: string
@@ -3063,48 +2109,6 @@ function EditorMetaStrip(props: {
         : props.status === 'saved' || props.status === 'published'
           ? 'bg-emerald-500'
           : 'bg-neutral-300 dark:bg-neutral-600'
-  const formatLabel = (() => {
-    switch (props.formatAction.type) {
-      case 'empty-switch': {
-        return props.format === 'lexical'
-          ? t('write.format.toCodeMirror')
-          : t('write.format.toLexical')
-      }
-      case 'migration-available': {
-        return t('write.migration.action.convert')
-      }
-      case 'migration-checking': {
-        return t('write.migration.action.checking')
-      }
-      case 'migration-blocked': {
-        return t('write.migration.action.blocked', {
-          count: props.formatAction.issueCount,
-        })
-      }
-      case 'migration-staged': {
-        return t('write.migration.action.staged')
-      }
-      case 'migration-committing': {
-        return t('write.migration.action.committing')
-      }
-      case 'lexical': {
-        return t('write.migration.action.lexical')
-      }
-    }
-  })()
-  const migrationHighlighted = [
-    'migration-available',
-    'migration-blocked',
-    'migration-checking',
-    'migration-committing',
-    'migration-staged',
-  ].includes(props.formatAction.type)
-  const formatActionDisabled = [
-    'lexical',
-    'migration-checking',
-    'migration-committing',
-  ].includes(props.formatAction.type)
-
   return (
     <div className="group mb-3 flex min-h-7 items-center justify-between opacity-60 transition-opacity duration-200 hover:opacity-100">
       <div className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-neutral-500 dark:text-neutral-400">
@@ -3138,31 +2142,6 @@ function EditorMetaStrip(props: {
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
-        <button
-          aria-label={formatLabel}
-          className={cn(
-            'focus-visible:outline-hidden inline-flex h-7 items-center gap-1 rounded-md border px-2 text-xs transition-colors focus-visible:ring-1 disabled:opacity-70',
-            migrationHighlighted
-              ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 focus-visible:ring-amber-400 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/70'
-              : 'border-transparent text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 focus-visible:ring-neutral-400 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-200',
-            props.formatAction.type === 'migration-blocked' &&
-              'border-red-300 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70',
-          )}
-          disabled={formatActionDisabled}
-          onClick={props.onFormatAction}
-          title={formatLabel}
-          type="button"
-        >
-          {props.formatAction.type === 'migration-checking' ||
-          props.formatAction.type === 'migration-committing' ? (
-            <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
-          ) : props.formatAction.type === 'migration-blocked' ? (
-            <BadgeAlert aria-hidden="true" className="size-3.5" />
-          ) : (
-            <ArrowLeftRight aria-hidden="true" className="size-3.5" />
-          )}
-          <span>{formatLabel}</span>
-        </button>
         {props.aiButtonVisible ? (
           <button
             aria-label={t('write.pill.aiGenerate')}
@@ -3186,17 +2165,13 @@ function EditorMetaStrip(props: {
 
 function EditorTitleArea(props: {
   autoFocus: boolean
-  copyPageUrl?: () => void
   displayPath: string
   onSlugChange: (value: string) => void
   onTitleChange: (value: string) => void
   placeholder: string
-  required: boolean
-  showSlugPill: boolean
   slug: string
   slugPlaceholder: string
   slugPrefix: string
-  subtitle: ReactNode
   title: string
 }) {
   return (
@@ -3206,26 +2181,21 @@ function EditorTitleArea(props: {
         className="outline-hidden w-full border-0 bg-transparent px-0 py-0 text-3xl font-semibold tracking-tight text-neutral-950 placeholder:font-medium placeholder:text-neutral-300 dark:text-neutral-50 dark:placeholder:text-neutral-700"
         onChange={(event) => props.onTitleChange(event.target.value)}
         placeholder={props.placeholder}
-        required={props.required}
+        required
         value={props.title}
       />
-      {props.showSlugPill ? (
-        <SlugPill
-          copyPageUrl={props.copyPageUrl}
-          displayPath={props.displayPath}
-          onSlugChange={props.onSlugChange}
-          slug={props.slug}
-          slugPlaceholder={props.slugPlaceholder}
-          slugPrefix={props.slugPrefix}
-        />
-      ) : null}
-      {props.subtitle}
+      <SlugPill
+        displayPath={props.displayPath}
+        onSlugChange={props.onSlugChange}
+        slug={props.slug}
+        slugPlaceholder={props.slugPlaceholder}
+        slugPrefix={props.slugPrefix}
+      />
     </div>
   )
 }
 
 function SlugPill(props: {
-  copyPageUrl?: () => void
   displayPath: string
   onSlugChange: (value: string) => void
   slug: string
@@ -3279,19 +2249,6 @@ function SlugPill(props: {
             value={props.slug}
           />
         </div>
-        {props.copyPageUrl ? (
-          <div className="mt-2 flex justify-end">
-            <button
-              className="inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs text-fg-muted transition-colors hover:bg-surface-inset hover:text-fg focus-visible:ring-[3px] focus-visible:ring-accent/15 disabled:pointer-events-none disabled:opacity-40"
-              disabled={!hasSlug}
-              onClick={props.copyPageUrl}
-              type="button"
-            >
-              <Copy aria-hidden="true" className="size-3" />
-              {t('write.editor.copyLink')}
-            </button>
-          </div>
-        ) : null}
       </Popover.Content>
     </Popover>
   )
@@ -3299,9 +2256,6 @@ function SlugPill(props: {
 
 function PostFields(props: {
   categories: CategoryEntity[]
-  currentPostId: string
-  isPublished: boolean
-  relatedPosts: PostModel[]
   state: WriteFormState
   tags: Array<{ count: number; name: string }>
   updateField: <TKey extends keyof WriteFormState>(
@@ -3311,18 +2265,8 @@ function PostFields(props: {
 }) {
   const { t } = useI18n()
   const selectedTags = splitCommaList(props.state.tags)
-  const selectedRelatedIds = splitCommaList(props.state.relatedId)
-  const visibleRelatedPosts = props.relatedPosts.filter(
-    (post) => post.id !== props.currentPostId,
-  )
   const toggleTag = (tag: string) => {
     props.updateField('tags', toggleListValue(selectedTags, tag).join(', '))
-  }
-  const toggleRelatedPost = (postId: string) => {
-    props.updateField(
-      'relatedId',
-      toggleListValue(selectedRelatedIds, postId).join(', '),
-    )
   }
 
   return (
@@ -3390,11 +2334,6 @@ function PostFields(props: {
           value={props.state.summary}
         />
         <FormSwitch
-          checked={props.state.copyright}
-          label={t('write.postFields.copyright')}
-          onCheckedChange={(checked) => props.updateField('copyright', checked)}
-        />
-        <FormSwitch
           checked={props.state.pin}
           label={t('write.postFields.pin')}
           onCheckedChange={(checked) => props.updateField('pin', checked)}
@@ -3408,555 +2347,13 @@ function PostFields(props: {
             value={props.state.pinOrder}
           />
         ) : null}
-        <PremiumArticlePanel
-          isPublished={props.isPublished}
-          updateField={props.updateField}
-          values={props.state}
-        />
-      </PanelBlock>
-
-      <PanelBlock title={t('write.postFields.section.related')}>
-        {visibleRelatedPosts.length > 0 ? (
-          <>
-            <SelectField
-              aria-label={t('write.postFields.related.addAria')}
-              onValueChange={(postId) => {
-                if (postId && !selectedRelatedIds.includes(postId)) {
-                  toggleRelatedPost(postId)
-                }
-              }}
-              options={[
-                { label: t('write.postFields.related.placeholder'), value: '' },
-                ...visibleRelatedPosts
-                  .filter((post) => !selectedRelatedIds.includes(post.id))
-                  .map((post) => ({
-                    label: post.category?.name
-                      ? `${post.category.name} · ${post.title}`
-                      : post.title,
-                    value: post.id,
-                  })),
-              ]}
-              value=""
-            />
-            {selectedRelatedIds.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {selectedRelatedIds.map((id) => {
-                  const post = visibleRelatedPosts.find((p) => p.id === id)
-                  const label = post ? post.title : `${id.slice(0, 8)}…`
-                  return (
-                    <span
-                      className="inline-flex max-w-full items-center gap-1 rounded-sm border border-neutral-200 bg-neutral-50 py-1 pl-2 pr-1 text-xs text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
-                      key={id}
-                    >
-                      <span className="truncate">{label}</span>
-                      <button
-                        aria-label={t('write.postFields.related.removeAria')}
-                        className="inline-flex size-4 shrink-0 items-center justify-center rounded text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-                        onClick={() => toggleRelatedPost(id)}
-                        type="button"
-                      >
-                        <X aria-hidden="true" className="size-3" />
-                      </button>
-                    </span>
-                  )
-                })}
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {t('write.postFields.related.empty')}
-          </p>
-        )}
-        <TextInput
-          controlClassName="h-9 font-mono focus:border-neutral-400"
-          label={t('write.postFields.related.idLabel')}
-          onChange={(value) => props.updateField('relatedId', value)}
-          placeholder={t('write.postFields.related.idPlaceholder')}
-          value={props.state.relatedId}
-        />
       </PanelBlock>
     </>
-  )
-}
-
-function MetadataPill(props: {
-  active: boolean
-  children: ReactNode
-  onClick: () => void
-}) {
-  return (
-    <button
-      className={cn(
-        'rounded border px-2 py-1 text-xs transition-colors',
-        props.active
-          ? 'border-neutral-950 bg-neutral-950 text-white dark:border-neutral-50 dark:bg-neutral-50 dark:text-neutral-950'
-          : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-900',
-      )}
-      onClick={props.onClick}
-      type="button"
-    >
-      {props.children}
-    </button>
-  )
-}
-
-function NoteFields(props: {
-  state: WriteFormState
-  topics: TopicModel[]
-  updateField: <TKey extends keyof WriteFormState>(
-    key: TKey,
-    value: WriteFormState[TKey],
-  ) => void
-}) {
-  const { t } = useI18n()
-  const [locationSearchOpen, setLocationSearchOpen] = useState(false)
-  const updateLocation = (
-    location: string,
-    coordinates: NoteCoordinates | null,
-  ) => {
-    props.updateField('location', location)
-    props.updateField(
-      'coordinatesLat',
-      typeof coordinates?.latitude === 'number'
-        ? String(coordinates.latitude)
-        : '',
-    )
-    props.updateField(
-      'coordinatesLng',
-      typeof coordinates?.longitude === 'number'
-        ? String(coordinates.longitude)
-        : '',
-    )
-  }
-
-  return (
-    <>
-      <PanelBlock title={t('write.noteFields.section.note')}>
-        <Field label={t('write.noteFields.topic')}>
-          <SelectField
-            aria-label={t('write.noteFields.topic')}
-            onValueChange={(topicId) => props.updateField('topicId', topicId)}
-            options={[
-              { label: t('write.noteFields.topicNone'), value: '' },
-              ...props.topics.map((topic) => ({
-                label: topic.name,
-                value: topic.id,
-              })),
-            ]}
-            value={props.state.topicId}
-          />
-        </Field>
-        <TextInput
-          controlClassName="h-9 focus:border-neutral-400"
-          list="write-note-moods"
-          label={t('write.noteFields.mood')}
-          onChange={(value) => props.updateField('mood', value)}
-          placeholder={t('write.noteFields.moodPlaceholder')}
-          value={props.state.mood}
-        />
-        <datalist id="write-note-moods">
-          {MOOD_SET.map((mood) => (
-            <option key={mood.value} label={t(mood.labelKey)}>
-              {mood.value}
-            </option>
-          ))}
-        </datalist>
-        <div className="flex flex-wrap gap-1.5">
-          {MOOD_SET.map((mood) => (
-            <MetadataPill
-              active={props.state.mood === mood.value}
-              key={mood.value}
-              onClick={() => props.updateField('mood', mood.value)}
-            >
-              {t(mood.labelKey)}
-            </MetadataPill>
-          ))}
-        </div>
-        <TextInput
-          controlClassName="h-9 focus:border-neutral-400"
-          list="write-note-weathers"
-          label={t('write.noteFields.weather')}
-          onChange={(value) => props.updateField('weather', value)}
-          placeholder={t('write.noteFields.weatherPlaceholder')}
-          value={props.state.weather}
-        />
-        <datalist id="write-note-weathers">
-          {WEATHER_SET.map((weather) => (
-            <option key={weather.value} label={t(weather.labelKey)}>
-              {weather.value}
-            </option>
-          ))}
-        </datalist>
-        <div className="flex flex-wrap gap-1.5">
-          {WEATHER_SET.map((weather) => (
-            <MetadataPill
-              active={props.state.weather === weather.value}
-              key={weather.value}
-              onClick={() => props.updateField('weather', weather.value)}
-            >
-              {t(weather.labelKey)}
-            </MetadataPill>
-          ))}
-        </div>
-        <FormSwitch
-          checked={props.state.bookmark}
-          label={t('write.noteFields.bookmark')}
-          onCheckedChange={(checked) => props.updateField('bookmark', checked)}
-        />
-      </PanelBlock>
-
-      <PanelBlock title={t('write.noteFields.section.publicLocation')}>
-        <DateTimePicker
-          controlClassName="h-9 focus:border-neutral-400"
-          label={t('write.field.publicAt')}
-          min={toDatetimeLocalValue(new Date())}
-          onChange={(value) => props.updateField('publicAt', value)}
-          placeholder={t('write.field.publicAtPlaceholder')}
-          value={props.state.publicAt}
-        />
-        <div className="grid grid-cols-2 gap-1.5">
-          {[
-            [t('write.field.publicAtPreset.day'), { days: 1 }],
-            [t('write.field.publicAtPreset.week'), { days: 7 }],
-            [t('write.field.publicAtPreset.fortnight'), { days: 14 }],
-            [t('write.field.publicAtPreset.month'), { months: 1 }],
-          ].map(([label, offset]) => (
-            <button
-              className="h-8 rounded border border-neutral-200 bg-white px-2 text-xs text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-900"
-              key={label as string}
-              onClick={() =>
-                props.updateField(
-                  'publicAt',
-                  toDatetimeLocalValue(
-                    addDateOffset(new Date(), offset as DateOffset),
-                  ),
-                )
-              }
-              type="button"
-            >
-              {label as string}
-            </button>
-          ))}
-        </div>
-        <TextInput
-          controlClassName="h-9 focus:border-neutral-400"
-          label={t('write.location.field.label')}
-          onChange={(value) => props.updateField('location', value)}
-          value={props.state.location}
-        />
-        <div className="flex flex-wrap gap-2">
-          <GetCurrentLocationButton onChange={updateLocation} />
-          <Button
-            onClick={() => setLocationSearchOpen(true)}
-            type="button"
-            variant="subtle"
-          >
-            <Search aria-hidden="true" className="size-4" />
-            {t('write.location.button.custom')}
-          </Button>
-          <Button
-            disabled={
-              !props.state.location &&
-              !props.state.coordinatesLat &&
-              !props.state.coordinatesLng
-            }
-            onClick={() => updateLocation('', null)}
-            type="button"
-            variant="subtle"
-          >
-            {t('write.location.button.clear')}
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <TextInput
-            controlClassName="h-9 focus:border-neutral-400"
-            inputMode="decimal"
-            label={t('write.location.coordinates.lat')}
-            onChange={(value) => props.updateField('coordinatesLat', value)}
-            value={props.state.coordinatesLat}
-          />
-          <TextInput
-            controlClassName="h-9 focus:border-neutral-400"
-            inputMode="decimal"
-            label={t('write.location.coordinates.lng')}
-            onChange={(value) => props.updateField('coordinatesLng', value)}
-            value={props.state.coordinatesLng}
-          />
-        </div>
-        <LocationSearchDialog
-          onClose={() => setLocationSearchOpen(false)}
-          onSelect={(location, coordinates) => {
-            updateLocation(location, coordinates)
-            setLocationSearchOpen(false)
-          }}
-          open={locationSearchOpen}
-          placeholder={props.state.location}
-        />
-      </PanelBlock>
-
-      <PanelBlock title={t('write.noteFields.section.access')}>
-        <FormSwitch
-          checked={props.state.passwordProtected}
-          label={t('write.field.passwordProtected')}
-          onCheckedChange={(checked) =>
-            props.updateField('passwordProtected', checked)
-          }
-        />
-        {props.state.passwordProtected ? (
-          <TextInput
-            autoComplete="new-password"
-            controlClassName="h-9 focus:border-neutral-400"
-            label={t('write.field.password')}
-            onChange={(value) => props.updateField('password', value)}
-            placeholder={t('write.field.passwordPlaceholder')}
-            type="password"
-            value={props.state.password}
-          />
-        ) : null}
-      </PanelBlock>
-    </>
-  )
-}
-
-function GetCurrentLocationButton(props: {
-  onChange: (location: string, coordinates: NoteCoordinates) => void
-}) {
-  const { t } = useI18n()
-  const mutation = useMutation({
-    mutationFn: async () => {
-      if (!navigator.geolocation) {
-        throw new Error(t('write.location.error.unsupported'))
-      }
-
-      const position = await new Promise<GeolocationPosition>(
-        (resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject)
-        },
-      )
-      const { latitude, longitude } = position.coords
-      const result = await callBuiltInFunction<Amap>('geocode_location', {
-        latitude,
-        longitude,
-      })
-
-      return {
-        coordinates: { latitude, longitude },
-        location: result.regeocode.formattedAddress,
-      }
-    },
-    onError(error) {
-      const geolocationErrorCode =
-        error != null && typeof error === 'object' && 'code' in error
-          ? error.code
-          : undefined
-      if (geolocationErrorCode === 2) {
-        toast.error(t('write.location.error.timeout'))
-        return
-      }
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : t('write.location.error.permission'),
-      )
-    },
-    onSuccess(result) {
-      props.onChange(result.location, result.coordinates)
-    },
-  })
-
-  return (
-    <Button
-      disabled={mutation.isPending}
-      onClick={() => mutation.mutate()}
-      type="button"
-      variant="subtle"
-    >
-      {mutation.isPending ? (
-        <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-      ) : (
-        <MapPin aria-hidden="true" className="size-4" />
-      )}
-      {t('write.location.button.locate')}
-    </Button>
-  )
-}
-
-function LocationSearchDialog(props: {
-  onClose: () => void
-  onSelect: (location: string, coordinates: NoteCoordinates) => void
-  open: boolean
-  placeholder?: string
-}) {
-  const { t } = useI18n()
-  const [keyword, setKeyword] = useState('')
-  const [options, setOptions] = useState<
-    Array<{ coordinates: NoteCoordinates; id: string; label: string }>
-  >([])
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (!props.open) {
-      setKeyword('')
-      setOptions([])
-      return
-    }
-
-    const trimmedKeyword = keyword.trim()
-    if (!trimmedKeyword) {
-      setOptions([])
-      return
-    }
-
-    let cancelled = false
-    const timeoutId = window.setTimeout(() => {
-      setLoading(true)
-      callBuiltInFunction<AMapSearch>('geocode_search', {
-        keywords: trimmedKeyword,
-      })
-        .then((result) => {
-          if (cancelled) return
-          setOptions(
-            result.pois
-              .map((poi) => {
-                const [longitude, latitude] = poi.location
-                  .split(',')
-                  .map(Number)
-                if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-                  return null
-                }
-
-                return {
-                  coordinates: { latitude, longitude },
-                  id: poi.id,
-                  label: [poi.cityname, poi.adname, poi.address, poi.name]
-                    .filter(Boolean)
-                    .join(''),
-                }
-              })
-              .filter(
-                (
-                  option,
-                ): option is {
-                  coordinates: NoteCoordinates
-                  id: string
-                  label: string
-                } => Boolean(option),
-              ),
-          )
-        })
-        .catch((error: unknown) => {
-          if (cancelled) return
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : t('write.location.error.search'),
-          )
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 350)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(timeoutId)
-    }
-  }, [keyword, props.open])
-
-  return (
-    <Modal
-      className="w-[min(92vw,30rem)]"
-      onClose={props.onClose}
-      open={props.open}
-    >
-      <ModalHeader icon={Search} title={t('write.location.dialog.title')} />
-
-      <div className="grid gap-3 p-4">
-        <TextInput
-          autoFocus
-          controlClassName="h-9 focus:border-neutral-400"
-          label={t('write.location.dialog.searchLabel')}
-          onChange={setKeyword}
-          placeholder={
-            props.placeholder || t('write.location.dialog.placeholder')
-          }
-          value={keyword}
-        />
-        <Scroll className="max-h-72" viewportClassName="max-h-72">
-          <div className="grid gap-1 pr-1">
-            {loading ? (
-              <div className="flex h-24 items-center justify-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                {t('write.location.dialog.searching')}
-              </div>
-            ) : options.length > 0 ? (
-              options.map((option) => (
-                <button
-                  className="grid gap-1 rounded px-3 py-2 text-left transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-900"
-                  key={option.id}
-                  onClick={() =>
-                    props.onSelect(option.label, option.coordinates)
-                  }
-                  type="button"
-                >
-                  <span className="text-sm text-neutral-900 dark:text-neutral-100">
-                    {option.label}
-                  </span>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {option.coordinates.longitude.toFixed(6)},{' '}
-                    {option.coordinates.latitude.toFixed(6)}
-                  </span>
-                </button>
-              ))
-            ) : (
-              <div className="flex h-24 items-center justify-center text-sm text-neutral-500 dark:text-neutral-400">
-                {keyword.trim()
-                  ? t('write.location.dialog.searchEmpty')
-                  : t('write.location.dialog.searchHint')}
-              </div>
-            )}
-          </div>
-        </Scroll>
-      </div>
-    </Modal>
-  )
-}
-
-function PageFields(props: {
-  state: WriteFormState
-  updateField: <TKey extends keyof WriteFormState>(
-    key: TKey,
-    value: WriteFormState[TKey],
-  ) => void
-}) {
-  const { t } = useI18n()
-  return (
-    <PanelBlock
-      description={t('write.page.section.options.description')}
-      icon={FileText}
-      title={t('write.page.section.options.title')}
-    >
-      <TextInput
-        controlClassName="h-9 focus:border-neutral-400"
-        inputMode="numeric"
-        label={t('write.pageFields.orderLabel')}
-        min="0"
-        onChange={(value) => props.updateField('order', value)}
-        placeholder={t('write.pageFields.orderPlaceholder')}
-        type="number"
-        value={props.state.order}
-      />
-      <p className="text-xs leading-5 text-neutral-500 dark:text-neutral-400">
-        {t('write.pageFields.orderHint')}
-      </p>
-    </PanelBlock>
   )
 }
 
 function MediaAndMetaFields(props: {
   draftId?: string
-  kind: WriteKind
   refId?: string
   state: WriteFormState
   updateField: <TKey extends keyof WriteFormState>(
@@ -4050,288 +2447,15 @@ function MediaAndMetaFields(props: {
         )}
       </PanelBlock>
 
-      {props.kind === 'post' && (
-        <PanelBlock icon={Sparkles} title={t('write.section.skill.title')}>
-          <SkillPicker
-            onChange={(next) => {
-              const meta = { ...props.state.meta }
-              if (next.length === 0) {
-                delete meta.skillIds
-                props.updateField('meta', meta)
-              } else {
-                props.updateField('meta', { ...meta, skillIds: next })
-              }
-            }}
-            value={
-              Array.isArray(props.state.meta?.skillIds) &&
-              (props.state.meta.skillIds as unknown[]).every(
-                (v) => typeof v === 'string',
-              )
-                ? (props.state.meta.skillIds as string[])
-                : []
-            }
-          />
-        </PanelBlock>
-      )}
-
       <PanelBlock icon={Braces} title={t('write.section.image.metaTitle')}>
-        {props.kind === 'page' ? (
-          <MetaJsonField state={props.state} updateField={props.updateField} />
-        ) : (
-          <MetaPresetSection
-            meta={props.state.meta}
-            onUpdateMeta={(meta) => props.updateField('meta', meta)}
-            scope={props.kind === 'post' ? 'post' : 'note'}
-          />
-        )}
+        <MetaPresetSection
+          meta={props.state.meta}
+          onUpdateMeta={(meta) => props.updateField('meta', meta)}
+          scope="post"
+        />
       </PanelBlock>
     </>
   )
-}
-
-function MetaJsonField(props: {
-  state: WriteFormState
-  updateField: <TKey extends keyof WriteFormState>(
-    key: TKey,
-    value: WriteFormState[TKey],
-  ) => void
-}) {
-  const { t } = useI18n()
-  const [value, setValue] = useState(() => formatMetaJson(props.state.meta))
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    setValue(formatMetaJson(props.state.meta))
-    setError('')
-  }, [props.state.meta])
-
-  const apply = () => {
-    const trimmed = value.trim()
-    if (!trimmed) {
-      setError('')
-      props.updateField('meta', {})
-      return
-    }
-
-    try {
-      const parsed = JSON.parse(trimmed)
-      if (!isRecord(parsed)) {
-        setError(t('write.meta.json.invalidObject'))
-        return
-      }
-      setError('')
-      props.updateField('meta', parsed)
-    } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : t('write.meta.json.parseError'),
-      )
-    }
-  }
-
-  return (
-    <div className="space-y-2">
-      <TextArea
-        controlClassName="min-h-32 font-mono text-xs leading-5 focus:border-neutral-400"
-        label="Meta JSON"
-        onBlur={apply}
-        onChange={setValue}
-        placeholder='{"cover":"https://..."}'
-        value={value}
-      />
-      <div className="flex items-center justify-between gap-2">
-        <p
-          className={cn(
-            'min-w-0 text-xs',
-            error
-              ? 'text-red-600 dark:text-red-400'
-              : 'text-neutral-500 dark:text-neutral-400',
-          )}
-        >
-          {error || t('write.meta.json.emptyHint')}
-        </p>
-        <Button onClick={apply} type="button" variant="subtle">
-          {t('write.meta.json.applyButton')}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-interface ParsedPageMarkdown {
-  meta?: Record<string, unknown>
-  order?: string
-  slug?: string
-  subtitle?: string
-  text: string
-  title?: string
-}
-
-function PageParseMarkdownDialog(props: {
-  onApply: (parsed: ParsedPageMarkdown) => void
-  onClose: () => void
-  open: boolean
-}) {
-  const { t } = useI18n()
-  const [value, setValue] = useState('')
-
-  useEffect(() => {
-    if (!props.open) {
-      setValue('')
-    }
-  }, [props.open])
-
-  const apply = () => {
-    const parsed = parsePageMarkdown(value)
-
-    if (!parsed.text.trim() && !parsed.title?.trim()) {
-      toast.error(t('write.parseMd.invalid'))
-      return
-    }
-
-    props.onApply(parsed)
-  }
-
-  return (
-    <Modal
-      onClose={props.onClose}
-      open={props.open}
-      popupStyle={{ height: 'min(82svh, 42rem)', width: 'min(92vw, 56rem)' }}
-    >
-      <ModalHeader title={t('write.parseMd.dialogTitle')} />
-      <div className="min-h-0 flex-1 p-4">
-        <TextArea
-          controlClassName="h-full min-h-0 resize-none rounded border-neutral-200 font-mono text-xs leading-5 focus:border-neutral-400 dark:border-neutral-800"
-          onChange={setValue}
-          placeholder={t('write.parseMd.placeholder')}
-          value={value}
-        />
-      </div>
-      <ModalFooter>
-        <p className="mr-auto min-w-0 text-xs text-fg-muted">
-          {t('write.parseMd.hint')}
-        </p>
-        <Button onClick={() => setValue('')} type="button" variant="subtle">
-          {t('write.parseMd.reset')}
-        </Button>
-        <Button onClick={apply} type="button">
-          {t('write.parseMd.ok')}
-        </Button>
-      </ModalFooter>
-    </Modal>
-  )
-}
-
-function PageLexicalDebugDialog(props: {
-  content: string
-  onClose: () => void
-  open: boolean
-}) {
-  const { t } = useI18n()
-  const formattedContent = useMemo(
-    () => formatLexicalDebugContent(props.content),
-    [props.content],
-  )
-
-  const copyContent = () => {
-    void navigator.clipboard
-      .writeText(formattedContent)
-      .then(() => toast.success(t('write.section.lexicalDebug.copyOk')))
-      .catch(() => toast.error(t('write.toast.copyFailed')))
-  }
-
-  return (
-    <Drawer
-      footer={
-        <>
-          <p className="min-w-0 flex-1 truncate text-xs text-neutral-500 dark:text-neutral-400">
-            {t('write.section.lexicalDebug.footer')}
-          </p>
-          <Button onClick={copyContent} type="button" variant="subtle">
-            {t('write.section.lexicalDebug.copyButton')}
-          </Button>
-        </>
-      }
-      icon={Bug}
-      onClose={props.onClose}
-      open={props.open}
-      title="Lexical State"
-      widthClassName="w-[min(92vw,38rem)]"
-    >
-      <Scroll className="min-h-0 flex-1" innerClassName="p-4">
-        <pre className="min-h-full whitespace-pre-wrap break-words border border-neutral-200 bg-neutral-50 p-3 font-mono text-xs leading-5 text-neutral-800 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-200">
-          {formattedContent}
-        </pre>
-      </Scroll>
-    </Drawer>
-  )
-}
-
-function formatLexicalDebugContent(content: string) {
-  if (!content.trim()) return '{}'
-
-  try {
-    return JSON.stringify(JSON.parse(content), null, 2)
-  } catch {
-    return content
-  }
-}
-
-function parsePageMarkdown(value: string): ParsedPageMarkdown {
-  let text = value.trim()
-  const parsed: ParsedPageMarkdown = { text: '' }
-  const yamlHeader = /^---\r?\n(.*?)\r?\n---/s.exec(text)
-
-  if (yamlHeader) {
-    const meta = parseYamlMeta(yamlHeader[1])
-    const { order, slug, subtitle, title, ...restMeta } = meta
-
-    parsed.title = optionalString(title)
-    parsed.slug = optionalString(slug)
-    parsed.subtitle = optionalString(subtitle)
-    if (order != null) {
-      parsed.order = String(order)
-    }
-    if (Object.keys(restMeta).length > 0) {
-      parsed.meta = restMeta
-    }
-    text = text.replace(yamlHeader[0], '').trim()
-  }
-
-  const lines = text.split('\n')
-  const firstLine = lines[0]?.trim() ?? ''
-  if (firstLine.startsWith('#')) {
-    const headingTitle = firstLine.replace(/^#+/, '').trim()
-
-    if (headingTitle) {
-      parsed.title = headingTitle
-      lines.shift()
-    }
-  }
-
-  parsed.text = lines.join('\n').trim()
-  return parsed
-}
-
-function parseYamlMeta(value: string): Record<string, unknown> {
-  try {
-    return asRecord(load(value))
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : translate('write.parseMd.yamlParseFailed')
-
-    toast.error(message)
-    return {}
-  }
-}
-
-function optionalString(value: unknown) {
-  if (value == null) return undefined
-
-  return String(value)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -4366,32 +2490,6 @@ function setMetaValue(
   return next
 }
 
-function paywallFormState(
-  meta: Record<string, unknown>,
-  previous: Pick<
-    WriteFormState,
-    'freeUntil' | 'freeWindowHours' | 'previewBlocks' | 'purchaseEnabled'
-  >,
-) {
-  const paywall = getPaywallMeta(meta)
-  return {
-    freeUntil: paywall.freeUntil ?? previous.freeUntil,
-    freeWindowHours:
-      paywall.freeWindowHours === undefined
-        ? previous.freeWindowHours
-        : String(paywall.freeWindowHours),
-    previewBlocks:
-      paywall.previewBlocks === undefined
-        ? previous.previewBlocks
-        : String(paywall.previewBlocks),
-    purchaseEnabled: paywall.purchaseEnabled ?? previous.purchaseEnabled,
-  }
-}
-
-function formatMetaJson(meta: Record<string, unknown>) {
-  return Object.keys(meta).length > 0 ? JSON.stringify(meta, null, 2) : ''
-}
-
 function buildWriteImages(state: WriteFormState): ImageModel[] {
   const images = new Map<string, ImageModel>()
   const addImage = (image: ImageModel | null | undefined) => {
@@ -4417,7 +2515,7 @@ function buildWriteImages(state: WriteFormState): ImageModel[] {
 
 function pickImagesFromMarkdown(text: string) {
   const images: string[] = []
-  // eslint-disable-next-line unicorn/better-regex -- `[^\]]` form preserved; `[^]]` changes parse semantics
+
   const imagePattern = /!\[[^\]]*\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g
 
   for (const match of text.matchAll(imagePattern)) {
@@ -4430,49 +2528,6 @@ function pickImagesFromMarkdown(text: string) {
 function getFileExtension(src: string) {
   const pathname = src.split(/[#?]/)[0] ?? src
   return pathname.split('.').pop() || ''
-}
-
-function applyParsedPageMarkdown(
-  state: WriteFormState,
-  parsed: ParsedPageMarkdown,
-): WriteFormState {
-  return {
-    ...state,
-    meta: parsed.meta ?? state.meta,
-    order: parsed.order ?? state.order,
-    slug: parsed.slug ?? state.slug,
-    subtitle: parsed.subtitle ?? state.subtitle,
-    text: parsed.text,
-    title: parsed.title ?? state.title,
-  }
-}
-
-function PageSettingsPanel(props: {
-  draftId?: string
-  refId?: string
-  state: WriteFormState
-  updateField: <TKey extends keyof WriteFormState>(
-    key: TKey,
-    value: WriteFormState[TKey],
-  ) => void
-}) {
-  return (
-    <AsidePanel>
-      <Scroll
-        className="min-h-0 flex-1"
-        innerClassName="grid grid-cols-[minmax(0,1fr)] gap-5 px-5 py-4"
-      >
-        <PageFields state={props.state} updateField={props.updateField} />
-        <MediaAndMetaFields
-          draftId={props.draftId}
-          kind="page"
-          refId={props.refId}
-          state={props.state}
-          updateField={props.updateField}
-        />
-      </Scroll>
-    </AsidePanel>
-  )
 }
 
 function PanelBlock(props: {
@@ -4517,22 +2572,7 @@ function Field(props: {
   )
 }
 
-function WriteSkeleton(props: { kind: WriteKind }) {
-  if (props.kind === 'page') {
-    return (
-      <div className="flex min-h-0 flex-1 flex-col bg-background">
-        <div className="mx-auto w-full max-w-[60rem] shrink-0 px-3 pb-2 pt-6">
-          <div className="h-14 w-full animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-900" />
-          <div className="mt-3 h-4 w-1/2 animate-pulse rounded bg-neutral-100 dark:bg-neutral-900" />
-          <div className="mt-3 h-4 w-2/3 animate-pulse rounded bg-neutral-100 dark:bg-neutral-900" />
-        </div>
-        <div className="mx-auto mt-6 h-[34rem] w-full max-w-[60rem] px-3">
-          <div className="h-full animate-pulse rounded bg-neutral-100 dark:bg-neutral-900" />
-        </div>
-      </div>
-    )
-  }
-
+function WriteSkeleton() {
   return (
     <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="space-y-4">
@@ -4551,91 +2591,35 @@ function WriteSkeleton(props: { kind: WriteKind }) {
   )
 }
 
-type WriteModel = NoteModel | PageModel | PostModel
+type WriteModel = PostModel
 
 const draftRefTypeByKind: Record<WriteKind, DraftRefType> = {
-  note: DraftRefType.Note,
-  page: DraftRefType.Page,
   post: DraftRefType.Post,
 }
 
 function getPublishedContent(model: WriteModel): PublishedWriteContent {
   return {
     content: model.content ?? undefined,
-    contentFormat: model.contentFormat,
     text: model.text ?? '',
     title: model.title,
     updatedAt: model.modifiedAt || model.createdAt,
   }
 }
 
-function fromModel(kind: WriteKind, model: WriteModel) {
-  if (kind === 'post') {
-    const post = model as PostModel
-    const meta = asRecord(post.meta)
-    return {
-      ...emptyState,
-      categoryId: post.categoryId,
-      content: post.content ?? '',
-      contentFormat: post.contentFormat ?? 'markdown',
-      copyright: post.copyright,
-      images: post.images ?? [],
-      isPremium: Boolean(post.isPremium),
-      meta,
-      pin: Boolean(post.pinAt),
-      pinOrder: String(post.pinOrder ?? 1),
-      ...paywallFormState(meta, emptyState),
-      relatedId: post.related?.map((item) => item.id).join(', ') ?? '',
-      slug: post.slug,
-      summary: post.summary ?? '',
-      tags: post.tags.join(', '),
-      text: post.text ?? '',
-      title: post.title,
-    }
-  }
-
-  if (kind === 'note') {
-    const note = model as NoteModel
-    return {
-      ...emptyState,
-      content: note.content ?? '',
-      contentFormat: note.contentFormat ?? 'markdown',
-      bookmark: note.bookmark,
-      coordinatesLat:
-        typeof note.coordinates?.latitude === 'number'
-          ? String(note.coordinates.latitude)
-          : '',
-      coordinatesLng:
-        typeof note.coordinates?.longitude === 'number'
-          ? String(note.coordinates.longitude)
-          : '',
-      images: note.images ?? [],
-      location: note.location ?? '',
-      meta: asRecord(note.meta),
-      mood: note.mood ?? '',
-      password: '',
-      passwordProtected: Boolean(note.hasPassword || note.password),
-      publicAt: toDatetimeLocalValue(note.publicAt),
-      slug: note.slug ?? '',
-      text: note.text ?? '',
-      title: note.title,
-      topicId: note.topicId ?? '',
-      weather: note.weather ?? '',
-    }
-  }
-
-  const page = model as PageModel
+function fromModel(_kind: WriteKind, post: WriteModel): WriteFormState {
   return {
     ...emptyState,
-    content: page.content ?? '',
-    contentFormat: page.contentFormat ?? 'markdown',
-    images: page.images ?? [],
-    meta: asRecord(page.meta),
-    order: typeof page.order === 'number' ? String(page.order) : '',
-    slug: page.slug,
-    subtitle: page.subtitle ?? '',
-    text: page.text ?? '',
-    title: page.title,
+    categoryId: post.categoryId,
+    content: post.content ?? '',
+    images: post.images ?? [],
+    meta: asRecord(post.meta),
+    pin: Boolean(post.pinAt),
+    pinOrder: String(post.pinOrder ?? 1),
+    slug: post.slug,
+    summary: post.summary ?? '',
+    tags: post.tags.join(', '),
+    text: post.text ?? '',
+    title: post.title,
   }
 }
 
@@ -4645,125 +2629,38 @@ function fromRevision(
   previous: WriteFormState,
 ): WriteFormState {
   const specific = (draft.typeSpecificData ?? {}) as Record<string, any>
-  const base = {
+  return {
     ...previous,
     content: draft.content ?? '',
-    contentFormat:
-      draft.contentFormat ??
-      (draft.text || draft.content ? 'markdown' : previous.contentFormat),
     images: draft.images ?? previous.images,
     meta: asRecord(draft.meta, previous.meta),
     text: draft.text ?? '',
     title: draft.title ?? '',
-  }
-
-  if (kind === 'post') {
-    return {
-      ...base,
-      categoryId:
-        typeof specific.categoryId === 'string'
-          ? specific.categoryId
-          : previous.categoryId,
-      copyright:
-        typeof specific.copyright === 'boolean'
-          ? specific.copyright
-          : previous.copyright,
-      isPremium:
-        typeof specific.isPremium === 'boolean'
-          ? specific.isPremium
-          : previous.isPremium,
-      pin: 'pin' in specific ? Boolean(specific.pin) : previous.pin,
-      pinOrder:
-        typeof specific.pinOrder === 'number'
-          ? String(specific.pinOrder)
-          : previous.pinOrder,
-      ...paywallFormState(base.meta, previous),
-      relatedId: Array.isArray(specific.relatedId)
-        ? specific.relatedId.map((id) => String(id)).join(', ')
-        : previous.relatedId,
-      slug: typeof specific.slug === 'string' ? specific.slug : previous.slug,
-      summary:
-        'summary' in specific
-          ? typeof specific.summary === 'string'
-            ? specific.summary
-            : ''
-          : previous.summary,
-      tags: Array.isArray(specific.tags)
-        ? specific.tags.map((tag) => String(tag)).join(', ')
-        : previous.tags,
-    }
-  }
-
-  if (kind === 'note') {
-    return {
-      ...base,
-      bookmark:
-        typeof specific.bookmark === 'boolean'
-          ? specific.bookmark
-          : previous.bookmark,
-      coordinatesLat:
-        'coordinates' in specific && specific.coordinates == null
-          ? ''
-          : typeof specific.coordinates?.latitude === 'number'
-            ? String(specific.coordinates.latitude)
-            : previous.coordinatesLat,
-      coordinatesLng:
-        'coordinates' in specific && specific.coordinates == null
-          ? ''
-          : typeof specific.coordinates?.longitude === 'number'
-            ? String(specific.coordinates.longitude)
-            : previous.coordinatesLng,
-      location:
-        typeof specific.location === 'string'
-          ? specific.location
-          : previous.location,
-      mood: typeof specific.mood === 'string' ? specific.mood : previous.mood,
-      password:
-        typeof specific.password === 'string'
-          ? specific.password
-          : 'password' in specific
-            ? ''
-            : previous.password,
-      passwordProtected: resolveDraftPasswordProtected(specific, previous),
-      publicAt:
-        'publicAt' in specific && specific.publicAt == null
-          ? ''
-          : typeof specific.publicAt === 'string'
-            ? toDatetimeLocalValue(specific.publicAt)
-            : previous.publicAt,
-      slug: typeof specific.slug === 'string' ? specific.slug : previous.slug,
-      topicId:
-        'topicId' in specific
-          ? typeof specific.topicId === 'string'
-            ? specific.topicId
-            : ''
-          : previous.topicId,
-      weather:
-        typeof specific.weather === 'string'
-          ? specific.weather
-          : previous.weather,
-    }
-  }
-
-  return {
-    ...base,
-    order:
-      typeof specific.order === 'number'
-        ? String(specific.order)
-        : previous.order,
+    categoryId:
+      typeof specific.categoryId === 'string'
+        ? specific.categoryId
+        : previous.categoryId,
+    pin: 'pin' in specific ? Boolean(specific.pin) : previous.pin,
+    pinOrder:
+      typeof specific.pinOrder === 'number'
+        ? String(specific.pinOrder)
+        : previous.pinOrder,
     slug: typeof specific.slug === 'string' ? specific.slug : previous.slug,
-    subtitle:
-      'subtitle' in specific
-        ? typeof specific.subtitle === 'string'
-          ? specific.subtitle
+    summary:
+      'summary' in specific
+        ? typeof specific.summary === 'string'
+          ? specific.summary
           : ''
-        : previous.subtitle,
+        : previous.summary,
+    tags: Array.isArray(specific.tags)
+      ? specific.tags.map((tag) => String(tag)).join(', ')
+      : previous.tags,
   }
 }
 
 function buildDraftRecoveryReviewData(
   kind: WriteKind,
-  model: NoteModel | PageModel | PostModel,
+  model: PostModel,
   draft: DraftModel,
   ancestor?: RevisionSnapshot,
 ): DraftRecoveryReviewData {
@@ -4801,114 +2698,31 @@ function buildDraftRecoveryReviewData(
   )
   add('write.recovery.field.slug', current.slug, next.slug, ancestorState?.slug)
 
-  if (kind === 'post') {
-    add(
-      'write.recovery.field.summary',
-      current.summary,
-      next.summary,
-      ancestorState?.summary,
-    )
-    add(
-      'write.recovery.field.category',
-      current.categoryId,
-      next.categoryId,
-      ancestorState?.categoryId,
-    )
-    add(
-      'write.recovery.field.tags',
-      splitCommaList(current.tags).sort(),
-      splitCommaList(next.tags).sort(),
-      splitCommaList(ancestorState?.tags ?? '').sort(),
-    )
-    add(
-      'write.recovery.field.copyright',
-      current.copyright,
-      next.copyright,
-      ancestorState?.copyright,
-    )
-    add(
-      'write.recovery.field.premium',
-      current.isPremium,
-      next.isPremium,
-      ancestorState?.isPremium,
-    )
-    add('write.recovery.field.pin', current.pin, next.pin, ancestorState?.pin)
-    add(
-      'write.recovery.field.pinOrder',
-      current.pinOrder,
-      next.pinOrder,
-      ancestorState?.pinOrder,
-    )
-    add(
-      'write.recovery.field.related',
-      splitCommaList(current.relatedId).sort(),
-      splitCommaList(next.relatedId).sort(),
-      splitCommaList(ancestorState?.relatedId ?? '').sort(),
-    )
-  } else if (kind === 'note') {
-    add(
-      'write.recovery.field.mood',
-      current.mood,
-      next.mood,
-      ancestorState?.mood,
-    )
-    add(
-      'write.recovery.field.weather',
-      current.weather,
-      next.weather,
-      ancestorState?.weather,
-    )
-    add(
-      'write.recovery.field.bookmark',
-      current.bookmark,
-      next.bookmark,
-      ancestorState?.bookmark,
-    )
-    add(
-      'write.recovery.field.location',
-      current.location,
-      next.location,
-      ancestorState?.location,
-    )
-    add(
-      'write.recovery.field.coordinates',
-      [current.coordinatesLat, current.coordinatesLng],
-      [next.coordinatesLat, next.coordinatesLng],
-      [ancestorState?.coordinatesLat, ancestorState?.coordinatesLng],
-    )
-    add(
-      'write.recovery.field.publicAt',
-      current.publicAt,
-      next.publicAt,
-      ancestorState?.publicAt,
-    )
-    add(
-      'write.recovery.field.topic',
-      current.topicId,
-      next.topicId,
-      ancestorState?.topicId,
-    )
-    add(
-      'write.recovery.field.passwordProtected',
-      current.passwordProtected,
-      next.passwordProtected,
-      ancestorState?.passwordProtected,
-    )
-  } else {
-    add(
-      'write.recovery.field.subtitle',
-      current.subtitle,
-      next.subtitle,
-      ancestorState?.subtitle,
-    )
-    add(
-      'write.recovery.field.order',
-      current.order,
-      next.order,
-      ancestorState?.order,
-    )
-  }
-
+  add(
+    'write.recovery.field.summary',
+    current.summary,
+    next.summary,
+    ancestorState?.summary,
+  )
+  add(
+    'write.recovery.field.category',
+    current.categoryId,
+    next.categoryId,
+    ancestorState?.categoryId,
+  )
+  add(
+    'write.recovery.field.tags',
+    splitCommaList(current.tags).sort(),
+    splitCommaList(next.tags).sort(),
+    splitCommaList(ancestorState?.tags ?? '').sort(),
+  )
+  add('write.recovery.field.pin', current.pin, next.pin, ancestorState?.pin)
+  add(
+    'write.recovery.field.pinOrder',
+    current.pinOrder,
+    next.pinOrder,
+    ancestorState?.pinOrder,
+  )
   add(
     'write.recovery.field.images',
     current.images,
@@ -4917,11 +2731,7 @@ function buildDraftRecoveryReviewData(
   )
   add('write.recovery.field.meta', current.meta, next.meta, ancestorState?.meta)
 
-  const rich =
-    current.contentFormat === 'lexical' && next.contentFormat === 'lexical'
-  const bodyChanged =
-    current.contentFormat !== next.contentFormat ||
-    (rich ? current.content !== next.content : current.text !== next.text)
+  const bodyChanged = current.content !== next.content
 
   return {
     ancestorContent: ancestorState?.content,
@@ -4935,7 +2745,7 @@ function buildDraftRecoveryReviewData(
     diverged:
       draft.relationToPublished === 'diverged' ||
       draft.relationToPublished === 'descendant',
-    rich,
+    rich: true,
     savedAt: formatRelativeTime(draft.updatedAt ?? draft.createdAt),
   }
 }
@@ -4980,25 +2790,6 @@ function formatReviewValue(value: unknown): string {
   return value == null ? '' : String(value)
 }
 
-function resolveDraftPasswordProtected(
-  specific: Record<string, any>,
-  previous: WriteFormState,
-) {
-  if (typeof specific.passwordProtected === 'boolean') {
-    return specific.passwordProtected
-  }
-
-  if (!('password' in specific)) {
-    return previous.passwordProtected
-  }
-
-  if (typeof specific.password === 'string') {
-    return specific.password.length > 0 || previous.passwordProtected
-  }
-
-  return previous.passwordProtected
-}
-
 function getDraftFingerprint(
   kind: WriteKind,
   state: WriteFormState,
@@ -5009,13 +2800,9 @@ function getDraftFingerprint(
     ...data.typeSpecificData,
   }
 
-  if (kind === 'post') {
-    typeSpecificData.pin = Boolean(typeSpecificData.pin)
-    for (const key of ['relatedId', 'tags']) {
-      if (Array.isArray(typeSpecificData[key])) {
-        typeSpecificData[key] = [...typeSpecificData[key]].sort()
-      }
-    }
+  typeSpecificData.pin = Boolean(typeSpecificData.pin)
+  if (Array.isArray(typeSpecificData.tags)) {
+    typeSpecificData.tags = [...typeSpecificData.tags].sort()
   }
 
   return serializeListKey([
@@ -5028,78 +2815,28 @@ function getDraftFingerprint(
 }
 
 function toDraftData(
-  kind: WriteKind,
+  _kind: WriteKind,
   state: WriteFormState,
   _refId?: string,
 ): DraftWriteData {
   state = projectWriteState(state)
 
-  const base = {
-    content: state.contentFormat === 'lexical' ? state.content : undefined,
-    contentFormat: state.contentFormat,
-    images:
-      state.contentFormat === 'lexical' ? undefined : buildWriteImages(state),
+  return {
+    content: state.content,
+    contentFormat: 'lexical',
     meta: state.meta,
     text: state.text,
-    title: resolveWriteTitle(kind, state),
-  } satisfies DraftWriteData
-
-  if (kind === 'post') {
-    return {
-      ...base,
-      meta: resolvePaywallMeta(state.meta, state.isPremium, {
-        freeUntil: state.freeUntil,
-        freeWindowHours: parseFreeWindowHours(state.freeWindowHours),
-        previewBlocks: Math.max(
-          1,
-          Number(state.previewBlocks) || DEFAULT_PREVIEW_BLOCKS,
-        ),
-        purchaseEnabled: state.purchaseEnabled,
-      }),
-      typeSpecificData: {
-        categoryId: state.categoryId,
-        copyright: state.copyright,
-        isPremium: state.isPremium,
-        pin: state.pin,
-        pinOrder: state.pin ? Number(state.pinOrder) || 1 : undefined,
-        relatedId: splitCommaList(state.relatedId),
-        slug: state.slug,
-        summary: state.summary || null,
-        tags: state.tags
-          .split(',')
-          .map((tag) => tag.trim())
-          .filter(Boolean),
-      },
-    }
-  }
-
-  if (kind === 'note') {
-    return {
-      ...base,
-      typeSpecificData: {
-        bookmark: state.bookmark,
-        coordinates: parseCoordinates(state),
-        location: state.location,
-        mood: state.mood,
-        ...(state.passwordProtected
-          ? state.password
-            ? { password: state.password }
-            : {}
-          : { password: null }),
-        publicAt: normalizeFutureDatetimeIso(state.publicAt),
-        slug: state.slug,
-        topicId: state.topicId || null,
-        weather: state.weather,
-      },
-    }
-  }
-
-  return {
-    ...base,
+    title: state.title.trim() || state.title,
     typeSpecificData: {
-      order: state.order ? Number(state.order) : undefined,
+      categoryId: state.categoryId,
+      pin: state.pin,
+      pinOrder: state.pin ? Number(state.pinOrder) || 1 : undefined,
       slug: state.slug,
-      subtitle: state.subtitle || null,
+      summary: state.summary || null,
+      tags: state.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean),
     },
   }
 }
@@ -5117,7 +2854,6 @@ function stripPendingAgentDiffs(content: string): string {
 }
 
 function projectWriteState(state: WriteFormState): WriteFormState {
-  if (state.contentFormat !== 'lexical') return state
   if (!state.content.trim()) return state
   const content = stripPendingAgentDiffs(state.content)
   return {
@@ -5186,10 +2922,6 @@ function RichWriteSurface(props: {
       const result = await uploadFile(file, 'image')
       return { src: result.url }
     },
-    trackUpload: async (file) => {
-      const result = await uploadFile(file, 'file')
-      return { url: result.url }
-    },
     videoUpload: async (file, opts) => {
       const result = await uploadFileWithProgress(file, {
         type: 'video',
@@ -5246,7 +2978,7 @@ function RichWriteSurface(props: {
     saveExcalidrawSnapshot,
     store: agent.store,
     theme: getColorScheme(),
-    variant: props.kind === 'note' ? 'note' : 'article',
+    variant: 'article',
   }
 
   return (
@@ -5293,26 +3025,6 @@ function parseSerializedEditorState(
   return undefined
 }
 
-function hasLexicalContent(content: string) {
-  const state = parseSerializedEditorState(content)
-  if (!state) return false
-
-  return lexicalNodeHasContent(state.root)
-}
-
-function lexicalNodeHasContent(node: unknown): boolean {
-  if (!node || typeof node !== 'object') return false
-
-  const record = node as Record<string, unknown>
-  if (typeof record.text === 'string' && record.text.trim()) return true
-
-  if (Array.isArray(record.children)) {
-    return record.children.some(lexicalNodeHasContent)
-  }
-
-  return record.type !== 'root' && record.type !== 'paragraph'
-}
-
 async function saveExcalidrawSnapshot(snapshot: object, existingRef?: string) {
   const name = existingRef
     ? `${existingRef.replaceAll(/[^\w.-]/g, '-')}.json`
@@ -5342,84 +3054,36 @@ function formatDateTime(value: string | null | undefined) {
   }).format(date)
 }
 
-function validateState(
-  kind: WriteKind,
-  state: WriteFormState,
-  categories: CategoryEntity[],
-  isEditing: boolean,
-) {
-  if (kind !== 'note' && !state.title.trim())
-    return translate('write.validation.titleRequired')
+function validateState(state: WriteFormState, categories: CategoryEntity[]) {
+  if (!state.title.trim()) return translate('write.validation.titleRequired')
   const hasBody =
-    state.contentFormat === 'lexical'
-      ? state.text.trim().length > 0 || state.content.trim().length > 0
-      : state.text.trim().length > 0
+    state.text.trim().length > 0 || state.content.trim().length > 0
   if (!hasBody) return translate('write.validation.textRequired')
-  if (kind !== 'note' && !state.slug.trim())
-    return translate('write.validation.slugRequired')
-  if (kind === 'post' && !state.categoryId) {
+  if (!state.slug.trim()) return translate('write.validation.slugRequired')
+  if (!state.categoryId) {
     return categories.length > 0
       ? translate('write.validation.selectCategory')
       : translate('write.validation.createCategoryFirst')
   }
-  if (kind === 'page' && state.order && Number.isNaN(Number(state.order))) {
-    return translate('write.validation.sortNumber')
-  }
-  if (kind === 'post' && state.pin && Number.isNaN(Number(state.pinOrder))) {
+  if (state.pin && Number.isNaN(Number(state.pinOrder))) {
     return translate('write.validation.pinOrderNumber')
-  }
-  if (
-    kind === 'note' &&
-    state.passwordProtected &&
-    !isEditing &&
-    !state.password.trim()
-  ) {
-    return translate('write.validation.passwordRequired')
   }
 
   return null
 }
 
-function getWriteAgentMetaSchema(kind: WriteKind) {
-  if (kind === 'post') return POST_META_SCHEMA
-  if (kind === 'note') return NOTE_META_SCHEMA
-  return PAGE_META_SCHEMA
-}
-
-function getWriteAgentMetaFields(kind: WriteKind, state: WriteFormState) {
-  if (kind === 'post') {
-    return {
-      copyright: state.copyright,
-      pin: state.pin,
-      pinOrder: Number(state.pinOrder) || 0,
-      slug: state.slug,
-      summary: state.summary,
-      tags: splitCommaList(state.tags),
-      title: state.title,
-    }
-  }
-
-  if (kind === 'note') {
-    return {
-      bookmark: state.bookmark,
-      location: state.location,
-      mood: state.mood,
-      slug: state.slug,
-      title: state.title,
-      weather: state.weather,
-    }
-  }
-
+function getWriteAgentMetaFields(state: WriteFormState) {
   return {
-    order: Number(state.order) || 0,
+    pin: state.pin,
+    pinOrder: Number(state.pinOrder) || 0,
     slug: state.slug,
-    subtitle: state.subtitle,
+    summary: state.summary,
+    tags: splitCommaList(state.tags),
     title: state.title,
   }
 }
 
 function applyWriteAgentMetaUpdates(
-  kind: WriteKind,
   state: WriteFormState,
   updates: Record<string, unknown>,
 ) {
@@ -5427,47 +3091,20 @@ function applyWriteAgentMetaUpdates(
 
   if ('title' in updates) next.title = String(updates.title ?? '')
   if ('slug' in updates) next.slug = String(updates.slug ?? '')
-
-  if (kind === 'post') {
-    if ('tags' in updates && Array.isArray(updates.tags)) {
-      next.tags = updates.tags.map((tag) => String(tag)).join(', ')
-    }
-    if ('summary' in updates) next.summary = String(updates.summary ?? '')
-    if ('copyright' in updates) next.copyright = Boolean(updates.copyright)
-    if ('pin' in updates) {
-      next.pin = Boolean(updates.pin)
-      if (!next.pin) next.pinOrder = '0'
-      else if (!next.pinOrder || Number(next.pinOrder) === 0)
-        next.pinOrder = '1'
-    }
-    if ('pinOrder' in updates) {
-      next.pinOrder = String(Number(updates.pinOrder ?? 0) || 0)
-    }
+  if ('tags' in updates && Array.isArray(updates.tags)) {
+    next.tags = updates.tags.map((tag) => String(tag)).join(', ')
   }
-
-  if (kind === 'note') {
-    if ('mood' in updates) next.mood = String(updates.mood ?? '')
-    if ('weather' in updates) next.weather = String(updates.weather ?? '')
-    if ('bookmark' in updates) next.bookmark = Boolean(updates.bookmark)
-    if ('location' in updates) {
-      next.location = updates.location == null ? '' : String(updates.location)
-    }
+  if ('summary' in updates) next.summary = String(updates.summary ?? '')
+  if ('pin' in updates) {
+    next.pin = Boolean(updates.pin)
+    if (!next.pin) next.pinOrder = '0'
+    else if (!next.pinOrder || Number(next.pinOrder) === 0) next.pinOrder = '1'
   }
-
-  if (kind === 'page') {
-    if ('subtitle' in updates) next.subtitle = String(updates.subtitle ?? '')
-    if ('order' in updates) {
-      next.order = String(Number(updates.order ?? 0) || 0)
-    }
+  if ('pinOrder' in updates) {
+    next.pinOrder = String(Number(updates.pinOrder ?? 0) || 0)
   }
 
   return next
-}
-
-function resolveWriteTitle(kind: WriteKind, state: WriteFormState) {
-  if (state.title.trim()) return state.title.trim()
-  if (kind === 'note') return getDefaultNoteTitle()
-  return state.title
 }
 
 function splitCommaList(value: string) {
@@ -5481,67 +3118,6 @@ function toggleListValue(values: string[], value: string) {
   return values.includes(value)
     ? values.filter((item) => item !== value)
     : [...values, value]
-}
-
-function parseCoordinates(state: WriteFormState) {
-  if (!state.coordinatesLat.trim() || !state.coordinatesLng.trim()) return null
-
-  const latitude = Number(state.coordinatesLat)
-  const longitude = Number(state.coordinatesLng)
-
-  if (Number.isNaN(latitude) || Number.isNaN(longitude)) return null
-
-  return { latitude, longitude }
-}
-
-function toDatetimeLocalValue(value: Date | string | null | undefined) {
-  if (!value) return ''
-
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-
-  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-  return offsetDate.toISOString().slice(0, 16)
-}
-
-function normalizeFutureDatetimeIso(value: string) {
-  if (!value) return null
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime()) || date.getTime() <= Date.now()) return null
-
-  return date.toISOString()
-}
-
-interface DateOffset {
-  days?: number
-  months?: number
-}
-
-function addDateOffset(date: Date, offset: DateOffset) {
-  const next = new Date(date)
-  if (offset.days) next.setDate(next.getDate() + offset.days)
-  if (offset.months) next.setMonth(next.getMonth() + offset.months)
-  return next
-}
-
-function getDefaultNoteTitle(date = new Date()) {
-  return translate('write.noteDefaultTitle', {
-    year: date.getFullYear(),
-    day: getDayOfYear(date),
-  })
-}
-
-function buildNotePublicPath(
-  state: Pick<WriteFormState, 'slug'>,
-  note: NoteModel | undefined,
-) {
-  if (state.slug.trim()) {
-    const date = note?.createdAt ? new Date(note.createdAt) : new Date()
-    return `/notes/${date.getUTCFullYear()}/${date.getUTCMonth() + 1}/${date.getUTCDate()}/${state.slug.trim()}`
-  }
-
-  return note?.nid ? `/notes/${note.nid}` : ''
 }
 
 function buildPostPublicPath(

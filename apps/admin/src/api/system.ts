@@ -1,13 +1,7 @@
 import { API_URL } from '~/constants/env'
 import type { AppInfo } from '~/models/system'
 
-import {
-  buildAdminRequestHeaders,
-  getJson,
-  patchJson,
-  postJson,
-  requestJson,
-} from './http'
+import { buildAdminRequestHeaders, getJson, patchJson, postJson } from './http'
 
 export interface CreateOwnerData {
   avatar?: string
@@ -17,14 +11,6 @@ export interface CreateOwnerData {
   password: string
   url?: string
   username: string
-}
-
-export interface InitDefaultConfigs {
-  seo?: {
-    description?: string
-    keywords?: string[]
-    title?: string
-  }
 }
 
 export async function checkInit() {
@@ -52,28 +38,10 @@ export function getAppInfo() {
   return getJson<AppInfo>('/info')
 }
 
-export function getInitDefaultConfigs() {
-  return getJson<InitDefaultConfigs>('/init/configs/default')
-}
-
 export function patchInitConfig<TData>(key: string, data: TData) {
   return patchJson<void, TData>(`/init/configs/${key}`, data)
 }
 
-export function restoreFromBackup(formData: FormData) {
-  return requestJson<void>('/init/restore', {
-    body: formData,
-    method: 'POST',
-  })
-}
-
 export function createOwner(data: CreateOwnerData) {
   return postJson<void, CreateOwnerData>('/init/owner', data)
-}
-
-export function callBuiltInFunction<TResponse = unknown>(
-  name: string,
-  params?: Record<string, boolean | number | string | undefined>,
-) {
-  return getJson<TResponse>(`/fn/built-in/${name}`, params)
 }

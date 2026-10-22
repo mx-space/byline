@@ -2,12 +2,12 @@ import { persist, subscribeWithSelector } from 'zustand/middleware'
 import { shallow } from 'zustand/shallow'
 import { createWithEqualityFn } from 'zustand/traditional'
 import type { StateCreator } from 'zustand/vanilla'
-import type { ThemeAction } from './action'
-import type { ThemeMode, ThemeState } from './initial-state'
 
 import { flattenActions } from '~/store/utils/flatten-actions'
 
+import type { ThemeAction } from './action'
 import { createThemeSlice } from './action'
+import type { ThemeMode, ThemeState } from './initial-state'
 import { initialThemeState } from './initial-state'
 
 export interface ThemeStore extends ThemeState, ThemeAction {}
@@ -34,7 +34,7 @@ export const useThemeStore = createWithEqualityFn<ThemeStore>()(
           if (typeof window === 'undefined') return null
           const raw = window.localStorage.getItem(name)
           if (!raw) return null
-          const stripped = raw.replace(/^"|"$/g, '')
+          const stripped = raw.replaceAll(/^"|"$/g, '')
           if (isValidMode(stripped)) {
             return { state: { themeMode: stripped }, version: 0 }
           }

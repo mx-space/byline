@@ -1,5 +1,4 @@
 import type { WebhookModel } from '~/api/webhooks'
-
 import { useI18n } from '~/i18n'
 
 import { getScopeText } from '../utils/webhooks'

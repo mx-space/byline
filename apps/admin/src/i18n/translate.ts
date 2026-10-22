@@ -1,7 +1,6 @@
-import type { Locale, TranslationKey, TranslationValues } from './types'
-
 import { UI_LOCALE_STORAGE_KEY } from '../constants/keys'
 import { DEFAULT_LOCALE, messages, SUPPORTED_LOCALES } from './resources'
+import type { Locale, TranslationKey, TranslationValues } from './types'
 
 function readActiveLocale(): Locale {
   if (typeof localStorage === 'undefined') return DEFAULT_LOCALE
@@ -20,7 +19,7 @@ export function translate(
 
   if (!values) return template
 
-  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
+  return template.replaceAll(/\{(\w+)\}/g, (match, name: string) =>
     Object.hasOwn(values, name) ? String(values[name]) : match,
   )
 }

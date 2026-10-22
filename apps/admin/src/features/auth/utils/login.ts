@@ -1,4 +1,5 @@
 import type { UserModel } from '~/models/user'
+
 import type { InitResponse } from '../types/login'
 
 export function isInitEnvelope(

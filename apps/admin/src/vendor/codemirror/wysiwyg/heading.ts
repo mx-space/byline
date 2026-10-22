@@ -1,10 +1,9 @@
 import type { EditorState, Range } from '@codemirror/state'
 import type { DecorationSet, EditorView } from '@codemirror/view'
-
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view'
 
 // Match heading lines: # to ###### followed by space and content
-const headingPattern = /^(#{1,6})\s+(.+)$/
+const headingPattern = /^(#{1,6})\s.+$/
 
 // Placeholder widget to replace the # symbols
 class HeadingMarkerWidget extends WidgetType {

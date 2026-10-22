@@ -1,5 +1,4 @@
 import type { ModalInstance } from '../types'
-
 import { useModalStore } from './store'
 
 export type { ModalAction } from './action'

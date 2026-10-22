@@ -1,9 +1,8 @@
-import katex from 'katex'
 import type { EditorState, Range } from '@codemirror/state'
-import type { DecorationSet } from '@codemirror/view'
-
 import { StateField } from '@codemirror/state'
+import type { DecorationSet } from '@codemirror/view'
 import { Decoration, EditorView, WidgetType } from '@codemirror/view'
+import katex from 'katex'
 
 // Inline math widget
 class InlineMathWidget extends WidgetType {
@@ -141,7 +140,7 @@ const findInlineMath = (
 ): InlineMathMatch[] => {
   const matches: InlineMathMatch[] = []
   // Match $...$ but not $$...$$
-  const inlineMathRegex = /(?<!\$)\$(?!\$)([^$\n]+?)\$(?!\$)/g
+  const inlineMathRegex = /(?<!\$)\$([^\n$]+)\$(?!\$)/g
   let match: RegExpExecArray | null
 
   while ((match = inlineMathRegex.exec(lineText)) !== null) {

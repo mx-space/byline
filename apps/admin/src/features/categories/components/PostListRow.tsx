@@ -24,11 +24,6 @@ export function PostListRow(props: { post: PostModel }) {
           <time dateTime={props.post.createdAt}>
             {relativeTimeFromNow(props.post.createdAt)}
           </time>
-          <span>
-            {t('categories.postRow.readSuffix', {
-              count: props.post.readCount ?? 0,
-            })}
-          </span>
         </div>
       </Link>
       <a

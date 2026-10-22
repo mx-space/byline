@@ -1,17 +1,11 @@
 import type { ContentDocument, DraftModel } from '~/models/draft'
-import { DraftRefType as DraftRefTypeValue } from '~/models/draft'
 
 export function getEditPathForDraft(
   draft: Pick<DraftModel, 'id'> & {
     document: Pick<ContentDocument, 'refId' | 'refType'>
   },
 ) {
-  const basePath =
-    draft.document.refType === DraftRefTypeValue.Post
-      ? '/posts/edit'
-      : draft.document.refType === DraftRefTypeValue.Note
-        ? '/notes/edit'
-        : '/pages/edit'
+  const basePath = '/posts/edit'
   const params = new URLSearchParams()
   params.set('draftId', draft.id)
   if (draft.document.refId) params.set('id', draft.document.refId)

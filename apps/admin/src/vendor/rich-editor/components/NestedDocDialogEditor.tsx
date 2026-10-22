@@ -1,5 +1,4 @@
 import type { NestedDocDialogEditorProps } from '@haklex/rich-ext-nested-doc'
-
 import { nestedDocEditNodes } from '@haklex/rich-ext-nested-doc'
 
 import { RichEditor } from '../core'
