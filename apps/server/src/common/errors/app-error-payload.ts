@@ -177,9 +177,7 @@ export type AppErrorPayloadMap = {
   [AppErrorCode.NOTE_NOT_FOUND]: WithId
   [AppErrorCode.NOTE_PASSWORD_REQUIRED]: undefined
 
-  // owner / reader / user
-  [AppErrorCode.OWNER_NOT_FOUND]: undefined
-  [AppErrorCode.READER_NOT_FOUND]: WithId
+  // user
   [AppErrorCode.USER_NOT_EXISTS]: undefined
   [AppErrorCode.USER_ALREADY_EXISTS]: undefined
   [AppErrorCode.USER_NOT_FOUND]: WithId
@@ -188,19 +186,6 @@ export type AppErrorPayloadMap = {
   [AppErrorCode.INVITE_EXPIRED]: undefined
   [AppErrorCode.INVITE_ALREADY_ACCEPTED]: undefined
   [AppErrorCode.DYNAMIC_COMPONENT_NAME_CONFLICT]: { name: string }
-
-  // membership
-  [AppErrorCode.MEMBERSHIP_REQUIRED]: undefined
-  [AppErrorCode.WEBHOOK_SIGNATURE_INVALID]: undefined
-  [AppErrorCode.MEMBERSHIP_PROVIDER_NOT_CONFIGURED]: undefined
-  [AppErrorCode.MEMBERSHIP_PROVIDER_NOT_SUPPORTED]: undefined
-  [AppErrorCode.MEMBERSHIP_ALREADY_ACTIVE]: undefined
-  [AppErrorCode.MEMBERSHIP_APPLE_TRANSACTION_INVALID]: undefined
-  [AppErrorCode.MEMBERSHIP_APPLE_ALREADY_BOUND]: undefined
-  [AppErrorCode.PREMIUM_REQUIRES_LEXICAL]: undefined
-  [AppErrorCode.ARTICLE_PURCHASE_UNAVAILABLE]: undefined
-  [AppErrorCode.ARTICLE_NOT_PURCHASABLE]: undefined
-  [AppErrorCode.ARTICLE_ALREADY_PURCHASED]: undefined
 
   // page
   [AppErrorCode.PAGE_NOT_FOUND]: WithId
@@ -213,8 +198,6 @@ export type AppErrorPayloadMap = {
   [AppErrorCode.POST_NOT_FOUND]: WithId
   [AppErrorCode.POST_UNPUBLISHED]: WithId
   [AppErrorCode.POST_HIDDEN_OR_ENCRYPTED]: undefined
-  [AppErrorCode.POST_RELATED_NOT_EXISTS]: undefined
-  [AppErrorCode.POST_SELF_RELATION]: undefined
 
   // recently
   [AppErrorCode.RECENTLY_NOT_FOUND]: WithId

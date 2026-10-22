@@ -612,13 +612,7 @@ export const APP_ERROR_DEFINITIONS = {
     message: 'Note password required',
   },
 
-  // owner / reader / user
-  [AppErrorCode.OWNER_NOT_FOUND]: { status: 404, message: 'Owner not found' },
-  [AppErrorCode.READER_NOT_FOUND]: {
-    status: 404,
-    message: 'Reader not found',
-    details: (p) => (p?.id ? { id: p.id } : undefined),
-  },
+  // user
   [AppErrorCode.USER_NOT_EXISTS]: {
     status: 400,
     message: 'No user exists yet',
@@ -652,52 +646,6 @@ export const APP_ERROR_DEFINITIONS = {
     status: 409,
     message: 'Another dynamic component already uses this name',
     details: (p) => ({ name: p.name }),
-  },
-
-  // membership
-  [AppErrorCode.MEMBERSHIP_REQUIRED]: {
-    status: 403,
-    message: 'An active membership is required',
-  },
-  [AppErrorCode.WEBHOOK_SIGNATURE_INVALID]: {
-    status: 400,
-    message: 'Webhook signature verification failed',
-  },
-  [AppErrorCode.MEMBERSHIP_PROVIDER_NOT_CONFIGURED]: {
-    status: 400,
-    message: 'No membership payment provider is configured',
-  },
-  [AppErrorCode.MEMBERSHIP_PROVIDER_NOT_SUPPORTED]: {
-    status: 404,
-    message: 'Unknown membership payment provider',
-  },
-  [AppErrorCode.MEMBERSHIP_ALREADY_ACTIVE]: {
-    status: 409,
-    message: 'Reader already has an active membership',
-  },
-  [AppErrorCode.MEMBERSHIP_APPLE_TRANSACTION_INVALID]: {
-    status: 400,
-    message: 'Apple transaction could not be verified',
-  },
-  [AppErrorCode.MEMBERSHIP_APPLE_ALREADY_BOUND]: {
-    status: 409,
-    message: 'This Apple subscription is already linked to another reader',
-  },
-  [AppErrorCode.PREMIUM_REQUIRES_LEXICAL]: {
-    status: 400,
-    message: 'Only Lexical-format posts can be marked as premium',
-  },
-  [AppErrorCode.ARTICLE_PURCHASE_UNAVAILABLE]: {
-    status: 400,
-    message: 'Single article purchase is not available',
-  },
-  [AppErrorCode.ARTICLE_NOT_PURCHASABLE]: {
-    status: 400,
-    message: 'This article cannot be purchased',
-  },
-  [AppErrorCode.ARTICLE_ALREADY_PURCHASED]: {
-    status: 409,
-    message: 'Reader already purchased this article',
   },
 
   // page
@@ -736,14 +684,6 @@ export const APP_ERROR_DEFINITIONS = {
   [AppErrorCode.POST_HIDDEN_OR_ENCRYPTED]: {
     status: 403,
     message: 'Post is hidden or encrypted',
-  },
-  [AppErrorCode.POST_RELATED_NOT_EXISTS]: {
-    status: 400,
-    message: 'Related post does not exist',
-  },
-  [AppErrorCode.POST_SELF_RELATION]: {
-    status: 400,
-    message: 'Post cannot relate to itself',
   },
 
   // recently
