@@ -21,8 +21,8 @@ export const DraftWriteDataSchema = z
   .object({
     content: z.string().optional(),
     contentFormat: z
-      .enum([ContentFormat.Markdown, ContentFormat.Lexical])
-      .default(ContentFormat.Markdown),
+      .literal(ContentFormat.Lexical)
+      .default(ContentFormat.Lexical),
     images: z.array(ImageModelSchema).nullable().optional(),
     meta: z.record(z.string(), z.unknown()).nullable().optional(),
     text: z.string().default(''),

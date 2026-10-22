@@ -1,4 +1,16 @@
+import type { PostSeo } from '~/database/schema'
 import type { EntityId } from '~/shared/id/entity-id'
+
+import type { PublicUserProfile } from '../user/user.types'
+
+export type { PostSeo }
+
+export interface PostCategorySummary {
+  id: EntityId
+  name: string
+  slug: string
+  type: number
+}
 
 export interface PostRow {
   id: EntityId
@@ -13,37 +25,15 @@ export interface PostRow {
   tags: string[]
   modifiedAt: Date | null
   categoryId: EntityId
-  category?: {
-    id: EntityId
-    name: string
-    slug: string
-    type: number
-  }
-  copyright: boolean
+  category?: PostCategorySummary
   isPublished: boolean
-  isPremium: boolean
-  readCount: number
-  likeCount: number
+  sourceLang: string | null
+  image: string | null
+  seo: PostSeo | null
   pinAt: Date | null
   pinOrder: number | null
   createdAt: Date
-  related?: PostRelatedSummary[]
-}
-
-export interface PostRelatedSummary {
-  id: EntityId
-  title: string
-  slug: string
-  summary: string | null
-  categoryId: EntityId
-  category?: {
-    id: EntityId
-    name: string
-    slug: string
-    type: number
-  }
-  createdAt: Date
-  modifiedAt: Date | null
+  authors?: PublicUserProfile[]
 }
 
 export interface PostCreateInput {
@@ -58,16 +48,21 @@ export interface PostCreateInput {
   meta?: Record<string, unknown> | null
   tags?: string[]
   categoryId: EntityId | string
-  copyright?: boolean
   isPublished?: boolean
-  isPremium?: boolean
+  sourceLang?: string | null
+  image?: string | null
+  seo?: PostSeo | null
   pinAt?: Date | null
   pinOrder?: number | null
+  authorIds: string[]
 }
 
-export type PostPatchInput = Partial<Omit<PostCreateInput, 'categoryId'>> & {
+export type PostPatchInput = Partial<
+  Omit<PostCreateInput, 'categoryId' | 'authorIds'>
+> & {
   categoryId?: EntityId | string
   modifiedAt?: Date | null
+  authorIds?: string[]
 }
 
 export interface PostListParams {
@@ -75,6 +70,7 @@ export interface PostListParams {
   size?: number
   categoryId?: EntityId | string
   categoryIds?: Array<EntityId | string>
+  authorId?: string
   tag?: string
   publishedOnly?: boolean
   year?: number
@@ -98,17 +94,7 @@ export interface PostListByCategoryOptions {
 }
 
 export type PostModel = PostRow & {
-  relatedId?: string[]
+  authorIds?: string[]
 }
 
-export const POST_PROTECTED_KEYS = [
-  'id',
-  'createdAt',
-  'readCount',
-  'likeCount',
-] as const
-
-export interface PostPaginatorModel {
-  data: PostRow[]
-  pagination: any
-}
+export const POST_PROTECTED_KEYS = ['id', 'createdAt'] as const

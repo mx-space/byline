@@ -95,7 +95,6 @@ const harness = (options: { online?: boolean } = {}) => {
   const service = new PublishService(
     drafts as never,
     posts as never,
-    { dryRunMarkdownToLexical: vi.fn() } as never,
     aiTasks as never,
     tasks as never,
     processor as never,

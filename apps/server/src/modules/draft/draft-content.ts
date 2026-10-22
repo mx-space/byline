@@ -38,7 +38,7 @@ function normalizeTypeSpecificData(
 
   if (refType === 'post') {
     if ('pin' in next) next.pin = Boolean(next.pin)
-    for (const key of ['relatedId', 'tags'] as const) {
+    for (const key of ['tags'] as const) {
       if (Array.isArray(next[key])) {
         next[key] = [...next[key]].sort((left, right) =>
           String(left).localeCompare(String(right)),
@@ -55,7 +55,7 @@ export function canonicalSnapshot(
 ): RevisionSnapshot {
   return {
     content: input.content ?? null,
-    contentFormat: input.contentFormat ?? 'markdown',
+    contentFormat: input.contentFormat ?? 'lexical',
     images: input.images ?? null,
     meta: input.meta ?? null,
     text: input.text ?? '',

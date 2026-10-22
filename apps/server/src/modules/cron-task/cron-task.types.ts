@@ -1,5 +1,4 @@
 export const CronTaskType = {
-  ResetLikedOrReadArticleRecord: 'cron:reset-liked-or-read',
   CleanTempDirectory: 'cron:clean-temp-directory',
   DeleteExpiredJWT: 'cron:delete-expired-jwt',
 } as const
@@ -18,12 +17,6 @@ export const CronTaskMetas: Record<
   CronTaskTypeValue,
   Omit<CronTaskMeta, 'type'>
 > = {
-  [CronTaskType.ResetLikedOrReadArticleRecord]: {
-    name: 'resetLikedOrReadArticleRecord',
-    description: 'Clean up like counts',
-    cronExpression: 'EVERY_DAY_AT_MIDNIGHT',
-    methodName: 'resetLikedOrReadArticleRecord',
-  },
   [CronTaskType.CleanTempDirectory]: {
     name: 'cleanTempDirectory',
     description: 'Clean up temporary files',

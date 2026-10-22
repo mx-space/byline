@@ -25,24 +25,6 @@ export class CronBusinessService {
   }
 
   /**
-   * Reset the like / read article cache every midnight.
-   */
-  async resetLikedOrReadArticleRecord() {
-    const redis = this.redisService.getClient()
-
-    const allKeys = (
-      await Promise.all([
-        this.redisService.scanKeys(getRedisKey(RedisKeys.Like, '*')),
-        this.redisService.scanKeys(getRedisKey(RedisKeys.Read, '*')),
-      ])
-    ).flat()
-    await Promise.all(allKeys.map((key) => redis.del(key)))
-
-    this.logger.log('--> Like counts cleaned up successfully')
-    return { success: true }
-  }
-
-  /**
    * Clean up the temporary file directory.
    */
   async cleanTempDirectory() {

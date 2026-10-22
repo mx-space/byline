@@ -1,4 +1,3 @@
-import type { MarkdownToLexicalMigrationDescriptor } from '../content-migration/content-migration.schema'
 import type { DraftRefType } from '../draft/draft.enum'
 import type { RevisionSnapshot } from '../draft/draft.types'
 
@@ -16,11 +15,11 @@ export type PublishOperation = 'first-publish' | 'online-update' | 'republish'
 export type PublishSnapshot = RevisionSnapshot
 
 export interface PublishTaskPayload {
+  actorId?: string
   aiResources: PublishAiResourceRequest[]
   branchId: string
   documentId: string
   expectedPublishedRevisionId: string | null
-  migration?: MarkdownToLexicalMigrationDescriptor
   operation: PublishOperation
   refId: string | null
   refType: DraftRefType

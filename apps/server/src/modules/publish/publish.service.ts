@@ -12,12 +12,9 @@ import {
   TaskQueueService,
   TaskStatus,
 } from '~/processors/task-queue'
-import { parseEntityId } from '~/shared/id/entity-id'
-import { ContentFormat } from '~/shared/types/content-format.type'
 import { createAbortError, throwIfAborted } from '~/utils/abort.util'
 
 import { AiTaskService } from '../ai/ai-task/ai-task.service'
-import { ContentMigrationService } from '../content-migration/content-migration.service'
 import { DraftRefType } from '../draft/draft.enum'
 import { DraftService } from '../draft/draft.service'
 import { PostService } from '../post/post.service'
@@ -45,7 +42,6 @@ export class PublishService implements OnModuleInit {
   constructor(
     private readonly drafts: DraftService,
     private readonly posts: PostService,
-    private readonly contentMigrations: ContentMigrationService,
     private readonly aiTasks: AiTaskService,
     private readonly tasks: TaskQueueService,
     private readonly processor: TaskQueueProcessor,
@@ -66,7 +62,7 @@ export class PublishService implements OnModuleInit {
     })
   }
 
-  async create(dto: CreatePublishJobDto) {
+  async create(dto: CreatePublishJobDto, actorId?: string) {
     const branch = await this.drafts.findById(dto.branchId)
     if (!branch) {
       throw createAppException(AppErrorCode.DRAFT_NOT_FOUND, {
@@ -105,48 +101,14 @@ export class PublishService implements OnModuleInit {
       existing && 'isPublished' in existing
         ? existing.isPublished !== false
         : Boolean(existing)
-    let migration: PublishTaskPayload['migration']
-    if (
-      existing?.contentFormat === ContentFormat.Markdown &&
-      branch.headRevision.contentFormat === ContentFormat.Lexical
-    ) {
-      const result = await this.contentMigrations.dryRunMarkdownToLexical({
-        branchId: branch.id,
-        profile: 'yohaku-v1',
-        refId: existing.id,
-        refType: branch.document.refType,
-        sourceText: existing.text ?? '',
-      })
-      if (
-        result.status !== 'convertible' ||
-        result.source.status !== 'convertible'
-      ) {
-        throw new BadRequestException(
-          'Markdown-to-Lexical migration is blocked',
-        )
-      }
-      migration = {
-        converterVersion: result.converterVersion,
-        preconditions: result.preconditions.map((item) => ({
-          ...item,
-          headRevisionId: item.headRevisionId
-            ? parseEntityId(item.headRevisionId)
-            : undefined,
-          id: parseEntityId(item.id),
-        })),
-        profile: result.profile,
-        sourceHash: result.sourceHash,
-        sourceMarkdown: existing.text ?? '',
-      }
-    }
     const payload: PublishTaskPayload = {
+      actorId,
       aiResources: normalizePublishAiResources(
         dto.aiResources ?? branch.document.publishAiResources ?? [],
       ),
       branchId: branch.id,
       documentId: branch.documentId,
       expectedPublishedRevisionId: dto.expectedPublishedRevisionId,
-      migration,
       operation: !existing
         ? 'first-publish'
         : online
@@ -268,22 +230,14 @@ export class PublishService implements OnModuleInit {
       existing && 'isPublished' in existing
         ? existing.isPublished !== false
         : Boolean(existing)
-    const data = {
-      ...this.articleData(payload, existing),
-      ...(payload.migration && existing?.contentFormat === 'markdown'
-        ? {
-            migration: payload.migration,
-            migrationBranchId: payload.branchId,
-          }
-        : {}),
-    }
+    const data = this.articleData(payload, existing)
 
     let saved: PostModel | undefined | null = existing
       ? await this.posts.updateById(existing.id, data as Partial<PostModel>)
-      : await this.posts.create({
-          ...(data as PostModel),
-          isPublished: false,
-        })
+      : await this.posts.create(
+          { ...(data as unknown as PostModel), isPublished: false },
+          payload.actorId,
+        )
     if (!saved && existing) {
       saved = await this.findArticle(payload.refType, existing.id)
     }

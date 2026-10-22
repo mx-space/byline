@@ -22,7 +22,6 @@ import { AiModule } from './modules/ai/ai.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { CategoryModule } from './modules/category/category.module'
 import { ConfigsModule } from './modules/configs/configs.module'
-import { ContentMigrationModule } from './modules/content-migration/content-migration.module'
 import { CronTaskModule } from './modules/cron-task/cron-task.module'
 import { DraftModule } from './modules/draft/draft.module'
 import { FileModule } from './modules/file/file.module'
@@ -59,7 +58,6 @@ import { SampleResponseInterceptor } from './shared/sample/sample-response.inter
     BizHelperModule,
     CategoryModule,
     ConfigsModule,
-    ContentMigrationModule,
     CronTaskModule,
 
     DraftModule,

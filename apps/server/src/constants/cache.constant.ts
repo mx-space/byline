@@ -1,11 +1,8 @@
 export enum RedisKeys {
   AccessIp = 'access_ip',
-  Like = 'like',
-  Read = 'read',
   LoginRecord = 'login_record',
   MaxOnlineCount = 'max_online_count',
   IpInfoMap = 'ip_info_map',
-  LikeSite = 'like_site',
   /** Admin dashboard entry page cache */
   AdminPage = 'admin_next_index_entry',
   /** Configuration cache */

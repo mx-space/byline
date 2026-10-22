@@ -20,16 +20,6 @@ export class CronTaskScheduler {
     )
   }
 
-  @CronOnce(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
-    name: 'resetLikedOrReadArticleRecord',
-  })
-  scheduleResetLikedOrReadArticleRecord() {
-    return this.dispatch(
-      'resetLikedOrReadArticleRecord',
-      CronTaskType.ResetLikedOrReadArticleRecord,
-    )
-  }
-
   @CronOnce(CronExpression.EVERY_DAY_AT_3AM, { name: 'cleanTempDirectory' })
   scheduleCleanTempDirectory() {
     return this.dispatch('cleanTempDirectory', CronTaskType.CleanTempDirectory)

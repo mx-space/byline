@@ -5,7 +5,7 @@ import {
   CreateDraftSchema,
   UpdateDraftSchema,
 } from '~/modules/draft/draft.schema'
-import { PostSchema } from '~/modules/post/post.schema'
+import { WriteBaseSchemaWithRefine as PostSchema } from '~/shared/schema/write-base.schema'
 import { ContentFormat } from '~/shared/types/content-format.type'
 
 const lexicalContent = JSON.stringify({

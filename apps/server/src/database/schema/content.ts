@@ -7,12 +7,20 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   unique,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
+import { users } from './auth'
 import { createdAt, pkText, refText, tsCol, updatedAt } from './columns'
+
+export interface PostSeo {
+  title?: string | null
+  description?: string | null
+  image?: string | null
+}
 
 export const categories = pgTable(
   'categories',
@@ -50,11 +58,10 @@ export const posts = pgTable(
     categoryId: refText('category_id')
       .notNull()
       .references(() => categories.id, { onDelete: 'restrict' }),
-    copyright: boolean('copyright').notNull().default(true),
     isPublished: boolean('is_published').notNull().default(true),
-    isPremium: boolean('is_premium').notNull().default(false),
-    readCount: integer('read_count').notNull().default(0),
-    likeCount: integer('like_count').notNull().default(0),
+    sourceLang: text('source_lang'),
+    image: text('image'),
+    seo: jsonb('seo').$type<PostSeo | null>(),
     pinAt: tsCol('pin_at'),
     pinOrder: integer('pin_order'),
   },
@@ -82,20 +89,21 @@ export const posts = pgTable(
   ],
 )
 
-export const postRelatedPosts = pgTable(
-  'post_related_posts',
+export const postAuthors = pgTable(
+  'post_authors',
   {
     postId: refText('post_id')
       .notNull()
       .references((): AnyPgColumn => posts.id, { onDelete: 'cascade' }),
-    relatedPostId: refText('related_post_id')
+    userId: text('user_id')
       .notNull()
-      .references((): AnyPgColumn => posts.id, { onDelete: 'cascade' }),
+      .references(() => users.id, { onDelete: 'restrict' }),
     position: integer('position').notNull().default(0),
   },
   (table) => [
-    uniqueIndex('post_related_posts_pk').on(table.postId, table.relatedPostId),
-    index('post_related_posts_related_idx').on(table.relatedPostId),
+    primaryKey({ columns: [table.postId, table.userId] }),
+    index('post_authors_user_idx').on(table.userId),
+    index('post_authors_post_position_idx').on(table.postId, table.position),
   ],
 )
 

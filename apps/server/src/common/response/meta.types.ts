@@ -90,7 +90,6 @@ export const BaseResponseMetaSchema = z.object({
 
 export const PostResponseMetaSchema = BaseResponseMetaSchema.extend({
   insights: InsightsMetaSchema.optional(),
-  related: z.array(RelatedRefSchema).optional(),
   articles: z.record(z.string(), RelatedRefSchema).optional(),
   summary: SummaryMetaSchema.optional(),
   tts: TtsMetaSchema.optional(),

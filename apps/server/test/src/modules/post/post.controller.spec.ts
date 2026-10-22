@@ -104,10 +104,6 @@ const createController = (opts: CreateControllerOptions = {}) => {
     getTranslationsBatch: vi.fn(getTranslationsBatchFn),
   }
 
-  const countingService = {
-    getThisRecordIsLiked: vi.fn(async () => false),
-  }
-
   const aiInsightsService = {
     hasInsightsInLang: vi.fn(async () => false),
   }
@@ -160,7 +156,6 @@ const createController = (opts: CreateControllerOptions = {}) => {
 
   const controller = new PostController(
     postService as any,
-    countingService as any,
     translationService as any,
     aiInsightsService as any,
     aiSummaryService as any,
@@ -423,7 +418,6 @@ describe('PostController.getByCateAndSlug', () => {
     const res = await controller.getByCateAndSlug(
       { category: 'tech', slug: 'post' },
       {} as any,
-      { ip: '127.0.0.1' } as any,
       false,
       'en',
     )

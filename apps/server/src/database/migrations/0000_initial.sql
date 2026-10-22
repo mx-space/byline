@@ -316,10 +316,11 @@ CREATE TABLE "drafts" (
 	CONSTRAINT "drafts_status_check" CHECK ("drafts"."status" in ('active', 'archived'))
 );
 --> statement-breakpoint
-CREATE TABLE "post_related_posts" (
+CREATE TABLE "post_authors" (
 	"post_id" text NOT NULL,
-	"related_post_id" text NOT NULL,
-	"position" integer DEFAULT 0 NOT NULL
+	"user_id" text NOT NULL,
+	"position" integer DEFAULT 0 NOT NULL,
+	CONSTRAINT "post_authors_post_id_user_id_pk" PRIMARY KEY("post_id","user_id")
 );
 --> statement-breakpoint
 CREATE TABLE "posts" (
@@ -336,11 +337,10 @@ CREATE TABLE "posts" (
 	"tags" text[] DEFAULT '{}'::text[] NOT NULL,
 	"modified_at" timestamp with time zone,
 	"category_id" text NOT NULL,
-	"copyright" boolean DEFAULT true NOT NULL,
 	"is_published" boolean DEFAULT true NOT NULL,
-	"is_premium" boolean DEFAULT false NOT NULL,
-	"read_count" integer DEFAULT 0 NOT NULL,
-	"like_count" integer DEFAULT 0 NOT NULL,
+	"source_lang" text,
+	"image" text,
+	"seo" jsonb,
 	"pin_at" timestamp with time zone,
 	"pin_order" integer
 );
@@ -434,8 +434,8 @@ ALTER TABLE "content_revisions" ADD CONSTRAINT "content_revisions_parent_revisio
 ALTER TABLE "drafts" ADD CONSTRAINT "drafts_document_id_content_documents_id_fk" FOREIGN KEY ("document_id") REFERENCES "public"."content_documents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "drafts" ADD CONSTRAINT "drafts_base_revision_id_content_revisions_id_fk" FOREIGN KEY ("base_revision_id") REFERENCES "public"."content_revisions"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "drafts" ADD CONSTRAINT "drafts_head_revision_id_content_revisions_id_fk" FOREIGN KEY ("head_revision_id") REFERENCES "public"."content_revisions"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "post_related_posts" ADD CONSTRAINT "post_related_posts_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "post_related_posts" ADD CONSTRAINT "post_related_posts_related_post_id_posts_id_fk" FOREIGN KEY ("related_post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "post_authors" ADD CONSTRAINT "post_authors_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "post_authors" ADD CONSTRAINT "post_authors_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts" ADD CONSTRAINT "posts_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_references" ADD CONSTRAINT "file_references_reader_id_users_id_fk" FOREIGN KEY ("reader_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_usages" ADD CONSTRAINT "file_usages_file_reference_id_file_references_id_fk" FOREIGN KEY ("file_reference_id") REFERENCES "public"."file_references"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -479,8 +479,8 @@ CREATE INDEX "content_revisions_document_idx" ON "content_revisions" USING btree
 CREATE INDEX "content_revisions_parent_idx" ON "content_revisions" USING btree ("parent_revision_id");--> statement-breakpoint
 CREATE INDEX "drafts_document_status_idx" ON "drafts" USING btree ("document_id","status");--> statement-breakpoint
 CREATE INDEX "drafts_updated_at_idx" ON "drafts" USING btree ("updated_at");--> statement-breakpoint
-CREATE UNIQUE INDEX "post_related_posts_pk" ON "post_related_posts" USING btree ("post_id","related_post_id");--> statement-breakpoint
-CREATE INDEX "post_related_posts_related_idx" ON "post_related_posts" USING btree ("related_post_id");--> statement-breakpoint
+CREATE INDEX "post_authors_user_idx" ON "post_authors" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "post_authors_post_position_idx" ON "post_authors" USING btree ("post_id","position");--> statement-breakpoint
 CREATE UNIQUE INDEX "posts_slug_uniq" ON "posts" USING btree ("slug");--> statement-breakpoint
 CREATE INDEX "posts_modified_at_idx" ON "posts" USING btree ("modified_at");--> statement-breakpoint
 CREATE INDEX "posts_created_at_idx" ON "posts" USING btree ("created_at");--> statement-breakpoint

@@ -101,8 +101,7 @@ export class CategoryService implements OnApplicationBootstrap {
         summary,
         tags,
         pinAt,
-        readCount,
-        likeCount,
+        authors,
       }) => ({
         id,
         title,
@@ -113,8 +112,7 @@ export class CategoryService implements OnApplicationBootstrap {
         summary,
         tags,
         pinAt,
-        readCount,
-        likeCount,
+        authors,
       }),
     )
   }

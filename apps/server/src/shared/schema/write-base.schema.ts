@@ -13,8 +13,8 @@ export const WriteBaseSchema = BaseCommentIndexSchema.extend({
   created: zCoerceDate.optional(),
   meta: z.record(z.string(), z.any()).optional().nullable().default(null),
   contentFormat: z
-    .enum([ContentFormat.Markdown, ContentFormat.Lexical])
-    .default(ContentFormat.Markdown)
+    .literal(ContentFormat.Lexical)
+    .default(ContentFormat.Lexical)
     .optional(),
   content: z.string().optional(),
 })

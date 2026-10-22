@@ -97,14 +97,6 @@ describe('MetaObjectBuilder', () => {
     })
   })
 
-  test('PostMetaBuilder.related sets an array of refs', () => {
-    const meta = new PostMetaBuilder()
-      .related([{ id: '1', title: 'Related post' }])
-      .build()
-
-    expect(meta.related).toEqual([{ id: '1', title: 'Related post' }])
-  })
-
   test('PostMetaBuilder.articles sets a ref map', () => {
     const meta = new PostMetaBuilder()
       .articles({

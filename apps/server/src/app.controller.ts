@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Get,
-  HttpCode,
-  Post,
-  UseInterceptors,
-} from '@nestjs/common'
+import { Get, UseInterceptors } from '@nestjs/common'
 import dayjs from 'dayjs'
 
 import { ApiController } from '~/common/decorators/api-controller.decorator'
@@ -12,21 +6,13 @@ import { Auth } from '~/common/decorators/auth.decorator'
 import { PKG } from '~/utils/pkg.util'
 
 import { HttpCache } from './common/decorators/cache.decorator'
-import type { IpRecord } from './common/decorators/ip.decorator'
-import { IpLocation } from './common/decorators/ip.decorator'
 import { AllowAllCorsInterceptor } from './common/interceptors/allow-all-cors.interceptor'
-import { RedisKeys } from './constants/cache.constant'
 import { isDev } from './global/env.global'
-import { ConfigsService } from './modules/configs/configs.service'
 import { RedisService } from './processors/redis/redis.service'
-import { getRedisKey } from './utils/redis.util'
 
 @ApiController()
 export class AppController {
-  constructor(
-    private readonly redisService: RedisService,
-    private readonly configsService: ConfigsService,
-  ) {}
+  constructor(private readonly redisService: RedisService) {}
 
   @Get('/uptime')
   @HttpCache.disable
@@ -54,31 +40,6 @@ export class AppController {
   @UseInterceptors(AllowAllCorsInterceptor)
   ping(): 'pong' {
     return 'pong'
-  }
-
-  @Post('/like_this')
-  @HttpCache.disable
-  @HttpCode(204)
-  async likeThis(@IpLocation() { ip }: IpRecord) {
-    const redis = this.redisService.getClient()
-
-    const isLikedBefore = await redis.sismember(
-      getRedisKey(RedisKeys.LikeSite),
-      ip,
-    )
-    if (isLikedBefore) {
-      throw new BadRequestException('Once a day is enough')
-    } else {
-      redis.sadd(getRedisKey(RedisKeys.LikeSite), ip)
-    }
-
-    await this.configsService.incrementOption('like')
-  }
-
-  @Get('/like_this')
-  @HttpCache.disable
-  async getLikeNumber() {
-    return this.configsService.getOptionValue('like', 0)
   }
 
   @Get('/clean_catch')

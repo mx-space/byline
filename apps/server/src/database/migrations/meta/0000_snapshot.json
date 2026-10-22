@@ -1,5 +1,5 @@
 {
-  "id": "2b9da056-217b-4c7d-9b20-8e67ea50a32c",
+  "id": "5a7aae37-3556-4838-81d5-8ba834c170b0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -2871,8 +2871,8 @@
       },
       "isRLSEnabled": false
     },
-    "public.post_related_posts": {
-      "name": "post_related_posts",
+    "public.post_authors": {
+      "name": "post_authors",
       "schema": "",
       "columns": {
         "post_id": {
@@ -2881,8 +2881,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "related_post_id": {
-          "name": "related_post_id",
+        "user_id": {
+          "name": "user_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -2896,8 +2896,23 @@
         }
       },
       "indexes": {
-        "post_related_posts_pk": {
-          "name": "post_related_posts_pk",
+        "post_authors_user_idx": {
+          "name": "post_authors_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "post_authors_post_position_idx": {
+          "name": "post_authors_post_position_idx",
           "columns": [
             {
               "expression": "post_id",
@@ -2906,22 +2921,7 @@
               "nulls": "last"
             },
             {
-              "expression": "related_post_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "post_related_posts_related_idx": {
-          "name": "post_related_posts_related_idx",
-          "columns": [
-            {
-              "expression": "related_post_id",
+              "expression": "position",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2934,9 +2934,9 @@
         }
       },
       "foreignKeys": {
-        "post_related_posts_post_id_posts_id_fk": {
-          "name": "post_related_posts_post_id_posts_id_fk",
-          "tableFrom": "post_related_posts",
+        "post_authors_post_id_posts_id_fk": {
+          "name": "post_authors_post_id_posts_id_fk",
+          "tableFrom": "post_authors",
           "tableTo": "posts",
           "columnsFrom": [
             "post_id"
@@ -2947,21 +2947,29 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "post_related_posts_related_post_id_posts_id_fk": {
-          "name": "post_related_posts_related_post_id_posts_id_fk",
-          "tableFrom": "post_related_posts",
-          "tableTo": "posts",
+        "post_authors_user_id_users_id_fk": {
+          "name": "post_authors_user_id_users_id_fk",
+          "tableFrom": "post_authors",
+          "tableTo": "users",
           "columnsFrom": [
-            "related_post_id"
+            "user_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "post_authors_post_id_user_id_pk": {
+          "name": "post_authors_post_id_user_id_pk",
+          "columns": [
+            "post_id",
+            "user_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -3051,13 +3059,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "copyright": {
-          "name": "copyright",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
         "is_published": {
           "name": "is_published",
           "type": "boolean",
@@ -3065,26 +3066,23 @@
           "notNull": true,
           "default": true
         },
-        "is_premium": {
-          "name": "is_premium",
-          "type": "boolean",
+        "source_lang": {
+          "name": "source_lang",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": false
+          "notNull": false
         },
-        "read_count": {
-          "name": "read_count",
-          "type": "integer",
+        "image": {
+          "name": "image",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": 0
+          "notNull": false
         },
-        "like_count": {
-          "name": "like_count",
-          "type": "integer",
+        "seo": {
+          "name": "seo",
+          "type": "jsonb",
           "primaryKey": false,
-          "notNull": true,
-          "default": 0
+          "notNull": false
         },
         "pin_at": {
           "name": "pin_at",

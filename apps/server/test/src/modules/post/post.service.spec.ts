@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createPgRepositoryMock, now } from '@/helper/pg-repository-mock'
@@ -9,10 +8,10 @@ import {
   CATEGORY_SERVICE_TOKEN,
   DRAFT_SERVICE_TOKEN,
 } from '~/constants/injection.constant'
-import { DraftRefType } from '~/modules/draft/draft.enum'
 import { FileReferenceType } from '~/modules/file/file-reference.enum'
-import type { PostRepository, PostRow } from '~/modules/post/post.repository'
+import type { PostRepository } from '~/modules/post/post.repository'
 import { PostService } from '~/modules/post/post.service'
+import type { PostRow } from '~/modules/post/post.types'
 import { ContentFormat } from '~/shared/types/content-format.type'
 
 const createPost = (overrides: Partial<PostRow> = {}): PostRow => ({
@@ -20,22 +19,21 @@ const createPost = (overrides: Partial<PostRow> = {}): PostRow => ({
   title: 'Post',
   slug: 'post',
   text: 'body',
-  content: null,
-  contentFormat: ContentFormat.Markdown,
+  content: '{"root":{"children":[]}}',
+  contentFormat: ContentFormat.Lexical,
   summary: null,
   images: [],
   meta: null,
   tags: [],
   categoryId: 'cat-1' as any,
-  category: null,
-  copyright: true,
+  category: undefined,
   isPublished: true,
-  isPremium: false,
-  readCount: 0,
-  likeCount: 0,
+  sourceLang: null,
+  image: null,
+  seo: null,
   pinAt: null,
   pinOrder: null,
-  related: [],
+  authors: [],
   createdAt: now,
   modifiedAt: null,
   ...overrides,
@@ -65,7 +63,9 @@ const createService = () => {
       return null
     }),
   }
-  const imageService = { saveImageDimensionsFromMarkdownText: vi.fn() }
+  const userRepository = {
+    findByIds: vi.fn(async (ids: string[]) => ids.map((id) => ({ id }))),
+  }
   const fileReferenceService = {
     activateReferences: vi.fn(),
     removeReferencesForDocument: vi.fn(),
@@ -78,105 +78,142 @@ const createService = () => {
     deleteAllTracker: vi.fn(),
   }
   const lexicalService = { normalizeContentForStorage: vi.fn() }
-  const contentMigrationCommitService = {
-    commitMarkdownToLexical: vi.fn(),
-  }
   const service = new PostService(
     repository as any,
-    imageService as any,
+    userRepository as any,
     fileReferenceService as any,
     eventManager as any,
     slugTrackerService as any,
     lexicalService as any,
-    contentMigrationCommitService as any,
     moduleRef as any,
   )
   service.onApplicationBootstrap()
 
   return {
     categoryService,
-    contentMigrationCommitService,
     draftService,
     eventManager,
     fileReferenceService,
     repository,
     service,
     slugTrackerService,
+    userRepository,
   }
 }
 
 describe('PostService', () => {
-  it('rejects a direct Markdown-to-Lexical update without a migration descriptor', async () => {
+  it('rejects Markdown content', async () => {
     const { repository, service } = createService()
     repository.findById.mockResolvedValue(createPost())
-    repository.findBySlug.mockResolvedValue(createPost())
-
-    await expect(
-      service.updateById('post-1', {
-        title: 'Post',
-        slug: 'post',
-        categoryId: 'cat-1' as any,
-        text: 'body',
-        content: '{"root":{"children":[]}}',
-        contentFormat: ContentFormat.Lexical,
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException)
-    expect(repository.update).not.toHaveBeenCalled()
-  })
-
-  it('rejects downgrading a published Lexical document to Markdown', async () => {
-    const { repository, service } = createService()
-    repository.findById.mockResolvedValue(
-      createPost({
-        content: '{"root":{"children":[]}}',
-        contentFormat: ContentFormat.Lexical,
-      }),
-    )
 
     await expect(
       service.updateById('post-1', {
         text: 'body',
         contentFormat: ContentFormat.Markdown,
       }),
-    ).rejects.toBeInstanceOf(BadRequestException)
+    ).rejects.toThrow(AppException)
+    await expect(
+      service.create({
+        title: 'Post',
+        text: 'body',
+        categoryId: 'cat-1',
+        contentFormat: ContentFormat.Markdown,
+      } as any),
+    ).rejects.toThrow(AppException)
+    expect(repository.update).not.toHaveBeenCalled()
+    expect(repository.create).not.toHaveBeenCalled()
+  })
+
+  it('defaults the byline to the creating user', async () => {
+    const { repository, service } = createService()
+    repository.findBySlug.mockResolvedValue(null)
+    repository.create.mockResolvedValue(createPost())
+
+    await service.create(
+      { title: 'Solo', text: '', categoryId: 'cat-1' } as any,
+      '1001',
+    )
+
+    expect(repository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ authorIds: ['1001'] }),
+    )
+  })
+
+  it('keeps explicit authors in byline order, dropping duplicates', async () => {
+    const { repository, service } = createService()
+    repository.findBySlug.mockResolvedValue(null)
+    repository.create.mockResolvedValue(createPost())
+
+    await service.create(
+      {
+        title: 'Duo',
+        text: '',
+        categoryId: 'cat-1',
+        authors: ['1003', { id: '1001' }, '1003'],
+      } as any,
+      '1002',
+    )
+
+    expect(repository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ authorIds: ['1003', '1001'] }),
+    )
+  })
+
+  it('rejects authors that do not exist', async () => {
+    const { repository, service, userRepository } = createService()
+    repository.findById.mockResolvedValue(createPost())
+    userRepository.findByIds.mockResolvedValue([{ id: '1001' }])
+
+    await expect(
+      service.updateById('post-1', { authors: ['1001', '1999'] } as any),
+    ).rejects.toMatchObject({ code: 'USER_NOT_FOUND' })
     expect(repository.update).not.toHaveBeenCalled()
   })
 
-  it('delegates a staged migration to the atomic commit boundary', async () => {
-    const { contentMigrationCommitService, repository, service } =
-      createService()
+  it('replaces authors on update and leaves them alone when omitted', async () => {
+    const { repository, service } = createService()
     repository.findById.mockResolvedValue(createPost())
-    repository.findBySlug.mockResolvedValue(createPost())
+    repository.update.mockResolvedValue(createPost())
 
-    const descriptor = {
-      profile: 'yohaku-v1' as const,
-      converterVersion: '0.1.0',
-      sourceMarkdown: 'body',
-      sourceHash: 'sha256:source',
-      preconditions: [
-        { kind: 'source' as const, id: 'post-1' as any, hash: 'sha256:old' },
-      ],
-    }
-    await service.updateById('post-1', {
-      title: 'Post',
-      slug: 'post',
-      categoryId: 'cat-1' as any,
-      text: 'body',
-      content: '{"root":{"children":[]}}',
-      contentFormat: ContentFormat.Lexical,
-      migration: descriptor,
-    })
+    await service.updateById('post-1', { authors: ['1002', '1001'] } as any)
+    await service.updateById('post-1', { tags: ['a'] } as any)
 
-    expect(
-      contentMigrationCommitService.commitMarkdownToLexical,
-    ).toHaveBeenCalledWith(
+    expect(repository.update).toHaveBeenNthCalledWith(
+      1,
+      'post-1',
+      expect.objectContaining({ authorIds: ['1002', '1001'] }),
+    )
+    expect(repository.update).toHaveBeenNthCalledWith(
+      2,
+      'post-1',
+      expect.objectContaining({ authorIds: undefined }),
+    )
+  })
+
+  it('stores source language, cover image and SEO fields', async () => {
+    const { repository, service } = createService()
+    repository.findBySlug.mockResolvedValue(null)
+    repository.create.mockResolvedValue(createPost())
+
+    await service.create(
+      {
+        title: 'Seo',
+        text: '',
+        categoryId: 'cat-1',
+        sourceLang: 'zh-CN',
+        image: 'https://cdn.example.com/cover.png',
+        seo: { title: 'Seo title', description: '', extra: 'dropped' },
+      } as any,
+      '1001',
+    )
+
+    expect(repository.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        refType: DraftRefType.Post,
-        refId: 'post-1',
-        descriptor,
+        image: 'https://cdn.example.com/cover.png',
+        seo: { title: 'Seo title', description: null },
+        sourceLang: 'zh-CN',
       }),
     )
-    expect(repository.update).not.toHaveBeenCalled()
   })
 
   it('creates posts through the PG repository after category and slug validation', async () => {
@@ -196,7 +233,7 @@ describe('PostService', () => {
         title: 'Hello World',
         slug: 'Hello-World',
         categoryId: 'cat-1',
-        contentFormat: ContentFormat.Markdown,
+        contentFormat: ContentFormat.Lexical,
       }),
     )
   })
@@ -235,7 +272,7 @@ describe('PostService', () => {
     )
   })
 
-  it('cleans related records and references when deleting a post', async () => {
+  it('cleans drafts, slug trackers and references when deleting a post', async () => {
     const {
       draftService,
       eventManager,
@@ -321,14 +358,5 @@ describe('PostService', () => {
       { id: 'post-1' },
       { scope: EventScope.TO_SYSTEM },
     )
-  })
-
-  it('rejects missing related post ids', async () => {
-    const { repository, service } = createService()
-    repository.findManyByIds.mockResolvedValue([])
-
-    await expect(
-      service.checkRelated({ relatedId: ['missing'] } as any),
-    ).rejects.toThrow(AppException)
   })
 })

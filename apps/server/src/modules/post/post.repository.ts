@@ -9,13 +9,12 @@ import {
   ilike,
   inArray,
   lt,
-  lte,
   type SQL,
   sql,
 } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
-import { categories, postRelatedPosts, posts } from '~/database/schema'
+import { categories, postAuthors, posts, users } from '~/database/schema'
 import {
   BaseRepository,
   type PaginationResult,
@@ -25,12 +24,12 @@ import type { AppDatabase } from '~/processors/database/postgres.provider'
 import { type EntityId, parseEntityId } from '~/shared/id/entity-id'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 
+import { type PublicUserProfile, toPublicProfile } from '../user/user.types'
 import type {
   PostCreateInput,
   PostListByCategoryOptions,
   PostListParams,
   PostPatchInput,
-  PostRelatedSummary,
   PostRow,
   PostTagCount,
 } from './post.types'
@@ -51,11 +50,10 @@ const mapBase = (row: PostRowSource): PostRow => ({
   tags: row.tags ?? [],
   modifiedAt: row.modifiedAt,
   categoryId: toEntityId(row.categoryId) as EntityId,
-  copyright: row.copyright,
   isPublished: row.isPublished,
-  isPremium: row.isPremium,
-  readCount: row.readCount,
-  likeCount: row.likeCount,
+  sourceLang: row.sourceLang,
+  image: row.image,
+  seo: row.seo ?? null,
   pinAt: row.pinAt,
   pinOrder: row.pinOrder,
   createdAt: row.createdAt,
@@ -92,9 +90,7 @@ export class PostRepository extends BaseRepository {
       .where(eq(posts.id, idBig))
       .limit(1)
     if (!row) return null
-    const withCategory = await this.attachCategory(mapBase(row))
-    const [withRelated] = await this.attachRelated([withCategory])
-    return withRelated
+    return this.hydrateOne(mapBase(row))
   }
 
   async findBySlug(slug: string): Promise<PostRow | null> {
@@ -104,9 +100,7 @@ export class PostRepository extends BaseRepository {
       .where(eq(posts.slug, slug))
       .limit(1)
     if (!row) return null
-    const withCategory = await this.attachCategory(mapBase(row))
-    const [withRelated] = await this.attachRelated([withCategory])
-    return withRelated
+    return this.hydrateOne(mapBase(row))
   }
 
   async list(params: PostListParams = {}): Promise<PaginationResult<PostRow>> {
@@ -127,6 +121,11 @@ export class PostRepository extends BaseRepository {
     }
     if (params.publishedOnly) {
       filters.push(eq(posts.isPublished, true))
+    }
+    if (params.authorId) {
+      filters.push(
+        sql`exists (select 1 from ${postAuthors} where ${postAuthors.postId} = ${posts.id} and ${postAuthors.userId} = ${params.authorId})`,
+      )
     }
     if (params.tag) {
       filters.push(sql`${posts.tags} @> array[${params.tag}]::text[]`)
@@ -178,8 +177,7 @@ export class PostRepository extends BaseRepository {
         .where(whereClause),
     ])
 
-    const dataWithCategory = await this.attachCategories(rows.map(mapBase))
-    const data = await this.attachRelated(dataWithCategory)
+    const data = await this.hydrate(rows.map(mapBase))
     return {
       data,
       pagination: this.paginationOf(Number(count ?? 0), page, size),
@@ -188,29 +186,34 @@ export class PostRepository extends BaseRepository {
 
   async create(input: PostCreateInput): Promise<PostRow> {
     const id = this.snowflake.nextId()
-    const [row] = await this.db
-      .insert(posts)
-      .values({
-        id,
-        ...(input.createdAt ? { createdAt: input.createdAt } : {}),
-        title: input.title,
-        slug: input.slug,
-        text: input.text ?? null,
-        content: input.content ?? null,
-        contentFormat: input.contentFormat,
-        summary: input.summary ?? null,
-        images: input.images ?? null,
-        meta: input.meta ?? null,
-        tags: input.tags ?? [],
-        categoryId: parseEntityId(input.categoryId),
-        copyright: input.copyright ?? true,
-        isPublished: input.isPublished ?? true,
-        isPremium: input.isPremium ?? false,
-        pinAt: input.pinAt ?? null,
-        pinOrder: input.pinOrder ?? null,
-      })
-      .returning()
-    return this.attachCategory(mapBase(row))
+    const row = await this.db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(posts)
+        .values({
+          id,
+          ...(input.createdAt ? { createdAt: input.createdAt } : {}),
+          title: input.title,
+          slug: input.slug,
+          text: input.text ?? null,
+          content: input.content ?? null,
+          contentFormat: input.contentFormat,
+          summary: input.summary ?? null,
+          images: input.images ?? null,
+          meta: input.meta ?? null,
+          tags: input.tags ?? [],
+          categoryId: parseEntityId(input.categoryId),
+          isPublished: input.isPublished ?? true,
+          sourceLang: input.sourceLang ?? null,
+          image: input.image ?? null,
+          seo: input.seo ?? null,
+          pinAt: input.pinAt ?? null,
+          pinOrder: input.pinOrder ?? null,
+        })
+        .returning()
+      await this.replaceAuthors(tx, inserted.id, input.authorIds)
+      return inserted
+    })
+    return this.hydrateOne(mapBase(row))
   }
 
   async update(
@@ -232,18 +235,25 @@ export class PostRepository extends BaseRepository {
     if (patch.tags !== undefined) update.tags = patch.tags
     if (patch.categoryId !== undefined)
       update.categoryId = parseEntityId(patch.categoryId)
-    if (patch.copyright !== undefined) update.copyright = patch.copyright
     if (patch.isPublished !== undefined) update.isPublished = patch.isPublished
-    if (patch.isPremium !== undefined) update.isPremium = patch.isPremium
+    if (patch.sourceLang !== undefined) update.sourceLang = patch.sourceLang
+    if (patch.image !== undefined) update.image = patch.image
+    if (patch.seo !== undefined) update.seo = patch.seo
     if (patch.pinAt !== undefined) update.pinAt = patch.pinAt
     if (patch.pinOrder !== undefined) update.pinOrder = patch.pinOrder
     update.modifiedAt = patch.modifiedAt ?? new Date()
-    const [row] = await this.db
-      .update(posts)
-      .set(update)
-      .where(eq(posts.id, idBig))
-      .returning()
-    return row ? this.attachCategory(mapBase(row)) : null
+    const row = await this.db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(posts)
+        .set(update)
+        .where(eq(posts.id, idBig))
+        .returning()
+      if (updated && patch.authorIds !== undefined) {
+        await this.replaceAuthors(tx, updated.id, patch.authorIds)
+      }
+      return updated
+    })
+    return row ? this.hydrateOne(mapBase(row)) : null
   }
 
   async deleteById(id: EntityId | string): Promise<PostRow | null> {
@@ -253,22 +263,6 @@ export class PostRepository extends BaseRepository {
       .where(eq(posts.id, idBig))
       .returning()
     return row ? mapBase(row) : null
-  }
-
-  async incrementRead(id: EntityId | string, by = 1): Promise<void> {
-    const idBig = parseEntityId(id)
-    await this.db
-      .update(posts)
-      .set({ readCount: sql`${posts.readCount} + ${by}` })
-      .where(eq(posts.id, idBig))
-  }
-
-  async incrementLike(id: EntityId | string, by = 1): Promise<void> {
-    const idBig = parseEntityId(id)
-    await this.db
-      .update(posts)
-      .set({ likeCount: sql`${posts.likeCount} + ${by}` })
-      .where(eq(posts.id, idBig))
   }
 
   async countByCategoryId(
@@ -304,21 +298,7 @@ export class PostRepository extends BaseRepository {
       .where(where)
       .orderBy(desc(posts.createdAt))
       .limit(Math.max(1, size))
-    const withCategory = await this.attachCategories(rows.map(mapBase))
-    return options.metaOnly ? withCategory : this.attachRelated(withCategory)
-  }
-
-  async listPremium(
-    options: { publishedOnly?: boolean } = {},
-  ): Promise<PostRow[]> {
-    const filters: SQL[] = [eq(posts.isPremium, true)]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
-    const rows = await this.db
-      .select(postMetaColumns)
-      .from(posts)
-      .where(and(...filters))
-      .orderBy(desc(posts.createdAt))
-    return this.attachCategories(rows.map(mapBase))
+    return this.hydrate(rows.map(mapBase))
   }
 
   async findManyByIds(ids: Array<EntityId | string>): Promise<PostRow[]> {
@@ -328,7 +308,7 @@ export class PostRepository extends BaseRepository {
       .select()
       .from(posts)
       .where(inArray(posts.id, bigInts))
-    return this.attachCategories(rows.map(mapBase))
+    return this.hydrate(rows.map(mapBase))
   }
 
   async findIdsByTitle(search: string): Promise<EntityId[]> {
@@ -397,8 +377,8 @@ export class PostRepository extends BaseRepository {
       .orderBy(pinAtDescNullsLast, desc(posts.createdAt))
 
     const mapped = rows.map(mapBase)
-    if (!options.includeCategory) return mapped
-    return this.attachCategories(mapped)
+    if (!options.includeCategory) return this.attachAuthors(mapped)
+    return this.hydrate(mapped)
   }
 
   async listByCategory(
@@ -419,8 +399,8 @@ export class PostRepository extends BaseRepository {
         ? await query
         : await query.limit(Math.max(1, options.limit))
     const mapped = rows.map(mapBase)
-    if (options.includeCategory === false) return mapped
-    return this.attachCategories(mapped)
+    if (options.includeCategory === false) return this.attachAuthors(mapped)
+    return this.hydrate(mapped)
   }
 
   async listByCategoryIds(
@@ -443,8 +423,8 @@ export class PostRepository extends BaseRepository {
     const mapped = rows.map(mapBase)
     const withCategory =
       options.includeCategory === false
-        ? mapped
-        : await this.attachCategories(mapped)
+        ? await this.attachAuthors(mapped)
+        : await this.hydrate(mapped)
 
     for (const post of withCategory) {
       const key = String(post.categoryId)
@@ -471,13 +451,7 @@ export class PostRepository extends BaseRepository {
       .where(and(...filters))
       .limit(1)
     if (!row) return null
-    const withCategory = await this.attachCategory(mapBase(row))
-    const [withRelated] = await this.attachRelated([withCategory])
-    return withRelated
-  }
-
-  async setImages(id: EntityId | string, images: unknown[]): Promise<void> {
-    await this.update(id, { images })
+    return this.hydrateOne(mapBase(row))
   }
 
   async findAdjacent(
@@ -501,219 +475,7 @@ export class PostRepository extends BaseRepository {
       .orderBy(direction === 'before' ? desc(posts.createdAt) : posts.createdAt)
       .limit(1)
     if (!row) return null
-    return this.attachCategory(mapBase(row))
-  }
-
-  async findOldest(): Promise<PostRow | null> {
-    const [row] = await this.db
-      .select()
-      .from(posts)
-      .orderBy(posts.createdAt)
-      .limit(1)
-    return row ? this.attachCategory(mapBase(row)) : null
-  }
-
-  async findByCreatedWindow(
-    pivotDate: Date,
-    direction: 'before' | 'after',
-    limit: number,
-    options: { publishedOnly?: boolean } = {},
-  ): Promise<PostRow[]> {
-    const filters: SQL[] = [
-      direction === 'before'
-        ? sql`${posts.createdAt} < ${pivotDate}`
-        : sql`${posts.createdAt} > ${pivotDate}`,
-    ]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
-    const rows = await this.db
-      .select()
-      .from(posts)
-      .where(and(...filters))
-      .orderBy(
-        direction === 'before' ? desc(posts.createdAt) : asc(posts.createdAt),
-      )
-      .limit(Math.max(1, limit))
-    return this.attachCategories(rows.map(mapBase))
-  }
-
-  async topTagsByCount(limit: number): Promise<PostTagCount[]> {
-    const result = await this.db.execute<PostTagCount>(sql`
-      select unnest(tags) as name, count(*)::int
-      from posts
-      where is_published = true
-      group by name
-      order by count desc, name asc
-      limit ${Math.max(1, limit)}
-    `)
-    return result.rows.map((row) => ({
-      name: row.name,
-      count: Number(row.count ?? 0),
-    }))
-  }
-
-  async findArchiveBuckets(): Promise<
-    Array<{ year: number; month: number; count: number }>
-  > {
-    const rows = await this.db
-      .select({
-        year: sql<number>`extract(year from ${posts.createdAt})::int`,
-        month: sql<number>`extract(month from ${posts.createdAt})::int`,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(posts)
-      .groupBy(
-        sql`extract(year from ${posts.createdAt})`,
-        sql`extract(month from ${posts.createdAt})`,
-      )
-      .orderBy(
-        sql`extract(year from ${posts.createdAt}) desc`,
-        sql`extract(month from ${posts.createdAt}) desc`,
-      )
-    return rows.map((r) => ({
-      year: Number(r.year),
-      month: Number(r.month),
-      count: Number(r.count ?? 0),
-    }))
-  }
-
-  async aggregateReadAndLikeSums(): Promise<{
-    totalReads: number
-    totalLikes: number
-  }> {
-    const [row] = await this.db
-      .select({
-        totalReads: sql<number>`coalesce(sum(${posts.readCount}), 0)::int`,
-        totalLikes: sql<number>`coalesce(sum(${posts.likeCount}), 0)::int`,
-      })
-      .from(posts)
-    return {
-      totalReads: Number(row?.totalReads ?? 0),
-      totalLikes: Number(row?.totalLikes ?? 0),
-    }
-  }
-
-  async findFirstPublishedAt(): Promise<Date | null> {
-    const [row] = await this.db
-      .select({ createdAt: posts.createdAt })
-      .from(posts)
-      .where(eq(posts.isPublished, true))
-      .orderBy(asc(posts.createdAt))
-      .limit(1)
-    return row?.createdAt ?? null
-  }
-
-  async findOnThisDay(
-    month: number,
-    day: number,
-    beforeYear: number,
-    limit: number,
-  ): Promise<
-    Array<{
-      id: EntityId
-      title: string | null
-      text: string | null
-      createdAt: Date
-    }>
-  > {
-    const rows = await this.db
-      .select({
-        id: posts.id,
-        title: posts.title,
-        text: posts.text,
-        createdAt: posts.createdAt,
-      })
-      .from(posts)
-      .where(
-        and(
-          eq(posts.isPublished, true),
-          sql`extract(month from ${posts.createdAt})::int = ${month}`,
-          sql`extract(day from ${posts.createdAt})::int = ${day}`,
-          sql`extract(year from ${posts.createdAt})::int < ${beforeYear}`,
-        ),
-      )
-      .orderBy(desc(posts.createdAt))
-      .limit(limit)
-    return rows.map((row) => ({
-      id: toEntityId(row.id) as EntityId,
-      title: row.title,
-      text: row.text,
-      createdAt: row.createdAt,
-    }))
-  }
-
-  async countPublishedByDay(
-    since: Date,
-  ): Promise<Array<{ date: string; count: number }>> {
-    const day = sql<string>`to_char(${posts.createdAt}, 'YYYY-MM-DD')`
-    const rows = await this.db
-      .select({ date: day, count: sql<number>`count(*)::int` })
-      .from(posts)
-      .where(and(eq(posts.isPublished, true), gte(posts.createdAt, since)))
-      .groupBy(day)
-    return rows.map((row) => ({
-      date: row.date,
-      count: Number(row.count ?? 0),
-    }))
-  }
-
-  async findTopByReadCount(limit: number): Promise<PostRow[]> {
-    const rows = await this.db
-      .select()
-      .from(posts)
-      .where(eq(posts.isPublished, true))
-      .orderBy(desc(posts.readCount), desc(posts.createdAt))
-      .limit(Math.max(1, limit))
-    return this.attachCategories(rows.map(mapBase))
-  }
-
-  async aggregateMonthlyTrend(options: {
-    from: Date
-    to: Date
-    publishedOnly?: boolean
-  }): Promise<Array<{ date: string; count: number }>> {
-    const filters: SQL[] = [
-      gte(posts.createdAt, options.from),
-      lte(posts.createdAt, options.to),
-    ]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
-    const monthExpr = sql<string>`to_char(${posts.createdAt}, 'YYYY-MM')`
-    const rows = await this.db
-      .select({
-        date: monthExpr,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(posts)
-      .where(and(...filters))
-      .groupBy(monthExpr)
-      .orderBy(asc(monthExpr))
-    return rows.map((r) => ({ date: r.date, count: Number(r.count ?? 0) }))
-  }
-
-  async aggregatePublishedByCategory(): Promise<
-    Array<{ categoryId: string; count: number }>
-  > {
-    const rows = await this.db
-      .select({
-        categoryId: posts.categoryId,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(posts)
-      .where(eq(posts.isPublished, true))
-      .groupBy(posts.categoryId)
-      .orderBy(desc(sql`count(*)`))
-    return rows.map((r) => ({
-      categoryId: toEntityId(r.categoryId) as string,
-      count: Number(r.count ?? 0),
-    }))
-  }
-
-  async sumTextLength(): Promise<number> {
-    const [row] = await this.db
-      .select({
-        total: sql<number>`coalesce(sum(char_length(coalesce(${posts.text}, ''))), 0)::bigint`,
-      })
-      .from(posts)
-    return Number(row?.total ?? 0)
+    return this.hydrateOne(mapBase(row))
   }
 
   async findPublishedForSitemap(): Promise<PostRow[]> {
@@ -722,70 +484,7 @@ export class PostRepository extends BaseRepository {
       .from(posts)
       .where(eq(posts.isPublished, true))
       .orderBy(desc(posts.createdAt))
-    return this.attachCategories(rows.map(mapBase))
-  }
-
-  async findByYearForTimeline(options: {
-    year?: number
-    sort: 'asc' | 'desc'
-    publishedOnly?: boolean
-  }): Promise<PostRow[]> {
-    const filters: SQL[] = []
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
-    if (options.year !== undefined) {
-      const { start, end } = yearRange(options.year)
-      filters.push(gte(posts.createdAt, start), lt(posts.createdAt, end))
-    }
-    const orderBy =
-      options.sort === 'asc' ? asc(posts.createdAt) : desc(posts.createdAt)
-    const rows = await this.db
-      .select(postMetaColumns)
-      .from(posts)
-      .where(filters.length ? and(...filters) : undefined)
-      .orderBy(orderBy)
-    return this.attachCategories(rows.map(mapBase))
-  }
-
-  async setRelatedPosts(
-    postId: EntityId | string,
-    relatedIds: Array<EntityId | string>,
-  ): Promise<void> {
-    const idBig = parseEntityId(postId)
-    const relatedBigInts = relatedIds.map((r) => parseEntityId(r))
-    await this.db.transaction(async (tx) => {
-      await tx
-        .delete(postRelatedPosts)
-        .where(eq(postRelatedPosts.postId, idBig))
-      if (relatedBigInts.length === 0) return
-      await tx.insert(postRelatedPosts).values(
-        relatedBigInts.map((relatedPostId, position) => ({
-          postId: idBig,
-          relatedPostId,
-          position,
-        })),
-      )
-    })
-  }
-
-  async getRelatedPosts(postId: EntityId | string): Promise<PostRow[]> {
-    const idBig = parseEntityId(postId)
-    const links = await this.db
-      .select({ relatedPostId: postRelatedPosts.relatedPostId })
-      .from(postRelatedPosts)
-      .where(eq(postRelatedPosts.postId, idBig))
-      .orderBy(postRelatedPosts.position)
-    if (links.length === 0) return []
-    const ids = links.map((l) => l.relatedPostId)
-    const rows = await this.db
-      .select()
-      .from(posts)
-      .where(inArray(posts.id, ids))
-    return this.attachCategories(rows.map(mapBase))
-  }
-
-  private async attachCategory(row: PostRow): Promise<PostRow> {
-    const [withCategory] = await this.attachCategories([row])
-    return withCategory
+    return this.hydrate(rows.map(mapBase))
   }
 
   private async attachCategories(rows: PostRow[]): Promise<PostRow[]> {
@@ -816,86 +515,69 @@ export class PostRepository extends BaseRepository {
     return rows
   }
 
-  private async attachRelated(rows: PostRow[]): Promise<PostRow[]> {
+  private async attachAuthors(rows: PostRow[]): Promise<PostRow[]> {
     if (rows.length === 0) return rows
-    const postIds = rows.map((row) => parseEntityId(row.id))
     const links = await this.db
       .select({
-        postId: postRelatedPosts.postId,
-        relatedPostId: postRelatedPosts.relatedPostId,
-        position: postRelatedPosts.position,
+        postId: postAuthors.postId,
+        id: users.id,
+        name: users.name,
+        username: users.username,
+        image: users.image,
+        bio: users.bio,
+        url: users.url,
       })
-      .from(postRelatedPosts)
-      .where(inArray(postRelatedPosts.postId, postIds))
-      .orderBy(postRelatedPosts.position)
+      .from(postAuthors)
+      .innerJoin(users, eq(users.id, postAuthors.userId))
+      .where(
+        inArray(
+          postAuthors.postId,
+          rows.map((row) => parseEntityId(row.id)),
+        ),
+      )
+      .orderBy(asc(postAuthors.postId), asc(postAuthors.position))
 
-    if (links.length === 0) {
-      for (const row of rows) row.related = []
-      return rows
-    }
-
-    const relatedIds = [...new Set(links.map((link) => link.relatedPostId))]
-    const relatedRows = await this.db
-      .select({
-        id: posts.id,
-        title: posts.title,
-        slug: posts.slug,
-        summary: posts.summary,
-        categoryId: posts.categoryId,
-        createdAt: posts.createdAt,
-        modifiedAt: posts.modifiedAt,
-      })
-      .from(posts)
-      .where(inArray(posts.id, relatedIds))
-
-    const categoryIds = [...new Set(relatedRows.map((row) => row.categoryId))]
-    const categoryRows = categoryIds.length
-      ? await this.db
-          .select()
-          .from(categories)
-          .where(inArray(categories.id, categoryIds))
-      : []
-    const categoryById = new Map(
-      categoryRows.map((cat) => [
-        cat.id.toString(),
-        {
-          id: toEntityId(cat.id) as EntityId,
-          name: cat.name,
-          slug: cat.slug,
-          type: cat.type,
-        },
-      ]),
-    )
-
-    const summaryById = new Map<string, PostRelatedSummary>(
-      relatedRows.map((row) => [
-        row.id.toString(),
-        {
-          id: toEntityId(row.id) as EntityId,
-          title: row.title,
-          slug: row.slug,
-          summary: row.summary,
-          categoryId: toEntityId(row.categoryId) as EntityId,
-          category: categoryById.get(row.categoryId.toString()),
-          createdAt: row.createdAt,
-          modifiedAt: row.modifiedAt,
-        },
-      ]),
-    )
-
-    const groupedByPost = new Map<string, PostRelatedSummary[]>()
+    const byPost = new Map<string, PublicUserProfile[]>()
     for (const link of links) {
-      const summary = summaryById.get(link.relatedPostId.toString())
-      if (!summary) continue
-      const key = link.postId.toString()
-      const list = groupedByPost.get(key) ?? []
-      list.push(summary)
-      groupedByPost.set(key, list)
+      const list = byPost.get(link.postId) ?? []
+      list.push(
+        toPublicProfile({
+          id: link.id,
+          displayName: link.name,
+          username: link.username,
+          avatar: link.image,
+          bio: link.bio,
+          url: link.url,
+        }),
+      )
+      byPost.set(link.postId, list)
     }
-
     for (const row of rows) {
-      row.related = groupedByPost.get(row.id.toString()) ?? []
+      row.authors = byPost.get(String(row.id)) ?? []
     }
     return rows
+  }
+
+  private async hydrate(rows: PostRow[]): Promise<PostRow[]> {
+    await this.attachCategories(rows)
+    return this.attachAuthors(rows)
+  }
+
+  private async hydrateOne(row: PostRow): Promise<PostRow> {
+    const [hydrated] = await this.hydrate([row])
+    return hydrated
+  }
+
+  private async replaceAuthors(
+    tx: Pick<AppDatabase, 'delete' | 'insert'>,
+    postId: string,
+    authorIds: string[],
+  ) {
+    await tx.delete(postAuthors).where(eq(postAuthors.postId, postId))
+    const unique = [...new Set(authorIds)]
+    if (unique.length === 0) return
+    await tx
+      .insert(postAuthors)
+      .values(unique.map((userId, position) => ({ postId, userId, position })))
   }
 }

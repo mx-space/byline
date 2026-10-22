@@ -1,22 +1,3 @@
-/**
- * Yohaku consumer contract: post detail.
- *
- * Mirrors the field set Yohaku reads from `apiClient.post.getPost(category, slug)`
- * (see /Users/innei/git/innei-repo/Yohaku/apps/web/src/app/[locale]/posts/(post-detail)).
- *
- * Required keys reflect what the frontend dereferences in:
- *   - `pageExtra.tsx`        — `data.created`, `data.modified`, `data.tags`,
- *                              `data.category`, `data.summary`, `data.related`,
- *                              `data.meta?.banner`, `data.images`,
- *                              `data.contentFormat`, `data.translationMeta`,
- *                              `data.allowComment`
- *   - `PostMetaBar.tsx`      — `meta.count.{read,like}` (legacy)
- *
- * Server now emits PG-shape (`created_at`, `modified_at`, `read_count`,
- * `like_count`). Yohaku v3.8.0 still reads legacy names. Yohaku-side stale
- * reads are reported separately; this spec asserts the SERVER's PG-shape
- * surface is complete (Yohaku migration must port to these names).
- */
 import { describe, expect, test } from 'vitest'
 
 import { apiRoutePrefix } from '~/common/decorators/api-controller.decorator'
@@ -33,7 +14,6 @@ import {
   assertPgTimestamps,
 } from '../../../helper/api-shape'
 import { createE2EApp } from '../../../helper/create-e2e-app'
-import { countingServiceProvider } from '../../../mock/processors/counting.mock'
 import {
   translationEntryProvider,
   translationProvider,
@@ -44,17 +24,17 @@ const fixturePost = (overrides: Record<string, unknown> = {}) => ({
   title: 'Yohaku Post',
   slug: 'yohaku-post',
   text: '# body',
-  content: null,
-  contentFormat: 'markdown',
+  content: '{"root":{"children":[]}}',
+  contentFormat: 'lexical',
   summary: 'short summary',
   tags: ['ts', 'pg'],
   meta: { cover: 'https://x.test/c.png', banner: null, keywords: ['k1'] },
   isPublished: true,
-  copyright: true,
+  sourceLang: 'zh-CN',
+  image: 'https://x.test/cover.png',
+  seo: { title: 'SEO title', description: 'SEO description', image: null },
   pinAt: null,
   pinOrder: null,
-  readCount: 12,
-  likeCount: 3,
   images: [{ src: 'https://x.test/i.png', accent: '#fff' }],
   category: {
     id: '7000000000000000900',
@@ -63,21 +43,13 @@ const fixturePost = (overrides: Record<string, unknown> = {}) => ({
     type: 0,
   },
   categoryId: '7000000000000000900',
-  related: [
+  authors: [
     {
-      id: '7000000000000000051',
-      title: 'Related One',
-      slug: 'related-one',
-      summary: null,
-      categoryId: '7000000000000000900',
-      category: {
-        id: '7000000000000000900',
-        slug: 'tech',
-        name: 'Tech',
-        type: 0,
-      },
-      createdAt: new Date('2024-01-03T00:00:00.000Z'),
-      modifiedAt: null,
+      id: '7000000000000000700',
+      displayName: 'Ada',
+      avatar: 'https://x.test/ada.png',
+      bio: 'Engine notes',
+      url: 'https://ada.test',
     },
   ],
   createdAt: new Date('2024-01-02T00:00:00.000Z'),
@@ -130,12 +102,11 @@ const aiTtsQueryProvider = {
   },
 }
 
-describe('Yohaku contract — post detail (e2e)', () => {
+describe('consumer contract — post detail (e2e)', () => {
   const proxy = createE2EApp({
     controllers: [PostController],
     providers: [
       postServiceProvider,
-      countingServiceProvider,
       translationProvider,
       translationEntryProvider,
       aiInsightsProvider,
@@ -144,7 +115,7 @@ describe('Yohaku contract — post detail (e2e)', () => {
     ],
   })
 
-  test('GET /posts/:category/:slug — exposes every field Yohaku reads', async () => {
+  test('GET /posts/:category/:slug — exposes the fields consumers render', async () => {
     const res = await proxy.app.inject({
       method: 'GET',
       url: `${apiRoutePrefix}/posts/tech/yohaku-post`,
@@ -155,7 +126,6 @@ describe('Yohaku contract — post detail (e2e)', () => {
     assertNoLegacyKeys(body)
     assertPgTimestamps(body.data)
 
-    // Top-level required by Yohaku post-detail page (entity fields only).
     assertHasKeys(body.data, [
       'id',
       'title',
@@ -168,24 +138,33 @@ describe('Yohaku contract — post detail (e2e)', () => {
       'images',
       'category',
       'category_id',
-      'read_count',
-      'like_count',
+      'authors',
+      'source_lang',
+      'image',
+      'seo',
       'created_at',
       'modified_at',
     ])
-    // Per-request fields live in meta, not on the resource object.
     expect(body.meta).toBeDefined()
     expect(body.data.has_insights_in_locale).toBeUndefined()
     expect(body.data.enrichments).toBeUndefined()
     expect(body.data.related).toBeUndefined()
 
-    // Insights and related refs are in meta.
+    expect(body.data.read_count).toBeUndefined()
+    expect(body.data.like_count).toBeUndefined()
+    expect(body.meta.related).toBeUndefined()
+    expect(body.meta.interaction).toBeUndefined()
     expect(typeof body.meta.insights?.has_in_locale).toBe('boolean')
-    expect(Array.isArray(body.meta.related)).toBe(true)
-    assertHasKeysDeep(body.meta, ['related.0.title', 'related.0.slug'])
 
-    // Deep paths Yohaku dereferences without optional chaining or with
-    // direct destructuring.
-    assertHasKeysDeep(body.data, ['category.slug', 'category.name'])
+    assertHasKeysDeep(body.data, [
+      'category.slug',
+      'category.name',
+      'authors.0.display_name',
+      'authors.0.avatar',
+      'authors.0.bio',
+      'authors.0.url',
+      'seo.title',
+      'seo.description',
+    ])
   })
 })

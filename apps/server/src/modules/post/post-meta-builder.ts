@@ -2,7 +2,6 @@ import type {
   ArticleRefMap,
   InsightsMeta,
   PostResponseMeta,
-  RelatedRef,
   SummaryMeta,
   TtsMeta,
 } from '~/common/response/meta.types'
@@ -18,11 +17,6 @@ export class PostMetaBuilder extends MetaObjectBuilder<
 
   insights(value: InsightsMeta): this {
     ;(this.meta as PostResponseMeta).insights = value
-    return this
-  }
-
-  related(value: RelatedRef[]): this {
-    ;(this.meta as PostResponseMeta).related = value
     return this
   }
 

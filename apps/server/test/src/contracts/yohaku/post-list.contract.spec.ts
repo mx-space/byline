@@ -26,7 +26,6 @@ import {
   assertPgTimestamps,
 } from '../../../helper/api-shape'
 import { createE2EApp } from '../../../helper/create-e2e-app'
-import { countingServiceProvider } from '../../../mock/processors/counting.mock'
 import {
   translationEntryProvider,
   translationProvider,
@@ -113,7 +112,6 @@ describe('Yohaku contract — post list (e2e)', () => {
     controllers: [PostController],
     providers: [
       postServiceProvider,
-      countingServiceProvider,
       translationProvider,
       translationEntryProvider,
       aiInsightsProvider,

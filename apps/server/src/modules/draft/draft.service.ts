@@ -604,7 +604,7 @@ export class DraftService {
   ): RevisionSnapshot {
     const common = {
       content: (article.content as string | null) ?? null,
-      contentFormat: (article.contentFormat as string) ?? 'markdown',
+      contentFormat: (article.contentFormat as string) ?? 'lexical',
       images: (article.images as unknown[] | null) ?? null,
       meta: (article.meta as Record<string, unknown> | null) ?? null,
       text: (article.text as string) ?? '',
@@ -613,15 +613,16 @@ export class DraftService {
     return canonicalSnapshot(refType, {
       ...common,
       typeSpecificData: {
+        authors: Array.isArray(article.authors)
+          ? article.authors.map((item) => (item as { id: string }).id)
+          : [],
         categoryId: article.categoryId,
-        copyright: article.copyright,
-        isPremium: article.isPremium,
+        image: article.image ?? null,
         pin: Boolean(article.pinAt),
         pinOrder: article.pinOrder,
-        relatedId: Array.isArray(article.related)
-          ? article.related.map((item) => (item as { id: string }).id)
-          : [],
+        seo: article.seo ?? null,
         slug: article.slug,
+        sourceLang: article.sourceLang ?? null,
         summary: article.summary,
         tags: article.tags,
       },

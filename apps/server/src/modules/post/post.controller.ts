@@ -3,7 +3,6 @@ import { Body, Delete, Get, Param, Patch, Query } from '@nestjs/common'
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { BypassCaseTransform } from '~/common/decorators/bypass-case-transform.decorator'
-import { IpLocation, type IpRecord } from '~/common/decorators/ip.decorator'
 import { Lang } from '~/common/decorators/lang.decorator'
 import { HasAdminAccess } from '~/common/decorators/role.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
@@ -11,7 +10,6 @@ import { withMeta } from '~/common/response/envelope.types'
 import type { ArticleTranslation } from '~/common/response/meta.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
 import { TranslationEntryService } from '~/modules/ai/ai-translation/translation-entry.service'
-import { CountingService } from '~/processors/helper/helper.counting.service'
 import {
   applyArticleTranslationInPlace,
   applyTranslationEntriesInPlace,
@@ -65,7 +63,6 @@ const POST_LIST_TRANSLATION_FIELDS = [
 export class PostController {
   constructor(
     private readonly postService: PostService,
-    private readonly countingService: CountingService,
     private readonly translationService: TranslationService,
     private readonly aiInsightsService: AiInsightsService,
     private readonly aiSummaryService: AiSummaryService,
@@ -119,6 +116,7 @@ export class PostController {
       sortOrder,
       truncate,
       categoryIds,
+      authorId,
       excludeAiWritten,
     } = query
 
@@ -127,6 +125,7 @@ export class PostController {
       page,
       year,
       categoryIds,
+      authorId,
       excludeAiWritten,
       publishedOnly: !isAuthenticated,
       sortBy: sortBy as any,
@@ -219,7 +218,6 @@ export class PostController {
 
   @Get('/latest')
   async getLatest(
-    @IpLocation() ip: IpRecord,
     @HasAdminAccess() isAuthenticated: boolean,
     @Lang() lang?: string,
   ) {
@@ -234,7 +232,6 @@ export class PostController {
     return this.getByCateAndSlug(
       { category: last.category.slug, slug: last.slug },
       {} as any,
-      ip,
       isAuthenticated,
       lang,
     )
@@ -308,8 +305,7 @@ export class PostController {
   @BypassCaseTransform(['meta'])
   async getByCateAndSlug(
     @Param({ schema: CategoryAndSlugSchema }) params: CategoryAndSlugDto,
-    @Query({ schema: PostDetailQuerySchema }) query: PostDetailQueryDto,
-    @IpLocation() { ip }: IpRecord,
+    @Query({ schema: PostDetailQuerySchema }) _query: PostDetailQueryDto,
     @HasAdminAccess() isAuthenticated?: boolean,
     @Lang() lang?: string,
   ) {
@@ -327,22 +323,9 @@ export class PostController {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }
 
-    const liked = await this.countingService.getThisRecordIsLiked(
-      postDocument.id,
-      ip,
-    )
-
-    const relatedList = Array.isArray((postDocument as any).related)
-      ? ((postDocument as any).related as any[])
-      : []
-    const relatedIds = relatedList
-      .map((item) => item?.id)
-      .filter((id): id is string => Boolean(id))
-
     const insightsLang = parseLanguageCode(lang)
     const [
       translationResult,
-      relatedTitleMap,
       entryMaps,
       hasInsightsInLocale,
       summaryDoc,
@@ -359,7 +342,6 @@ export class PostController {
           tags: postDocument.tags,
         },
       }),
-      this.translationService.getCachedTitles(relatedIds, lang),
       this.batchEntryTranslations(lang ?? '', [postDocument]),
       this.aiInsightsService
         .hasInsightsInLang(postDocument.id, insightsLang)
@@ -390,20 +372,8 @@ export class PostController {
       )
     }
 
-    const translatedRelated = relatedTitleMap.size
-      ? relatedList.map((item) => {
-          const refId = item?.id
-          const translatedTitle = refId ? relatedTitleMap.get(refId) : undefined
-          return translatedTitle ? { ...item, title: translatedTitle } : item
-        })
-      : relatedList
-
-    const { related: _related, ...postData } = postDocument
-
     const metaBuilder = new PostMetaBuilder()
       .view('detail')
-      .interaction({ isLiked: liked })
-      .related(translatedRelated)
       .insights({ hasInLocale: hasInsightsInLocale })
       .tts(ttsMeta)
 
@@ -430,7 +400,7 @@ export class PostController {
     metaBuilder.translation(translationMap)
     if (lang) this.applyTagGlossary(metaBuilder, entryMaps)
 
-    return withMeta(postData, metaBuilder.build())
+    return withMeta(postDocument, metaBuilder.build())
   }
 
   @Patch('/:id')
