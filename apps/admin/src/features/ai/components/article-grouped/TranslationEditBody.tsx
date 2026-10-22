@@ -2,6 +2,7 @@ import type { SerializedEditorState } from 'lexical'
 import { lazy, Suspense, useMemo, useState } from 'react'
 
 import type { AITranslation } from '~/api/ai'
+import { SeoFields } from '~/features/write/components/PostBylineFields'
 import { useI18n } from '~/i18n'
 import { Button } from '~/ui/primitives/button'
 import { FormSwitch } from '~/ui/primitives/switch'
@@ -9,6 +10,7 @@ import { TextInput } from '~/ui/primitives/text-field'
 import { CodeMirrorEditor } from '~/vendor/codemirror'
 
 import { formatDateString } from '../../utils/ai'
+import { seoFromFields, seoToFields } from '../../utils/translation-seo'
 import { GenerationMetricsMeta } from './GenerationMetricsMeta'
 import type { EditDrawerBodyProps } from './types'
 
@@ -37,6 +39,7 @@ export function TranslationEditBody(props: EditDrawerBodyProps<AITranslation>) {
   const [summary, setSummary] = useState(props.item.summary ?? '')
   const [text, setText] = useState(props.item.text)
   const [locked, setLocked] = useState(Boolean(props.item.isLocked))
+  const [seo, setSeo] = useState(() => seoToFields(props.item.seo))
 
   const initialLexical = useMemo(
     () => parseLexical(props.item.content),
@@ -54,6 +57,7 @@ export function TranslationEditBody(props: EditDrawerBodyProps<AITranslation>) {
     const next: AITranslation = {
       ...props.item,
       isLocked: locked,
+      seo: seoFromFields(seo),
       title,
       subtitle: subtitle || undefined,
       summary: summary || undefined,
@@ -130,6 +134,24 @@ export function TranslationEditBody(props: EditDrawerBodyProps<AITranslation>) {
               text={summary}
             />
           </div>
+        </section>
+
+        <section className="grid gap-3 rounded-md border border-border p-3">
+          <div>
+            <p className="text-sm font-medium text-fg">
+              {t('ai.translation.editLabel.seo')}
+            </p>
+            <p className="mt-0.5 text-xs text-fg-muted">
+              {t('ai.translation.editLabel.seoDescription')}
+            </p>
+          </div>
+          <SeoFields
+            onChange={(key, value) =>
+              setSeo((current) => ({ ...current, [key]: value }))
+            }
+            titlePlaceholder={title}
+            value={seo}
+          />
         </section>
 
         <section>

@@ -65,6 +65,7 @@ export function AiTranslationRouteView() {
           text: next.text,
           content: next.content ?? undefined,
           isLocked: next.isLocked,
+          seo: next.seo,
         }),
 
       generate: {

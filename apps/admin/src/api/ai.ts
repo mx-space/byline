@@ -1,3 +1,5 @@
+import type { PostSeo } from '~/models/post'
+
 import { deleteJson, getJson, patchJson, postJson } from './http'
 import type { CreateTaskResponse } from './tasks'
 
@@ -123,6 +125,7 @@ export interface AITranslation {
   lang: string
   refId: string
   refType: string
+  seo?: PostSeo | null
   sourceLang: string
   subtitle?: string
   summary?: string
@@ -365,6 +368,7 @@ export function updateTranslation(
   data: {
     content?: string
     isLocked?: boolean
+    seo?: PostSeo | null
     subtitle?: string
     summary?: string
     tags?: string[]
