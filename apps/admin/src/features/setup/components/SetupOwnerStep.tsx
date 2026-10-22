@@ -2,8 +2,8 @@ import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import type { CreateOwnerData } from '~/api/system'
-import { createOwner } from '~/api/system'
+import type { CreateFirstUserData } from '~/api/system'
+import { createFirstUser } from '~/api/system'
 import { useI18n } from '~/i18n'
 import { TextInput } from '~/ui/primitives/text-field'
 
@@ -16,7 +16,7 @@ export function SetupOwnerStep(props: {
   onPrev: () => void
 }) {
   const { t } = useI18n()
-  const [owner, setOwner] = useState<CreateOwnerData>({
+  const [owner, setOwner] = useState<CreateFirstUserData>({
     mail: '',
     password: '',
     username: '',
@@ -27,7 +27,7 @@ export function SetupOwnerStep(props: {
     owner.username && owner.mail && owner.password && confirmPassword,
   )
 
-  const updateOwner = (patch: Partial<CreateOwnerData>) => {
+  const updateOwner = (patch: Partial<CreateFirstUserData>) => {
     setOwner((current) => ({ ...current, ...patch }))
   }
 
@@ -43,7 +43,7 @@ export function SetupOwnerStep(props: {
     setSubmitting(true)
 
     try {
-      await createOwner(removeEmptyStrings(owner))
+      await createFirstUser(removeEmptyStrings(owner))
       props.onNext()
     } catch (error) {
       toast.error(getErrorMessage(error, t('setup.owner.createError')))
@@ -135,9 +135,9 @@ export function SetupOwnerStep(props: {
             controlClassName={inputClassName}
             label={t('setup.owner.introduceLabel')}
             labelClassName={labelClassName}
-            onChange={(value) => updateOwner({ introduce: value })}
+            onChange={(value) => updateOwner({ bio: value })}
             placeholder={t('setup.owner.introducePlaceholder')}
-            value={owner.introduce ?? ''}
+            value={owner.bio ?? ''}
           />
         </div>
 

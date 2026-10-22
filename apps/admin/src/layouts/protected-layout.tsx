@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Suspense } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
 
-import { checkLogged } from '~/api/auth'
+import { checkLogged } from '~/api/users'
 import { loggedStatusQueryKey } from '~/features/auth/constants'
 import { PublishProcessDock } from '~/features/write/components/PublishProcessDock'
 import { useI18n } from '~/i18n'

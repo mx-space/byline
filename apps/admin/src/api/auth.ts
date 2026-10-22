@@ -17,15 +17,6 @@ export interface PasskeyItem {
   publicKey?: string
 }
 
-export interface LoggedStatus {
-  isGuest?: boolean
-  ok: boolean | number
-}
-
-export function checkLogged() {
-  return getJson<LoggedStatus>('/owner/check_logged')
-}
-
 export function getTokens() {
   return getJson<TokenModel[]>('/auth/token')
 }
@@ -37,12 +28,6 @@ export function createToken(data: CreateTokenData) {
 export function deleteToken(id: string) {
   return requestJson<void>(`/auth/token?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
-  })
-}
-
-export function authAsOwner() {
-  return requestJson<void>('/auth/as-owner', {
-    method: 'PATCH',
   })
 }
 

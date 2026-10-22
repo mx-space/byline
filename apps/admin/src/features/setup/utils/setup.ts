@@ -1,13 +1,13 @@
-import type { CreateOwnerData } from '~/api/system'
+import type { CreateFirstUserData } from '~/api/system'
 
-export function removeEmptyStrings(data: CreateOwnerData) {
-  const next: CreateOwnerData = {
+export function removeEmptyStrings(data: CreateFirstUserData) {
+  const next: CreateFirstUserData = {
     mail: data.mail,
     password: data.password,
     username: data.username,
   }
 
-  for (const key of ['avatar', 'introduce', 'name', 'url'] as const) {
+  for (const key of ['avatar', 'bio', 'name', 'url'] as const) {
     if (data[key]) next[key] = data[key]
   }
 

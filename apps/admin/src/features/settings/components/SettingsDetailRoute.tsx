@@ -11,7 +11,7 @@ import { Scroll } from '~/ui/primitives/scroll'
 import { cn } from '~/utils/cn'
 
 import { AccountSettings } from './account/AccountSettings'
-import { OwnerSettings } from './OwnerSettings'
+import { ProfileSettings } from './ProfileSettings'
 import { useSettingsRouteContext } from './settings-route-context'
 import type { SettingsDirtyAction } from './SettingsActionBar'
 import { SettingsActionBarContext } from './SettingsActionBar'
@@ -115,13 +115,7 @@ export function SettingsDetailRoute() {
         </div>
 
         <Scroll className="flex-1" innerClassName="px-5 py-4">
-          {activeGroup.type === 'user' ? (
-            <OwnerSettings
-              onSaved={async () => {
-                await ctx.onOwnerSaved()
-              }}
-            />
-          ) : null}
+          {activeGroup.type === 'user' ? <ProfileSettings /> : null}
           {activeGroup.type === 'account' ? <AccountSettings /> : null}
           {activeGroup.type === 'system' && activeGroup.systemGroup ? (
             <SystemSettings

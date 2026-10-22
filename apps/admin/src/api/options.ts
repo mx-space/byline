@@ -1,5 +1,3 @@
-import type { UserModel } from '~/models/user'
-
 import { deleteJson, getJson, patchJson, putJson } from './http'
 
 export interface SystemOptions {
@@ -78,16 +76,6 @@ export interface ConfigFormSchema {
   title: string
 }
 
-export interface UpdateOwnerData {
-  avatar?: string
-  introduce?: string
-  mail?: string
-  name?: string
-  socialIds?: Record<string, number | string>
-  url?: string
-  username?: string
-}
-
 export function getAllOptions() {
   return getJson<SystemOptions>('/options')
 }
@@ -125,12 +113,4 @@ export function deleteEmailTemplate(type: string) {
   return deleteJson<void>(
     `/options/email/template?type=${encodeURIComponent(type)}`,
   )
-}
-
-export function getOwner() {
-  return getJson<UserModel>('/owner')
-}
-
-export function updateOwner(data: UpdateOwnerData) {
-  return patchJson<UserModel, UpdateOwnerData>('/owner', data)
 }

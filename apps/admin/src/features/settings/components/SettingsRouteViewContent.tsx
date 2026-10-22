@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
@@ -14,7 +14,6 @@ import { Scroll } from '~/ui/primitives/scroll'
 import { cn } from '~/utils/cn'
 
 import {
-  settingsQueryKey,
   staticGroupsAfter,
   staticGroupsBefore,
   systemGroupTranslationKeys,
@@ -28,7 +27,6 @@ const SETTINGS_NAV_SCOPE_ID = 'settings-nav'
 
 export function SettingsRouteViewContent() {
   const { t } = useI18n()
-  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const params = useParams<{ section?: string }>()
   const selectedSection = params.section ?? null
@@ -103,19 +101,13 @@ export function SettingsRouteViewContent() {
     navigate(`/setting${qs ? `?${qs}` : ''}`)
   }, [navigate, searchParams])
 
-  const invalidateSettings = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: settingsQueryKey }),
-    [queryClient],
-  )
-
   const routeContextValue = useMemo(
     () => ({
       groups,
       schema: schemaQuery.data,
       onBack: closeDetail,
-      onOwnerSaved: invalidateSettings,
     }),
-    [closeDetail, groups, invalidateSettings, schemaQuery.data],
+    [closeDetail, groups, schemaQuery.data],
   )
 
   return (

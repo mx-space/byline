@@ -16,8 +16,8 @@ import { NavLink, useLocation, useNavigate } from 'react-router'
 import type { SidebarNode, SidebarSection } from 'virtual:admin-routes'
 import { shellRoutes, sidebarTree } from 'virtual:admin-routes'
 
-import { getOwner } from '~/api/options'
 import { getAppInfo } from '~/api/system'
+import { getMe } from '~/api/users'
 import { API_URL, GATEWAY_URL, WEB_URL } from '~/constants/env'
 import { SESSION_WITH_LOGIN } from '~/constants/keys'
 import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
@@ -25,6 +25,7 @@ import { resetAllCollections } from '~/data/resource/collection'
 import { useI18n } from '~/i18n'
 import { SUPPORTED_LOCALES } from '~/i18n/resources'
 import type { Locale, TranslationKey } from '~/i18n/types'
+import { adminQueryKeys } from '~/query/keys'
 import type { ThemeMode } from '~/theme'
 import { useThemeMode } from '~/theme'
 import { useSidebarExpandStore } from '~/ui/layout/sidebar-expand-store'
@@ -67,9 +68,9 @@ export function SidebarBody(props: { onCollapseSidebar?: () => void }) {
   const queryClient = useQueryClient()
   const { locale, setLocale, t } = useI18n()
   const { setThemeMode, themeMode } = useThemeMode()
-  const ownerQuery = useQuery({
-    queryFn: getOwner,
-    queryKey: ['shell', 'owner'],
+  const meQuery = useQuery({
+    queryFn: getMe,
+    queryKey: adminQueryKeys.users.me(),
     retry: false,
   })
   const appInfoQuery = useQuery({
@@ -82,10 +83,10 @@ export function SidebarBody(props: { onCollapseSidebar?: () => void }) {
       .sort((a, b) => b.path.length - a.path.length)
       .find((route) => location.pathname.startsWith(route.path)) ??
     shellRoutes[0]
-  const owner = ownerQuery.data
+  const owner = meQuery.data
   const ownerName =
-    owner?.name || owner?.username || owner?.handle || t('shell.owner.fallback')
-  const ownerContact = owner?.mail || owner?.email || owner?.username
+    owner?.displayName || owner?.username || t('shell.owner.fallback')
+  const ownerContact = owner?.email || owner?.username
   const shouldShowDebugMenu =
     window.injectData.PAGE_PROXY || appInfoQuery.data?.version === 'dev'
   const isInApiDebugMode = Boolean(

@@ -3,9 +3,9 @@ import type { AppInfo } from '~/models/system'
 
 import { buildAdminRequestHeaders, getJson, patchJson, postJson } from './http'
 
-export interface CreateOwnerData {
+export interface CreateFirstUserData {
   avatar?: string
-  introduce?: string
+  bio?: string
   mail: string
   name?: string
   password: string
@@ -42,6 +42,6 @@ export function patchInitConfig<TData>(key: string, data: TData) {
   return patchJson<void, TData>(`/init/configs/${key}`, data)
 }
 
-export function createOwner(data: CreateOwnerData) {
-  return postJson<void, CreateOwnerData>('/init/owner', data)
+export function createFirstUser(data: CreateFirstUserData) {
+  return postJson<void, CreateFirstUserData>('/init/user', data)
 }

@@ -1,17 +1,15 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { Fingerprint, Key } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 
-import { authAsOwner } from '~/api/auth'
 import { useI18n } from '~/i18n'
 import { Drawer } from '~/ui/feedback/drawer'
 import { authClient } from '~/utils/authjs/auth'
 
 import { accountQueryKey } from '../../constants'
 import type { OauthProviderType } from '../../types/settings'
-import { getErrorMessage } from '../../utils/settings'
 import { SettingsSection } from '../SettingsPrimitives'
 import { OauthSection } from './OauthSection'
 import { PasskeyPanel, PasskeyPanelHeaderAction } from './PasskeyPanel'
@@ -29,18 +27,6 @@ export function AccountSettings() {
   const validateProvider = searchParams.get(
     'validate',
   ) as OauthProviderType | null
-
-  const authAsOwnerMutation = useMutation({
-    mutationFn: authAsOwner,
-    onError: (error: unknown) =>
-      toast.error(
-        getErrorMessage(error, t('settings.account.error.authAsOwnerFailed')),
-      ),
-    onSuccess: async () => {
-      toast.success(t('settings.account.success.authAsOwner'))
-      await queryClient.invalidateQueries({ queryKey: accountQueryKey })
-    },
-  })
 
   useEffect(() => {
     if (!validateProvider) return
@@ -61,11 +47,9 @@ export function AccountSettings() {
       }
 
       toast.success(t('settings.account.success.oauthValidate'))
-      if (window.confirm(t('settings.account.prompt.setAsOwner'))) {
-        authAsOwnerMutation.mutate()
-      }
+      void queryClient.invalidateQueries({ queryKey: accountQueryKey })
     })
-  }, [authAsOwnerMutation, setSearchParams, t, validateProvider])
+  }, [queryClient, setSearchParams, t, validateProvider])
 
   return (
     <>

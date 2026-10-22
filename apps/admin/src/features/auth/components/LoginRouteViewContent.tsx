@@ -2,14 +2,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { KeyRound, Loader2 } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 
-import { getJson } from '~/api/http'
-import { bgUrl } from '~/constants/env'
+import { getAllowLogin } from '~/api/users'
 import { SESSION_WITH_LOGIN } from '~/constants/keys'
 import { useI18n } from '~/i18n'
-import type { UserModel } from '~/models/user'
 import { TextInput } from '~/ui/primitives/text-field'
 import { authClient } from '~/utils/authjs/auth'
 
@@ -17,45 +15,41 @@ import {
   allowLoginQueryKey,
   initQueryKey,
   loggedStatusQueryKey,
-  ownerQueryKey,
 } from '../constants'
-import type { AllowLoginResponse } from '../types/login'
 import { checkIsInit } from '../utils/check-init'
-import { readErrorMessage, readInitial } from '../utils/login'
+import { buildHashRouteUrl, readErrorMessage } from '../utils/login'
 import { AppleIcon } from './AppleIcon'
+import {
+  authInputClassName,
+  authPrimaryButtonClassName,
+  AuthScreen,
+} from './AuthScreen'
 import { GithubIcon } from './GithubIcon'
 import { GoogleIcon } from './GoogleIcon'
 import { LoginIconButton } from './LoginIconButton'
 
 export function LoginRouteViewContent() {
   const { t } = useI18n()
-  const inputRef = useRef<HTMLInputElement>(null)
+  const identifierRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [isLoggingIn, setIsLoggingIn] = useState(false)
-  const [passkeyAttempted, setPasskeyAttempted] = useState(false)
 
   const initQuery = useQuery({
     queryFn: checkIsInit,
     queryKey: initQueryKey,
     retry: false,
   })
-  const ownerQuery = useQuery({
-    enabled: initQuery.data !== false,
-    queryFn: () => getJson<UserModel>('/owner'),
-    queryKey: ownerQueryKey,
-    retry: false,
-  })
   const allowLoginQuery = useQuery({
     enabled: initQuery.data !== false,
-    queryFn: () => getJson<AllowLoginResponse>('/owner/allow-login'),
+    queryFn: getAllowLogin,
     queryKey: allowLoginQueryKey,
     retry: false,
   })
 
-  const owner = ownerQuery.data
   const settings = allowLoginQuery.data
   const fromPath = searchParams.get('from') || '/dashboard'
   const showPasswordInput = settings?.password !== false
@@ -65,10 +59,10 @@ export function LoginRouteViewContent() {
     Boolean(settings?.google) ||
     Boolean(settings?.apple)
 
-  const callbackURL = useMemo(() => {
-    const callbackPath = searchParams.get('to') || fromPath
-    return `${window.location.origin}${window.location.pathname}#${callbackPath}`
-  }, [fromPath, searchParams])
+  const callbackURL = useMemo(
+    () => buildHashRouteUrl(searchParams.get('to') || fromPath),
+    [fromPath, searchParams],
+  )
 
   useEffect(() => {
     if (initQuery.data === false) {
@@ -77,20 +71,8 @@ export function LoginRouteViewContent() {
   }, [initQuery.data, navigate])
 
   useEffect(() => {
-    const focusInput = () => inputRef.current?.focus()
-
-    focusInput()
-    document.addEventListener('keydown', focusInput)
-
-    return () => document.removeEventListener('keydown', focusInput)
+    identifierRef.current?.focus()
   }, [])
-
-  useEffect(() => {
-    if (passkeyAttempted || settings?.password !== false) return
-
-    setPasskeyAttempted(true)
-    void handlePasskeyLogin()
-  }, [passkeyAttempted, settings?.password])
 
   const postSuccessfulLogin = () => {
     sessionStorage.setItem(SESSION_WITH_LOGIN, '1')
@@ -103,19 +85,21 @@ export function LoginRouteViewContent() {
     event.preventDefault()
     if (isLoggingIn) return
 
-    const username = owner?.username || owner?.handle
-    if (!username) {
-      toast.error(t('auth.login.ownerUsernameMissing'))
+    const account = identifier.trim()
+    if (!account || !password) {
+      toast.error(t('auth.login.credentialsRequired'))
       return
     }
 
     setIsLoggingIn(true)
 
     try {
-      const result = await authClient.signIn.username({
-        password,
-        username,
-      })
+      const result = account.includes('@')
+        ? await authClient.signIn.email({ email: account, password })
+        : await authClient.signIn.username({
+            password,
+            username: account.toLowerCase(),
+          })
 
       if (result.error) {
         toast.error(result.error.message || t('auth.login.failed'))
@@ -154,105 +138,101 @@ export function LoginRouteViewContent() {
   }
 
   return (
-    <main
-      className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-neutral-950 p-4 text-white"
-      style={{
-        backgroundImage: `linear-gradient(rgba(10,10,10,.42), rgba(10,10,10,.58)), url(${bgUrl})`,
-        backgroundPosition: 'center',
-        backgroundSize: 'cover',
-      }}
-    >
-      <section className="flex w-full max-w-sm flex-col items-center">
-        <div className="mb-4 size-[120px] overflow-hidden rounded-full bg-white/15 shadow-2xl ring-4 ring-white/30">
-          {owner?.avatar ? (
-            <img
-              alt=""
-              className="size-full object-cover"
-              decoding="async"
-              src={owner.avatar}
-            />
-          ) : (
-            <div className="flex size-full items-center justify-center text-3xl font-medium">
-              {readInitial(owner)}
-            </div>
-          )}
-        </div>
-
-        <h1 className="mb-6 text-xl font-medium tracking-wide drop-shadow-lg">
-          {owner?.name || owner?.username || 'Admin'}
-        </h1>
-
-        {showPasswordInput ? (
-          <form className="w-full max-w-[280px]" onSubmit={handlePasswordLogin}>
-            <label className="sr-only" htmlFor="password-input">
-              {t('auth.login.passwordLabel')}
-            </label>
-            <div className="relative">
-              <TextInput
-                autoComplete="current-password"
-                controlClassName="h-[38px] rounded-full border-0 bg-white/20 px-4 text-center text-sm text-white backdrop-blur-md placeholder:text-white/60 focus:bg-white/25 focus:ring-2 focus:ring-white/50 dark:border-0 dark:bg-white/20 dark:text-white"
-                disabled={isLoggingIn}
-                id="password-input"
-                onChange={setPassword}
-                placeholder={t('auth.login.passwordPlaceholder')}
-                ref={inputRef}
-                type="password"
-                value={password}
+    <AuthScreen subtitle={t('auth.login.subtitle')} title="Byline">
+      {showPasswordInput ? (
+        <form
+          className="flex w-full max-w-[280px] flex-col gap-3"
+          onSubmit={handlePasswordLogin}
+        >
+          <TextInput
+            aria-label={t('auth.login.identifierLabel')}
+            autoComplete="username"
+            controlClassName={authInputClassName}
+            disabled={isLoggingIn}
+            onChange={setIdentifier}
+            placeholder={t('auth.login.identifierPlaceholder')}
+            ref={identifierRef}
+            value={identifier}
+          />
+          <TextInput
+            aria-label={t('auth.login.passwordLabel')}
+            autoComplete="current-password"
+            controlClassName={authInputClassName}
+            disabled={isLoggingIn}
+            onChange={setPassword}
+            placeholder={t('auth.login.passwordPlaceholder')}
+            type="password"
+            value={password}
+          />
+          <button
+            className={authPrimaryButtonClassName}
+            disabled={isLoggingIn}
+            type="submit"
+          >
+            {isLoggingIn ? (
+              <Loader2
+                aria-hidden="true"
+                className="mx-auto size-4 animate-spin"
               />
-              <button className="sr-only" type="submit">
-                {t('auth.login.submit')}
-              </button>
-            </div>
-          </form>
-        ) : null}
+            ) : (
+              t('auth.login.submit')
+            )}
+          </button>
+          <Link
+            className="text-center text-xs text-white/70 hover:text-white"
+            to="/reset-password"
+          >
+            {t('auth.login.forgotPassword')}
+          </Link>
+        </form>
+      ) : null}
 
-        {hasAlternativeAuth ? (
-          <div className="mt-6 flex justify-center gap-4">
-            {settings?.passkey ? (
-              <LoginIconButton
-                label={t('auth.login.passkey')}
-                onClick={handlePasskeyLogin}
-              >
-                <KeyRound aria-hidden="true" className="!size-5" />
-              </LoginIconButton>
-            ) : null}
+      {hasAlternativeAuth ? (
+        <div className="mt-6 flex justify-center gap-4">
+          {settings?.passkey ? (
+            <LoginIconButton
+              label={t('auth.login.passkey')}
+              onClick={handlePasskeyLogin}
+            >
+              <KeyRound aria-hidden="true" className="!size-5" />
+            </LoginIconButton>
+          ) : null}
 
-            {settings?.github ? (
-              <LoginIconButton
-                label={t('auth.login.github')}
-                onClick={() => handleSocialLogin('github')}
-              >
-                <GithubIcon />
-              </LoginIconButton>
-            ) : null}
+          {settings?.github ? (
+            <LoginIconButton
+              label={t('auth.login.github')}
+              onClick={() => handleSocialLogin('github')}
+            >
+              <GithubIcon />
+            </LoginIconButton>
+          ) : null}
 
-            {settings?.google ? (
-              <LoginIconButton
-                label={t('auth.login.google')}
-                onClick={() => handleSocialLogin('google')}
-              >
-                <GoogleIcon />
-              </LoginIconButton>
-            ) : null}
+          {settings?.google ? (
+            <LoginIconButton
+              label={t('auth.login.google')}
+              onClick={() => handleSocialLogin('google')}
+            >
+              <GoogleIcon />
+            </LoginIconButton>
+          ) : null}
 
-            {settings?.apple ? (
-              <LoginIconButton
-                label={t('auth.login.apple')}
-                onClick={() => handleSocialLogin('apple')}
-              >
-                <AppleIcon />
-              </LoginIconButton>
-            ) : null}
-          </div>
-        ) : null}
+          {settings?.apple ? (
+            <LoginIconButton
+              label={t('auth.login.apple')}
+              onClick={() => handleSocialLogin('apple')}
+            >
+              <AppleIcon />
+            </LoginIconButton>
+          ) : null}
+        </div>
+      ) : null}
 
-        {ownerQuery.isLoading || allowLoginQuery.isLoading ? (
-          <div className="mt-6 flex items-center gap-2 text-xs text-white/70">
-            <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
-            {t('auth.login.loadingProfile')}
-          </div>
-        ) : null}
-      </section>
-    </main>
+      {allowLoginQuery.isLoading ? (
+        <div className="mt-6 flex items-center gap-2 text-xs text-white/70">
+          <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+          {t('auth.login.loadingProfile')}
+        </div>
+      ) : null}
+    </AuthScreen>
   )
 }

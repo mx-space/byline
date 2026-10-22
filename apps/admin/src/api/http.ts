@@ -184,7 +184,8 @@ function handleUnauthorized() {
   const isAuthRoute =
     hash.startsWith('/login') ||
     hash.startsWith('/setup') ||
-    hash.startsWith('/setup-api')
+    hash.startsWith('/invite/') ||
+    hash.startsWith('/reset-password')
 
   if (isAuthRoute) return
 

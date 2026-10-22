@@ -25,6 +25,8 @@ export const adminQueryKeys = {
     groupedRoot: (group: string) => ['ai', group] as const,
     groupedListRoot: (group: string) => ['ai', group, 'grouped'] as const,
     imageGenerationOptions: () => ['ai', 'image', 'options'] as const,
+    lockedTranslations: (refId: string) =>
+      ['ai', 'locked-translations', refId] as const,
     imageModels: () => ['ai', 'image', 'models'] as const,
     imagePresets: () => ['ai', 'image', 'presets'] as const,
     models: (context: string) => ['ai', 'models', context] as const,
@@ -71,7 +73,6 @@ export const adminQueryKeys = {
   login: {
     allowLogin: () => ['login', 'allow-login'] as const,
     init: () => ['login', 'init'] as const,
-    owner: () => ['login', 'owner'] as const,
   },
   posts: {
     categoryDetail: (id: string) => ['posts', 'category-detail', id] as const,
@@ -111,15 +112,22 @@ export const adminQueryKeys = {
     authSecurity: () => ['settings', 'account', 'auth-security'] as const,
     oauth: () => ['settings', 'account', 'oauth'] as const,
     options: () => ['settings', 'options'] as const,
-    owner: () => ['settings', 'owner'] as const,
     passkeys: () => ['settings', 'account', 'passkeys'] as const,
     root: ['settings'] as const,
     schema: () => ['settings', 'schema'] as const,
     sessions: () => ['settings', 'account', 'sessions'] as const,
+    site: () => ['settings', 'site'] as const,
     tokens: () => ['settings', 'account', 'tokens'] as const,
   },
-  shell: {
-    owner: () => ['shell', 'owner'] as const,
+  users: {
+    authors: () => ['users', 'authors'] as const,
+    detail: (id: string) => ['users', 'detail', id] as const,
+    invites: () => ['users', 'invites'] as const,
+    list: (params: { search: string; status: string }) =>
+      ['users', 'list', params] as const,
+    listRoot: ['users', 'list'] as const,
+    me: () => ['users', 'me'] as const,
+    root: ['users'] as const,
   },
   tasks: {
     taskDetail: adminTaskKeys.taskDetail,

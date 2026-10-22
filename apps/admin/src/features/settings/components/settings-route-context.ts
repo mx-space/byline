@@ -8,7 +8,6 @@ export interface SettingsRouteContextValue {
   groups: SettingsGroupSummary[]
   schema: ConfigFormSchema | undefined
   onBack: () => void
-  onOwnerSaved: () => Promise<unknown> | void
 }
 
 export const SettingsRouteContext =

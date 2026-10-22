@@ -58,7 +58,7 @@ export function OauthProviderSection(props: {
   const validate = () => {
     const callback = new URL(location.href)
     callback.searchParams.set('validate', props.type)
-    void authClient.signIn.social({
+    void authClient.linkSocial({
       callbackURL: callback.toString(),
       provider: props.type,
     })

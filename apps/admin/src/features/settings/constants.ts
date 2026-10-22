@@ -53,17 +53,6 @@ export const aiProviderTypeOptions: Array<{
   { labelKey: 'settings.ai.providerType.generic', value: 'generic' },
 ]
 
-type SocialOption =
-  | { label: string; labelKey?: undefined; value: string }
-  | { label?: undefined; labelKey: TranslationKey; value: string }
-
-export const socialOptions: readonly SocialOption[] = [
-  { label: 'GitHub', value: 'github' },
-  { label: 'Weibo', value: 'weibo' },
-  { labelKey: 'settings.social.netease', value: 'netease' },
-  { labelKey: 'settings.social.bilibili', value: 'bilibili' },
-] as const
-
 export const staticGroupsBefore: SettingsGroupSummary[] = [
   {
     descriptionKey: 'settings.group.user.description',
