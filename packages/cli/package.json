@@ -17,7 +17,7 @@
     "directory": "packages/cli"
   },
   "license": "MIT",
-  "author": "Innei <https://innei.in>",
+  "author": "Innei",
   "type": "module",
   "engines": {
     "node": ">=22.0.0"

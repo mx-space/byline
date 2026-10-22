@@ -16,7 +16,7 @@
     "directory": "packages/api-client"
   },
   "license": "MIT",
-  "author": "Innei <https://innei.in>",
+  "author": "Innei",
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
