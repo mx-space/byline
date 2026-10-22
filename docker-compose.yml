@@ -1,0 +1,97 @@
+x-byline-env: &byline-env
+  TZ: ${TZ:-UTC}
+  NODE_ENV: production
+  PORT: '2333'
+  ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+
+  PG_HOST: postgres
+  PG_PORT: '5432'
+  PG_USER: ${PG_USER:-byline}
+  PG_PASSWORD: ${PG_PASSWORD:-byline}
+  PG_DATABASE: ${PG_DATABASE:-byline}
+
+  REDIS_HOST: redis
+  REDIS_PORT: '6379'
+
+  SNOWFLAKE_WORKER_ID: ${SNOWFLAKE_WORKER_ID:-1}
+  JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET to 32+ random characters}
+  ENCRYPT_ENABLE: ${ENCRYPT_ENABLE:-false}
+  ENCRYPT_KEY: ${ENCRYPT_KEY:-}
+  TRUST_PROXY: ${TRUST_PROXY:-}
+
+x-runtime-safety: &runtime-safety
+  ulimits:
+    core:
+      soft: 0
+      hard: 0
+  logging:
+    driver: json-file
+    options:
+      max-size: '10m'
+      max-file: '3'
+
+services:
+  byline:
+    <<: *runtime-safety
+    image: ${BYLINE_IMAGE:-byline:latest}
+    restart: unless-stopped
+    ports:
+      - '${BYLINE_PORT:-2333}:2333'
+    environment:
+      <<: *byline-env
+      BYLINE_AUTO_MIGRATE: 'false'
+    volumes:
+      - byline-data:/root/.byline
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  migrate:
+    <<: *runtime-safety
+    image: ${BYLINE_IMAGE:-byline:latest}
+    command: ['node', 'migrate.mjs']
+    restart: 'no'
+    environment: *byline-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    <<: *runtime-safety
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USER:-byline}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-byline}
+      POSTGRES_DB: ${PG_DATABASE:-byline}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    <<: *runtime-safety
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping | grep PONG']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  byline-data:
+  postgres-data:
+  redis-data:
