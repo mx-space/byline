@@ -11,6 +11,7 @@ import { getOption, getUrlOptions, patchOption } from '~/api/options'
 import { checkInit, createFirstUser } from '~/api/system'
 import { getMe } from '~/api/users'
 import { I18nProvider } from '~/i18n'
+import { adminQueryKeys } from '~/query/keys'
 import { authClient } from '~/utils/authjs/auth'
 
 import { AccountStep } from './AccountStep'
@@ -235,6 +236,7 @@ describe('SiteStep', () => {
     vi.mocked(patchOption).mockResolvedValue(undefined)
     const onNext = vi.fn()
 
+    queryClient.setQueryData(adminQueryKeys.settings.options(), {})
     await render(<SiteStep onBack={vi.fn()} onNext={onNext} />)
     await type(input('webUrl'), 'https://blog.example.com')
     await click(button('onboarding-submit'))
@@ -242,6 +244,10 @@ describe('SiteStep', () => {
     expect(patchOption).toHaveBeenCalledWith('site', {
       defaultSourceLang: 'ja',
     })
+    expect(
+      queryClient.getQueryState(adminQueryKeys.settings.options())
+        ?.isInvalidated,
+    ).toBe(true)
     expect(patchOption).toHaveBeenCalledWith(
       'url',
       expect.objectContaining({
@@ -312,7 +318,45 @@ describe('AiProvidersStep', () => {
   })
 })
 
+describe('AiProvidersStep removal', () => {
+  it('clears assignments that use a removed provider', async () => {
+    vi.mocked(getOption).mockResolvedValue({
+      providers: [
+        {
+          apiKey: '',
+          defaultModel: 'x',
+          enabled: true,
+          id: 'p1',
+          name: 'Anthropic',
+          type: 'anthropic',
+        },
+      ],
+      writerModel: { model: 'x', providerId: 'p1' },
+    })
+    vi.mocked(patchOption).mockResolvedValue(undefined)
+
+    await render(
+      <AiProvidersStep onBack={vi.fn()} onNext={vi.fn()} onSkip={vi.fn()} />,
+    )
+    await click(button('onboarding-provider-remove-p1'))
+
+    expect(patchOption).toHaveBeenCalledWith(
+      'ai',
+      expect.objectContaining({ providers: [], writerModel: null }),
+    )
+  })
+})
+
 describe('AiModelsStep', () => {
+  it('waits for the model lists before allowing continue', async () => {
+    vi.mocked(getOption).mockResolvedValue({ providers: [] })
+    vi.mocked(getModelsByCapability).mockReturnValue(new Promise(() => {}))
+
+    await render(<AiModelsStep onBack={vi.fn()} onNext={vi.fn()} />)
+
+    expect(button('onboarding-submit').disabled).toBe(true)
+  })
+
   it('assigns the default model to every text feature on continue', async () => {
     vi.mocked(getOption).mockResolvedValue({
       providers: [
@@ -432,5 +476,27 @@ describe('AiFeaturesStep', () => {
       }),
     )
     expect(onNext).toHaveBeenCalled()
+  })
+
+  it('keeps summary languages following translation languages', async () => {
+    vi.mocked(getOption).mockResolvedValue({
+      enableTranslation: true,
+      providers: [],
+      summaryTargetLanguages: ['en'],
+      translationTargetLanguages: ['en'],
+    })
+    vi.mocked(patchOption).mockResolvedValue(undefined)
+
+    await render(<AiFeaturesStep onBack={vi.fn()} onNext={vi.fn()} />)
+    await click(button('onboarding-language-ja'))
+    await click(button('onboarding-submit'))
+
+    expect(patchOption).toHaveBeenCalledWith(
+      'ai',
+      expect.objectContaining({
+        summaryTargetLanguages: ['en', 'ja'],
+        translationTargetLanguages: ['en', 'ja'],
+      }),
+    )
   })
 })

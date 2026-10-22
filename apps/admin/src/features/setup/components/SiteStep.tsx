@@ -8,6 +8,7 @@ import { getOption, getUrlOptions, patchOption } from '~/api/options'
 import { API_URL } from '~/constants/env'
 import { LanguageSelect } from '~/features/settings/components/config/LanguageSelect'
 import { useI18n } from '~/i18n'
+import { adminQueryKeys } from '~/query/keys'
 import { Button } from '~/ui/primitives/button'
 import { TextInput } from '~/ui/primitives/text-field'
 
@@ -29,7 +30,7 @@ interface SiteOptions {
 
 const serviceKeys = ['serverUrl', 'adminUrl', 'wsUrl'] as const
 
-const siteQueryKey = ['onboarding', 'site']
+const siteQueryKey = adminQueryKeys.onboarding.site()
 
 function readGatewayOverride() {
   try {
@@ -66,7 +67,7 @@ export function SiteStep(props: {
   })
   const urlQuery = useQuery({
     queryFn: getUrlOptions,
-    queryKey: ['onboarding', 'url'],
+    queryKey: adminQueryKeys.onboarding.url(),
   })
   const derived = useMemo(
     () =>
@@ -116,6 +117,9 @@ export function SiteStep(props: {
         'url',
         trimmedWebUrl ? { ...services, webUrl: trimmedWebUrl } : services,
       )
+      await queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.settings.root,
+      })
       props.onNext()
     } catch (error) {
       toast.error(getErrorMessage(error, t('setup.onboarding.site.saveError')))

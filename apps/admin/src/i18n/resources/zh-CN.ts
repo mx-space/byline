@@ -1111,6 +1111,7 @@ export const zhCN = {
   'setup.onboarding.ai.features.asideSummary': 'AI 摘要',
   'setup.onboarding.ai.features.asidePlaceholder':
     '发布时生成的摘要会显示在这里',
+  'setup.onboarding.ready.separator': '、',
   'setup.onboarding.ready.title': '一切就绪',
   'setup.onboarding.ready.description':
     '{name} 已经可以使用。挑一件开始，或者直接进入后台。',

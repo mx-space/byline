@@ -74,6 +74,16 @@ export const adminQueryKeys = {
     allowLogin: () => ['login', 'allow-login'] as const,
     init: () => ['login', 'init'] as const,
   },
+  onboarding: {
+    ai: () => ['onboarding', 'ai'] as const,
+    info: () => ['onboarding', 'info'] as const,
+    me: () => ['onboarding', 'me'] as const,
+    models: (capability: string) =>
+      ['onboarding', 'models', capability] as const,
+    modelsRoot: ['onboarding', 'models'] as const,
+    site: () => ['onboarding', 'site'] as const,
+    url: () => ['onboarding', 'url'] as const,
+  },
   posts: {
     categoryDetail: (id: string) => ['posts', 'category-detail', id] as const,
     list: (params: {

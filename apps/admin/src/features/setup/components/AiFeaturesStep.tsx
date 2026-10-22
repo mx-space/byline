@@ -11,7 +11,7 @@ import {
   useOnboardingAiConfig,
   useSaveOnboardingAiConfig,
 } from '../hooks/use-onboarding-ai'
-import { onboardingLanguages } from '../utils/onboarding'
+import { nextSummaryLanguages, onboardingLanguages } from '../utils/onboarding'
 import { getErrorMessage } from '../utils/setup'
 import {
   OnboardingAsideTitle,
@@ -75,9 +75,7 @@ export function AiFeaturesStep(props: {
         enableInsights: draft.insights,
         enableSummary: draft.summary,
         enableTranslation: draft.translation,
-        summaryTargetLanguages: config.summaryTargetLanguages?.length
-          ? config.summaryTargetLanguages
-          : draft.languages,
+        summaryTargetLanguages: nextSummaryLanguages(config, draft.languages),
         translationTargetLanguages: draft.languages,
         tts: { ...config.tts, enable: ttsAvailable && draft.tts },
       })

@@ -6,6 +6,7 @@ import { Link } from 'react-router'
 import { getUrlOptions } from '~/api/options'
 import { getMe } from '~/api/users'
 import { useI18n } from '~/i18n'
+import { adminQueryKeys } from '~/query/keys'
 import { Button } from '~/ui/primitives/button'
 
 import { useOnboardingAiConfig } from '../hooks/use-onboarding-ai'
@@ -25,14 +26,15 @@ export function ReadyStep(props: { onFinish: () => void }) {
   const { t } = useI18n()
   const meQuery = useQuery({
     queryFn: getMe,
-    queryKey: ['onboarding', 'me'],
+    queryKey: adminQueryKeys.onboarding.me(),
   })
   const urlQuery = useQuery({
     queryFn: getUrlOptions,
-    queryKey: ['onboarding', 'url'],
+    queryKey: adminQueryKeys.onboarding.url(),
   })
   const aiQuery = useOnboardingAiConfig()
   const ai = aiQuery.data
+  const separator = t('setup.onboarding.ready.separator')
 
   const enabledFeatures = [
     ai?.enableTranslation && t('setup.onboarding.ai.features.translation'),
@@ -42,7 +44,7 @@ export function ReadyStep(props: { onFinish: () => void }) {
   ].filter(Boolean)
   const providerNames = (ai?.providers ?? []).map((provider) => provider.name)
   const aiSummary = providerNames.length
-    ? [providerNames.join(', '), enabledFeatures.join(', ')]
+    ? [providerNames.join(separator), enabledFeatures.join(separator)]
         .filter(Boolean)
         .join(' · ')
     : ''
@@ -52,7 +54,7 @@ export function ReadyStep(props: { onFinish: () => void }) {
         onboardingLanguages.find((language) => language.code === code)?.label ??
         code,
     )
-    .join(', ')
+    .join(separator)
 
   const summaryRows = [
     {

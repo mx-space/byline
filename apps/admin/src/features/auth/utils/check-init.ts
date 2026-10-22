@@ -15,7 +15,9 @@ export async function checkIsInit() {
   })
 
   if (response.status === 403 || response.status === 404) return true
-  if (!response.ok) return false
+  if (!response.ok) {
+    throw new Error(response.statusText || 'Init check failed')
+  }
 
   try {
     const data = (await response.json()) as
