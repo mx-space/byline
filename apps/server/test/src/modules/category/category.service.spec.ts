@@ -44,6 +44,7 @@ describe('CategoryService write events', () => {
       create: vi.fn(async () => ({ id: 'category-1', name: 'News' })),
       update: vi.fn(async () => ({ id: 'category-1', name: 'News' })),
       findById: vi.fn(async () => ({ id: 'category-1', slug: 'news' })),
+      countAll: vi.fn(async () => 1),
     }
     const service = new CategoryService(
       repository as any,
