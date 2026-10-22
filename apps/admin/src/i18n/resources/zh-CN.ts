@@ -826,10 +826,6 @@ export const zhCN = {
   'settings.group.user.title': '用户',
   'settings.schema.ai.title': 'AI 设置',
   'settings.schema.imageStorageOptions.bucket.title': '存储桶',
-  'settings.schema.imageStorageOptions.commentUploadPrefix.description':
-    '读者评论上传图片专用路径前缀。留空时默认 comments/{readerId}/{Y}/{m}/{md5}.{ext}。除 prefix 支持的占位符外，还支持 {readerId}',
-  'settings.schema.imageStorageOptions.commentUploadPrefix.title':
-    '评论图片路径前缀',
   'settings.schema.imageStorageOptions.customDomain.description':
     '用于替换默认 S3 URL，例如 CDN 域名',
   'settings.schema.imageStorageOptions.customDomain.title': '自定义域名（CDN）',
@@ -890,15 +886,6 @@ export const zhCN = {
   'settings.oauth.copySuccess': '已复制到剪贴板',
   'settings.oauth.description': '配置第三方账号登录方式。',
   'settings.oauth.error.save': '保存 OAuth 配置失败',
-  'settings.oauth.reviewDemo.copyEmailAria': '复制审核邮箱',
-  'settings.oauth.reviewDemo.copyPasswordAria': '复制审核密码',
-  'settings.oauth.reviewDemo.email': '审核邮箱',
-  'settings.oauth.reviewDemo.helper':
-    '创建供 App Store 审核使用的读者账号。评论与资料每日重置。即使关闭密码登录，仍可用邮箱表单登录此账号。',
-  'settings.oauth.reviewDemo.password': '审核密码',
-  'settings.oauth.reviewDemo.provisionFailed':
-    'Demo 账号已开启但尚未就绪，请再保存一次或查看日志。',
-  'settings.oauth.reviewDemo.switch': 'App 审核 Demo 账号',
   'settings.oauth.secretKeptPlaceholder': '留空则不修改',
   'settings.oauth.success.save': 'OAuth 配置已保存',
   'settings.oauth.switch.enabled': '启用',

@@ -200,25 +200,7 @@ export interface AIModelListData {
   type: string
 }
 
-export interface AICommentReviewTestData {
-  author?: string
-  text: string
-}
-
-export interface AICommentReviewTestResponse {
-  isSpam: boolean
-  reason?: string
-  score?: number
-}
-
-export type TranslationEntryKeyPath =
-  | 'category.name'
-  | 'note.mood'
-  | 'note.weather'
-  | 'post.tag'
-  | 'topic.description'
-  | 'topic.introduce'
-  | 'topic.name'
+export type TranslationEntryKeyPath = 'category.name' | 'post.tag'
 
 export interface TranslationEntry {
   createdAt: string
@@ -247,13 +229,6 @@ export interface GenerateEntriesResponse {
 }
 
 export type { CreateTaskResponse }
-
-export function testCommentReview(data: AICommentReviewTestData) {
-  return postJson<AICommentReviewTestResponse, AICommentReviewTestData>(
-    '/ai/comment-review/test',
-    data,
-  )
-}
 
 export function writerGenerate(data: AIWriterGenerateData) {
   return postJson<AIWriterGenerateResponse, AIWriterGenerateData>(

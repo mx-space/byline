@@ -113,7 +113,6 @@ export const adminQueryKeys = {
     options: () => ['settings', 'options'] as const,
     owner: () => ['settings', 'owner'] as const,
     passkeys: () => ['settings', 'account', 'passkeys'] as const,
-    reviewDemo: () => ['settings', 'account', 'review-demo'] as const,
     root: ['settings'] as const,
     schema: () => ['settings', 'schema'] as const,
     sessions: () => ['settings', 'account', 'sessions'] as const,

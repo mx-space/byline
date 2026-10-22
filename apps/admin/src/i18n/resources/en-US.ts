@@ -870,10 +870,6 @@ export const enUS = {
   'settings.group.user.title': 'User',
   'settings.schema.ai.title': 'AI settings',
   'settings.schema.imageStorageOptions.bucket.title': 'Bucket',
-  'settings.schema.imageStorageOptions.commentUploadPrefix.description':
-    'Path prefix dedicated to reader comment uploads. Defaults to comments/{readerId}/{Y}/{m}/{md5}.{ext} when empty. Placeholders are the same as prefix, with additional support for {readerId}',
-  'settings.schema.imageStorageOptions.commentUploadPrefix.title':
-    'Comment image path prefix',
   'settings.schema.imageStorageOptions.customDomain.description':
     'Used to replace the default S3 URL, e.g. a CDN domain',
   'settings.schema.imageStorageOptions.customDomain.title':
@@ -935,15 +931,6 @@ export const enUS = {
   'settings.oauth.copySuccess': 'Copied to clipboard',
   'settings.oauth.description': 'Configure third-party account sign-in.',
   'settings.oauth.error.save': 'Failed to save OAuth config',
-  'settings.oauth.reviewDemo.copyEmailAria': 'Copy review email',
-  'settings.oauth.reviewDemo.copyPasswordAria': 'Copy review password',
-  'settings.oauth.reviewDemo.email': 'Review email',
-  'settings.oauth.reviewDemo.helper':
-    'Creates a reader account for App Store review. Comments and profile reset daily. Sign-in uses the email form even if password login is disabled.',
-  'settings.oauth.reviewDemo.password': 'Review password',
-  'settings.oauth.reviewDemo.provisionFailed':
-    'Demo account is enabled but not ready. Save again or check logs.',
-  'settings.oauth.reviewDemo.switch': 'App Review demo account',
   'settings.oauth.secretKeptPlaceholder': 'Leave blank to keep current',
   'settings.oauth.success.save': 'OAuth config saved',
   'settings.oauth.switch.enabled': 'Enabled',
