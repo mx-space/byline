@@ -32,3 +32,47 @@ describe('CategoryService deletion', () => {
     },
   )
 })
+
+describe('CategoryService write events', () => {
+  const setup = () => {
+    let release!: () => void
+    const emitted = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const eventManager = { emit: vi.fn(() => emitted) }
+    const repository = {
+      create: vi.fn(async () => ({ id: 'category-1', name: 'News' })),
+      update: vi.fn(async () => ({ id: 'category-1', name: 'News' })),
+      findById: vi.fn(async () => ({ id: 'category-1', slug: 'news' })),
+    }
+    const service = new CategoryService(
+      repository as any,
+      eventManager as any,
+      {} as any,
+      { get: () => ({}) } as any,
+    )
+    service.onApplicationBootstrap()
+    return { service, release }
+  }
+
+  it.each(['create', 'update'] as const)(
+    'resolves %s only after the content event, and its cache invalidation, finished',
+    async (action) => {
+      const { service, release } = setup()
+      let settled = false
+      const pending = (
+        action === 'create'
+          ? service.create('News')
+          : service.update('category-1', { name: 'News' })
+      ).then(() => {
+        settled = true
+      })
+
+      await new Promise((resolve) => setImmediate(resolve))
+      expect(settled).toBe(false)
+      release()
+      await pending
+      expect(settled).toBe(true)
+    },
+  )
+})

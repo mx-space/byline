@@ -140,7 +140,7 @@ export class CategoryService implements OnApplicationBootstrap {
       name,
       slug: slug ?? name,
     })
-    this.eventManager.emit(BusinessEvents.CATEGORY_CREATE, doc, {
+    await this.eventManager.emit(BusinessEvents.CATEGORY_CREATE, doc, {
       scope: EventScope.TO_SYSTEM_VISITOR,
     })
     return doc
@@ -165,7 +165,7 @@ export class CategoryService implements OnApplicationBootstrap {
   async update(id: string, partialDoc: CategoryPatchInput) {
     if (partialDoc?.slug) await this.trackerSlugChanges(id, partialDoc.slug)
     const newDoc = await this.categoryRepository.update(id, partialDoc)
-    this.eventManager.emit(BusinessEvents.CATEGORY_UPDATE, newDoc, {
+    await this.eventManager.emit(BusinessEvents.CATEGORY_UPDATE, newDoc, {
       scope: EventScope.TO_SYSTEM_VISITOR,
     })
     return newDoc
@@ -183,7 +183,7 @@ export class CategoryService implements OnApplicationBootstrap {
     if ((await this.categoryRepository.countAll()) === 0) {
       await this.createDefaultCategory()
     }
-    this.eventManager.emit(
+    await this.eventManager.emit(
       BusinessEvents.CATEGORY_DELETE,
       { id },
       { scope: EventScope.TO_SYSTEM_VISITOR },
