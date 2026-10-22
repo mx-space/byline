@@ -16,6 +16,7 @@ const mapRow = (row: typeof userInvites.$inferSelect): UserInviteRow => ({
   expiresAt: row.expiresAt,
   acceptedAt: row.acceptedAt,
   acceptedUserId: row.acceptedUserId,
+  userId: row.userId ?? null,
   createdAt: row.createdAt,
 })
 
@@ -31,6 +32,7 @@ export class UserInviteRepository extends BaseRepository {
     displayName?: string | null
     tokenHash: string
     invitedBy?: string | null
+    userId?: string | null
     expiresAt: Date
   }): Promise<UserInviteRow> {
     const [row] = await this.db
@@ -41,6 +43,7 @@ export class UserInviteRepository extends BaseRepository {
         displayName: input.displayName ?? null,
         tokenHash: input.tokenHash,
         invitedBy: input.invitedBy ?? null,
+        userId: input.userId ?? null,
         expiresAt: input.expiresAt,
       })
       .returning()
@@ -84,6 +87,14 @@ export class UserInviteRepository extends BaseRepository {
           sql`lower(${userInvites.email}) = lower(${email})`,
           isNull(userInvites.acceptedAt),
         ),
+      )
+  }
+
+  async deletePendingByUserId(userId: string): Promise<void> {
+    await this.db
+      .delete(userInvites)
+      .where(
+        and(eq(userInvites.userId, userId), isNull(userInvites.acceptedAt)),
       )
   }
 

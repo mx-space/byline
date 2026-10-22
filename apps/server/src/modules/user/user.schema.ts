@@ -64,6 +64,13 @@ export const CreateInviteSchema = z.object({
 
 export type CreateInviteDto = z.infer<typeof CreateInviteSchema>
 
+export const InviteExistingUserSchema = z.object({
+  email: z.email().optional(),
+  displayName: z.string().trim().min(1).max(120).optional(),
+})
+
+export type InviteExistingUserDto = z.infer<typeof InviteExistingUserSchema>
+
 export const InviteTokenSchema = z.object({
   token: z.string().min(16).max(256),
 })

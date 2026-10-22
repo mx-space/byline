@@ -58,10 +58,14 @@ export const userInvites = pgTable(
     acceptedUserId: text('accepted_user_id').references(() => users.id, {
       onDelete: 'set null',
     }),
+    userId: text('user_id').references(() => users.id, {
+      onDelete: 'cascade',
+    }),
   },
   (table) => [
     uniqueIndex('user_invites_token_hash_uniq').on(table.tokenHash),
     index('user_invites_email_idx').on(table.email),
+    index('user_invites_user_id_idx').on(table.userId),
   ],
 )
 

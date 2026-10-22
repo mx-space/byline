@@ -94,8 +94,8 @@ export class UserService {
     return this.userRepository.countLoginCapable().then((count) => count > 0)
   }
 
-  hasUserWithEmail(email: string) {
-    return this.userRepository.existsByUsernameOrEmail(null, email)
+  findByEmail(email: string) {
+    return this.userRepository.findByEmail(email)
   }
 
   private async assertIdentityAvailable(
@@ -210,6 +210,45 @@ export class UserService {
       }
       throw error
     }
+  }
+
+  async convertProfileOnly(input: {
+    userId: string
+    email: string
+    username: string
+    displayName?: string
+    password: string
+    claimInviteId: string
+  }) {
+    const username = input.username.trim().toLowerCase()
+    await this.assertIdentityAvailable(username, input.email, input.userId)
+    let result: Awaited<
+      ReturnType<UserRepository['convertProfileOnlyWithCredential']>
+    >
+    try {
+      result = await this.userRepository.convertProfileOnlyWithCredential({
+        userId: input.userId,
+        email: input.email,
+        username,
+        displayName: input.displayName,
+        accountId: this.snowflakeService.nextId(),
+        passwordHash: await hashPassword(input.password),
+        claimInviteId: input.claimInviteId,
+      })
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw createAppException(AppErrorCode.USER_CONFLICT)
+      }
+      throw error
+    }
+    if (result.kind === 'invite-unusable') {
+      throw createAppException(AppErrorCode.INVITE_ALREADY_ACCEPTED)
+    }
+    if (result.kind === 'not-profile-only') {
+      throw createAppException(AppErrorCode.USER_CONFLICT)
+    }
+    await this.apiCache.invalidate()
+    return result.row
   }
 
   async createFirstUser(dto: CreateFirstUserDto) {

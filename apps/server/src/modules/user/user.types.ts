@@ -62,6 +62,7 @@ export interface UserInviteRow {
   expiresAt: Date
   acceptedAt: Date | null
   acceptedUserId: string | null
+  userId: string | null
   createdAt: Date
 }
 

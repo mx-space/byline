@@ -26,6 +26,7 @@ const InviteSchema = z.object({
   email: z.string(),
   displayName: z.string().nullable(),
   invitedBy: z.string().nullable(),
+  userId: z.string().nullable(),
   expiresAt: zDate,
   acceptedAt: zDate.nullable(),
   createdAt: zDate,

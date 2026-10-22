@@ -10,9 +10,13 @@ import {
 } from '~/processors/helper/helper.email.service'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 
-import type { AcceptInviteDto, CreateInviteDto } from './user.schema'
+import type {
+  AcceptInviteDto,
+  CreateInviteDto,
+  InviteExistingUserDto,
+} from './user.schema'
 import { UserService } from './user.service'
-import type { UserInviteRow } from './user.types'
+import type { UserInviteRow, UserRow } from './user.types'
 import { UserViews } from './user.views'
 import { UserInviteRepository } from './user-invite.repository'
 
@@ -50,18 +54,80 @@ export class UserInviteService {
 
   async create(dto: CreateInviteDto, inviter: { id: string; name?: string }) {
     const email = dto.email.trim().toLowerCase()
-    if (await this.userService.hasUserWithEmail(email)) {
+    const existing = await this.userService.findByEmail(email)
+    if (existing) this.assertInvitable(existing)
+    return this.issue(
+      {
+        email,
+        displayName: dto.displayName ?? existing?.displayName ?? null,
+        userId: existing?.id ?? null,
+      },
+      inviter,
+    )
+  }
+
+  async inviteExisting(
+    userId: string,
+    dto: InviteExistingUserDto,
+    inviter: { id: string; name?: string },
+  ) {
+    const user = await this.userService.findById(userId)
+    if (!user) {
+      throw createAppException(AppErrorCode.USER_NOT_FOUND, { id: userId })
+    }
+    this.assertInvitable(user)
+    const email = (dto.email ?? user.email)?.trim().toLowerCase()
+    if (!email) {
+      throw createAppException(AppErrorCode.INVALID_PARAMETER, {
+        message: 'An email is required to invite this author',
+      })
+    }
+    const owner = await this.userService.findByEmail(email)
+    if (owner && owner.id !== user.id) {
       throw createAppException(AppErrorCode.USER_CONFLICT)
     }
-    await this.inviteRepository.deletePendingByEmail(email)
+    return this.issue(
+      {
+        email,
+        displayName: dto.displayName ?? user.displayName,
+        userId: user.id,
+      },
+      inviter,
+    )
+  }
+
+  private assertInvitable(user: UserRow) {
+    if (!user.isProfileOnly) {
+      throw createAppException(AppErrorCode.USER_CONFLICT)
+    }
+    if (user.deactivatedAt) {
+      throw createAppException(AppErrorCode.INVALID_PARAMETER, {
+        message: 'Reactivate this author before inviting them',
+      })
+    }
+  }
+
+  private async issue(
+    target: {
+      email: string
+      displayName: string | null
+      userId: string | null
+    },
+    inviter: { id: string; name?: string },
+  ) {
+    await this.inviteRepository.deletePendingByEmail(target.email)
+    if (target.userId) {
+      await this.inviteRepository.deletePendingByUserId(target.userId)
+    }
 
     const token = randomBytes(32).toString('base64url')
     const row = await this.inviteRepository.create({
       id: this.snowflakeService.nextId(),
-      email,
-      displayName: dto.displayName ?? null,
+      email: target.email,
+      displayName: target.displayName,
       tokenHash: hashInviteToken(token),
       invitedBy: inviter.id,
+      userId: target.userId,
       expiresAt: new Date(Date.now() + INVITE_TTL_MS),
     })
     const acceptUrl = await this.buildAcceptUrl(token)
@@ -131,6 +197,17 @@ export class UserInviteService {
 
   async accept(token: string, dto: AcceptInviteDto) {
     const invite = await this.findUsable(token)
+    if (invite.userId) {
+      const converted = await this.userService.convertProfileOnly({
+        userId: invite.userId,
+        email: invite.email,
+        username: dto.username,
+        displayName: dto.displayName,
+        password: dto.password,
+        claimInviteId: invite.id,
+      })
+      return this.userService.toDetail(converted)
+    }
     const created = await this.userService.createWithPassword({
       user: {
         email: invite.email,

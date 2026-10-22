@@ -5,7 +5,7 @@ import {
 } from 'test/helper/pg-verify-url'
 
 import { AppErrorCode } from '~/common/errors'
-import { accounts } from '~/database/schema'
+import { accounts, categories, postAuthors, posts } from '~/database/schema'
 import { CreateAuth } from '~/modules/auth/auth.implement'
 import { UserRepository } from '~/modules/user/user.repository'
 import { UserService } from '~/modules/user/user.service'
@@ -219,5 +219,137 @@ describe('users, invites and sign-in gates (PostgreSQL)', () => {
     await users.reactivate(writer.id)
     await requestReset('writer@example.test')
     expect(sendResetPasswordEmail).toHaveBeenCalledTimes(1)
+  })
+
+  it('upgrades a profile-only author invited by email into the same sign-in account', async () => {
+    const inviter = (await users.list({ search: 'founder', page: 1, size: 1 }))
+      .data[0]
+    const author = await users.createProfileOnly({
+      displayName: 'Imported Author',
+      email: 'imported@example.test',
+    })
+    await context.db
+      .insert(categories)
+      .values({ id: '7001', name: 'Upgrade', slug: 'upgrade' })
+    await context.db.insert(posts).values({
+      id: '7002',
+      title: 'By an imported author',
+      slug: 'by-imported',
+      contentFormat: 'lexical',
+      categoryId: '7001',
+    })
+    await context.db
+      .insert(postAuthors)
+      .values({ postId: '7002', userId: author.id, position: 0 })
+
+    const invite = await invites.create(
+      { email: 'Imported@Example.test' },
+      { id: inviter.id },
+    )
+    expect(invite).toMatchObject({
+      email: 'imported@example.test',
+      userId: author.id,
+      displayName: 'Imported Author',
+    })
+
+    const upgraded = await invites.accept(invite.token, {
+      username: 'imported',
+      password: PASSWORD,
+    })
+    expect(upgraded).toMatchObject({
+      id: author.id,
+      isProfileOnly: false,
+      username: 'imported',
+      displayName: 'Imported Author',
+      email: 'imported@example.test',
+    })
+    const bylines = await context.pool.query(
+      'SELECT user_id FROM post_authors WHERE post_id = $1',
+      ['7002'],
+    )
+    expect(bylines.rows).toEqual([{ user_id: author.id }])
+    const session = await signIn('imported@example.test')
+    expect(session.user.id).toBe(author.id)
+  })
+
+  it('invites a profile-only author by id with a new email', async () => {
+    const inviter = (await users.list({ search: 'founder', page: 1, size: 1 }))
+      .data[0]
+    const author = await users.createProfileOnly({ displayName: 'No Email' })
+
+    await expect(
+      invites.inviteExisting(author.id, {}, { id: inviter.id }),
+    ).rejects.toMatchObject({ code: AppErrorCode.INVALID_PARAMETER })
+    await expect(
+      invites.inviteExisting(
+        author.id,
+        { email: 'founder@example.test' },
+        { id: inviter.id },
+      ),
+    ).rejects.toMatchObject({ code: AppErrorCode.USER_CONFLICT })
+
+    const invite = await invites.inviteExisting(
+      author.id,
+      { email: 'no-email@example.test' },
+      { id: inviter.id },
+    )
+    expect(invite).toMatchObject({
+      userId: author.id,
+      email: 'no-email@example.test',
+      displayName: 'No Email',
+    })
+
+    const upgraded = await invites.accept(invite.token, {
+      username: 'no-email',
+      password: PASSWORD,
+      displayName: 'Has Email Now',
+    })
+    expect(upgraded).toMatchObject({
+      id: author.id,
+      isProfileOnly: false,
+      email: 'no-email@example.test',
+      displayName: 'Has Email Now',
+    })
+    await expect(signIn('no-email@example.test')).resolves.toMatchObject({
+      user: { id: author.id },
+    })
+  })
+
+  it('still refuses to invite an email that already signs in', async () => {
+    const inviter = (await users.list({ search: 'founder', page: 1, size: 1 }))
+      .data[0]
+
+    await expect(
+      invites.create({ email: 'founder@example.test' }, { id: inviter.id }),
+    ).rejects.toMatchObject({ code: AppErrorCode.USER_CONFLICT })
+    await expect(
+      invites.inviteExisting(inviter.id, {}, { id: inviter.id }),
+    ).rejects.toMatchObject({ code: AppErrorCode.USER_CONFLICT })
+  })
+
+  it('refuses to convert an author that stopped being profile-only before acceptance', async () => {
+    const inviter = (await users.list({ search: 'founder', page: 1, size: 1 }))
+      .data[0]
+    const author = await users.createProfileOnly({
+      displayName: 'Raced',
+      email: 'raced@example.test',
+    })
+    const invite = await invites.create(
+      { email: 'raced@example.test' },
+      { id: inviter.id },
+    )
+    await context.pool.query(
+      'UPDATE users SET is_profile_only = false WHERE id = $1',
+      [author.id],
+    )
+
+    await expect(
+      invites.accept(invite.token, { username: 'raced', password: PASSWORD }),
+    ).rejects.toMatchObject({ code: AppErrorCode.USER_CONFLICT })
+    const pending = await context.pool.query(
+      'SELECT accepted_at FROM user_invites WHERE id = $1',
+      [invite.id],
+    )
+    expect(pending.rows[0].accepted_at).toBeNull()
   })
 })

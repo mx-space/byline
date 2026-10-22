@@ -19,6 +19,8 @@ import {
   CreateInviteSchema,
   type CreateProfileOnlyUserDto,
   CreateProfileOnlyUserSchema,
+  type InviteExistingUserDto,
+  InviteExistingUserSchema,
   type UpdateUserDto,
   UpdateUserSchema,
   type UserListQueryDto,
@@ -147,6 +149,20 @@ export class UserController {
     @Body({ schema: UpdateUserSchema }) body: UpdateUserDto,
   ) {
     return this.userService.updateProfile(params.id, body, user.id)
+  }
+
+  @Post('/:id/invite')
+  @Auth()
+  @RequirePermissions(UserPermission.ManageUsers)
+  inviteExisting(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+    @Body({ schema: InviteExistingUserSchema }) body: InviteExistingUserDto,
+  ) {
+    return this.inviteService.inviteExisting(params.id, body, {
+      id: user.id,
+      name: user.name ?? user.username ?? undefined,
+    })
   }
 
   @Post('/:id/deactivate')

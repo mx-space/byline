@@ -221,7 +221,8 @@ CREATE TABLE "user_invites" (
 	"invited_by" text,
 	"expires_at" timestamp with time zone NOT NULL,
 	"accepted_at" timestamp with time zone,
-	"accepted_user_id" text
+	"accepted_user_id" text,
+	"user_id" text
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
@@ -433,6 +434,7 @@ ALTER TABLE "passkeys" ADD CONSTRAINT "passkeys_user_id_users_id_fk" FOREIGN KEY
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_invites" ADD CONSTRAINT "user_invites_invited_by_users_id_fk" FOREIGN KEY ("invited_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_invites" ADD CONSTRAINT "user_invites_accepted_user_id_users_id_fk" FOREIGN KEY ("accepted_user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_invites" ADD CONSTRAINT "user_invites_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "content_document_shares" ADD CONSTRAINT "content_document_shares_document_id_content_documents_id_fk" FOREIGN KEY ("document_id") REFERENCES "public"."content_documents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "content_document_shares" ADD CONSTRAINT "content_document_shares_revision_id_content_revisions_id_fk" FOREIGN KEY ("revision_id") REFERENCES "public"."content_revisions"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "content_document_shares" ADD CONSTRAINT "content_document_shares_draft_id_drafts_id_fk" FOREIGN KEY ("draft_id") REFERENCES "public"."drafts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -479,6 +481,7 @@ CREATE UNIQUE INDEX "sessions_token_uniq" ON "sessions" USING btree ("token");--
 CREATE INDEX "sessions_user_id_idx" ON "sessions" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "user_invites_token_hash_uniq" ON "user_invites" USING btree ("token_hash");--> statement-breakpoint
 CREATE INDEX "user_invites_email_idx" ON "user_invites" USING btree ("email");--> statement-breakpoint
+CREATE INDEX "user_invites_user_id_idx" ON "user_invites" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "users_email_uniq" ON "users" USING btree ("email") WHERE "users"."email" is not null;--> statement-breakpoint
 CREATE UNIQUE INDEX "users_username_uniq" ON "users" USING btree ("username") WHERE "users"."username" is not null;--> statement-breakpoint
 CREATE INDEX "verifications_identifier_idx" ON "verifications" USING btree ("identifier");--> statement-breakpoint

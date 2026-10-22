@@ -11,6 +11,7 @@ import {
   or,
   type SQL,
   sql,
+  TransactionRollbackError,
 } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
@@ -259,6 +260,78 @@ export class UserRepository extends BaseRepository {
       }
       return mapRow(row)
     })
+  }
+
+  async convertProfileOnlyWithCredential(input: {
+    userId: string
+    email: string
+    username: string
+    displayName?: string | null
+    accountId: string
+    passwordHash: string
+    claimInviteId: string
+  }): Promise<
+    | { kind: 'converted'; row: UserRow }
+    | { kind: 'invite-unusable' }
+    | { kind: 'not-profile-only' }
+  > {
+    return this.db
+      .transaction(async (tx) => {
+        const claimed = await tx
+          .update(userInvites)
+          .set({ acceptedAt: new Date(), acceptedUserId: input.userId })
+          .where(
+            and(
+              eq(userInvites.id, input.claimInviteId),
+              isNull(userInvites.acceptedAt),
+              sql`${userInvites.expiresAt} > now()`,
+            ),
+          )
+          .returning({ id: userInvites.id })
+        if (claimed.length === 0) return { kind: 'invite-unusable' as const }
+
+        const update: Partial<typeof users.$inferInsert> = {
+          email: input.email,
+          emailVerified: true,
+          username: input.username,
+          handle: input.username,
+          isProfileOnly: false,
+          updatedAt: new Date(),
+        }
+        if (input.displayName) {
+          update.name = input.displayName
+          update.displayUsername = input.displayName
+        }
+        const [row] = await tx
+          .update(users)
+          .set(update)
+          .where(
+            and(
+              eq(users.id, input.userId),
+              eq(users.isProfileOnly, true),
+              isNull(users.deactivatedAt),
+            ),
+          )
+          .returning()
+        if (!row) {
+          tx.rollback()
+        }
+        await tx.insert(accounts).values({
+          id: input.accountId,
+          userId: row.id,
+          accountId: row.id,
+          providerId: 'credential',
+          providerAccountId: row.id,
+          password: input.passwordHash,
+        })
+        return { kind: 'converted' as const, row: mapRow(row) }
+      })
+      .catch((error: unknown) => {
+        if (error instanceof TransactionRollbackError) {
+          return { kind: 'not-profile-only' as const }
+        }
+        throw error
+      })
   }
 
   async updateProfile(
