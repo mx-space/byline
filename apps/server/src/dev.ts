@@ -20,7 +20,8 @@ import cluster from 'node:cluster'
 
 async function main() {
   if (cluster.isPrimary) {
-    const { runSchemaMigrations } = await import('./migrate')
+    const { runSchemaMigrations } =
+      await import('./database/run-schema-migrations')
     await runSchemaMigrations()
   }
   const { startMain } = await import('./main')
