@@ -2,16 +2,18 @@
 
 import { beforeEach, expect, it, vi } from 'vitest'
 
-import { registerDynamicComponent } from './dynamic-catalog'
+import {
+  isAllowedDynamicUrl,
+  registerDynamicComponent,
+} from './dynamic-catalog'
 
-const getSnippetByPath = vi.fn()
-const createSnippet = vi.fn()
-const updateSnippet = vi.fn()
+const registerDynamicComponentEntry = vi.fn()
 vi.mock('~/constants/env', () => ({ API_URL: 'https://api.example' }))
-vi.mock('~/api/snippets', () => ({
-  getSnippetByPath: (...args: unknown[]) => getSnippetByPath(...args),
-  createSnippet: (...args: unknown[]) => createSnippet(...args),
-  updateSnippet: (...args: unknown[]) => updateSnippet(...args),
+vi.mock('~/api/dynamic-components', () => ({
+  getDynamicComponents: vi.fn(),
+  getDynamicComponentsUrl: () => 'https://api.example/dynamic-components',
+  registerDynamicComponentEntry: (...args: unknown[]) =>
+    registerDynamicComponentEntry(...args),
 }))
 
 const entry = {
@@ -24,46 +26,38 @@ const entry = {
 
 beforeEach(() => vi.resetAllMocks())
 
-it('reads the exact catalog path and preserves existing entries when adding another component', async () => {
-  const original = {
+it('registers through the server append endpoint and allows every catalog url it returns', async () => {
+  const existing = {
     ...entry,
     name: 'Existing',
     url: 'https://cdn.example/existing.js',
   }
-  getSnippetByPath.mockResolvedValue({
-    id: 'catalog',
-    path: 'dynamic-widgets-catalog',
-    type: 'json',
-    raw: JSON.stringify({ version: 1, components: [original] }),
+  registerDynamicComponentEntry.mockResolvedValue({
+    version: 1,
+    components: [existing, entry],
   })
-  await registerDynamicComponent(entry)
-  expect(getSnippetByPath).toHaveBeenCalledWith('dynamic-widgets-catalog')
-  expect(createSnippet).not.toHaveBeenCalled()
-  const [id, body] = updateSnippet.mock.calls[0]
-  expect(id).toBe('catalog')
-  expect(body.path).toBe('dynamic-widgets-catalog')
-  expect(JSON.parse(body.raw).components).toEqual([original, entry])
 
-  getSnippetByPath.mockResolvedValue({ id, ...body })
+  expect(isAllowedDynamicUrl(entry.url)).toBe(false)
   await registerDynamicComponent(entry)
-  expect(updateSnippet).toHaveBeenCalledTimes(1)
+
+  expect(registerDynamicComponentEntry).toHaveBeenCalledWith(entry)
+  expect(isAllowedDynamicUrl(entry.url)).toBe(true)
+  expect(isAllowedDynamicUrl(existing.url)).toBe(true)
 })
 
-it('creates a public catalog only when absent and never overwrites malformed existing data', async () => {
-  getSnippetByPath.mockResolvedValueOnce(null)
-  await registerDynamicComponent(entry)
-  expect(createSnippet).toHaveBeenCalledWith(
-    expect.objectContaining({
-      private: false,
-      path: 'dynamic-widgets-catalog',
-    }),
+it('propagates a failed registration without allowing the url', async () => {
+  const rejected = { ...entry, url: 'https://cdn.example/rejected.js' }
+  registerDynamicComponentEntry.mockRejectedValue(new Error('boom'))
+
+  await expect(registerDynamicComponent(rejected)).rejects.toThrow('boom')
+  expect(isAllowedDynamicUrl(rejected.url)).toBe(false)
+})
+
+it('allows same-origin object storage urls without a catalog entry', () => {
+  expect(isAllowedDynamicUrl('https://api.example/objects/widget.js')).toBe(
+    true,
   )
-  getSnippetByPath.mockResolvedValueOnce({
-    raw: '{"components":"invalid","version":1}',
-  })
-  await expect(registerDynamicComponent(entry)).rejects.toThrow(
-    'Invalid dynamic component catalog',
+  expect(isAllowedDynamicUrl('https://evil.example/objects/widget.js')).toBe(
+    false,
   )
-  expect(updateSnippet).not.toHaveBeenCalled()
-  expect(createSnippet).toHaveBeenCalledTimes(1)
 })

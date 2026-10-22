@@ -20,8 +20,6 @@ export function createDynamicPublisher(
   store: AgentStore,
   getEditor: () => LexicalEditor | null,
 ) {
-  // ponytail: serialize this editor's catalog updates; use a server-side atomic
-  // append if simultaneous adoption across multiple admins becomes necessary.
   let publishing = false
   return async (item: ToolCallGroupItem) => {
     if (publishing) throw new Error(translate('write.agent.dynamic.busy'))
