@@ -165,6 +165,19 @@ pnpm dev          # API server on :2333, routes without the /api/v3 prefix
 pnpm dev:admin    # admin dev server on :9528
 ```
 
+## CI and releases
+
+`.github/workflows/ci.yml` runs lint, typecheck, the envelope and `validate: false` checks, the migration linter and every test suite on pushes and pull requests to `main`. Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds `linux/amd64` and `linux/arm64` images, pushes them to Docker Hub as `innei/byline` (semver tags plus `latest` for stable versions) and creates a GitHub Release.
+
+Required repository secrets:
+
+| Secret | Used for |
+| --- | --- |
+| `DOCKERHUB_USERNAME` | Docker Hub login for the image push |
+| `DOCKERHUB_TOKEN` | Docker Hub access token with write access to `innei/byline` |
+
+Both workflows install from the registry, so the `link:` overrides for `@mx-space/*` in `pnpm-workspace.yaml` must be replaced with published versions before CI or a release can pass.
+
 ## License
 
 [MIT](./LICENSE) © Innei
