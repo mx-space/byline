@@ -1,10 +1,10 @@
 /**
- * Yohaku consumer contract: category list + detail.
+ * Consumer contract: category list + detail.
  *
  * Drives:
  *   - `apiClient.category.getAllCategories()`        — `data[].id/slug/name`
  *   - `apiClient.category.getCategoryByIdOrSlug()`   — `{ data: {...res, count,
- *     children, tagsSum} }`. Yohaku reads `data.name/count/children/tagsSum`,
+ *     children, tagsSum} }`. Consumers read `data.name/count/children/tagsSum`,
  *     `children[*].pin/created/title/slug/category/count/text/summary/images/
  *     tags/modified`.
  *   - `apiClient.category.getCategoryDetail`         — `{ entries: { id: { ...
@@ -102,7 +102,7 @@ const postServiceProvider = {
   },
 }
 
-describe('Yohaku contract — category (e2e)', () => {
+describe('Consumer contract — category (e2e)', () => {
   const proxy = createE2EApp({
     controllers: [CategoryController],
     providers: [
@@ -113,7 +113,7 @@ describe('Yohaku contract — category (e2e)', () => {
     ],
   })
 
-  test('GET /categories — list, items expose nav fields Yohaku reads', async () => {
+  test('GET /categories — list, items expose nav fields consumers read', async () => {
     const res = await proxy.app.inject({
       method: 'GET',
       url: `${apiRoutePrefix}/categories`,

@@ -9,8 +9,8 @@ response envelope, case-normalization, migration authoring, etc.).
 The AI subsystem (`apps/server/src/modules/ai/`) was migrated off `ai`/`openai`/
 `@anthropic-ai/sdk` and onto `@earendil-works/pi-ai` in a single atomic PR.
 The runtime, prompt-validation, and SSE-wire-format expectations below are
-load-bearing — drifting any of them silently breaks Shiro/Yohaku consumers or
-admin chat.
+load-bearing — drifting any of them silently breaks consumers or admin
+chat.
 
 ### Runtime — `modules/ai/runtime/`
 
@@ -71,7 +71,7 @@ Two distinct SSE protocols live side-by-side; both are byte-pinned.
    imported directly by both the controller and `apps/admin`'s transport. The
    server has NO reverse dependency on the client lib. `@mx-space/api-client`
    does NOT export this type: it is an admin-only wire contract, not part of
-   the public api-client surface consumed by Shiro/Yohaku. Drift fails tsc.
+   the public api-client surface consumers use. Drift fails tsc.
    - Frames: `text_start | text_delta | text_end | thinking_start |
      thinking_delta | thinking_end | toolcall_start | toolcall_delta |
      toolcall_end | done | error`. Each frame carries a monotonic

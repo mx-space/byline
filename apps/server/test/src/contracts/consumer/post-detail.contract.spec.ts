@@ -21,8 +21,8 @@ import {
 
 const fixturePost = (overrides: Record<string, unknown> = {}) => ({
   id: '7000000000000000050',
-  title: 'Yohaku Post',
-  slug: 'yohaku-post',
+  title: 'Consumer Post',
+  slug: 'consumer-post',
   text: '# body',
   content: '{"root":{"children":[]}}',
   contentFormat: 'lexical',
@@ -118,7 +118,7 @@ describe('consumer contract — post detail (e2e)', () => {
   test('GET /posts/:category/:slug — exposes the fields consumers render', async () => {
     const res = await proxy.app.inject({
       method: 'GET',
-      url: `${apiRoutePrefix}/posts/tech/yohaku-post`,
+      url: `${apiRoutePrefix}/posts/tech/consumer-post`,
     })
     expect(res.statusCode).toBe(200)
     const body = res.json()

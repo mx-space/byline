@@ -1,5 +1,5 @@
 /**
- * Yohaku consumer contract: post list (`/posts` route).
+ * Consumer contract: post list (`/posts` route).
  *
  * Drives `apiClient.post.getList()` consumed by:
  *   - `app/[locale]/posts/page.tsx` — `data.findIndex(p => p.pin)`,
@@ -7,7 +7,7 @@
  *   - `PostListItem.tsx`            — `data.title/slug/category/tags/created/
  *                                     modified/count.{read,like}/summary/text`
  *
- * Server emits `pin_at` not `pin` (legacy). Yohaku stale read of `.pin` is
+ * Server emits `pin_at` not `pin` (legacy). A consumer's stale read of `.pin` is
  * reported separately; this spec asserts PG-shape surface is complete.
  */
 import { describe, expect, test } from 'vitest'
@@ -107,7 +107,7 @@ const aiTtsQueryProvider = {
   },
 }
 
-describe('Yohaku contract — post list (e2e)', () => {
+describe('Consumer contract — post list (e2e)', () => {
   const proxy = createE2EApp({
     controllers: [PostController],
     providers: [
@@ -120,7 +120,7 @@ describe('Yohaku contract — post list (e2e)', () => {
     ],
   })
 
-  test('GET /posts — list items expose every field Yohaku reads', async () => {
+  test('GET /posts — list items expose every field Consumers read', async () => {
     const res = await proxy.app.inject({
       method: 'GET',
       url: `${apiRoutePrefix}/posts`,
