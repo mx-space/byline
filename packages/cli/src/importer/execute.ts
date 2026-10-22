@@ -9,7 +9,7 @@ import {
 
 import { AssetUploader, findLocalAssets } from './assets'
 import type { ImportConfig } from './config'
-import type { PlannedPost } from './plan'
+import type { PlannedPost, PostSeoInput } from './plan'
 import { AuthorResolver, CategoryResolver, type ResolvedRef } from './resolvers'
 
 export type PostAction = 'create' | 'update' | 'unchanged' | 'skip' | 'error'
@@ -51,6 +51,20 @@ const readImportMeta = (post: Post | null): ImportMeta | undefined => {
   const value = post?.meta?.[IMPORT_META_KEY]
   return value && typeof value === 'object' ? (value as ImportMeta) : undefined
 }
+
+const resolveSeo = async (
+  seo: PostSeoInput | undefined,
+  uploader: AssetUploader,
+  baseDir: string,
+) =>
+  seo
+    ? {
+        ...seo,
+        ...(seo.image
+          ? { image: await uploader.resolveUrl(seo.image, baseDir) }
+          : {}),
+      }
+    : null
 
 const findExisting = async (client: BylineClient, slug: string) => {
   const found = await client.posts.findBySlug(slug)
@@ -129,7 +143,7 @@ export const executeImport = async (
         ...(authorIds.length ? { authors: authorIds } : {}),
         sourceLang: post.sourceLocale,
         image,
-        seo: post.seo ?? null,
+        seo: await resolveSeo(post.seo, uploader, baseDir),
         meta: {
           ...existing?.meta,
           [IMPORT_META_KEY]: { source: post.sourceFile!, hash: post.hash },
@@ -153,6 +167,7 @@ export const executeImport = async (
           summary: translation.summary ?? null,
           tags: translation.tags,
           sourceLang: post.sourceLocale,
+          seo: await resolveSeo(translation.seo, uploader, baseDir),
         })
       }
     } catch (error) {

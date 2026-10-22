@@ -9,6 +9,7 @@ export interface ImportSummary {
   sourceLocale: string
   locales: Record<string, number>
   translationFiles: number
+  seo: { posts: number; translations: number }
   authors: { keys: number; existing: number; create: number; list: unknown[] }
   categories: { existing: number; create: number; list: unknown[] }
   components: Record<string, { count: number; target: string }>
@@ -49,17 +50,20 @@ export const summarize = (
   const unmapped: Record<string, { count: number; posts: Set<string> }> = {}
   const issues: Record<string, number> = {}
   let translationFiles = 0
+  const seo = { posts: 0, translations: 0 }
 
   for (const post of plan) {
     if (post.document) {
       locales[post.sourceLocale] = (locales[post.sourceLocale] ?? 0) + 1
     }
+    if (post.seo) seo.posts++
     const documents = [
       ...(post.document ? [post.document] : []),
       ...post.translations.map((item) => item.document),
     ]
     for (const translation of post.translations) {
       translationFiles++
+      if (translation.seo) seo.translations++
       locales[translation.locale] = (locales[translation.locale] ?? 0) + 1
     }
     for (const document of documents) {
@@ -84,6 +88,7 @@ export const summarize = (
     sourceLocale: plan[0]?.sourceLocale ?? '',
     locales,
     translationFiles,
+    seo,
     authors: {
       keys: result.authors.length,
       existing: result.authors.filter((ref) => ref.action === 'existing')
@@ -130,6 +135,7 @@ export const formatSummary = (summary: ImportSummary): string => {
   const lines = [
     `Posts: ${posts.found} found; ${verb} create ${posts.create}, update ${posts.update}; unchanged ${posts.unchanged}, skipped ${posts.skip}, errors ${posts.error}`,
     `Locales: ${Object.keys(summary.locales).length} (source ${summary.sourceLocale}); ${summary.translationFiles} translation files [${list(summary.locales)}]`,
+    `SEO: ${summary.seo.posts} posts, ${summary.seo.translations} translations`,
     `Authors: ${summary.authors.keys} keys; ${summary.authors.existing} existing, ${verb} create ${summary.authors.create} profile-only`,
     `Categories: ${summary.categories.existing} existing, ${verb} create ${summary.categories.create}`,
     `Components: ${

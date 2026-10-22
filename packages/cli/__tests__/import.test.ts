@@ -44,7 +44,17 @@ beforeAll(async () => {
   await write('news/hello-world/cover.png', 'png')
   await write(
     'news/hello-world/index.zh.mdx',
-    post('title: 你好\nseo:\n  tags: [介绍]', '你好世界'),
+    post(
+      [
+        'title: 你好',
+        'seo:',
+        '  title: 你好 SEO',
+        '  description: 问候',
+        '  image: ./cover.png',
+        '  tags: [介绍]',
+      ].join('\n'),
+      '你好世界',
+    ),
   )
   await write(
     'news/hello-world/index.pt_br.mdx',
@@ -235,9 +245,13 @@ describe('import', () => {
       authorKeys: ['ada', 'grace'],
       createdAt: '2024-06-19T00:00:00.000Z',
     })
-    expect(hello.translations.map((t) => [t.locale, t.title])).toEqual([
-      ['pt-BR', 'Olá'],
-      ['zh-CN', '你好'],
+    expect(hello.translations.map((t) => [t.locale, t.title, t.seo])).toEqual([
+      ['pt-BR', 'Olá', undefined],
+      [
+        'zh-CN',
+        '你好',
+        { title: '你好 SEO', description: '问候', image: './cover.png' },
+      ],
     ])
     expect(plan.find((item) => item.key === 'orphan')?.skipReason).toBe(
       'no en source file',
@@ -315,7 +329,19 @@ describe('import', () => {
     ])
     expect(
       translations.find((call) => call.path.endsWith('zh-CN'))?.body,
-    ).toMatchObject({ title: '你好', tags: ['介绍'], sourceLang: 'en' })
+    ).toMatchObject({
+      title: '你好',
+      tags: ['介绍'],
+      sourceLang: 'en',
+      seo: {
+        title: '你好 SEO',
+        description: '问候',
+        image: 'https://cdn.test/cover.png',
+      },
+    })
+    expect(
+      translations.find((call) => call.path.endsWith('pt-BR'))?.body.seo,
+    ).toBeNull()
 
     calls.length = 0
     const second = await executeImport(plan, config, {

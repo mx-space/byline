@@ -18,6 +18,7 @@ export interface PlannedTranslation {
   title: string
   summary?: string
   tags: string[]
+  seo?: PostSeoInput
   document: ConvertedDocument
 }
 
@@ -85,6 +86,19 @@ const extractMeta = (frontmatter: Record<string, unknown>) => {
   }
 }
 
+const extractSeo = (
+  frontmatter: Record<string, unknown>,
+): PostSeoInput | undefined => {
+  const record = asRecord(frontmatter.seo)
+  const entries = Object.entries({
+    title: asString(record.title),
+    description:
+      asString(record.description) ?? asString(frontmatter.description),
+    image: asString(record.image),
+  }).filter(([, value]) => value !== undefined)
+  return entries.length ? Object.fromEntries(entries) : undefined
+}
+
 const isDraft = (frontmatter: Record<string, unknown>) =>
   frontmatter.draft === true || frontmatter.published === false
 
@@ -139,13 +153,7 @@ export const planImport = async (
     const document = await convertFile(post.source, config)
     const frontmatter = document.frontmatter
     const meta = extractMeta(frontmatter)
-    const seoRecord = asRecord(frontmatter.seo)
-    const seo: PostSeoInput = {
-      title: asString(seoRecord.title),
-      description:
-        asString(seoRecord.description) ?? asString(frontmatter.description),
-      image: asString(seoRecord.image),
-    }
+    const seo = extractSeo(frontmatter)
     const authorKeys = asStringList(frontmatter.author ?? frontmatter.authors)
 
     const entry: PlannedPost = {
@@ -163,8 +171,10 @@ export const planImport = async (
         frontmatter.date ?? frontmatter.createdAt ?? frontmatter.publishedAt,
       ),
       image:
-        asString(frontmatter.image) ?? asString(frontmatter.cover) ?? seo.image,
-      seo: Object.values(seo).some(Boolean) ? seo : undefined,
+        asString(frontmatter.image) ??
+        asString(frontmatter.cover) ??
+        seo?.image,
+      seo,
       authorKeys: authorKeys.length ? authorKeys : config.defaultAuthors,
       document,
       issues: [...base.issues, ...tagIssues(document, post.source.relPath)],
@@ -188,6 +198,7 @@ export const planImport = async (
         title: translatedMeta.title,
         summary: translatedMeta.summary,
         tags: translatedMeta.tags,
+        seo: extractSeo(translated.frontmatter),
         document: translated,
       })
     }
@@ -213,6 +224,7 @@ export const planImport = async (
         title: translation.title,
         summary: translation.summary,
         tags: translation.tags,
+        seo: translation.seo,
         content: translation.document.state,
       })),
     })
