@@ -5,7 +5,7 @@ import type { BylineClient, FileType } from '@mx-space/byline-api-client'
 
 import type { LexicalNode, LexicalState } from '../mdx/lexical-nodes'
 
-const REMOTE = /^(?:[a-z][\d+.a-z-]*:|\/\/|#)/i
+const REMOTE = /^(?:[a-z][\d+.a-z-]*:|\/|#)/i
 const MEDIA_FIELDS: Record<string, Array<{ key: string; type: FileType }>> = {
   image: [{ key: 'src', type: 'image' }],
   video: [

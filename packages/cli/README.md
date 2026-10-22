@@ -31,7 +31,7 @@ also looks up existing posts, users and categories (read-only).
 | --------------------------------------------- | ------------------------------------------------ |
 | `title` (or `seo.title`)                      | post title                                       |
 | `date` / `createdAt`                          | creation time, sent only with `--preserve-dates` |
-| `image` / `cover`                             | cover image (local paths are uploaded)           |
+| `image` / `cover`                             | cover image (relative paths are uploaded)        |
 | `author` / `authors`                          | author keys, in byline order                     |
 | `seo.title`, `seo.description`, `seo.image`   | post SEO                                         |
 | `tags` / `seo.tags`                           | tags                                             |
