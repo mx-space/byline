@@ -191,4 +191,31 @@ describe('users, invites and sign-in gates (PostgreSQL)', () => {
     )
     expect(sessions.rows[0].count).toBe(0)
   })
+
+  it('sends password reset mail only to users who can sign in', async () => {
+    const sendResetPasswordEmail = vi.fn(async () => {})
+    const { auth: mailingAuth } = await CreateAuth(
+      {},
+      undefined,
+      'http://127.0.0.1:2333',
+      snowflake,
+      undefined,
+      sendResetPasswordEmail,
+    )
+    const requestReset = (email: string) =>
+      mailingAuth.api.requestPasswordReset({
+        body: { email, redirectTo: 'https://admin.example.test/' },
+      })
+
+    await requestReset('guest@example.test')
+    const writer = (await users.list({ search: 'writer', page: 1, size: 1 }))
+      .data[0]
+    await users.deactivate(writer.id)
+    await requestReset('writer@example.test')
+    expect(sendResetPasswordEmail).not.toHaveBeenCalled()
+
+    await users.reactivate(writer.id)
+    await requestReset('writer@example.test')
+    expect(sendResetPasswordEmail).toHaveBeenCalledTimes(1)
+  })
 })

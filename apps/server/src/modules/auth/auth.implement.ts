@@ -301,6 +301,11 @@ export async function CreateAuth(
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: sendResetPasswordEmail
         ? async ({ user, url }) => {
+            const { isProfileOnly, deactivatedAt } = user as {
+              isProfileOnly?: boolean
+              deactivatedAt?: Date | null
+            }
+            if (isProfileOnly || deactivatedAt) return
             await sendResetPasswordEmail({ user, url })
           }
         : undefined,
