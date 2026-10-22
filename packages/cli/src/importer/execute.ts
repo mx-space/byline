@@ -66,7 +66,8 @@ export const executeImport = async (
   if (!client && !dryRun) throw new Error('An API client is required to import')
   const authors = new AuthorResolver(client, config.authors, dryRun)
   const categories = new CategoryResolver(client, config.categories, dryRun)
-  const uploader = client && !dryRun ? new AssetUploader(client) : null
+  const uploader =
+    client && !dryRun ? new AssetUploader(client, config.siteUrl) : null
   const outcomes: PostOutcome[] = []
 
   for (const post of plan) {

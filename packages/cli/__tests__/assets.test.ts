@@ -26,4 +26,28 @@ describe('local asset detection', () => {
     ).resolves.toBe('/images/cover.png')
     expect(upload).not.toHaveBeenCalled()
   })
+
+  it('resolves site-absolute paths against siteUrl', async () => {
+    const upload = vi.fn()
+    const uploader = new AssetUploader(
+      { files: { upload } } as any,
+      'https://lobehub.com',
+    )
+    await expect(
+      uploader.resolveUrl('/api/dynamic-og/blog-hero?color=cyan', '/content'),
+    ).resolves.toBe('https://lobehub.com/api/dynamic-og/blog-hero?color=cyan')
+    const state = await uploader.rewrite(
+      {
+        root: {
+          type: 'root',
+          children: [{ type: 'image', src: '/images/a.png' }],
+        },
+      } as any,
+      '/content',
+    )
+    expect((state.root.children as any)[0].src).toBe(
+      'https://lobehub.com/images/a.png',
+    )
+    expect(upload).not.toHaveBeenCalled()
+  })
 })

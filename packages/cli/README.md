@@ -31,7 +31,7 @@ also looks up existing posts, users and categories (read-only).
 | --------------------------------------------- | ------------------------------------------------ |
 | `title` (or `seo.title`)                      | post title                                       |
 | `date` / `createdAt`                          | creation time, sent only with `--preserve-dates` |
-| `image` / `cover`                             | cover image (relative paths are uploaded)        |
+| `image` / `cover`                             | cover image (see image paths below)              |
 | `author` / `authors`                          | author keys, in byline order                     |
 | `seo.title`, `seo.description`, `seo.image`   | post SEO                                         |
 | `tags` / `seo.tags`                           | tags                                             |
@@ -65,9 +65,15 @@ or paths relative to the config file.
   "components": "./components.json",
   "authors": "./authors.json",
   "categories": { "product": { "name": "Product" } },
-  "defaultAuthors": ["team"]
+  "defaultAuthors": ["team"],
+  "siteUrl": "https://example.com"
 }
 ```
+
+Image paths in frontmatter and the body are handled by kind: relative paths
+(`./hero.png`) are uploaded to Byline, URLs are kept, and site-absolute paths
+(`/images/hero.png`) are resolved against `siteUrl`. Without `siteUrl` they are
+kept as-is, which Byline accepts in the body but not as a post cover.
 
 The component map turns JSX components into haklex nodes:
 

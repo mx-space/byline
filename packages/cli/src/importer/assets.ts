@@ -6,6 +6,7 @@ import type { BylineClient, FileType } from '@mx-space/byline-api-client'
 import type { LexicalNode, LexicalState } from '../mdx/lexical-nodes'
 
 const REMOTE = /^(?:[a-z][\d+.a-z-]*:|\/|#)/i
+const SITE_ABSOLUTE = /^\/(?!\/)/
 const MEDIA_FIELDS: Record<string, Array<{ key: string; type: FileType }>> = {
   image: [{ key: 'src', type: 'image' }],
   video: [
@@ -22,44 +23,66 @@ export interface LocalAssetRef {
   value: string
 }
 
-const visit = (value: unknown, refs: LocalAssetRef[]) => {
+const visit = (
+  value: unknown,
+  refs: LocalAssetRef[],
+  include: (src: string) => boolean,
+) => {
   if (Array.isArray(value)) {
-    for (const item of value) visit(item, refs)
+    for (const item of value) visit(item, refs, include)
     return
   }
   if (!value || typeof value !== 'object') return
   const node = value as LexicalNode
   for (const field of MEDIA_FIELDS[node.type] ?? []) {
     const src = node[field.key]
-    if (typeof src === 'string' && src && !REMOTE.test(src)) {
+    if (typeof src === 'string' && src && include(src)) {
       refs.push({ node, key: field.key, type: field.type, value: src })
     }
   }
   for (const item of Object.values(node)) {
-    if (item && typeof item === 'object') visit(item, refs)
+    if (item && typeof item === 'object') visit(item, refs, include)
   }
 }
 
-export const findLocalAssets = (state: LexicalState): LocalAssetRef[] => {
+const collectAssets = (
+  state: LexicalState,
+  include: (src: string) => boolean,
+): LocalAssetRef[] => {
   const refs: LocalAssetRef[] = []
-  visit(state.root, refs)
+  visit(state.root, refs, include)
   return refs
 }
+
+export const findLocalAssets = (state: LexicalState) =>
+  collectAssets(state, (src) => !REMOTE.test(src))
 
 export class AssetUploader {
   private readonly uploaded = new Map<string, Promise<string>>()
 
-  constructor(private readonly client: BylineClient) {}
+  constructor(
+    private readonly client: BylineClient,
+    private readonly siteUrl?: string,
+  ) {}
 
   async rewrite(state: LexicalState, baseDir: string): Promise<LexicalState> {
     const copy = structuredClone(state)
-    for (const ref of findLocalAssets(copy)) {
+    const refs = collectAssets(
+      copy,
+      (src) => SITE_ABSOLUTE.test(src) || !REMOTE.test(src),
+    )
+    for (const ref of refs) {
       ref.node[ref.key] = await this.resolveUrl(ref.value, baseDir, ref.type)
     }
     return copy
   }
 
   resolveUrl(value: string, baseDir: string, type: FileType = 'image') {
+    if (SITE_ABSOLUTE.test(value)) {
+      return Promise.resolve(
+        this.siteUrl ? new URL(value, this.siteUrl).href : value,
+      )
+    }
     if (REMOTE.test(value)) return Promise.resolve(value)
     const absPath = path.resolve(
       baseDir,

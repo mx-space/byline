@@ -30,6 +30,7 @@ export interface ImportConfig {
   categories: Record<string, CategoryProfile>
   defaultCategory?: string
   defaultAuthors: string[]
+  siteUrl?: string
 }
 
 export interface ImportConfigOverrides {
@@ -45,6 +46,14 @@ export interface ImportConfigOverrides {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
+
+const parseSiteUrl = (value: unknown): string | undefined => {
+  if (value === undefined) return undefined
+  if (typeof value !== 'string' || !URL.canParse(value)) {
+    throw new Error('siteUrl must be an absolute URL')
+  }
+  return value
+}
 
 const readJson = async (file: string): Promise<unknown> => {
   try {
@@ -134,5 +143,6 @@ export const loadImportConfig = async (
         ? file.defaultCategory
         : undefined),
     defaultAuthors,
+    siteUrl: parseSiteUrl(file.siteUrl),
   }
 }
