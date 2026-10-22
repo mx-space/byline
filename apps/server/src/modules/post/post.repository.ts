@@ -93,11 +93,16 @@ export class PostRepository extends BaseRepository {
     return this.hydrateOne(mapBase(row))
   }
 
-  async findBySlug(slug: string): Promise<PostRow | null> {
+  async findBySlug(
+    slug: string,
+    options: { publishedOnly?: boolean } = {},
+  ): Promise<PostRow | null> {
+    const filters: SQL[] = [eq(posts.slug, slug)]
+    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
     const [row] = await this.db
       .select()
       .from(posts)
-      .where(eq(posts.slug, slug))
+      .where(and(...filters))
       .limit(1)
     if (!row) return null
     return this.hydrateOne(mapBase(row))

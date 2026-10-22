@@ -96,4 +96,24 @@ describe('PostRepository public visibility filters', () => {
     expect(sharedPosts).toHaveLength(1)
     expect(sharedPosts[0].slug).toBe('public')
   })
+
+  test('slug lookups can exclude unpublished posts', async () => {
+    const category = await categoryRepository.create({
+      name: 'tech',
+      slug: 'tech',
+    })
+    await db.insert(posts).values({
+      id: snowflake.nextId(),
+      title: 'private',
+      slug: 'private',
+      contentFormat: 'lexical',
+      categoryId: category.id,
+      isPublished: false,
+    })
+
+    expect((await postRepository.findBySlug('private'))?.slug).toBe('private')
+    expect(
+      await postRepository.findBySlug('private', { publishedOnly: true }),
+    ).toBeNull()
+  })
 })

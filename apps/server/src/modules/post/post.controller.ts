@@ -35,11 +35,13 @@ import {
   PostDetailQuerySchema,
   type PostPagerDto,
   PostPagerSchema,
+  type PostSlugDto,
+  PostSlugSchema,
   type SetPostPublishStatusDto,
   SetPostPublishStatusSchema,
 } from './post.schema'
 import { PostService } from './post.service'
-import type { PostModel } from './post.types'
+import type { PostModel, PostRow } from './post.types'
 import { PostMetaBuilder } from './post-meta-builder'
 
 const CATEGORY_NAME_RULES: ReadonlyArray<EntryRule> = [
@@ -218,6 +220,21 @@ export class PostController {
     }
   }
 
+  @Get('/slug/:slug')
+  @BypassCaseTransform(['meta'])
+  async getDetailBySlug(
+    @Param({ schema: PostSlugSchema }) params: PostSlugDto,
+    @Query({ schema: PostDetailQuerySchema }) _query: PostDetailQueryDto,
+    @HasAdminAccess() isAuthenticated?: boolean,
+    @Lang() lang?: string,
+  ) {
+    const postDocument = await this.postService.getPostBySlugOnly(
+      params.slug,
+      isAuthenticated,
+    )
+    return this.buildPublicDetail(postDocument, isAuthenticated, lang)
+  }
+
   @Get('/latest')
   @BypassCaseTransform(['meta'])
   async getLatest(
@@ -318,6 +335,14 @@ export class PostController {
       slug,
       isAuthenticated,
     )
+    return this.buildPublicDetail(postDocument, isAuthenticated, lang)
+  }
+
+  private async buildPublicDetail(
+    postDocument: PostRow | null,
+    isAuthenticated: boolean | undefined,
+    lang: string | undefined,
+  ) {
     if (!postDocument) {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }

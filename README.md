@@ -99,8 +99,11 @@ In production every route is under `/api/v3`. Responses use one envelope: `{ "da
 curl 'https://cms.example.com/api/v3/posts?page=1&size=10'
 curl 'https://cms.example.com/api/v3/posts?author_id=<user id>'
 curl 'https://cms.example.com/api/v3/posts/<category slug>/<post slug>'
+curl 'https://cms.example.com/api/v3/posts/slug/<post slug>'
 curl 'https://cms.example.com/api/v3/posts/<post id>'
 ```
+
+Post slugs are unique across categories, so `GET /posts/slug/<post slug>` returns the same detail as the category route without knowing the category. Old slugs and old category paths still resolve to the current post.
 
 List responses carry `meta.pagination` (`page`, `size`, `total`, `total_pages`).
 

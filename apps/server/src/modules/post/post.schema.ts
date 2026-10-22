@@ -31,17 +31,25 @@ export const PartialPostSchema = z.object({
 
 export type PartialPostDto = z.infer<typeof PartialPostSchema>
 
+const zDecodedSlug = z.preprocess((val) => {
+  if (typeof val === 'string') {
+    return decodeURI(val)
+  }
+  return val
+}, z.string())
+
 export const CategoryAndSlugSchema = z.object({
   category: z.string(),
-  slug: z.preprocess((val) => {
-    if (typeof val === 'string') {
-      return decodeURI(val)
-    }
-    return val
-  }, z.string()),
+  slug: zDecodedSlug,
 })
 
 export type CategoryAndSlugDto = z.infer<typeof CategoryAndSlugSchema>
+
+export const PostSlugSchema = z.object({
+  slug: zDecodedSlug,
+})
+
+export type PostSlugDto = z.infer<typeof PostSlugSchema>
 
 export const PostDetailQuerySchema = z.object({
   lang: zLang,

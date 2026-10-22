@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import { slugTrackers } from '~/database/schema'
@@ -54,6 +54,31 @@ export class SlugTrackerRepository extends BaseRepository {
       .select()
       .from(slugTrackers)
       .where(and(eq(slugTrackers.slug, slug), eq(slugTrackers.type, type))!)
+      .limit(1)
+    return row ? mapRow(row) : null
+  }
+
+  async findLatestByTrailingSlug(
+    slug: string,
+    type: string,
+  ): Promise<SlugTrackerRow | null> {
+    const [row] = await this.db
+      .select()
+      .from(slugTrackers)
+      .where(
+        and(
+          eq(slugTrackers.type, type),
+          eq(
+            sql`right(${slugTrackers.slug}, char_length(${slug}) + 1)`,
+            `/${slug}`,
+          ),
+        )!,
+      )
+      // Snowflake ids stored as text: newest first needs length, then lexical.
+      .orderBy(
+        desc(sql`char_length(${slugTrackers.id})`),
+        desc(slugTrackers.id),
+      )
       .limit(1)
     return row ? mapRow(row) : null
   }

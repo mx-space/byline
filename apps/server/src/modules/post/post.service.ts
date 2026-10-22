@@ -74,8 +74,8 @@ export class PostService implements OnApplicationBootstrap {
     return this.postRepository.findById(id)
   }
 
-  async findBySlug(slug: string) {
-    return this.postRepository.findBySlug(slug)
+  async findBySlug(slug: string, options: { publishedOnly?: boolean } = {}) {
+    return this.postRepository.findBySlug(slug, options)
   }
 
   async findByCategoryAndSlug(
@@ -341,6 +341,26 @@ export class PostService implements OnApplicationBootstrap {
     if (postDocument) return postDocument
 
     const trackedPost = await findTrackedPost()
+    if (trackedPost && !isAuthenticated && !trackedPost.isPublished) {
+      throw createAppException(AppErrorCode.POST_NOT_FOUND, {
+        id: trackedPost.id,
+      })
+    }
+    return trackedPost
+  }
+
+  async getPostBySlugOnly(slug: string, isAuthenticated?: boolean) {
+    const postDocument = await this.findBySlug(slug, {
+      publishedOnly: !isAuthenticated,
+    })
+    if (postDocument) return postDocument
+
+    const tracked =
+      await this.slugTrackerService.findLatestTrackerByTrailingSlug(
+        slug,
+        ArticleTypeEnum.Post,
+      )
+    const trackedPost = tracked ? await this.findById(tracked.targetId) : null
     if (trackedPost && !isAuthenticated && !trackedPost.isPublished) {
       throw createAppException(AppErrorCode.POST_NOT_FOUND, {
         id: trackedPost.id,
