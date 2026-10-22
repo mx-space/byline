@@ -37,13 +37,10 @@ const adminLoginPath = '/proxy/qaqdmin/#/login'
 
 const webTargets = {
   admin: '/dashboard',
-  analytics: '/analyze',
-  comments: '/comments',
+  drafts: '/drafts',
   files: '/files',
-  notes: '/notes',
   posts: '/posts',
-  recently: '/recently',
-  settings: '/settings',
+  settings: '/setting',
 } as const
 
 type WebTarget = keyof typeof webTargets

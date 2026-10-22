@@ -46,7 +46,7 @@ describe('DeviceController web handoff', () => {
 
     await controller.webHandoff(
       'single-use-token',
-      'comments',
+      'posts',
       reply as unknown as FastifyReply,
     )
 
@@ -59,7 +59,7 @@ describe('DeviceController web handoff', () => {
     ])
     expect(reply.header).toHaveBeenCalledWith('cache-control', 'no-store')
     expect(reply.redirect).toHaveBeenCalledWith(
-      'https://mx.example.com/admin#/comments',
+      'https://mx.example.com/admin#/posts',
       302,
     )
   })

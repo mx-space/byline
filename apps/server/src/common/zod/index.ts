@@ -5,7 +5,6 @@ export {
   zMaxLengthString,
   zPinDate,
   zPrefer,
-  zRefTypeTransform,
   zSlug,
 } from './custom'
 export {
