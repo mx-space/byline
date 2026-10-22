@@ -23,12 +23,10 @@ import type {
 } from '../types'
 import type { BuildRichEditorPropsInput } from '../utils/build-rich-editor-props'
 import { buildRichEditorProps } from '../utils/build-rich-editor-props'
-import type { EnrichmentFetcher } from './EnrichmentLinkCardContext'
 import { ReactEditorPane } from './ReactEditorPane'
 
 export interface RichEditorWithAgentProps extends BuildRichEditorPropsInput {
   apiUrl: string
-  fetchEnrichment?: EnrichmentFetcher | null
   onAgentLoopReady?: (loop: AgentLoopHandle | null) => void
   onChange?: (value: SerializedEditorState) => void
   onEditorReady?: (editor: LexicalEditor | null) => void
@@ -137,7 +135,6 @@ export const RichEditorWithAgent = forwardRef<
     <ReactEditorPane
       apiUrl={props.apiUrl}
       editorProps={editorProps}
-      fetchEnrichment={props.fetchEnrichment}
       key={editorKey}
       injectDocumentXml={props.injectDocumentXml}
       onAgentLoopReady={handleAgentLoopReady}

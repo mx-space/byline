@@ -1,4 +1,3 @@
-import './setup-enrichment-linkcard'
 import '@haklex/rich-ext-ai-agent/style.css'
 import '@haklex/rich-ext-nested-doc/style.css'
 import '../core/style'
@@ -38,8 +37,6 @@ import type {
 } from '../types'
 import { AgentLoopCapture } from './AgentLoopCapture'
 import { EditorToolbar } from './EditorToolbar'
-import type { EnrichmentFetcher } from './EnrichmentLinkCardContext'
-import { EnrichmentFetcherProvider } from './EnrichmentLinkCardContext'
 import { NestedDocDialogEditor } from './NestedDocDialogEditor'
 
 export interface ReactEditorPaneProps {
@@ -48,7 +45,6 @@ export interface ReactEditorPaneProps {
   provider: LLMProvider | null
   saveExcalidrawSnapshot: SaveExcalidrawSnapshot
   apiUrl: string
-  fetchEnrichment?: EnrichmentFetcher | null
   onChange?: RichEditorProps['onChange']
   onSubmit?: RichEditorProps['onSubmit']
   onEditorReady?: (editor: LexicalEditor | null) => void
@@ -68,7 +64,6 @@ export function ReactEditorPane({
   provider,
   saveExcalidrawSnapshot,
   apiUrl,
-  fetchEnrichment,
   onChange,
   onSubmit,
   onEditorReady,
@@ -89,50 +84,46 @@ export function ReactEditorPane({
   }
 
   return (
-    <EnrichmentFetcherProvider value={fetchEnrichment ?? null}>
-      <NestedDocDialogEditorProvider value={NestedDocDialogEditor}>
-        <DialogStackProvider>
-          <ExcalidrawConfigProvider
-            saveSnapshot={saveExcalidrawSnapshot}
-            apiUrl={apiUrl}
+    <NestedDocDialogEditorProvider value={NestedDocDialogEditor}>
+      <DialogStackProvider>
+        <ExcalidrawConfigProvider
+          saveSnapshot={saveExcalidrawSnapshot}
+          apiUrl={apiUrl}
+        >
+          <RichEditor
+            {...editorProps}
+            extraNodes={[
+              ...(editorProps.extraNodes || []),
+              ...nestedDocEditNodes,
+              AgentDiffEditNode,
+            ]}
+            header={<EditorToolbar />}
+            floatingToolbarActions={
+              provider ? <AgentAskAIAction onPin={onPinSelection} /> : undefined
+            }
+            onChange={onChange}
+            onSubmit={onSubmit}
+            onEditorReady={handleEditorReady}
           >
-            <RichEditor
-              {...editorProps}
-              extraNodes={[
-                ...(editorProps.extraNodes || []),
-                ...nestedDocEditNodes,
-                AgentDiffEditNode,
-              ]}
-              header={<EditorToolbar />}
-              floatingToolbarActions={
-                provider ? (
-                  <AgentAskAIAction onPin={onPinSelection} />
-                ) : undefined
-              }
-              onChange={onChange}
-              onSubmit={onSubmit}
-              onEditorReady={handleEditorReady}
-            >
-              <DiffReviewOverlayPlugin store={store} />
-              {provider ? <AgentSelectionPinPlugin store={store} /> : null}
-              <AgentLoopCapture
-                editorRef={editorRef}
-                injectDocumentXml={injectDocumentXml}
-                onAgentLoopReady={onAgentLoopReady}
-                plugins={plugins}
-                provider={provider}
-                store={store}
-                tools={tools}
-                toolSystemRole={toolSystemRole}
-                litexmlRegistry={litexmlRegistry}
-                systemMessages={systemMessages}
-              />
-              <NestedDocPlugin />
-              <ImageEditModalPlugin privacy={imageGpsPrivacy} />
-            </RichEditor>
-          </ExcalidrawConfigProvider>
-        </DialogStackProvider>
-      </NestedDocDialogEditorProvider>
-    </EnrichmentFetcherProvider>
+            <DiffReviewOverlayPlugin store={store} />
+            {provider ? <AgentSelectionPinPlugin store={store} /> : null}
+            <AgentLoopCapture
+              editorRef={editorRef}
+              injectDocumentXml={injectDocumentXml}
+              onAgentLoopReady={onAgentLoopReady}
+              plugins={plugins}
+              provider={provider}
+              store={store}
+              tools={tools}
+              toolSystemRole={toolSystemRole}
+              litexmlRegistry={litexmlRegistry}
+              systemMessages={systemMessages}
+            />
+            <NestedDocPlugin />
+            <ImageEditModalPlugin privacy={imageGpsPrivacy} />
+          </RichEditor>
+        </ExcalidrawConfigProvider>
+      </DialogStackProvider>
+    </NestedDocDialogEditorProvider>
   )
 }

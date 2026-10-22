@@ -5,8 +5,6 @@ import type {
   OauthProviderType,
 } from '../types/settings'
 
-const oauthConfiguredIgnoredKeys = new Set(['reviewDemoEnabled'])
-
 export function flattenOauthOptions(
   data: OauthOptions | undefined,
 ): Record<OauthProviderType, FlatOauthProvider> {
@@ -20,10 +18,7 @@ export function flattenOauthOptions(
       return [
         provider.type,
         {
-          configured: Object.entries(publicFields).some(
-            ([key, value]) =>
-              !oauthConfiguredIgnoredKeys.has(key) && Boolean(value),
-          ),
+          configured: Object.values(publicFields).some(Boolean),
           enabled: providerMap.get(provider.type)?.enabled ?? false,
           public: publicFields,
           type: provider.type,

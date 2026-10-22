@@ -1,5 +1,4 @@
 import '@haklex/rich-diff/style.css'
-import '../components/setup-enrichment-linkcard'
 
 import { RichDiff } from '@haklex/rich-diff'
 import { codeSnippetNodes } from '@haklex/rich-ext-code-snippet/static'
@@ -10,8 +9,6 @@ import { nestedDocNodes } from '@haklex/rich-ext-nested-doc/static'
 import type { SerializedEditorState } from 'lexical'
 import { createRoot } from 'react-dom/client'
 
-import type { EnrichmentFetcher } from '../components/EnrichmentLinkCardContext'
-import { EnrichmentFetcherProvider } from '../components/EnrichmentLinkCardContext'
 import { enhancedRendererConfig } from '../core'
 
 const extraNodes = [
@@ -28,7 +25,6 @@ export interface MountRichDiffOptions {
   variant?: 'article' | 'comment' | 'note'
   className?: string
   theme: 'dark' | 'light'
-  fetchEnrichment?: EnrichmentFetcher | null
 }
 
 export interface RichDiffHandle {
@@ -44,17 +40,15 @@ export function mountRichDiff(
 
   const render = (opts: MountRichDiffOptions) => {
     root.render(
-      <EnrichmentFetcherProvider value={opts.fetchEnrichment ?? null}>
-        <RichDiff
-          oldValue={opts.oldValue}
-          newValue={opts.newValue}
-          variant={opts.variant}
-          theme={opts.theme}
-          className={opts.className}
-          extraNodes={extraNodes}
-          rendererConfig={enhancedRendererConfig}
-        />
-      </EnrichmentFetcherProvider>,
+      <RichDiff
+        oldValue={opts.oldValue}
+        newValue={opts.newValue}
+        variant={opts.variant}
+        theme={opts.theme}
+        className={opts.className}
+        extraNodes={extraNodes}
+        rendererConfig={enhancedRendererConfig}
+      />,
     )
   }
 
