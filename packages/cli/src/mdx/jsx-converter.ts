@@ -1,5 +1,5 @@
 import type { PhrasingContent, RootContent } from 'mdast'
-import type { MdxJsxFlowElement } from 'mdast-util-mdx-jsx'
+import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx'
 
 import {
   applyPropSpecs,
@@ -63,11 +63,35 @@ export class JsxConverter {
     if (!name) return this.host.childrenToBlocks(element.children)
     if (!this.map.components[name] && INLINE_HTML.has(name)) {
       if (hasFlowChildren(element.children)) {
-        return this.host.childrenToBlocks(element.children)
+        return this.inlineWrapperBlocks(element)
       }
       return this.host.paragraphs(this.inline(element as JsxElement, 0))
     }
     return this.host.paragraphs(this.component(element, 0))
+  }
+
+  private inlineWrapperBlocks(element: MdxJsxFlowElement): LexicalNode[] {
+    return element.children.flatMap((child) => {
+      if (child.type === 'paragraph') {
+        const wrapped: MdxJsxTextElement = {
+          type: 'mdxJsxTextElement',
+          name: element.name,
+          attributes: element.attributes,
+          children: child.children,
+          position: child.position,
+        }
+        return this.host.paragraphs(this.inline(wrapped, 0))
+      }
+      const blocks = this.host.blocks([child])
+      if (element.name === 'a' && blocks.length) {
+        const { attributes } = readAttributes(element)
+        this.host.reportDroppedLink(
+          String(attributes.href ?? ''),
+          child.position?.start.line,
+        )
+      }
+      return blocks
+    })
   }
 
   inline(element: JsxElement, format: number): InlineItem[] {

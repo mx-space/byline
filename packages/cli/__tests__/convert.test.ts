@@ -291,6 +291,36 @@ describe('convertMdx components', () => {
     ])
     expect(children.at(-1)).toMatchObject({ text: 'Ctrl', format: 16 })
   })
+
+  it('keeps the link of a block-level anchor around text', () => {
+    const { nodes, issues } = blocks(
+      '<Callout type="tip">\n  <a href="https://a.test/docs">\n    Read the docs\n  </a>\n</Callout>\n',
+    )
+    const inner = (nodes[0].content as { root: LexicalNode }).root
+      .children![0] as LexicalNode
+    expect(inner.type).toBe('paragraph')
+    expect(inner.children![0]).toMatchObject({
+      type: 'link',
+      url: 'https://a.test/docs',
+    })
+    expect(texts(inner)).toBe('Read the docs')
+    expect(issues).toEqual([])
+  })
+
+  it('reports a link dropped around an image', () => {
+    const { nodes, issues } = blocks(
+      '<a href="https://ph.test">\n  <img alt="Badge" src="https://img.test/b.svg" width="250" />\n</a>\n\n[![Shot](https://img.test/s.png)](https://shot.test)\n',
+    )
+    expect(nodes.map((node) => node.type)).toEqual(['image', 'image'])
+    expect(nodes[0]).toMatchObject({
+      src: 'https://img.test/b.svg',
+      width: 250,
+    })
+    expect(issues.map((issue) => issue.message)).toEqual([
+      'link to https://ph.test around block content dropped',
+      'link to https://shot.test around block content dropped',
+    ])
+  })
 })
 
 describe('parseComponentMap', () => {

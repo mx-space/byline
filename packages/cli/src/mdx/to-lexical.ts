@@ -294,7 +294,17 @@ export class MdastToLexical {
     const items = this.inline(children, format)
     const inline = items.filter((item) => !isBlockItem(item)) as LexicalNode[]
     const blocks = items.filter(isBlockItem)
+    if (blocks.length)
+      this.reportDroppedLink(url, children[0]?.position?.start.line)
     return [...(inline.length ? [link(url, inline, title)] : []), ...blocks]
+  }
+
+  reportDroppedLink(url: string, line?: number) {
+    this.report({
+      kind: 'dropped-node',
+      message: `link to ${url} around block content dropped`,
+      line,
+    })
   }
 
   withLiftedBlocks(
