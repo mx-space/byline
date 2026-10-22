@@ -36,16 +36,7 @@ function normalizeTypeSpecificData(
     delete next[key]
   }
 
-  if (refType === 'post') {
-    if ('pin' in next) next.pin = Boolean(next.pin)
-    for (const key of ['tags'] as const) {
-      if (Array.isArray(next[key])) {
-        next[key] = [...next[key]].sort((left, right) =>
-          String(left).localeCompare(String(right)),
-        )
-      }
-    }
-  }
+  if (refType === 'post' && 'pin' in next) next.pin = Boolean(next.pin)
   return Object.keys(next).length ? next : null
 }
 
