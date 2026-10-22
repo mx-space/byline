@@ -39,7 +39,12 @@ function buildPod(client: Redis) {
   const emitter2 = {
     on: vi.fn(),
   } as any
-  const eventManager = new EventManagerService(adminGateway, emitter2, roomSubs)
+  const eventManager = new EventManagerService(
+    adminGateway,
+    emitter2,
+    roomSubs,
+    { invalidate: vi.fn() } as any,
+  )
   return { roomSubs, adminGateway, eventManager }
 }
 

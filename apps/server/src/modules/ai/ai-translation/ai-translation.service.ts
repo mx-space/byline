@@ -1011,7 +1011,7 @@ export class AiTranslationService
       aiProvider: translation.aiProvider,
     }
 
-    this.eventManager.emit(eventType, payload, {
+    return this.eventManager.emit(eventType, payload, {
       scope: EventScope.TO_SYSTEM_VISITOR,
     })
   }
@@ -1165,6 +1165,7 @@ export class AiTranslationService
     if (!updated) {
       throw createAppException(AppErrorCode.AI_TRANSLATION_NOT_FOUND)
     }
+    await this.emitTranslationEvent(BusinessEvents.TRANSLATION_UPDATE, updated)
     return updated
   }
 
@@ -1213,7 +1214,7 @@ export class AiTranslationService
       isLocked: true,
     })
 
-    this.emitTranslationEvent(
+    await this.emitTranslationEvent(
       existing
         ? BusinessEvents.TRANSLATION_UPDATE
         : BusinessEvents.TRANSLATION_CREATE,
@@ -1232,7 +1233,7 @@ export class AiTranslationService
     }
     await this.generationMetrics.deleteByResource('translation', id)
     if (existing) {
-      this.eventManager.emit(
+      await this.eventManager.emit(
         BusinessEvents.TRANSLATION_DELETE,
         {
           refId: existing.refId,

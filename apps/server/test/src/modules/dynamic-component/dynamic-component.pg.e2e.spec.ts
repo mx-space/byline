@@ -27,11 +27,13 @@ const entry = (index: number, overrides: Record<string, unknown> = {}) =>
 describe('dynamic component catalog (PostgreSQL)', () => {
   let context: PgTestDatabase
   let service: DynamicComponentService
+  const apiCache = { invalidate: vi.fn(async () => {}) }
 
   beforeAll(async () => {
     context = await createPgTestDatabase('byline_dynamic_components')
     service = new DynamicComponentService(
       new DynamicComponentRepository(context.db as any, new SnowflakeService()),
+      apiCache as any,
     )
     await context.db
       .insert(users)
@@ -92,12 +94,22 @@ describe('dynamic component catalog (PostgreSQL)', () => {
     })
   })
 
+  it('invalidates the public cache once a registration is stored', async () => {
+    apiCache.invalidate.mockClear()
+
+    await service.register(entry(50), '1001')
+
+    expect(apiCache.invalidate).toHaveBeenCalledTimes(1)
+  })
+
   it('rejects a new url that reuses another component name', async () => {
+    apiCache.invalidate.mockClear()
     await expect(
       service.register(entry(99, { name: 'widget-1' }), '1001'),
     ).rejects.toMatchObject({
       code: AppErrorCode.DYNAMIC_COMPONENT_NAME_CONFLICT,
     })
+    expect(apiCache.invalidate).not.toHaveBeenCalled()
   })
 
   it('serializes to the wire without rewriting propsSchema keys', async () => {

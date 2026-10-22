@@ -28,11 +28,13 @@ const createService = (row: UserRow) => {
     existsByUsernameOrEmail: vi.fn(async () => false),
     updateProfile: vi.fn(async () => row),
   }
+  const apiCache = { invalidate: vi.fn() }
   const service = new UserService(
     repository as unknown as UserRepository,
     new SnowflakeService(),
+    apiCache as any,
   )
-  return { service, repository }
+  return { service, repository, apiCache }
 }
 
 describe('UserService.updateProfile sign-in identity', () => {
@@ -88,5 +90,25 @@ describe('UserService.updateProfile sign-in identity', () => {
     await service.updateProfile('2', { email: 'guest@example.test' }, '1')
 
     expect(repository.updateProfile).toHaveBeenCalled()
+  })
+})
+
+describe('UserService public cache invalidation', () => {
+  it('invalidates after a public profile changes', async () => {
+    const { service, apiCache } = createService(baseRow)
+
+    await service.updateProfile('2', { displayName: 'Renamed' }, '2')
+
+    expect(apiCache.invalidate).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not invalidate when the profile update is rejected', async () => {
+    const { service, apiCache } = createService(baseRow)
+
+    await expect(
+      service.updateProfile('2', { email: 'attacker@example.test' }, '1'),
+    ).rejects.toMatchObject({ code: AppErrorCode.USER_IDENTITY_LOCKED })
+
+    expect(apiCache.invalidate).not.toHaveBeenCalled()
   })
 })

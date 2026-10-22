@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createAiGenerationMetricsMock } from '@/helper/ai-generation-metrics-mock'
 import { createPgRepositoryMock, now } from '@/helper/pg-repository-mock'
 import { AppException } from '~/common/errors/exception.types'
+import { BusinessEvents, EventScope } from '~/constants/business-event.constant'
 import { CollectionRefTypes } from '~/constants/db.constant'
 import type { AiService } from '~/modules/ai/ai.service'
 import type { AiInFlightService } from '~/modules/ai/ai-inflight/ai-inflight.service'
@@ -114,6 +115,7 @@ const createService = () => {
     aiTaskService,
     configService,
     databaseService,
+    eventManager,
     generationMetrics,
     lexicalService,
     lexicalStrategy,
@@ -283,6 +285,20 @@ describe('AiTranslationService', () => {
     expect(repository.updateById).toHaveBeenCalledWith(
       'translation-1',
       expect.objectContaining({ content: '{"root":{}}', text: 'markdown' }),
+    )
+  })
+
+  it('announces an edited translation so the public cache drops it', async () => {
+    const { eventManager, repository, service } = createService()
+    repository.findById.mockResolvedValue(row())
+    repository.updateById.mockResolvedValue(row({ title: 'Edited' }))
+
+    await service.updateTranslation('translation-1', { title: 'Edited' })
+
+    expect(eventManager.emit).toHaveBeenCalledWith(
+      BusinessEvents.TRANSLATION_UPDATE,
+      expect.objectContaining({ id: 'translation-1', title: 'Edited' }),
+      { scope: EventScope.TO_SYSTEM_VISITOR },
     )
   })
 

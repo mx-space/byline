@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { hashPassword } from 'better-auth/crypto'
 
 import { AppErrorCode, createAppException } from '~/common/errors'
+import { ApiCacheService } from '~/processors/redis/api-cache.service'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 import { getAvatar } from '~/utils/tool.util'
 
@@ -43,6 +44,7 @@ export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly snowflakeService: SnowflakeService,
+    private readonly apiCache: ApiCacheService,
   ) {}
 
   toDetail(row: UserRow) {
@@ -134,6 +136,7 @@ export class UserService {
       }
       throw error
     }
+    await this.apiCache.invalidate()
     return this.getDetail(id)
   }
 
@@ -150,6 +153,7 @@ export class UserService {
         url: dto.url ?? null,
         isProfileOnly: true,
       })
+      await this.apiCache.invalidate()
       return this.toDetail(row)
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -171,6 +175,7 @@ export class UserService {
       await this.userRepository.setDeactivatedAt(id, new Date())
     }
     await this.userRepository.deleteSessionsForUser(id)
+    await this.apiCache.invalidate()
     return this.getDetail(id)
   }
 
@@ -180,6 +185,7 @@ export class UserService {
     if (row.deactivatedAt) {
       await this.userRepository.setDeactivatedAt(id, null)
     }
+    await this.apiCache.invalidate()
     return this.getDetail(id)
   }
 

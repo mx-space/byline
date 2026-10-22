@@ -35,7 +35,9 @@ describe('users, invites and sign-in gates (PostgreSQL)', () => {
       'http://127.0.0.1:2333',
       snowflake,
     ))
-    users = new UserService(new UserRepository(context.db), snowflake)
+    users = new UserService(new UserRepository(context.db), snowflake, {
+      invalidate: async () => {},
+    } as any)
     invites = new UserInviteService(
       new UserInviteRepository(context.db),
       users,

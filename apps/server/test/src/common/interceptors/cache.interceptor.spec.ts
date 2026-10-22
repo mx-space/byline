@@ -1,5 +1,5 @@
 import type { CallHandler, ExecutionContext } from '@nestjs/common'
-import { firstValueFrom, of } from 'rxjs'
+import { firstValueFrom, from, of } from 'rxjs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('~/global/env.global', async (importOriginal) => {
@@ -48,7 +48,10 @@ const createHandler = (value: unknown): CallHandler => ({
   handle: () => of(value),
 })
 
-const createInterceptor = (store: Map<string, unknown>) => {
+const createInterceptor = (
+  store: Map<string, unknown>,
+  apiCache = { generation: vi.fn(async () => 0), invalidate: vi.fn() },
+) => {
   const cacheManager = {
     get: vi.fn(async (key: string) => store.get(key)),
     set: vi.fn(async (key: string, value: unknown) => {
@@ -63,6 +66,7 @@ const createInterceptor = (store: Map<string, unknown>) => {
     cacheManager as any,
     reflector as any,
     httpAdapterHost as any,
+    apiCache as any,
   )
   return { interceptor, cacheManager }
 }
@@ -223,7 +227,7 @@ describe('HttpCacheInterceptor entitlement-keyed caching', () => {
       meta: {},
     }
     const store = new Map<string, unknown>([
-      ['mx-api-cache:/posts/paywalled-post', stalePremiumResponse],
+      ['mx-api-cache:/posts/paywalled-post@g0', stalePremiumResponse],
     ])
     const { interceptor } = createInterceptor(store)
     const teaserResponse = {
@@ -286,5 +290,73 @@ describe('HttpCacheInterceptor entitlement-keyed caching', () => {
     expect(result).toEqual({ data: { title: 'source title' } })
     expect(store.size).toBe(2)
     expect(reply.headers.vary).toBe('x-lang, accept-language')
+  })
+
+  it('stops serving entries cached before a content write', async () => {
+    const store = new Map<string, unknown>()
+    let generation = 0
+    const apiCache = {
+      generation: vi.fn(async () => generation),
+      invalidate: vi.fn(async () => {
+        generation++
+      }),
+    }
+    const read = async (title: string) => {
+      const { interceptor } = createInterceptor(store, apiCache)
+      return firstValueFrom(
+        (await interceptor.intercept(
+          createContext(baseRequest({ url: '/posts/1' }), createReply()),
+          createHandler({ data: { title } }),
+        )) as any,
+      )
+    }
+
+    await read('before write')
+    await expect(read('ignored')).resolves.toEqual({
+      data: { title: 'before write' },
+    })
+
+    await apiCache.invalidate()
+
+    await expect(read('after write')).resolves.toEqual({
+      data: { title: 'after write' },
+    })
+  })
+
+  it('keeps a read that started before a write from refilling the new generation', async () => {
+    const store = new Map<string, unknown>()
+    let generation = 0
+    const apiCache = {
+      generation: vi.fn(async () => generation),
+      invalidate: vi.fn(async () => {
+        generation++
+      }),
+    }
+    const { interceptor } = createInterceptor(store, apiCache)
+    let release!: (value: unknown) => void
+    const slowRead = new Promise((resolve) => {
+      release = resolve
+    })
+    const inFlight = interceptor
+      .intercept(
+        createContext(baseRequest({ url: '/posts/1' }), createReply()),
+        { handle: () => from(slowRead) },
+      )
+      .then((observable) => firstValueFrom(observable as any))
+
+    await new Promise((resolve) => setImmediate(resolve))
+    await apiCache.invalidate()
+    release({ data: { title: 'stale' } })
+    await inFlight
+
+    const { interceptor: next } = createInterceptor(store, apiCache)
+    const result = await firstValueFrom(
+      (await next.intercept(
+        createContext(baseRequest({ url: '/posts/1' }), createReply()),
+        createHandler({ data: { title: 'fresh' } }),
+      )) as any,
+    )
+
+    expect(result).toEqual({ data: { title: 'fresh' } })
   })
 })

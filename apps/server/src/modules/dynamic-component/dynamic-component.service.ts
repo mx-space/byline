@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 
 import { AppErrorCode, createAppException } from '~/common/errors'
+import { ApiCacheService } from '~/processors/redis/api-cache.service'
 
 import { DynamicComponentRepository } from './dynamic-component.repository'
 import {
@@ -29,7 +30,10 @@ const isNameConflict = (error: unknown): boolean => {
 
 @Injectable()
 export class DynamicComponentService {
-  constructor(private readonly repository: DynamicComponentRepository) {}
+  constructor(
+    private readonly repository: DynamicComponentRepository,
+    private readonly apiCache: ApiCacheService,
+  ) {}
 
   private toCatalog(rows: DynamicComponentRow[]) {
     return DynamicComponentViews.catalog.parse({
@@ -66,6 +70,7 @@ export class DynamicComponentService {
       }
       throw error
     }
+    await this.apiCache.invalidate()
     return this.getCatalog()
   }
 }

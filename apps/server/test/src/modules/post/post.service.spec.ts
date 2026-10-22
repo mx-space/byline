@@ -78,6 +78,7 @@ const createService = () => {
     deleteAllTracker: vi.fn(),
   }
   const lexicalService = { normalizeContentForStorage: vi.fn() }
+  const apiCache = { invalidate: vi.fn() }
   const service = new PostService(
     repository as any,
     userRepository as any,
@@ -86,10 +87,12 @@ const createService = () => {
     slugTrackerService as any,
     lexicalService as any,
     moduleRef as any,
+    apiCache as any,
   )
   service.onApplicationBootstrap()
 
   return {
+    apiCache,
     categoryService,
     draftService,
     eventManager,
@@ -358,5 +361,45 @@ describe('PostService', () => {
       { id: 'post-1' },
       { scope: EventScope.TO_SYSTEM },
     )
+  })
+})
+
+describe('PostService public cache invalidation', () => {
+  it('invalidates right after an update is written, ahead of the debounced event', async () => {
+    const { apiCache, eventManager, repository, service } = createService()
+    repository.findById.mockResolvedValue(createPost())
+    repository.update.mockResolvedValue(createPost({ title: 'New' }))
+
+    await service.updateById('post-1', { title: 'New' } as any)
+
+    expect(apiCache.invalidate).toHaveBeenCalledTimes(1)
+    expect(apiCache.invalidate.mock.invocationCallOrder[0]).toBeGreaterThan(
+      repository.update.mock.invocationCallOrder[0],
+    )
+    expect(eventManager.emit).not.toHaveBeenCalled()
+  })
+
+  it('invalidates after a post is created', async () => {
+    const { apiCache, repository, service } = createService()
+    repository.findBySlug.mockResolvedValue(null)
+    repository.create.mockResolvedValue(createPost())
+
+    await service.create(
+      { title: 'Fresh', text: '', categoryId: 'cat-1' } as any,
+      '1001',
+    )
+
+    expect(apiCache.invalidate).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not invalidate when the write is rejected', async () => {
+    const { apiCache, repository, service } = createService()
+    repository.findBySlug.mockResolvedValue(createPost())
+
+    await expect(
+      service.create({ title: 'Post', text: '', categoryId: 'cat-1' } as any),
+    ).rejects.toThrow(AppException)
+
+    expect(apiCache.invalidate).not.toHaveBeenCalled()
   })
 })

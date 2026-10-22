@@ -4,6 +4,10 @@ import { merge } from 'es-toolkit/compat'
 
 import { BusinessEvents, EventScope } from '~/constants/business-event.constant'
 import type { EventBusEvents } from '~/constants/event-bus.constant'
+import {
+  ApiCacheService,
+  PUBLIC_CONTENT_EVENTS,
+} from '~/processors/redis/api-cache.service'
 import { RoomSubsService } from '~/processors/task-queue/task-queue.room-subs.service'
 import { scheduleManager } from '~/utils/schedule.util'
 
@@ -37,6 +41,7 @@ export class EventManagerService {
 
     private readonly emitter2: EventEmitter2,
     private readonly roomSubs: RoomSubsService,
+    private readonly apiCache: ApiCacheService,
   ) {
     this.logger = new Logger(EventManagerService.name)
 
@@ -93,6 +98,10 @@ export class EventManagerService {
 
     const instances = this.mapScopeToInstance[scope]
 
+    if (PUBLIC_CONTENT_EVENTS.has(event)) {
+      await this.invalidatePublicCache(event)
+    }
+
     const tasks = Promise.all(
       instances.map((instance) => {
         if (instance instanceof EventEmitter2) {
@@ -119,7 +128,16 @@ export class EventManagerService {
     }
   }
 
-  // TODO add proper types
+  private async invalidatePublicCache(event: string) {
+    try {
+      await this.apiCache.invalidate()
+    } catch (error) {
+      this.logger.warn(
+        `Public cache invalidation failed for event=${event}: ${(error as Error).message}`,
+      )
+    }
+  }
+
   on(
     event: BusinessEvents,
     handler: (data: any) => void,

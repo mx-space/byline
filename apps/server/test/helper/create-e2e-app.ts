@@ -6,6 +6,7 @@ import { AppExceptionFilter } from '~/common/filters/app-exception.filter'
 import { HttpCacheInterceptor } from '~/common/interceptors/cache.interceptor'
 import { DbQueryInterceptor } from '~/common/interceptors/db-query.interceptor'
 import { ResponseInterceptor } from '~/common/interceptors/response.interceptor'
+import { ApiCacheService } from '~/processors/redis/api-cache.service'
 
 import { redisHelper } from './redis-mock.helper'
 import { setupE2EApp } from './setup-e2e'
@@ -39,7 +40,13 @@ export const createE2EApp = (module: ModuleMetadata) => {
       },
     )
 
-    nestModule.providers.push({ provide: token, useValue: CacheService })
+    nestModule.providers.push(
+      { provide: token, useValue: CacheService },
+      {
+        provide: ApiCacheService,
+        useValue: { generation: async () => 0, invalidate: async () => {} },
+      },
+    )
     const app = await setupE2EApp(nestModule)
 
     proxy.app = app

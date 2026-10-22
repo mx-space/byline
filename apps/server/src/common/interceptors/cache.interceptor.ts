@@ -13,6 +13,7 @@ import { RequestContext } from '~/common/contexts/request.context'
 import { API_CACHE_PREFIX } from '~/constants/cache.constant'
 import * as META from '~/constants/meta.constant'
 import { isTest } from '~/global/env.global'
+import { ApiCacheService } from '~/processors/redis/api-cache.service'
 import { CacheService } from '~/processors/redis/cache.service'
 import {
   getNestExecutionContextRequest,
@@ -30,6 +31,7 @@ export class HttpCacheInterceptor implements NestInterceptor {
     private readonly cacheManager: CacheService,
     private readonly reflector: Reflector,
     private readonly httpAdapterHost: HttpAdapterHost,
+    private readonly apiCache: ApiCacheService,
   ) {}
 
   async intercept(
@@ -75,11 +77,12 @@ export class HttpCacheInterceptor implements NestInterceptor {
       return call$
     }
 
-    const key = this.trackBy(context)
     const metaTTL = this.reflector.get(META.HTTP_CACHE_TTL_METADATA, handler)
     const ttl = metaTTL || HTTP_CACHE.ttl
 
+    let key = ''
     try {
+      key = this.trackBy(context, await this.apiCache.generation())
       const value = await Promise.race([
         this.cacheManager.get(key),
         new Promise<undefined>((resolve) =>
@@ -172,7 +175,7 @@ export class HttpCacheInterceptor implements NestInterceptor {
     res.header('vary', [...values].join(', '))
   }
 
-  private trackBy(context: ExecutionContext): string {
+  private trackBy(context: ExecutionContext, generation: number): string {
     const request = this.getRequest(context)
     const httpServer = this.httpAdapterHost.httpAdapter
     const isGetRequest =
@@ -184,10 +187,14 @@ export class HttpCacheInterceptor implements NestInterceptor {
     )
     const originalKey =
       isGetRequest && cacheKey ? cacheKey : this.fallbackKey(context)
-    return this.transformCacheKey(originalKey, context)
+    return this.transformCacheKey(originalKey, context, generation)
   }
 
-  private transformCacheKey(key: string, context: ExecutionContext): string {
+  private transformCacheKey(
+    key: string,
+    context: ExecutionContext,
+    generation: number,
+  ): string {
     const cacheOptions = this.reflector.get(
       META.HTTP_CACHE_META_OPTIONS,
       context.getHandler(),
@@ -197,7 +204,8 @@ export class HttpCacheInterceptor implements NestInterceptor {
       : undefined
     const lang = RequestContext.currentLang()
     const base = queryString ? `${key}?${hashString(queryString)}` : key
-    return lang ? `${base}#${lang}` : base
+    const versioned = `${base}@g${generation}`
+    return lang ? `${versioned}#${lang}` : versioned
   }
 
   private fallbackKey(context: ExecutionContext): string {

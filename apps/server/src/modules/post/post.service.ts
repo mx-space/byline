@@ -14,6 +14,7 @@ import { FileReferenceType } from '~/modules/file/file-reference.enum'
 import { FileReferenceService } from '~/modules/file/file-reference.service'
 import { EventManagerService } from '~/processors/helper/helper.event.service'
 import { LexicalService } from '~/processors/helper/helper.lexical.service'
+import { ApiCacheService } from '~/processors/redis/api-cache.service'
 import { ContentFormat } from '~/shared/types/content-format.type'
 import { contentIdentityChanged } from '~/utils/content.util'
 import { scheduleManager } from '~/utils/schedule.util'
@@ -45,6 +46,7 @@ export class PostService implements OnApplicationBootstrap {
     private readonly slugTrackerService: SlugTrackerService,
     private readonly lexicalService: LexicalService,
     private readonly moduleRef: ModuleRef,
+    private readonly apiCache: ApiCacheService,
   ) {}
 
   onApplicationBootstrap() {
@@ -237,6 +239,7 @@ export class PostService implements OnApplicationBootstrap {
       })
       if (refreshed) doc = refreshed
     }
+    await this.apiCache.invalidate()
 
     scheduleManager.schedule(async () => {
       await Promise.all([
@@ -405,6 +408,7 @@ export class PostService implements OnApplicationBootstrap {
       modifiedAt: data.modifiedAt,
       authorIds: extras.authors,
     })
+    await this.apiCache.invalidate()
 
     const wasPublished = oldDocument.isPublished
     scheduleManager.schedule(() => this.afterUpdatePost(id, wasPublished))

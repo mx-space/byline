@@ -9,6 +9,7 @@ export const ConfigVersionScopes = {
   OAuth: 'oauth',
   Url: 'url',
   Mail: 'mail',
+  PublicContent: 'public-content',
 } as const
 
 export type ConfigVersionScope =
