@@ -25,7 +25,7 @@ export function SummaryEditBody(props: EditDrawerBodyProps<AISummary>) {
           rows={[
             {
               label: t('ai.translation.langLabel'),
-              value: props.item.lang.toUpperCase(),
+              value: props.item.lang,
             },
             ...(props.item.generationMetrics?.providerId
               ? [

@@ -1,4 +1,5 @@
 import { Calendar, Trash2 } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { useI18n } from '~/i18n'
 import type { ListRowSelectMode } from '~/ui/list-actions'
@@ -9,6 +10,7 @@ import { cn } from '~/utils/cn'
 import { formatDateString } from '../../utils/ai'
 
 interface ItemRowProps<TItem> {
+  badge?: ReactNode
   item: TItem
   id: string
   lang: string
@@ -43,8 +45,9 @@ export function ItemRow<TItem>(props: ItemRowProps<TItem>) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 dark:bg-blue-950 dark:text-blue-400">
-            {props.lang.toUpperCase()}
+            {props.lang}
           </span>
+          {props.badge}
           <span className="inline-flex items-center gap-1 text-xs text-fg-subtle">
             <Calendar aria-hidden="true" className="size-3" />
             {formatDateString(props.createdAt)}

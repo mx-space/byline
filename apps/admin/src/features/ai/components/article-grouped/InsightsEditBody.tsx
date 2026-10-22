@@ -28,7 +28,7 @@ export function InsightsEditBody(props: EditDrawerBodyProps<AIInsights>) {
           <dl className="grid grid-cols-2 gap-y-1.5 text-xs">
             <Row
               label={t('ai.translation.langLabel')}
-              value={props.item.lang.toUpperCase()}
+              value={props.item.lang}
             />
             <Row
               label={t('ai.task.createdAt')}
@@ -37,7 +37,7 @@ export function InsightsEditBody(props: EditDrawerBodyProps<AIInsights>) {
             {props.item.isTranslation ? (
               <Row
                 label={t('ai.taskType.insightsTranslation')}
-                value={props.item.sourceLang?.toUpperCase() ?? '-'}
+                value={props.item.sourceLang ?? '-'}
               />
             ) : null}
             {props.item.generationMetrics?.providerId ? (

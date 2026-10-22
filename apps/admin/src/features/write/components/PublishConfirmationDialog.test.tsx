@@ -117,10 +117,13 @@ describe('PublishConfirmationDialog', () => {
         .find((button) => button.textContent?.trim() === '更新线上文章')
         ?.click()
     })
-    expect(onConfirm).toHaveBeenCalledWith([
-      { mode: 'sync', resource: 'summary' },
-      { mode: 'async', resource: 'insights' },
-    ])
+    expect(onConfirm).toHaveBeenCalledWith(
+      [
+        { mode: 'sync', resource: 'summary' },
+        { mode: 'async', resource: 'insights' },
+      ],
+      { regenerateLockedTranslations: false },
+    )
 
     render(false)
     render(true, [
@@ -130,5 +133,58 @@ describe('PublishConfirmationDialog', () => {
 
     expect(tab(SUMMARY, '上线前').getAttribute('aria-selected')).toBe('true')
     expect(tab(INSIGHTS, '上线后').getAttribute('aria-selected')).toBe('true')
+  })
+  it('keeps locked translations unless regeneration is ticked', async () => {
+    const onConfirm = vi.fn()
+    act(() => {
+      root.render(
+        createElement(
+          I18nProvider,
+          null,
+          createElement(PublishConfirmationDialog, {
+            aiConfig: {
+              enableTranslation: true,
+              translationTargetLanguages: ['zh-TW', 'ja'],
+            } as any,
+            diverged: false,
+            lockedTranslationLangs: ['zh-TW'],
+            onClose: vi.fn(),
+            onConfirm,
+            otherBranchCount: 0,
+            open: true,
+            operation: 'online-update',
+            pending: false,
+            rememberedResources: [{ mode: 'sync', resource: 'translation' }],
+            validationError: null,
+          }),
+        ),
+      )
+    })
+
+    expect(document.body.textContent).toContain('zh-TW')
+    const submit = () =>
+      act(() => {
+        ;[...document.querySelectorAll('button')]
+          .find((button) => button.textContent?.trim() === '更新线上文章')
+          ?.click()
+      })
+
+    submit()
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      [{ mode: 'sync', resource: 'translation' }],
+      { regenerateLockedTranslations: false },
+    )
+
+    await act(async () => {
+      document
+        .querySelector<HTMLInputElement>('input[type="checkbox"]')!
+        .click()
+      await Promise.resolve()
+    })
+    submit()
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      [{ mode: 'sync', resource: 'translation' }],
+      { regenerateLockedTranslations: true },
+    )
   })
 })

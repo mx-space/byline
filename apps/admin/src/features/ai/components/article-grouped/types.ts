@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 
 import type { ArticleInfo, PaginationInfo } from '~/api/ai'
 import type { TranslationKey } from '~/i18n/types'
@@ -83,6 +83,7 @@ export interface ArticleGroupedConfig<TItem> {
   extraItemActions?: (item: TItem) => ItemAction<TItem>[]
 
   getPreview: (item: TItem) => string
+  getBadge?: (item: TItem) => ReactNode
   getLang: (item: TItem) => string
   getCreatedAt: (item: TItem) => string
   getId: (item: TItem) => string

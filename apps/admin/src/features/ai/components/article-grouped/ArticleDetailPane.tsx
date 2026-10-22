@@ -129,6 +129,7 @@ export function ArticleDetailPane<TItem>(props: ArticleDetailPaneProps<TItem>) {
               const id = props.config.getId(item)
               return (
                 <ItemRow<TItem>
+                  badge={props.config.getBadge?.(item)}
                   buildMenu={props.buildMenu}
                   createdAt={props.config.getCreatedAt(item)}
                   id={id}

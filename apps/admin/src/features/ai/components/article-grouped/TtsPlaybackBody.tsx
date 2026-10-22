@@ -36,7 +36,7 @@ export function TtsPlaybackBody(props: EditDrawerBodyProps<AITtsRow>) {
       <div className="flex-1 space-y-5 overflow-y-auto p-4">
         <div className="flex items-center gap-2 text-xs">
           <span className="rounded-full bg-blue-50 px-2 py-0.5 font-medium text-blue-600 dark:bg-blue-950 dark:text-blue-400">
-            {item.lang.toUpperCase()}
+            {item.lang}
           </span>
           <span className="text-fg-muted">
             {item.segments.length} {t('ttsPlayer.segmentsTitle')} ·{' '}

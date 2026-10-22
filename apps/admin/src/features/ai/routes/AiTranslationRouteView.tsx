@@ -1,4 +1,4 @@
-import { Languages, Plus } from 'lucide-react'
+import { Languages, Lock, LockOpen, Plus } from 'lucide-react'
 import { useMemo } from 'react'
 import { toast } from 'sonner'
 
@@ -12,7 +12,9 @@ import {
   updateTranslation,
 } from '~/api/ai'
 import { useI18n } from '~/i18n'
+import { confirmDialog } from '~/ui/feedback/confirm'
 import type { HeaderAction } from '~/ui/layout/page-layout'
+import { Badge } from '~/ui/primitives/badge'
 
 import { ArticleGroupedRouteView } from '../components/article-grouped/ArticleGroupedRouteView'
 import { TranslationEditBody } from '../components/article-grouped/TranslationEditBody'
@@ -62,6 +64,7 @@ export function AiTranslationRouteView() {
           summary: next.summary,
           text: next.text,
           content: next.content ?? undefined,
+          isLocked: next.isLocked,
         }),
 
       generate: {
@@ -103,15 +106,36 @@ export function AiTranslationRouteView() {
 
       extraItemActions: (item) => [
         {
+          id: 'toggle-lock',
+          labelKey: item.isLocked ? 'ai.action.unlock' : 'ai.action.lock',
+          icon: item.isLocked ? LockOpen : Lock,
+          run: () => updateTranslation(item.id, { isLocked: !item.isLocked }),
+        },
+        {
           id: 'retranslate',
           labelKey: 'ai.action.retranslate',
           icon: Languages,
-          run: () =>
-            createTranslationTask({
+          run: async () => {
+            if (
+              item.isLocked &&
+              !(await confirmDialog({
+                confirmText: t('ai.action.retranslate'),
+                description: t('ai.translation.regenerateLockedDescription'),
+                destructive: true,
+                title: t('ai.translation.regenerateLockedTitle', {
+                  lang: item.lang,
+                }),
+              }))
+            ) {
+              return
+            }
+            return createTranslationTask({
               force: true,
               refId: item.refId,
+              regenerateLocked: item.isLocked,
               targetLanguages: [item.lang],
-            }),
+            })
+          },
         },
       ],
 
@@ -119,6 +143,19 @@ export function AiTranslationRouteView() {
         [item.title, item.subtitle, item.summary, item.text]
           .filter(Boolean)
           .join('\n'),
+      getBadge: (item) =>
+        item.isLocked ? (
+          <Badge
+            pill
+            size="sm"
+            title={t('ai.translation.lockDescription')}
+            tone="warning"
+            variant="soft"
+          >
+            <Lock aria-hidden="true" className="mr-1 inline size-3" />
+            {t('ai.translation.locked')}
+          </Badge>
+        ) : null,
       getLang: (item) => item.lang,
       getCreatedAt: (item) => item.createdAt,
       getId: (item) => item.id,

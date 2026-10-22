@@ -1,4 +1,4 @@
-import { AlertCircle, Bot, Clock, Loader2 } from 'lucide-react'
+import { AlertCircle, Bot, Clock, Loader2, Lock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import type {
@@ -11,6 +11,7 @@ import { useI18n } from '~/i18n'
 import type { TranslationKey } from '~/i18n/types'
 import { Modal, ModalFooter, ModalHeader } from '~/ui/feedback/modal'
 import { Button } from '~/ui/primitives/button'
+import { Checkbox } from '~/ui/primitives/checkbox'
 import { SegmentedControl } from '~/ui/primitives/segmented-control'
 import { cn } from '~/utils/cn'
 
@@ -27,8 +28,12 @@ import {
 export function PublishConfirmationDialog(props: {
   aiConfig?: AIConfig
   diverged: boolean
+  lockedTranslationLangs?: string[]
   onClose: () => void
-  onConfirm: (resources: PublishAiResourceRequest[]) => void
+  onConfirm: (
+    resources: PublishAiResourceRequest[],
+    options: { regenerateLockedTranslations: boolean },
+  ) => void
   onReviewDiff?: () => void
   otherBranchCount: number
   open: boolean
@@ -43,14 +48,26 @@ export function PublishConfirmationDialog(props: {
     emptyPublishAiChoices,
   )
 
+  const [regenerateLocked, setRegenerateLocked] = useState(false)
+
   useEffect(() => {
-    if (props.open) setChoices(choicesFromRequests(props.rememberedResources))
+    if (!props.open) return
+    setChoices(choicesFromRequests(props.rememberedResources))
+    setRegenerateLocked(false)
   }, [props.open, props.rememberedResources])
 
   const isAvailable = (resource: PublishAiResource) =>
     !getUnavailableKey(resource, props.aiConfig)
   const requests = toPublishAiRequests(choices, isAvailable)
-  const confirm = () => props.onConfirm(requests)
+  const lockedLangs = props.lockedTranslationLangs ?? []
+  const translationSelected = requests.some(
+    (request) => request.resource === 'translation',
+  )
+  const confirm = () =>
+    props.onConfirm(requests, {
+      regenerateLockedTranslations:
+        translationSelected && lockedLangs.length > 0 && regenerateLocked,
+    })
   const choiceOptions: { label: string; value: PublishAiChoice }[] = [
     { label: t('write.publishAi.modeNone'), value: 'none' },
     { label: t('write.publishAi.modeSync'), value: 'sync' },
@@ -168,6 +185,23 @@ export function PublishConfirmationDialog(props: {
               )
             })}
           </div>
+          {translationSelected && lockedLangs.length > 0 ? (
+            <div className="mt-3 grid gap-2 rounded-lg border border-amber-500/30 bg-amber-500/8 px-3 py-2.5 text-xs">
+              <p className="flex items-start gap-2 text-fg">
+                <Lock aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                <span>
+                  {t('write.publishAi.lockedTranslations', {
+                    langs: lockedLangs.join(', '),
+                  })}
+                </span>
+              </p>
+              <Checkbox
+                checked={regenerateLocked}
+                label={t('write.publishAi.regenerateLocked')}
+                onCheckedChange={setRegenerateLocked}
+              />
+            </div>
+          ) : null}
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-lg bg-surface-inset px-3 py-2.5 text-xs">
             <dt className="text-fg-muted">
               {t('write.publishAi.summaryWait')}

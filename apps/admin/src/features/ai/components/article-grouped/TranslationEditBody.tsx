@@ -4,6 +4,7 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import type { AITranslation } from '~/api/ai'
 import { useI18n } from '~/i18n'
 import { Button } from '~/ui/primitives/button'
+import { FormSwitch } from '~/ui/primitives/switch'
 import { TextInput } from '~/ui/primitives/text-field'
 import { CodeMirrorEditor } from '~/vendor/codemirror'
 
@@ -35,6 +36,7 @@ export function TranslationEditBody(props: EditDrawerBodyProps<AITranslation>) {
   const [subtitle, setSubtitle] = useState(props.item.subtitle ?? '')
   const [summary, setSummary] = useState(props.item.summary ?? '')
   const [text, setText] = useState(props.item.text)
+  const [locked, setLocked] = useState(Boolean(props.item.isLocked))
 
   const initialLexical = useMemo(
     () => parseLexical(props.item.content),
@@ -51,6 +53,7 @@ export function TranslationEditBody(props: EditDrawerBodyProps<AITranslation>) {
     if (!useLexical && !text.trim()) return
     const next: AITranslation = {
       ...props.item,
+      isLocked: locked,
       title,
       subtitle: subtitle || undefined,
       summary: summary || undefined,
@@ -75,11 +78,11 @@ export function TranslationEditBody(props: EditDrawerBodyProps<AITranslation>) {
           <dl className="grid grid-cols-2 gap-y-1.5 text-xs">
             <Row
               label={t('ai.translation.langLabel')}
-              value={props.item.lang.toUpperCase()}
+              value={props.item.lang}
             />
             <Row
               label={t('ai.translation.column.source')}
-              value={(props.item.sourceLang || '-').toUpperCase()}
+              value={props.item.sourceLang || '-'}
             />
             {props.item.contentFormat ? (
               <Row label="Format" value={props.item.contentFormat} />
@@ -95,6 +98,13 @@ export function TranslationEditBody(props: EditDrawerBodyProps<AITranslation>) {
           </dl>
         </section>
         <GenerationMetricsMeta metrics={props.item.generationMetrics} />
+        <FormSwitch
+          bordered
+          checked={locked}
+          description={t('ai.translation.lockDescription')}
+          label={t('ai.translation.locked')}
+          onCheckedChange={setLocked}
+        />
 
         <TextInput
           autoFocus

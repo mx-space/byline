@@ -119,6 +119,7 @@ export interface AITranslation {
   generationMetrics?: GenerationMetrics | null
   hash: string
   id: string
+  isLocked?: boolean
   lang: string
   refId: string
   refType: string
@@ -363,6 +364,7 @@ export function updateTranslation(
   id: string,
   data: {
     content?: string
+    isLocked?: boolean
     subtitle?: string
     summary?: string
     tags?: string[]
@@ -376,12 +378,13 @@ export function updateTranslation(
 export function createTranslationTask(data: {
   force?: boolean
   refId: string
+  regenerateLocked?: boolean
   targetLanguages?: string[]
 }) {
-  return postJson<
-    CreateTaskResponse,
-    { force?: boolean; refId: string; targetLanguages?: string[] }
-  >('/ai/translations/task', data)
+  return postJson<CreateTaskResponse, typeof data>(
+    '/ai/translations/task',
+    data,
+  )
 }
 
 export function createTranslationBatchTask(data: {
