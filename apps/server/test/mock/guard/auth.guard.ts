@@ -1,18 +1,15 @@
 import type { ExecutionContext } from '@nestjs/common'
 import { UnauthorizedException } from '@nestjs/common'
 
-import type { OwnerModel } from '~/modules/owner/owner.types'
+import type { SessionUser } from '~/modules/auth/auth.types'
 
 import { authJWTToken } from '../constants/token'
 
-export const mockUser1: Partial<OwnerModel> = {
+export const mockUser1: SessionUser = {
   id: '1',
   name: 'John Doe',
-  mail: 'example@ee.com',
-  password: '**********',
-
+  email: 'example@ee.com',
   username: 'johndoe',
-  created: new Date('2021/1/1 10:00:11'),
 }
 
 export class AuthTestingGuard {

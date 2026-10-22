@@ -31,7 +31,7 @@ export class SpiderGuard implements CanActivate {
     }
 
     // Slow path: UA is missing or looks like a scraper. Allow only if the
-    // request carries valid owner credentials — header presence alone is not
+    // request carries valid user credentials — header presence alone is not
     // enough (otherwise `Authorization: junk` would let any scraper through).
     if (await this.isAuthenticated(request)) {
       return true
@@ -48,9 +48,9 @@ export class SpiderGuard implements CanActivate {
     if (!auth && !apiKeyHeader) return false
 
     try {
-      // Session (cookie or Bearer) → owner user.
+      // Session (cookie or Bearer) → active user.
       const session = await this.authService.getSessionUser(request.raw)
-      if (session?.user?.role === 'owner') return true
+      if (session?.user?.id) return true
 
       // API key (x-api-key header only).
       const apiKey = this.authService.getApiKeyFromRequest({
@@ -59,8 +59,8 @@ export class SpiderGuard implements CanActivate {
       if (!apiKey) return false
       const verified = await this.authService.verifyApiKey(apiKey.key)
       if (!verified?.referenceId) return false
-      // Match AuthGuard's policy: only owner-scoped API keys bypass guards.
-      return await this.authService.isOwnerReaderId(verified.referenceId)
+      // Match AuthGuard: only keys owned by an active user bypass guards.
+      return await this.authService.isActiveUserId(verified.referenceId)
     } catch {
       // Any failure (DB blip, malformed token, etc.) → fall through to the
       // UA check rather than crashing the request.

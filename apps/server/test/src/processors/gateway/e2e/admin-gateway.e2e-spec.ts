@@ -39,7 +39,7 @@ describe('AdminEventsGateway e2e', () => {
 
   it('connects via a cookie owner session', async () => {
     testApp.authService.getSessionUserFromHeaders.mockResolvedValueOnce({
-      user: { id: 'owner-1', role: 'owner' },
+      user: { id: 'owner-1' },
       session: { token: 'tok-cookie' },
     })
 
@@ -58,7 +58,7 @@ describe('AdminEventsGateway e2e', () => {
     testApp.authService.verifyApiKey.mockResolvedValueOnce({
       referenceId: 'reader-1',
     })
-    testApp.authService.isOwnerReaderId.mockResolvedValueOnce(true)
+    testApp.authService.isActiveUserId.mockResolvedValueOnce(true)
 
     const client = await WsTestClient.connect(testApp.adminUrl(), {
       headers: { 'x-api-key': 'valid-key' },
@@ -75,7 +75,7 @@ describe('AdminEventsGateway e2e', () => {
     testApp.authService.verifyApiKey.mockResolvedValueOnce({
       referenceId: 'reader-2',
     })
-    testApp.authService.isOwnerReaderId.mockResolvedValueOnce(true)
+    testApp.authService.isActiveUserId.mockResolvedValueOnce(true)
 
     const client = await WsTestClient.connect(
       testApp.adminUrl('token=valid-query-token'),
@@ -107,7 +107,7 @@ describe('AdminEventsGateway e2e', () => {
     testApp.authService.verifyApiKey.mockResolvedValueOnce({
       referenceId: 'reader-3',
     })
-    testApp.authService.isOwnerReaderId.mockResolvedValueOnce(true)
+    testApp.authService.isActiveUserId.mockResolvedValueOnce(true)
     const subscriber = await WsTestClient.connect(testApp.adminUrl(), {
       headers: { 'x-api-key': 'sub-key' },
     })
@@ -115,7 +115,7 @@ describe('AdminEventsGateway e2e', () => {
     testApp.authService.verifyApiKey.mockResolvedValueOnce({
       referenceId: 'reader-4',
     })
-    testApp.authService.isOwnerReaderId.mockResolvedValueOnce(true)
+    testApp.authService.isActiveUserId.mockResolvedValueOnce(true)
     const bystander = await WsTestClient.connect(testApp.adminUrl(), {
       headers: { 'x-api-key': 'bystander-key' },
     })
@@ -153,7 +153,7 @@ describe('AdminEventsGateway e2e', () => {
 
   it('closes the socket when its bound token expires', async () => {
     testApp.authService.getSessionUserFromHeaders.mockResolvedValueOnce({
-      user: { id: 'owner-2', role: 'owner' },
+      user: { id: 'owner-2' },
       session: { token: 'tok-expiring' },
     })
 
@@ -176,7 +176,7 @@ describe('AdminEventsGateway e2e', () => {
       id: 'api-key-id',
       referenceId: 'owner',
     })
-    testApp.authService.isOwnerReaderId.mockResolvedValue(true)
+    testApp.authService.isActiveUserId.mockResolvedValue(true)
     const clients = await Promise.all(
       [1, 2].map(() =>
         WsTestClient.connect(testApp.adminUrl(), {
@@ -200,7 +200,7 @@ describe('AdminEventsGateway e2e', () => {
     } finally {
       await Promise.all(clients.map((client) => client.closeAndWait()))
       testApp.authService.verifyApiKey.mockResolvedValue(null)
-      testApp.authService.isOwnerReaderId.mockResolvedValue(false)
+      testApp.authService.isActiveUserId.mockResolvedValue(false)
     }
   })
 })

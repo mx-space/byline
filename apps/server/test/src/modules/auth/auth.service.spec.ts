@@ -3,7 +3,6 @@ import { betterAuth } from 'better-auth'
 import { memoryAdapter } from 'better-auth/adapters/memory'
 import { describe, expect, it, vi } from 'vitest'
 
-import { AppException } from '~/common/errors/exception.types'
 import { HASHED_API_KEY_CONFIG_ID } from '~/modules/auth/auth.constant'
 import { AuthService } from '~/modules/auth/auth.service'
 
@@ -16,17 +15,12 @@ const createService = () => {
     findApiKeyById: vi.fn(),
     findApiKey: vi.fn(),
   }
-  const readerRepository = {
-    findOwner: vi.fn().mockResolvedValue({ id: 'owner-1' }),
-    findById: vi.fn(),
-    countOwners: vi.fn(),
-    existsByUsernameOrEmail: vi.fn(),
-    createReader: vi.fn(),
-    setRole: vi.fn(),
-    setOwnersExceptToReader: vi.fn(),
-  }
-  const ownerRepository = {
-    upsertByReaderId: vi.fn(),
+  const userRepository = {
+    findById: vi.fn().mockResolvedValue({
+      id: 'owner-1',
+      isProfileOnly: false,
+      deactivatedAt: null,
+    }),
   }
   const auth = {
     api: {
@@ -47,17 +41,16 @@ const createService = () => {
   }
   const service = new AuthService(
     authRepository as any,
-    readerRepository as any,
-    ownerRepository as any,
+    userRepository as any,
     authInstance as any,
     snowflakeService as any,
   )
-  return { authInstance, authRepository, readerRepository, service }
+  return { authInstance, authRepository, userRepository, service }
 }
 
 describe('AuthService', () => {
   it('does not expose credential material through session account profiles', async () => {
-    const { authRepository, readerRepository, service } = createService()
+    const { authRepository, userRepository, service } = createService()
     authRepository.findAccountByProviderAccountId.mockResolvedValue({
       userId: 'owner-1',
       providerId: 'github',
@@ -67,9 +60,8 @@ describe('AuthService', () => {
       idToken: 'provider-id',
       raw: { token: 'raw-provider-token' },
     })
-    readerRepository.findById.mockResolvedValue({
-      name: 'Owner',
-      role: 'owner',
+    userRepository.findById.mockResolvedValue({
+      displayName: 'Owner',
     })
     const profile = await service.getOauthUserAccount('provider-account')
     expect(profile).toMatchObject({ name: 'Owner', provider: 'github' })
@@ -83,12 +75,12 @@ describe('AuthService', () => {
       expect(profile).not.toHaveProperty(field)
   })
 
-  it('creates Better Auth API keys for the owner reader id', async () => {
+  it('creates Better Auth API keys for the requesting user', async () => {
     const { authInstance, service } = createService()
     const auth = authInstance.get()
 
     await expect(
-      service.createAccessToken({ name: 'deploy' } as any),
+      service.createAccessToken({ name: 'deploy' } as any, 'owner-1'),
     ).resolves.toEqual({
       name: 'deploy',
       token: 'txo-created',
@@ -105,13 +97,39 @@ describe('AuthService', () => {
     })
   })
 
-  it('rejects access-token creation when no owner reader exists', async () => {
-    const { readerRepository, service } = createService()
-    readerRepository.findOwner.mockResolvedValue(null)
+  it('hides API keys owned by another user', async () => {
+    const { authRepository, service } = createService()
+    authRepository.findApiKeyById.mockResolvedValue({
+      id: 'key-1',
+      referenceId: 'someone-else',
+      userId: 'someone-else',
+      name: 'other',
+      createdAt: new Date(),
+      expiresAt: null,
+    })
 
-    await expect(
-      service.createAccessToken({ name: 'deploy' } as any),
-    ).rejects.toThrow(AppException)
+    await expect(service.getToken('key-1', 'owner-1')).resolves.toBeNull()
+  })
+
+  it('rejects session users that are deactivated', async () => {
+    const { authInstance, userRepository, service } = createService()
+    const auth = authInstance.get()
+    auth.api.getSession.mockResolvedValue({
+      user: { id: 'owner-1' },
+      session: { token: 'session-token' },
+    })
+    auth.api.listUserAccounts.mockResolvedValue([
+      { id: 'account-1', accountId: 'owner-1', providerId: 'credential' },
+    ])
+    userRepository.findById.mockResolvedValue({
+      id: 'owner-1',
+      isProfileOnly: false,
+      deactivatedAt: new Date(),
+    })
+    const headers = new Headers()
+    headers.set('cookie', 'session=1')
+
+    await expect(service.getSessionUserFromHeaders(headers)).resolves.toBeNull()
   })
 
   it('keeps owner automation tokens usable beyond the provider default daily quota', async () => {
@@ -142,7 +160,10 @@ describe('AuthService', () => {
       logger: { disabled: true },
     })
     authInstance.get.mockReturnValue(auth as any)
-    const { token } = await service.createAccessToken({ name: 'bot' } as any)
+    const { token } = await service.createAccessToken(
+      { name: 'bot' } as any,
+      'owner-1',
+    )
 
     for (let index = 0; index < 12; index++) {
       const result = await auth.api.verifyApiKey({
@@ -185,7 +206,6 @@ describe('AuthService', () => {
       user: {
         id: 'owner-1',
         email: 'owner@example.com',
-        role: 'owner',
       },
       session: { token: 'session-token' },
     })
@@ -203,7 +223,7 @@ describe('AuthService', () => {
       expect.objectContaining({
         provider: 'device',
         providerAccountId: 'owner-1',
-        user: expect.objectContaining({ id: 'owner-1', role: 'owner' }),
+        user: expect.objectContaining({ id: 'owner-1' }),
       }),
     )
 

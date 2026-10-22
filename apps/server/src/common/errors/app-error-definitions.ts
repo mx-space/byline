@@ -621,11 +621,32 @@ export const APP_ERROR_DEFINITIONS = {
   },
   [AppErrorCode.USER_NOT_EXISTS]: {
     status: 400,
-    message: 'No owner exists yet',
+    message: 'No user exists yet',
   },
   [AppErrorCode.USER_ALREADY_EXISTS]: {
     status: 400,
-    message: 'An owner already exists',
+    message: 'A user already exists',
+  },
+  [AppErrorCode.USER_NOT_FOUND]: {
+    status: 404,
+    message: 'User not found',
+    details: (p) => (p?.id ? { id: p.id } : undefined),
+  },
+  [AppErrorCode.USER_CONFLICT]: {
+    status: 409,
+    message: 'A user with this email or username already exists',
+  },
+  [AppErrorCode.INVITE_NOT_FOUND]: {
+    status: 404,
+    message: 'Invite not found',
+  },
+  [AppErrorCode.INVITE_EXPIRED]: {
+    status: 410,
+    message: 'Invite has expired',
+  },
+  [AppErrorCode.INVITE_ALREADY_ACCEPTED]: {
+    status: 409,
+    message: 'Invite has already been accepted',
   },
 
   // membership

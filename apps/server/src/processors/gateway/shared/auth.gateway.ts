@@ -67,7 +67,7 @@ export const createAuthGateway = (options: AuthGatewayOptions) => {
         }
         const session =
           await this.authService.getSessionUserFromHeaders(headers)
-        if (session?.user?.role === 'owner') {
+        if (session?.user?.id) {
           return this.completeConnection(conn, session.session?.token)
         }
       }
@@ -86,7 +86,7 @@ export const createAuthGateway = (options: AuthGatewayOptions) => {
       const result = await this.authService.verifyApiKey(token)
       if (
         !result ||
-        !(await this.authService.isOwnerReaderId(result.referenceId))
+        !(await this.authService.isActiveUserId(result.referenceId))
       ) {
         return this.authFailed(conn)
       }

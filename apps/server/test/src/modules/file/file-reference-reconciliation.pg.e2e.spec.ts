@@ -83,7 +83,7 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
 
   beforeEach(async () => {
     await pool.query(
-      'TRUNCATE TABLE file_usages, file_references, posts, options, owner_profiles, categories, readers, ai_tts, ai_tts_blocks RESTART IDENTITY CASCADE',
+      'TRUNCATE TABLE file_usages, file_references, posts, options, categories, users, ai_tts, ai_tts_blocks RESTART IDENTITY CASCADE',
     )
     await rm(root, { force: true, recursive: true })
     await mkdir(root, { recursive: true })
@@ -141,14 +141,10 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
       name: 'fixtureOption',
       value: { cover: sharedUrl },
     })
-    await db.insert(schema.readers).values({
+    await db.insert(schema.users).values({
       id: 'reader-fixture',
       name: 'Reader fixture',
-    })
-    await db.insert(schema.ownerProfiles).values({
-      id: '1004',
-      introduce: legacyUrl,
-      readerId: 'reader-fixture',
+      bio: legacyUrl,
     })
     await db.insert(schema.fileReferences).values([
       {
@@ -260,12 +256,12 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
       )
     expect(usages).toEqual([
       { sourceField: 'value', sourceId: '1003', sourceType: 'option' },
-      {
-        sourceField: 'introduce',
-        sourceId: '1004',
-        sourceType: 'owner_profile',
-      },
       { sourceField: 'meta', sourceId: '1002', sourceType: 'post' },
+      {
+        sourceField: 'bio',
+        sourceId: 'reader-fixture',
+        sourceType: 'user',
+      },
     ])
 
     const orphanList = await fileReferenceService.listOrphanFiles(1, 24)
@@ -309,14 +305,10 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
     const styledUrl = `${serverUrl}/objects/image/styled.png`
     await putFile('image', 'collision.png')
     await putFile('image', 'styled.png')
-    await db.insert(schema.readers).values({
+    await db.insert(schema.users).values({
       id: 'reader-boundary',
       name: 'Reader boundary',
-    })
-    await db.insert(schema.ownerProfiles).values({
-      id: '3001',
-      introduce: `backup=${collisionUrl}.backup`,
-      readerId: 'reader-boundary',
+      bio: `backup=${collisionUrl}.backup`,
       url: `${styledUrl}?width=640#preview`,
     })
     await db.insert(schema.fileReferences).values([
@@ -345,8 +337,8 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
       {
         fileUrl: styledUrl,
         sourceField: 'url',
-        sourceId: '3001',
-        sourceType: 'owner_profile',
+        sourceId: 'reader-boundary',
+        sourceType: 'user',
       },
     ])
     await expect(reconciliation.reconcile({ apply: true })).resolves.toEqual({

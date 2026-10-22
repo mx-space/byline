@@ -46,7 +46,7 @@ export interface AuthServiceStub {
   getSessionUser: Mock
   getSessionUserFromHeaders: Mock
   verifyApiKey: Mock
-  isOwnerReaderId: Mock
+  isActiveUserId: Mock
 }
 
 function buildFakeRedisService(client: Redis) {
@@ -68,7 +68,7 @@ function createAuthServiceStub(): AuthServiceStub {
     }),
     getSessionUserFromHeaders: vi.fn(async () => null),
     verifyApiKey: vi.fn(async () => null),
-    isOwnerReaderId: vi.fn(async () => false),
+    isActiveUserId: vi.fn(async () => false),
   }
 }
 

@@ -5,7 +5,6 @@ import { username } from 'better-auth/plugins'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  assertUserDeletionAllowed,
   authDatabaseHooks,
   createCredentialSignInHook,
 } from '~/modules/auth/auth.implement'
@@ -35,6 +34,7 @@ function createApiWrapper(mockApi: Record<string, any>) {
 
 function buildCredentialAuth(
   getCredentialSignInGate: () => Promise<CredentialSignInGate>,
+  options: { allowSignUp?: boolean } = {},
 ) {
   const database: Record<string, any[]> = {
     account: [],
@@ -42,12 +42,14 @@ function buildCredentialAuth(
     user: [],
     verification: [],
   }
-  return betterAuth({
-    appName: 'mx-core-test',
+  const auth = betterAuth({
+    appName: 'byline-test',
     basePath: '/auth',
     baseURL: 'http://localhost',
     database: memoryAdapter(database),
-    databaseHooks: authDatabaseHooks,
+    databaseHooks: options.allowSignUp
+      ? { ...authDatabaseHooks, user: undefined }
+      : authDatabaseHooks,
     emailAndPassword: { disableSignUp: false, enabled: true },
     hooks: { before: createCredentialSignInHook(getCredentialSignInGate) },
     plugins: [username({ usernameValidator: validateMxUsername })],
@@ -56,14 +58,13 @@ function buildCredentialAuth(
     user: {
       additionalFields: {
         handle: { defaultValue: '', type: 'string' },
-        role: { defaultValue: 'reader', input: false, type: 'string' },
-      },
-      deleteUser: {
-        beforeDelete: async (user) => assertUserDeletionAllowed(user),
-        enabled: true,
+        permissions: { defaultValue: 1, input: false, type: 'number' },
+        isProfileOnly: { defaultValue: false, input: false, type: 'boolean' },
+        deactivatedAt: { input: false, required: false, type: 'date' },
       },
     },
   })
+  return Object.assign(auth, { database })
 }
 
 async function signUp(
@@ -155,9 +156,11 @@ describe('auth.implement api wrapper', () => {
 })
 
 describe('credential auth endpoints', () => {
+  const allowLogin = async () => ({ disablePasswordLogin: false })
+
   it('enforces the password login gate for email and username sign-in', async () => {
     let gate: CredentialSignInGate = { disablePasswordLogin: false }
-    const auth = buildCredentialAuth(async () => gate)
+    const auth = buildCredentialAuth(async () => gate, { allowSignUp: true })
     await signUp(auth, {
       email: 'owner@example.com',
       name: 'Owner',
@@ -180,23 +183,57 @@ describe('credential auth endpoints', () => {
     }
   })
 
-  it('rejects role changes through update-user', async () => {
-    const auth = buildCredentialAuth(async () => ({
-      disablePasswordLogin: false,
-    }))
+  it('rejects permission changes through update-user', async () => {
+    const auth = buildCredentialAuth(allowLogin, { allowSignUp: true })
     const created = await signUp(auth, {
       email: 'writer@example.com',
       name: 'Writer',
       username: 'writer',
     })
 
-    const roleResponse = await postAuth(
+    const response = await postAuth(
       auth,
       '/update-user',
-      { name: 'Writer', role: 'owner' },
+      { name: 'Writer', permissions: 0 },
       created.headers.get('set-cookie'),
     )
 
-    expect(roleResponse.status).toBe(403)
+    expect(response.status).toBe(403)
+    expect(auth.database.user[0].permissions).toBe(1)
+  })
+
+  it('rejects public sign-up', async () => {
+    const auth = buildCredentialAuth(allowLogin)
+    const response = await postAuth(auth, '/sign-up/email', {
+      email: 'stranger@example.com',
+      name: 'Stranger',
+      password: TEST_PASSWORD,
+      username: 'stranger',
+    })
+
+    expect(response.ok).toBe(false)
+    expect(auth.database.user).toHaveLength(0)
+  })
+
+  it.each([
+    ['deactivated', { deactivatedAt: new Date() }],
+    ['profile-only', { isProfileOnly: true }],
+  ])('refuses to open a session for a %s user', async (_label, patch) => {
+    const auth = buildCredentialAuth(allowLogin, { allowSignUp: true })
+    await signUp(auth, {
+      email: 'gone@example.com',
+      name: 'Gone',
+      username: 'gone',
+    })
+    Object.assign(auth.database.user[0], patch)
+    const sessionsBefore = auth.database.session.length
+
+    const response = await postAuth(auth, '/sign-in/email', {
+      email: 'gone@example.com',
+      password: TEST_PASSWORD,
+    })
+
+    expect(response.status).toBe(403)
+    expect(auth.database.session).toHaveLength(sessionsBefore)
   })
 })

@@ -6,7 +6,7 @@ import { expo } from '@better-auth/expo'
 import type { PasskeyOptions } from '@better-auth/passkey'
 import { passkey } from '@better-auth/passkey'
 import { compare } from 'bcryptjs'
-import type { BetterAuthOptions } from 'better-auth'
+import type { BetterAuthOptions, GenericEndpointContext } from 'better-auth'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
@@ -32,6 +32,7 @@ import {
   SECRET_STORAGE_V2,
   SECURITY,
 } from '~/app.config'
+import { ALL_PERMISSIONS } from '~/constants/permission.constant'
 import type { SnowflakeGenerator } from '~/database/id'
 import * as authSchema from '~/database/schema'
 import { db } from '~/processors/database/postgres.provider'
@@ -79,25 +80,57 @@ async function preserveLegacyOAuthWrites(
   return { data }
 }
 
+type DatabaseHookContext = GenericEndpointContext | null
+
+export async function assertSessionUserCanSignIn(
+  session: { userId: string },
+  context: DatabaseHookContext,
+) {
+  const user = (await context?.context.internalAdapter.findUserById(
+    session.userId,
+  )) as { isProfileOnly?: boolean; deactivatedAt?: Date | null } | null
+  if (!user || user.isProfileOnly || user.deactivatedAt) {
+    throw new APIError('FORBIDDEN', {
+      message: 'This account cannot sign in',
+    })
+  }
+}
+
+export function rejectPublicSignUp(): never {
+  throw new APIError('FORBIDDEN', {
+    message: 'Sign-up is invite-only',
+  })
+}
+
 export const authDatabaseHooks: NonNullable<
   BetterAuthOptions['databaseHooks']
 > = {
+  user: {
+    create: { before: async () => rejectPublicSignUp() },
+  },
+  session: {
+    create: {
+      before: async (session, context) => {
+        await assertSessionUserCanSignIn(session, context)
+      },
+    },
+  },
   account: {
     create: { before: preserveLegacyOAuthWrites },
     update: { before: preserveLegacyOAuthWrites },
   },
 }
 
-export function assertUserDeletionAllowed(user: {
-  email?: string | null
-  role?: string | null
-}) {
-  if (user.role === 'owner') {
-    throw new APIError('FORBIDDEN', {
-      message: 'owner cannot delete',
-    })
-  }
-}
+export type SendResetPasswordEmail = (input: {
+  user: { id: string; email: string; name?: string | null }
+  url: string
+}) => Promise<void>
+
+const PROTECTED_USER_FIELDS = [
+  'permissions',
+  'isProfileOnly',
+  'deactivatedAt',
+] as const
 
 export const createCredentialSignInHook = (
   getCredentialSignInGate?: () => Promise<CredentialSignInGate>,
@@ -108,9 +141,12 @@ export const createCredentialSignInHook = (
         ? HASHED_API_KEY_CONFIG_ID
         : 'default'
     }
-    if (ctx.body?.role !== undefined) {
+    if (
+      (ctx.path === '/update-user' || ctx.path.startsWith('/sign-up')) &&
+      PROTECTED_USER_FIELDS.some((field) => ctx.body?.[field] !== undefined)
+    ) {
       throw new APIError('FORBIDDEN', {
-        message: 'role cannot be modified',
+        message: 'protected user fields cannot be modified',
       })
     }
     if (!['/sign-in/email', '/sign-in/username'].includes(ctx.path)) {
@@ -187,6 +223,7 @@ export async function CreateAuth(
   serverUrl?: string,
   idGenerator?: SnowflakeGenerator,
   getCredentialSignInGate?: () => Promise<CredentialSignInGate>,
+  sendResetPasswordEmail?: SendResetPasswordEmail,
 ) {
   const deviceVerificationPath = isDev
     ? '/device'
@@ -246,6 +283,13 @@ export async function CreateAuth(
     emailAndPassword: {
       enabled: true,
       disableSignUp: true,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: sendResetPasswordEmail
+        ? async ({ user, url }) => {
+            await sendResetPasswordEmail({ user, url })
+          }
+        : undefined,
       password: {
         hash: async (password) => hashPassword(password),
         verify: async ({ hash, password }) => {
@@ -271,7 +315,7 @@ export async function CreateAuth(
     advanced: idGenerator
       ? { database: { generateId: () => idGenerator.nextId() } }
       : undefined,
-    appName: 'mx-core',
+    appName: 'Byline',
     secret: SECURITY.jwtSecret,
     secrets: SECURITY.jwtSecret
       ? [{ version: 1, value: SECURITY.jwtSecret }]
@@ -342,10 +386,6 @@ export async function CreateAuth(
           | undefined
 
         const userId = newSession?.user?.id
-        const headers = ctx.headers
-        const loginIpRaw =
-          headers?.get('x-forwarded-for') || headers?.get('x-real-ip') || ''
-        const loginIp = loginIpRaw.split(',')[0]?.trim()
 
         if (
           userId &&
@@ -377,34 +417,6 @@ export async function CreateAuth(
           }
         }
 
-        if (userId) {
-          const [reader] = await db
-            .select({
-              id: authSchema.readers.id,
-              role: authSchema.readers.role,
-            })
-            .from(authSchema.readers)
-            .where(eq(authSchema.readers.id, userId))
-            .limit(1)
-          if (reader?.role === 'owner') {
-            await db
-              .insert(authSchema.ownerProfiles)
-              .values({
-                id: reader.id,
-                readerId: reader.id,
-                lastLoginTime: new Date(),
-                ...(loginIp ? { lastLoginIp: loginIp } : {}),
-              })
-              .onConflictDoUpdate({
-                target: authSchema.ownerProfiles.readerId,
-                set: {
-                  lastLoginTime: new Date(),
-                  ...(loginIp ? { lastLoginIp: loginIp } : {}),
-                },
-              })
-          }
-        }
-
         if (!ctx.path?.startsWith('/callback')) {
           return
         }
@@ -433,20 +445,36 @@ export async function CreateAuth(
       }),
     },
     user: {
-      modelName: 'reader',
       deleteUser: {
-        enabled: true,
-        beforeDelete: async (user) => assertUserDeletionAllowed(user),
+        enabled: false,
       },
       additionalFields: {
-        role: {
-          type: 'string',
-          defaultValue: 'reader',
-          input: false,
-        },
         handle: {
           type: 'string',
           defaultValue: '',
+        },
+        bio: {
+          type: 'string',
+          required: false,
+        },
+        url: {
+          type: 'string',
+          required: false,
+        },
+        permissions: {
+          type: 'number',
+          defaultValue: ALL_PERMISSIONS,
+          input: false,
+        },
+        isProfileOnly: {
+          type: 'boolean',
+          defaultValue: false,
+          input: false,
+        },
+        deactivatedAt: {
+          type: 'date',
+          required: false,
+          input: false,
         },
       },
     },

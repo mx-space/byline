@@ -2,16 +2,12 @@ import { Injectable } from '@nestjs/common'
 
 import { DATA_DIR, TEMP_DIR } from '~/constants/path.constant'
 
-import { AuthService } from '../auth/auth.service'
-import { OwnerService } from '../owner/owner.service'
-import type { InitOwnerCreateDto } from './init.schema'
+import type { CreateFirstUserDto } from '../user/user.schema'
+import { UserService } from '../user/user.service'
 
 @Injectable()
 export class InitService {
-  constructor(
-    private readonly ownerService: OwnerService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
   getTempdir() {
     return TEMP_DIR
@@ -22,10 +18,10 @@ export class InitService {
   }
 
   isInit(): Promise<boolean> {
-    return this.ownerService.hasOwner()
+    return this.userService.hasAnyLoginUser()
   }
 
-  createOwner(input: InitOwnerCreateDto) {
-    return this.authService.createOwnerByCredential(input)
+  createFirstUser(input: CreateFirstUserDto) {
+    return this.userService.createFirstUser(input)
   }
 }

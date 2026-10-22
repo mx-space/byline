@@ -13,8 +13,8 @@ function createMockAuthService(): Record<keyof AuthService, any> {
     getApiKeyFromRequest: vi.fn().mockReturnValue(null),
     isCustomToken: vi.fn().mockReturnValue(false),
     verifyApiKey: vi.fn().mockResolvedValue(null),
-    isOwnerReaderId: vi.fn().mockResolvedValue(false),
-    getReaderById: vi.fn().mockResolvedValue(null),
+    isActiveUserId: vi.fn().mockResolvedValue(false),
+    getActiveUserById: vi.fn().mockResolvedValue(null),
   } as any
 }
 
@@ -39,14 +39,6 @@ const ownerUser: SessionUser = {
   id: 'owner-1',
   email: 'owner@test.com',
   name: 'Owner',
-  role: 'owner',
-}
-
-const readerUser: SessionUser = {
-  id: 'reader-1',
-  email: 'reader@test.com',
-  name: 'Reader',
-  role: 'reader',
 }
 
 describe('AuthGuard', () => {
@@ -59,7 +51,7 @@ describe('AuthGuard', () => {
   })
 
   describe('session-based auth', () => {
-    it('should pass when session user is owner', async () => {
+    it('should pass when session user is active', async () => {
       const { context, request } = createMockContext()
       authService.getSessionUser.mockResolvedValue({
         user: ownerUser,
@@ -98,11 +90,11 @@ describe('AuthGuard', () => {
       expect(request.token).toBe('')
     })
 
-    it('should fall through to API key when session user is not owner', async () => {
+    it('should fall through to API key when session has no user', async () => {
       const { context } = createMockContext()
       authService.getSessionUser.mockResolvedValue({
-        user: readerUser,
-        session: { token: 'reader-tok' },
+        user: undefined,
+        session: { token: 'orphan-tok' },
       })
 
       await expect(guard.canActivate(context)).rejects.toThrow(AppException)
@@ -171,7 +163,7 @@ describe('AuthGuard', () => {
       )
     })
 
-    it('should throw AuthTokenInvalid when user is not owner', async () => {
+    it('should throw AuthTokenInvalid when user is not active', async () => {
       const { context } = createMockContext()
       authService.getApiKeyFromRequest.mockReturnValue({
         key: 'txo-valid-key',
@@ -179,14 +171,13 @@ describe('AuthGuard', () => {
       })
       authService.isCustomToken.mockReturnValue(true)
       authService.verifyApiKey.mockResolvedValue({ referenceId: 'reader-1' })
-      authService.isOwnerReaderId.mockResolvedValue(false)
 
       await expect(guard.canActivate(context)).rejects.toThrow(
         expect.objectContaining({ code: AppErrorCode.AUTH_TOKEN_INVALID }),
       )
     })
 
-    it('should throw AuthTokenInvalid when reader not found', async () => {
+    it('should throw AuthTokenInvalid when user not found', async () => {
       const { context } = createMockContext()
       authService.getApiKeyFromRequest.mockReturnValue({
         key: 'txo-valid-key',
@@ -194,15 +185,14 @@ describe('AuthGuard', () => {
       })
       authService.isCustomToken.mockReturnValue(true)
       authService.verifyApiKey.mockResolvedValue({ referenceId: 'owner-1' })
-      authService.isOwnerReaderId.mockResolvedValue(true)
-      authService.getReaderById.mockResolvedValue(null)
+      authService.getActiveUserById.mockResolvedValue(null)
 
       await expect(guard.canActivate(context)).rejects.toThrow(
         expect.objectContaining({ code: AppErrorCode.AUTH_TOKEN_INVALID }),
       )
     })
 
-    it('should pass and attach user when API key is valid owner', async () => {
+    it('should pass and attach user when API key belongs to an active user', async () => {
       const { context, request } = createMockContext()
       const apiKey = 'txo-valid-owner-key'
       authService.getApiKeyFromRequest.mockReturnValue({
@@ -211,8 +201,7 @@ describe('AuthGuard', () => {
       })
       authService.isCustomToken.mockReturnValue(true)
       authService.verifyApiKey.mockResolvedValue({ referenceId: 'owner-1' })
-      authService.isOwnerReaderId.mockResolvedValue(true)
-      authService.getReaderById.mockResolvedValue(ownerUser)
+      authService.getActiveUserById.mockResolvedValue(ownerUser)
 
       const result = await guard.canActivate(context)
 
@@ -233,8 +222,7 @@ describe('AuthGuard', () => {
       })
       authService.isCustomToken.mockReturnValue(true)
       authService.verifyApiKey.mockResolvedValue({ referenceId: 'owner-1' })
-      authService.isOwnerReaderId.mockResolvedValue(true)
-      authService.getReaderById.mockResolvedValue(ownerUser)
+      authService.getActiveUserById.mockResolvedValue(ownerUser)
 
       const result = await guard.canActivate(context)
 
@@ -244,11 +232,11 @@ describe('AuthGuard', () => {
   })
 
   describe('session fallback to API key', () => {
-    it('should try API key when session exists but user is reader', async () => {
+    it('should try API key when session has no user', async () => {
       const { context, request } = createMockContext()
       authService.getSessionUser.mockResolvedValue({
-        user: readerUser,
-        session: { token: 'reader-tok' },
+        user: undefined,
+        session: { token: 'orphan-tok' },
       })
       const apiKey = 'txo-fallback-key'
       authService.getApiKeyFromRequest.mockReturnValue({
@@ -257,8 +245,7 @@ describe('AuthGuard', () => {
       })
       authService.isCustomToken.mockReturnValue(true)
       authService.verifyApiKey.mockResolvedValue({ referenceId: 'owner-1' })
-      authService.isOwnerReaderId.mockResolvedValue(true)
-      authService.getReaderById.mockResolvedValue(ownerUser)
+      authService.getActiveUserById.mockResolvedValue(ownerUser)
 
       const result = await guard.canActivate(context)
 

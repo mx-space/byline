@@ -184,18 +184,6 @@ CREATE TABLE "device_codes" (
 	"scope" text
 );
 --> statement-breakpoint
-CREATE TABLE "owner_profiles" (
-	"id" text PRIMARY KEY NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"reader_id" text NOT NULL,
-	"mail" text,
-	"url" text,
-	"introduce" text,
-	"last_login_ip" text,
-	"last_login_time" timestamp with time zone,
-	"social_ids" jsonb
-);
---> statement-breakpoint
 CREATE TABLE "passkeys" (
 	"id" text PRIMARY KEY NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -211,22 +199,6 @@ CREATE TABLE "passkeys" (
 	"aaguid" text
 );
 --> statement-breakpoint
-CREATE TABLE "readers" (
-	"id" text PRIMARY KEY NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone,
-	"email" text,
-	"email_verified" boolean DEFAULT false NOT NULL,
-	"name" text,
-	"handle" text,
-	"username" text,
-	"display_username" text,
-	"image" text,
-	"role" text DEFAULT 'reader' NOT NULL,
-	"banned_at" timestamp with time zone,
-	"ban_reason" text
-);
---> statement-breakpoint
 CREATE TABLE "sessions" (
 	"id" text PRIMARY KEY NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -237,6 +209,36 @@ CREATE TABLE "sessions" (
 	"ip_address" text,
 	"user_agent" text,
 	"provider" text
+);
+--> statement-breakpoint
+CREATE TABLE "user_invites" (
+	"id" text PRIMARY KEY NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"email" text NOT NULL,
+	"display_name" text,
+	"token_hash" text NOT NULL,
+	"invited_by" text,
+	"expires_at" timestamp with time zone NOT NULL,
+	"accepted_at" timestamp with time zone,
+	"accepted_user_id" text
+);
+--> statement-breakpoint
+CREATE TABLE "users" (
+	"id" text PRIMARY KEY NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone,
+	"email" text,
+	"email_verified" boolean DEFAULT false NOT NULL,
+	"name" text,
+	"handle" text,
+	"username" text,
+	"display_username" text,
+	"image" text,
+	"bio" text,
+	"url" text,
+	"permissions" integer DEFAULT 2147483647 NOT NULL,
+	"is_profile_only" boolean DEFAULT false NOT NULL,
+	"deactivated_at" timestamp with time zone
 );
 --> statement-breakpoint
 CREATE TABLE "verifications" (
@@ -412,13 +414,14 @@ CREATE TABLE "webhooks" (
 ALTER TABLE "ai_insights" ADD CONSTRAINT "ai_insights_source_insights_id_ai_insights_id_fk" FOREIGN KEY ("source_insights_id") REFERENCES "public"."ai_insights"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ai_summaries" ADD CONSTRAINT "ai_summaries_source_summary_id_ai_summaries_id_fk" FOREIGN KEY ("source_summary_id") REFERENCES "public"."ai_summaries"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ai_tts_blocks" ADD CONSTRAINT "ai_tts_blocks_tts_id_ai_tts_id_fk" FOREIGN KEY ("tts_id") REFERENCES "public"."ai_tts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_readers_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."readers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "api_keys" ADD CONSTRAINT "api_keys_user_id_readers_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."readers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "api_keys" ADD CONSTRAINT "api_keys_reference_id_readers_id_fk" FOREIGN KEY ("reference_id") REFERENCES "public"."readers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "device_codes" ADD CONSTRAINT "device_codes_user_id_readers_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."readers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "owner_profiles" ADD CONSTRAINT "owner_profiles_reader_id_readers_id_fk" FOREIGN KEY ("reader_id") REFERENCES "public"."readers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "passkeys" ADD CONSTRAINT "passkeys_user_id_readers_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."readers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_readers_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."readers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_keys" ADD CONSTRAINT "api_keys_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_keys" ADD CONSTRAINT "api_keys_reference_id_users_id_fk" FOREIGN KEY ("reference_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "device_codes" ADD CONSTRAINT "device_codes_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "passkeys" ADD CONSTRAINT "passkeys_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_invites" ADD CONSTRAINT "user_invites_invited_by_users_id_fk" FOREIGN KEY ("invited_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_invites" ADD CONSTRAINT "user_invites_accepted_user_id_users_id_fk" FOREIGN KEY ("accepted_user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "content_document_shares" ADD CONSTRAINT "content_document_shares_document_id_content_documents_id_fk" FOREIGN KEY ("document_id") REFERENCES "public"."content_documents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "content_document_shares" ADD CONSTRAINT "content_document_shares_revision_id_content_revisions_id_fk" FOREIGN KEY ("revision_id") REFERENCES "public"."content_revisions"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "content_document_shares" ADD CONSTRAINT "content_document_shares_draft_id_drafts_id_fk" FOREIGN KEY ("draft_id") REFERENCES "public"."drafts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -434,7 +437,7 @@ ALTER TABLE "drafts" ADD CONSTRAINT "drafts_head_revision_id_content_revisions_i
 ALTER TABLE "post_related_posts" ADD CONSTRAINT "post_related_posts_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "post_related_posts" ADD CONSTRAINT "post_related_posts_related_post_id_posts_id_fk" FOREIGN KEY ("related_post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts" ADD CONSTRAINT "posts_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "file_references" ADD CONSTRAINT "file_references_reader_id_readers_id_fk" FOREIGN KEY ("reader_id") REFERENCES "public"."readers"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "file_references" ADD CONSTRAINT "file_references_reader_id_users_id_fk" FOREIGN KEY ("reader_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_usages" ADD CONSTRAINT "file_usages_file_reference_id_file_references_id_fk" FOREIGN KEY ("file_reference_id") REFERENCES "public"."file_references"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "webhook_events" ADD CONSTRAINT "webhook_events_hook_id_webhooks_id_fk" FOREIGN KEY ("hook_id") REFERENCES "public"."webhooks"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "ai_agent_conversation_session_idx" ON "ai_agent_conversations" USING btree ("session_id");--> statement-breakpoint
@@ -459,14 +462,14 @@ CREATE INDEX "api_keys_user_id_idx" ON "api_keys" USING btree ("user_id");--> st
 CREATE UNIQUE INDEX "device_codes_device_code_uniq" ON "device_codes" USING btree ("device_code");--> statement-breakpoint
 CREATE UNIQUE INDEX "device_codes_user_code_uniq" ON "device_codes" USING btree ("user_code");--> statement-breakpoint
 CREATE INDEX "device_codes_expires_at_idx" ON "device_codes" USING btree ("expires_at");--> statement-breakpoint
-CREATE UNIQUE INDEX "owner_profiles_reader_id_uniq" ON "owner_profiles" USING btree ("reader_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "passkeys_credential_id_uniq" ON "passkeys" USING btree ("credential_id");--> statement-breakpoint
 CREATE INDEX "passkeys_user_id_idx" ON "passkeys" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "readers_email_uniq" ON "readers" USING btree ("email") WHERE "readers"."email" is not null;--> statement-breakpoint
-CREATE UNIQUE INDEX "readers_username_uniq" ON "readers" USING btree ("username") WHERE "readers"."username" is not null;--> statement-breakpoint
-CREATE INDEX "readers_role_idx" ON "readers" USING btree ("role");--> statement-breakpoint
 CREATE UNIQUE INDEX "sessions_token_uniq" ON "sessions" USING btree ("token");--> statement-breakpoint
 CREATE INDEX "sessions_user_id_idx" ON "sessions" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "user_invites_token_hash_uniq" ON "user_invites" USING btree ("token_hash");--> statement-breakpoint
+CREATE INDEX "user_invites_email_idx" ON "user_invites" USING btree ("email");--> statement-breakpoint
+CREATE UNIQUE INDEX "users_email_uniq" ON "users" USING btree ("email") WHERE "users"."email" is not null;--> statement-breakpoint
+CREATE UNIQUE INDEX "users_username_uniq" ON "users" USING btree ("username") WHERE "users"."username" is not null;--> statement-breakpoint
 CREATE INDEX "verifications_identifier_idx" ON "verifications" USING btree ("identifier");--> statement-breakpoint
 CREATE UNIQUE INDEX "categories_name_uniq" ON "categories" USING btree ("name");--> statement-breakpoint
 CREATE UNIQUE INDEX "categories_slug_uniq" ON "categories" USING btree ("slug");--> statement-breakpoint

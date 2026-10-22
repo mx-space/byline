@@ -4,6 +4,10 @@ import type { NestMiddleware, OnModuleInit } from '@nestjs/common'
 import { Inject } from '@nestjs/common'
 
 import {
+  EmailService,
+  EmailTemplateType,
+} from '~/processors/helper/helper.email.service'
+import {
   ConfigVersionScopes,
   ConfigVersionService,
 } from '~/processors/redis/config-version.service'
@@ -35,7 +39,23 @@ export class AuthMiddleware implements NestMiddleware, OnModuleInit {
     @Inject(AuthInstanceInjectKey)
     private readonly authInstance: InjectAuthInstance,
     private readonly snowflakeService: SnowflakeService,
+    private readonly emailService: EmailService,
   ) {}
+
+  private readonly sendResetPasswordEmail = async (input: {
+    user: { email: string; name?: string | null }
+    url: string
+  }) => {
+    await this.emailService.sendTemplate(EmailTemplateType.PasswordReset, {
+      to: input.user.email,
+      subject: 'Reset your Byline password',
+      props: {
+        siteName: 'Byline',
+        displayName: input.user.name || input.user.email,
+        resetUrl: input.url,
+      },
+    })
+  }
 
   async onModuleInit() {
     await this.ensureAuthHandlerFresh(true)
@@ -70,7 +90,7 @@ export class AuthMiddleware implements NestMiddleware, OnModuleInit {
       const parsedAdminUrl = new URL(urls.adminUrl)
       const passkeyOptions = {
         rpID: parsedAdminUrl.hostname,
-        rpName: 'MixSpace',
+        rpName: 'Byline',
         origin: isDev
           ? [
               parsedAdminUrl.origin,
@@ -92,6 +112,7 @@ export class AuthMiddleware implements NestMiddleware, OnModuleInit {
             (await this.configService.get('authSecurity')).disablePasswordLogin,
           ),
         }),
+        this.sendResetPasswordEmail,
       )
       this.authHandler = handler
 

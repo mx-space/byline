@@ -11,8 +11,8 @@ function createMockAuthService(): Record<string, any> {
     getApiKeyFromRequest: vi.fn().mockReturnValue(null),
     isCustomToken: vi.fn().mockReturnValue(false),
     verifyApiKey: vi.fn().mockResolvedValue(null),
-    isOwnerReaderId: vi.fn().mockResolvedValue(false),
-    getReaderById: vi.fn().mockResolvedValue(null),
+    isActiveUserId: vi.fn().mockResolvedValue(false),
+    getActiveUserById: vi.fn().mockResolvedValue(null),
   }
 }
 
@@ -46,14 +46,6 @@ const ownerUser: SessionUser = {
   id: 'owner-1',
   email: 'owner@test.com',
   name: 'Owner',
-  role: 'owner',
-}
-
-const readerUser: SessionUser = {
-  id: 'reader-1',
-  email: 'reader@test.com',
-  name: 'Reader',
-  role: 'reader',
 }
 
 describe('RolesGuard', () => {
@@ -78,7 +70,7 @@ describe('RolesGuard', () => {
     expect(authService.getSessionUser).not.toHaveBeenCalled()
   })
 
-  it('should set isAuthenticated=true when owner session exists', async () => {
+  it('should set isAuthenticated=true when a user session exists', async () => {
     const { context, request } = createMockContext()
     authService.getSessionUser.mockResolvedValue({
       user: ownerUser,
@@ -113,25 +105,10 @@ describe('RolesGuard', () => {
     expect(request.raw.isGuest).toBe(true)
   })
 
-  it('should treat reader session as reader-identified but not admin-authorized', async () => {
-    const { context, request } = createMockContext()
-    authService.getSessionUser.mockResolvedValue({
-      user: readerUser,
-      session: { token: 'reader-tok' },
-    })
-
-    await guard.canActivate(context)
-
-    expect(request.hasAdminAccess).toBe(false)
-    expect(request.hasReaderIdentity).toBe(true)
-    expect(request.isAuthenticated).toBe(false)
-    expect(request.isGuest).toBe(false)
-  })
-
   it('should set readerId from session user', async () => {
     const { context, request } = createMockContext()
     authService.getSessionUser.mockResolvedValue({
-      user: { id: 'reader-42', role: 'reader' },
+      user: { id: 'reader-42' },
       session: { token: 'tok' },
     })
 
@@ -180,8 +157,7 @@ describe('RolesGuard', () => {
     })
     authService.isCustomToken.mockReturnValue(true)
     authService.verifyApiKey.mockResolvedValue({ referenceId: 'owner-1' })
-    authService.isOwnerReaderId.mockResolvedValue(true)
-    authService.getReaderById.mockResolvedValue(ownerUser)
+    authService.getActiveUserById.mockResolvedValue(ownerUser)
 
     await guard.canActivate(context)
 

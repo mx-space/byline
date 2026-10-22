@@ -11,8 +11,7 @@ import { AuthRepository } from '~/modules/auth/auth.repository'
 import { AuthService } from '~/modules/auth/auth.service'
 import { ConfigsService } from '~/modules/configs/configs.service'
 import { OptionsRepository } from '~/modules/configs/options.repository'
-import { OwnerRepository } from '~/modules/owner/owner.repository'
-import { ReaderRepository } from '~/modules/reader/reader.repository'
+import { UserRepository } from '~/modules/user/user.repository'
 import { WebhookRepository } from '~/modules/webhook/webhook.repository'
 import { __setTestPostgresInstance } from '~/processors/database/postgres.provider'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
@@ -33,7 +32,7 @@ it('upgrades real credential rows without changing their usable values, and can 
         'base64',
       )
     await context.pool.query(
-      "INSERT INTO readers (id, name, email, role) VALUES ('100', 'Owner', 'owner@example.test', 'owner')",
+      "INSERT INTO users (id, name, email) VALUES ('100', 'Owner', 'owner@example.test')",
     )
     await context.pool.query(
       'INSERT INTO options (id,name,value) VALUES (101, $1, $2), (102, $3, $4)',
@@ -78,8 +77,7 @@ it('upgrades real credential rows without changing their usable values, and can 
     )
     const service = new AuthService(
       new AuthRepository(context.db),
-      new ReaderRepository(context.db, snowflake),
-      new OwnerRepository(context.db, snowflake),
+      new UserRepository(context.db),
       { get: () => auth } as any,
       snowflake,
     )
@@ -88,9 +86,10 @@ it('upgrades real credential rows without changing their usable values, and can 
       referenceId: '100',
     })
     expect(await service.verifyApiKey(first.key)).toBeNull()
-    const created = await service.createAccessToken({
-      name: 'Created once',
-    } as any)
+    const created = await service.createAccessToken(
+      { name: 'Created once' } as any,
+      '100',
+    )
     const stored = (
       await context.pool.query(
         "SELECT key,config_id FROM api_keys WHERE name='Created once'",
@@ -98,7 +97,7 @@ it('upgrades real credential rows without changing their usable values, and can 
     ).rows[0]
     expect(stored.key).toBe(await defaultKeyHasher(created.token))
     expect(stored.config_id).toBe('mx-hashed-v1')
-    const item = (await service.getAllAccessToken()).find(
+    const item = (await service.getAllAccessToken('100')).find(
       (row) => row.name === 'Created once',
     )!
     expect(item.token).not.toBe(created.token)

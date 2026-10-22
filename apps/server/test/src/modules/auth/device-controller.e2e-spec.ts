@@ -17,7 +17,6 @@ const ownerSession = {
     id: 'owner-1',
     email: 'owner@example.com',
     name: 'Owner',
-    role: 'owner',
   },
   session: { token: 'session-token' },
 }
@@ -146,9 +145,9 @@ describe('DeviceController (e2e)', () => {
     expect(deviceVerify).not.toHaveBeenCalled()
   })
 
-  test('GET /device redirects when the session is a non-owner reader', async () => {
+  test('GET /device redirects when the session has no user', async () => {
     authService.getSessionUserFromHeaders.mockResolvedValue({
-      user: { id: 'r', role: 'reader' },
+      user: undefined,
       session: { token: 't' },
     })
 

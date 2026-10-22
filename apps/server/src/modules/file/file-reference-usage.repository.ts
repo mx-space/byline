@@ -9,10 +9,9 @@ import {
   aiTtsBlocks,
   contentRevisions,
   options,
-  ownerProfiles,
   posts,
-  readers,
   translationEntries,
+  users,
 } from '~/database/schema'
 import type { AppDatabase } from '~/processors/database/postgres.provider'
 
@@ -112,12 +111,8 @@ export class FileReferenceUsageRepository {
           WHERE item.value::text ~ candidate.pattern
         )
         OR EXISTS (
-          SELECT 1 FROM ${readers} AS item
-          WHERE coalesce(item.image, '') ~ candidate.pattern
-        )
-        OR EXISTS (
-          SELECT 1 FROM ${ownerProfiles} AS item
-          WHERE concat_ws(E'\n', item.url, item.introduce, item.social_ids::text) ~ candidate.pattern
+          SELECT 1 FROM ${users} AS item
+          WHERE concat_ws(E'\n', item.image, item.url, item.bio) ~ candidate.pattern
         )
         OR EXISTS (
           SELECT 1 FROM ${aiTranslations} AS item
@@ -152,8 +147,7 @@ export class FileReferenceUsageRepository {
       postRows,
       revisionRows,
       optionRows,
-      readerRows,
-      ownerProfileRows,
+      userRows,
       translationRows,
       summaryRows,
       insightRows,
@@ -180,15 +174,14 @@ export class FileReferenceUsageRepository {
         })
         .from(contentRevisions),
       this.db.select({ id: options.id, value: options.value }).from(options),
-      this.db.select({ id: readers.id, image: readers.image }).from(readers),
       this.db
         .select({
-          id: ownerProfiles.id,
-          url: ownerProfiles.url,
-          introduce: ownerProfiles.introduce,
-          socialIds: ownerProfiles.socialIds,
+          id: users.id,
+          image: users.image,
+          url: users.url,
+          bio: users.bio,
         })
-        .from(ownerProfiles),
+        .from(users),
       this.db
         .select({
           id: aiTranslations.id,
@@ -228,8 +221,7 @@ export class FileReferenceUsageRepository {
     append('post', postRows)
     append('content_revision', revisionRows)
     append('option', optionRows)
-    append('reader', readerRows)
-    append('owner_profile', ownerProfileRows)
+    append('user', userRows)
     append('ai_translation', translationRows)
     append('ai_summary', summaryRows)
     append('ai_insight', insightRows)

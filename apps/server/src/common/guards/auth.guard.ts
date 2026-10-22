@@ -16,7 +16,7 @@ export class AuthGuard implements CanActivate {
 
     const session = await this.authService.getSessionUser(request.raw)
 
-    if (session?.user?.role === 'owner') {
+    if (session?.user?.id) {
       this.attachUserAndToken(
         request,
         session.user as SessionUser,
@@ -38,11 +38,11 @@ export class AuthGuard implements CanActivate {
       throw createAppException(AppErrorCode.AUTH_TOKEN_INVALID)
     }
 
-    const readerUser = await this.authService.getReaderById(result.referenceId)
-    if (!readerUser || readerUser.role !== 'owner') {
+    const user = await this.authService.getActiveUserById(result.referenceId)
+    if (!user) {
       throw createAppException(AppErrorCode.AUTH_TOKEN_INVALID)
     }
-    this.attachUserAndToken(request, readerUser, apiKey.key)
+    this.attachUserAndToken(request, user, apiKey.key)
     return true
   }
 

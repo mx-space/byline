@@ -11,7 +11,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
-import { readers } from './auth'
+import { users } from './auth'
 import { createdAt, pkText, refText, tsCol } from './columns'
 
 export const options = pgTable(
@@ -35,7 +35,7 @@ export const fileReferences = pgTable(
     refId: refText('ref_id'),
     refType: text('ref_type'),
     s3ObjectKey: text('s3_object_key'),
-    readerId: text('reader_id').references((): AnyPgColumn => readers.id, {
+    readerId: text('reader_id').references((): AnyPgColumn => users.id, {
       onDelete: 'set null',
     }),
     uploadedBy: text('uploaded_by'),

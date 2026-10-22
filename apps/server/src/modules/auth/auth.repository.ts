@@ -386,6 +386,22 @@ export class AuthRepository extends BaseRepository {
     }
   }
 
+  async countPasskeys(): Promise<number> {
+    const [row] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(passkeys)
+    return Number(row?.count ?? 0)
+  }
+
+  async hasCredentialAccounts(): Promise<boolean> {
+    const [row] = await this.db
+      .select({ id: accounts.id })
+      .from(accounts)
+      .where(eq(accounts.providerId, 'credential'))
+      .limit(1)
+    return !!row
+  }
+
   async countPasskeysForUser(userId: string): Promise<number> {
     const [row] = await this.db
       .select({ count: sql<number>`count(*)::int` })

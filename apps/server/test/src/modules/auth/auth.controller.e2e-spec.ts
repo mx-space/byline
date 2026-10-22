@@ -35,18 +35,24 @@ const createController = () => {
   }
 }
 
+const user = { id: 'owner-1' }
+
 describe('AuthController', () => {
   it('verifies custom tokens when a token query is present', async () => {
     const { authService, controller } = createController()
 
-    await expect(controller.getOrVerifyToken('txo-token')).resolves.toBe(true)
+    await expect(controller.getOrVerifyToken(user, 'txo-token')).resolves.toBe(
+      true,
+    )
     expect(authService.verifyCustomToken).toHaveBeenCalledWith('txo-token')
   })
 
   it('emits token expiration after deleting an existing PG API key', async () => {
     const { authService, controller, eventEmitter } = createController()
 
-    await expect(controller.deleteToken({ id: 'token-1' })).resolves.toBe('OK')
+    await expect(controller.deleteToken(user, { id: 'token-1' })).resolves.toBe(
+      'OK',
+    )
 
     expect(authService.deleteToken).toHaveBeenCalledWith('token-1')
     expect(eventEmitter.emit).toHaveBeenCalledWith(
@@ -59,8 +65,8 @@ describe('AuthController', () => {
     const { authService, controller } = createController()
     authService.getToken.mockResolvedValue(null)
 
-    await expect(controller.deleteToken({ id: 'missing' })).rejects.toThrow(
-      AppException,
-    )
+    await expect(
+      controller.deleteToken(user, { id: 'missing' }),
+    ).rejects.toThrow(AppException)
   })
 })

@@ -6,19 +6,16 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common'
-import { hashPassword } from 'better-auth/crypto'
 import { omit } from 'es-toolkit/compat'
 import { customAlphabet } from 'nanoid'
 
 import { SECRET_STORAGE_V2 } from '~/app.config'
-import { RequestContext } from '~/common/contexts/request.context'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { alphabet } from '~/constants/other.constant'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
-import { getAvatar } from '~/utils/tool.util'
 
-import { OwnerRepository } from '../owner/owner.repository'
-import { ReaderRepository } from '../reader/reader.repository'
+import { UserRepository } from '../user/user.repository'
+import { isUserActive, type UserRow } from '../user/user.types'
 import {
   AuthInstanceInjectKey,
   HASHED_API_KEY_CONFIG_ID,
@@ -28,49 +25,26 @@ import type { InjectAuthInstance } from './auth.interface'
 import { AuthRepository } from './auth.repository'
 import type { SessionUser } from './auth.types'
 
-type CreateOwnerByCredentialInput = {
-  username: string
-  password: string
-  mail: string
-  name?: string
-  url?: string
-  avatar?: string
-  introduce?: string
-  socialIds?: Record<string, string | number>
-}
+const toSessionUser = (user: UserRow): SessionUser => ({
+  id: user.id,
+  email: user.email,
+  name: user.displayName,
+  image: user.avatar,
+  handle: user.handle,
+  username: user.username,
+  displayUsername: user.displayName,
+  permissions: user.permissions,
+})
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
-    private readonly readerRepository: ReaderRepository,
-    private readonly ownerRepository: OwnerRepository,
+    private readonly userRepository: UserRepository,
     @Inject(AuthInstanceInjectKey)
     private readonly authInstance: InjectAuthInstance,
     private readonly snowflakeService: SnowflakeService,
   ) {}
-
-  private normalizeOptional(value?: string | null) {
-    if (typeof value !== 'string') {
-      return undefined
-    }
-    const normalized = value.trim()
-    return normalized.length > 0 ? normalized : undefined
-  }
-
-  private normalizeUsername(username: string) {
-    return username.trim().toLowerCase()
-  }
-
-  private isDuplicateKeyError(error: unknown) {
-    return (
-      !!error &&
-      typeof error === 'object' &&
-      'code' in error &&
-      ((error as { code?: number | string }).code === 11000 ||
-        (error as { code?: number | string }).code === '23505')
-    )
-  }
 
   private pickFirstHeader(
     headers: Record<string, string | string[] | undefined>,
@@ -86,12 +60,8 @@ export class AuthService {
     return undefined
   }
 
-  async getAllAccessToken() {
-    const ownerId = await this.getOwnerReaderId()
-    if (!ownerId) {
-      return []
-    }
-    const keys = await this.authRepository.listApiKeysForUser(ownerId)
+  async getAllAccessToken(userId: string) {
+    const keys = await this.authRepository.listApiKeysForUser(userId)
 
     return keys.map((token) => ({
       id: token.id,
@@ -113,10 +83,13 @@ export class AuthService {
     return visible ? `${visible}••••••••` : '••••••••••••••••••••••••'
   }
 
-  async getToken(id: string) {
+  async getToken(id: string, userId?: string) {
     const token = await this.authRepository.findApiKeyById(id)
 
     if (!token) {
+      return null
+    }
+    if (userId && token.referenceId !== userId && token.userId !== userId) {
       return null
     }
     return {
@@ -144,15 +117,10 @@ export class AuthService {
     return [true, { userId: apiKey.referenceId }]
   }
 
-  async createAccessToken(body: TokenDto) {
+  async createAccessToken(body: TokenDto, userId: string) {
     const auth = this.authInstance.get()
     if (!auth) {
       throw new InternalServerErrorException('auth not found')
-    }
-
-    const ownerId = await this.getOwnerReaderId()
-    if (!ownerId) {
-      throw createAppException(AppErrorCode.AUTH_USER_ID_NOT_FOUND)
     }
 
     const expiresIn =
@@ -169,9 +137,9 @@ export class AuthService {
     const created = await auth.api.createApiKey({
       body: {
         name: body.name,
-        userId: ownerId,
+        userId,
         configId: SECRET_STORAGE_V2 ? HASHED_API_KEY_CONFIG_ID : 'default',
-        // Owner automation keys must not inherit the provider's 10-request daily quota.
+        // Automation keys must not inherit the provider's 10-request daily quota.
         rateLimitEnabled: false,
         ...(expiresIn ? { expiresIn } : {}),
       },
@@ -184,11 +152,7 @@ export class AuthService {
     }
   }
 
-  async saveToken(model: TokenDto & { token: string }) {
-    const ownerId = await this.getOwnerReaderId()
-    if (!ownerId) {
-      throw createAppException(AppErrorCode.AUTH_USER_ID_NOT_FOUND)
-    }
+  async saveToken(model: TokenDto & { token: string }, userId: string) {
     const now = new Date()
     const start = model.token.slice(0, 6)
     const prefix = model.token.startsWith('txo') ? 'txo' : undefined
@@ -201,8 +165,8 @@ export class AuthService {
         ? await defaultKeyHasher(model.token)
         : model.token,
       configId: SECRET_STORAGE_V2 ? HASHED_API_KEY_CONFIG_ID : 'default',
-      userId: ownerId,
-      referenceId: ownerId,
+      userId,
+      referenceId: userId,
       enabled: true,
       rateLimitEnabled: true,
       expiresAt: model.expired ?? null,
@@ -213,96 +177,6 @@ export class AuthService {
 
   async deleteToken(id: string) {
     await this.authRepository.deleteApiKey(id)
-  }
-
-  async createOwnerByCredential(input: CreateOwnerByCredentialInput) {
-    const normalizedUsername = this.normalizeUsername(input.username)
-    if (!normalizedUsername) {
-      throw createAppException(AppErrorCode.INVALID_PARAMETER, {
-        message: 'username is required',
-      })
-    }
-    if (typeof input.password !== 'string' || input.password.length === 0) {
-      throw createAppException(AppErrorCode.INVALID_PARAMETER, {
-        message: 'password is required',
-      })
-    }
-    const mail = this.normalizeOptional(input.mail)
-    if (!mail) {
-      throw createAppException(AppErrorCode.INVALID_PARAMETER, {
-        message: 'mail is required',
-      })
-    }
-
-    const ownerCount = await this.readerRepository.countOwners()
-    if (ownerCount > 0) {
-      throw createAppException(AppErrorCode.USER_ALREADY_EXISTS)
-    }
-
-    const exists = await this.readerRepository.existsByUsernameOrEmail(
-      normalizedUsername,
-      mail,
-    )
-    if (exists) {
-      throw createAppException(AppErrorCode.USER_ALREADY_EXISTS)
-    }
-
-    const rawUsername =
-      this.normalizeOptional(input.username) || normalizedUsername
-    const displayName = this.normalizeOptional(input.name) || rawUsername
-    const avatar = this.normalizeOptional(input.avatar) || getAvatar(mail)
-    const readerId = this.snowflakeService.nextId()
-    const passwordHash = await hashPassword(input.password)
-
-    const profilePatch: Record<string, any> = {
-      mail,
-    }
-    const url = this.normalizeOptional(input.url)
-    if (url) {
-      profilePatch.url = url
-    }
-    const introduce = this.normalizeOptional(input.introduce)
-    if (introduce) {
-      profilePatch.introduce = introduce
-    }
-    if (input.socialIds && Object.keys(input.socialIds).length > 0) {
-      profilePatch.socialIds = input.socialIds
-    }
-
-    try {
-      await this.readerRepository.create({
-        id: readerId,
-        name: displayName,
-        email: mail,
-        emailVerified: true,
-        image: avatar,
-        role: 'owner',
-        handle: rawUsername,
-        username: normalizedUsername,
-        displayUsername: displayName,
-      })
-
-      await this.authRepository.createAccount({
-        id: this.snowflakeService.nextId(),
-        providerAccountId: readerId,
-        providerId: 'credential',
-        userId: readerId,
-        password: passwordHash,
-      })
-
-      await this.ownerRepository.upsertByReaderId(readerId, {
-        id: readerId,
-        ...profilePatch,
-      })
-    } catch (error) {
-      if (this.isDuplicateKeyError(error)) {
-        throw createAppException(AppErrorCode.USER_ALREADY_EXISTS)
-      }
-
-      throw error
-    }
-
-    return 'OK'
   }
 
   private readonly sessionUserPromiseByRequest = new WeakMap<
@@ -365,17 +239,14 @@ export class AuthService {
     const providerAccountId = primaryAccount.accountId || primaryAccount.id
     const provider = primaryAccount.providerId
 
-    let sessionUser = session?.user as (typeof session)['user'] & {
-      role?: string
+    const sessionUser = session?.user as (typeof session)['user'] & {
       handle?: string
+      permissions?: number
     }
     if (sessionUser?.id) {
-      const reader = await this.readerRepository.findById(sessionUser.id)
-      if (reader?.bannedAt) {
+      const user = await this.userRepository.findById(sessionUser.id)
+      if (!isUserActive(user)) {
         return null
-      }
-      if (reader?.role && !sessionUser.role) {
-        sessionUser = { ...sessionUser, role: reader.role }
       }
     }
 
@@ -385,61 +256,6 @@ export class AuthService {
       provider: provider || sessionProvider,
       user: sessionUser,
     }
-  }
-
-  async setCurrentOauthAsOwner() {
-    const req = RequestContext.currentRequest()
-    if (!req) {
-      throw createAppException(AppErrorCode.AUTH_FAILED)
-    }
-    const session = await this.getSessionUser(req)
-    if (!session) {
-      throw createAppException(AppErrorCode.AUTH_SESSION_NOT_FOUND)
-    }
-    const userId = session.user?.id
-    if (!userId) {
-      throw createAppException(AppErrorCode.AUTH_USER_ID_NOT_FOUND)
-    }
-
-    return this.transferOwnerRole(userId)
-  }
-
-  async transferOwnerRole(targetUserId: string) {
-    const target = await this.readerRepository.findById(targetUserId)
-    if (!target?.id) {
-      throw createAppException(AppErrorCode.AUTH_USER_ID_NOT_FOUND)
-    }
-
-    await this.readerRepository.setOwnersExceptToReader(target.id)
-    await this.readerRepository.setRole(target.id, 'owner')
-
-    const ownerCount = await this.readerRepository.countOwners()
-    if (ownerCount !== 1) {
-      throw createAppException(AppErrorCode.AUTH_FAILED, {
-        message: 'owner role consistency check failed',
-      })
-    }
-    return 'OK'
-  }
-
-  async revokeOwnerRole(targetUserId: string) {
-    const target = await this.readerRepository.findById(targetUserId)
-    if (!target?.id) {
-      throw createAppException(AppErrorCode.AUTH_USER_ID_NOT_FOUND)
-    }
-    if (target.role !== 'owner') {
-      return 'OK'
-    }
-
-    const ownerCount = await this.readerRepository.countOwners()
-    if (ownerCount <= 1) {
-      throw createAppException(AppErrorCode.INVALID_PARAMETER, {
-        message: 'owner must be unique and cannot be empty',
-      })
-    }
-
-    await this.readerRepository.setRole(target.id, 'reader')
-    return 'OK'
   }
 
   async getOauthUserAccount(providerAccountId: string) {
@@ -453,7 +269,7 @@ export class AuthService {
     }
 
     const user = account.userId
-      ? await this.readerRepository.findById(account.userId)
+      ? await this.userRepository.findById(account.userId)
       : null
 
     return {
@@ -468,9 +284,8 @@ export class AuthService {
       ...(user
         ? {
             email: user.email,
-            name: user.name,
-            image: user.image,
-            role: user.role,
+            name: user.displayName,
+            image: user.avatar,
             handle: user.handle,
           }
         : {}),
@@ -482,22 +297,12 @@ export class AuthService {
     return Object.keys(this.authInstance.get().options.socialProviders || {})
   }
 
-  async hasCredentialAccount() {
-    const ownerId = await this.getOwnerReaderId()
-    if (!ownerId) {
-      return false
-    }
-    const accounts = await this.authRepository.findAccountsForUser(ownerId)
-    return accounts.some((account) => account.providerId === 'credential')
+  hasCredentialAccount() {
+    return this.authRepository.hasCredentialAccounts()
   }
 
   async hasPasskey() {
-    const ownerId = await this.getOwnerReaderId()
-    if (!ownerId) {
-      return false
-    }
-    const count = await this.authRepository.countPasskeysForUser(ownerId)
-    return count > 0
+    return (await this.authRepository.countPasskeys()) > 0
   }
 
   getApiKeyFromRequest(req: {
@@ -568,17 +373,8 @@ export class AuthService {
     }
   }
 
-  private async getOwnerReaderId() {
-    const owner = await this.readerRepository.findOwner()
-    if (!owner?.id) {
-      return null
-    }
-    return owner.id
-  }
-
-  async isOwnerReaderId(userId: string) {
-    const owner = await this.readerRepository.findById(userId)
-    return owner?.role === 'owner'
+  async isActiveUserId(userId: string) {
+    return isUserActive(await this.userRepository.findById(userId))
   }
 
   private buildHeadersFromRequest(
@@ -604,23 +400,14 @@ export class AuthService {
     return header
   }
 
-  async getReaderById(userId: string): Promise<SessionUser | null> {
+  async getActiveUserById(userId: string): Promise<SessionUser | null> {
     if (!userId) {
       return null
     }
-    const reader = await this.readerRepository.findById(userId)
-    if (!reader) {
+    const user = await this.userRepository.findById(userId)
+    if (!isUserActive(user)) {
       return null
     }
-    return {
-      id: reader.id,
-      email: reader.email,
-      name: reader.name,
-      image: reader.image,
-      role: reader.role as 'reader' | 'owner',
-      handle: reader.handle,
-      username: reader.username,
-      displayUsername: reader.displayUsername,
-    }
+    return toSessionUser(user!)
   }
 }

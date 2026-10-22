@@ -1,10 +1,10 @@
 import { defineProvider } from 'test/helper/defineProvider'
 
-import { OwnerService } from '~/modules/owner/owner.service'
+import { UserService } from '~/modules/user/user.service'
 
 export const userProvider = defineProvider({
-  provide: OwnerService,
-  useValue: {},
+  provide: UserService,
+  useValue: {
+    getPublicProfiles: async () => new Map(),
+  },
 })
-
-export const ownerProvider = userProvider

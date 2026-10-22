@@ -1,13 +1,4 @@
-import {
-  Body,
-  Delete,
-  Get,
-  Inject,
-  Patch,
-  Post,
-  Query,
-  Req,
-} from '@nestjs/common'
+import { Body, Delete, Get, Inject, Post, Query, Req } from '@nestjs/common'
 import { EventEmitter2 } from '@nestjs/event-emitter'
 import { omit } from 'es-toolkit/compat'
 import { z } from 'zod'
@@ -15,6 +6,7 @@ import { z } from 'zod'
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { HttpCache } from '~/common/decorators/cache.decorator'
+import { CurrentUser } from '~/common/decorators/current-user.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { EventBusEvents } from '~/constants/event-bus.constant'
 import { type StringIdDto, StringIdSchema } from '~/shared/dto/id.dto'
@@ -23,6 +15,7 @@ import type { FastifyBizRequest } from '~/transformers/get-req.transformer'
 import { AuthInstanceInjectKey } from './auth.constant'
 import type { InjectAuthInstance } from './auth.interface'
 import { AuthService } from './auth.service'
+import type { SessionUser } from './auth.types'
 
 export const TokenSchema = z.object({
   expired: z.preprocess(
@@ -47,6 +40,7 @@ export class AuthController {
   @Get('token')
   @Auth()
   async getOrVerifyToken(
+    @CurrentUser() user: SessionUser,
     @Query('token') token?: string,
     @Query('id') id?: string,
   ) {
@@ -55,22 +49,28 @@ export class AuthController {
       return isValid
     }
     if (typeof id === 'string') {
-      return await this.authService.getToken(id)
+      return await this.authService.getToken(id, user.id)
     }
-    return await this.authService.getAllAccessToken()
+    return await this.authService.getAllAccessToken(user.id)
   }
 
   @Post('token')
   @Auth()
-  async generateToken(@Body({ schema: TokenSchema }) body: TokenDto) {
-    return this.authService.createAccessToken(body)
+  async generateToken(
+    @CurrentUser() user: SessionUser,
+    @Body({ schema: TokenSchema }) body: TokenDto,
+  ) {
+    return this.authService.createAccessToken(body, user.id)
   }
 
   @Delete('token')
   @Auth()
-  async deleteToken(@Query({ schema: StringIdSchema }) query: StringIdDto) {
+  async deleteToken(
+    @CurrentUser() user: SessionUser,
+    @Query({ schema: StringIdSchema }) query: StringIdDto,
+  ) {
     const { id } = query
-    const secret = await this.authService.getToken(id)
+    const secret = await this.authService.getToken(id, user.id)
     if (!secret) {
       throw createAppException(AppErrorCode.AUTH_TOKEN_NOT_FOUND)
     }
@@ -78,12 +78,6 @@ export class AuthController {
 
     this.eventEmitter.emit(EventBusEvents.TokenExpired, id)
     return 'OK'
-  }
-
-  @Patch('as-owner')
-  @Auth()
-  async oauthAsOwner() {
-    return this.authService.setCurrentOauthAsOwner()
   }
 
   @Get('session')

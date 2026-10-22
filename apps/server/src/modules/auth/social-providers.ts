@@ -28,6 +28,7 @@ export function buildSocialProviders(
         if (!clientId || !keyId || !privateKey || !teamId) break
 
         providers.apple = async () => ({
+          disableImplicitSignUp: true,
           appBundleIdentifier: appBundleIdentifier || undefined,
           clientId,
           clientSecret: await signAppleClientSecret({
@@ -45,6 +46,7 @@ export function buildSocialProviders(
         if (!config.clientId || !config.clientSecret) break
 
         providers.github = {
+          disableImplicitSignUp: true,
           clientId: config.clientId,
           clientSecret: config.clientSecret,
           redirectURI,
@@ -61,6 +63,7 @@ export function buildSocialProviders(
         if (!config.clientId || !config.clientSecret) break
 
         providers.google = {
+          disableImplicitSignUp: true,
           clientId: config.clientId,
           clientSecret: config.clientSecret,
           redirectURI,

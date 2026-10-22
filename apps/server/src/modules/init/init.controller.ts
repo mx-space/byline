@@ -5,8 +5,11 @@ import { AppErrorCode, createAppException } from '~/common/errors'
 
 import { ConfigsService } from '../configs/configs.service'
 import { type ConfigKeyDto, ConfigKeySchema } from '../option/option.schema'
+import {
+  type CreateFirstUserDto,
+  CreateFirstUserSchema,
+} from '../user/user.schema'
 import { InitGuard } from './init.guard'
-import { type InitOwnerCreateDto, InitOwnerCreateSchema } from './init.schema'
 import { InitService } from './init.service'
 
 @ApiController('/init')
@@ -51,11 +54,11 @@ export class InitController {
     return this.configs.patchAndValid(params.key, body)
   }
 
-  @Post('/owner')
-  async createOwner(
-    @Body({ schema: InitOwnerCreateSchema }) body: InitOwnerCreateDto,
+  @Post('/user')
+  async createFirstUser(
+    @Body({ schema: CreateFirstUserSchema }) body: CreateFirstUserDto,
   ) {
     await this.assertNotInitialized()
-    return this.initService.createOwner(body)
+    return this.initService.createFirstUser(body)
   }
 }

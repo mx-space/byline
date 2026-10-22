@@ -1,13 +1,13 @@
 import type { OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { Injectable, Logger } from '@nestjs/common'
 import { OnEvent } from '@nestjs/event-emitter'
+import ejs from 'ejs'
 import { delay } from 'es-toolkit'
 import type Mail from 'nodemailer/lib/mailer'
 
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { EventBusEvents } from '~/constants/event-bus.constant'
 import { ConfigsService } from '~/modules/configs/configs.service'
-import { OwnerService } from '~/modules/owner/owner.service'
 import {
   ConfigVersionScopes,
   ConfigVersionService,
@@ -18,6 +18,43 @@ import { AssetService } from './helper.asset.service'
 type AddressInput = string | { address?: string } | AddressInput[]
 
 type MailProvider = 'smtp' | 'resend'
+
+export enum EmailTemplateType {
+  Invite = 'invite',
+  PasswordReset = 'password-reset',
+}
+
+export interface EmailTemplateProps {
+  [EmailTemplateType.Invite]: {
+    siteName: string
+    inviterName: string
+    displayName: string | null
+    email: string
+    acceptUrl: string
+    expiresAt: string
+  }
+  [EmailTemplateType.PasswordReset]: {
+    siteName: string
+    displayName: string
+    resetUrl: string
+  }
+}
+
+const EMAIL_TEMPLATE_EXAMPLES: EmailTemplateProps = {
+  [EmailTemplateType.Invite]: {
+    siteName: 'Byline',
+    inviterName: 'Alice',
+    displayName: 'Bob',
+    email: 'bob@example.com',
+    acceptUrl: 'https://admin.example.com/#/invite/token',
+    expiresAt: new Date(0).toUTCString(),
+  },
+  [EmailTemplateType.PasswordReset]: {
+    siteName: 'Byline',
+    displayName: 'Bob',
+    resetUrl: 'https://api.example.com/auth/reset-password/token',
+  },
+}
 type MailClient = {
   sendMail: (options: Mail.Options) => Promise<any>
   verify?: (callback: (error?: Error | null) => void) => void
@@ -44,9 +81,11 @@ export class EmailService implements OnModuleInit, OnModuleDestroy {
     private readonly configsService: ConfigsService,
     private readonly assetService: AssetService,
     private readonly configVersionService: ConfigVersionService,
-    private readonly ownerService: OwnerService,
   ) {
     this.logger = new Logger(EmailService.name)
+    for (const [type, example] of Object.entries(EMAIL_TEMPLATE_EXAMPLES)) {
+      this.registerEmailType(type, example)
+    }
   }
 
   onModuleInit() {
@@ -256,16 +295,40 @@ export class EmailService implements OnModuleInit, OnModuleDestroy {
     })
   }
 
-  async sendTestEmail() {
-    const owner = await this.ownerService.getOwner()
-    const mailOptions = await this.configsService.get('mailOptions')
-    const senderEmail = mailOptions.from || mailOptions.smtp?.user
+  async sendTestEmail(to: string) {
     return this.send({
-      from: `"Byline" <${senderEmail}>`,
-      to: owner.mail,
+      from: await this.resolveSender(),
+      to,
       subject: 'Test email',
       text: 'This is a test email',
     })
+  }
+
+  async renderTemplate<T extends EmailTemplateType>(
+    type: T,
+    props: EmailTemplateProps[T],
+  ) {
+    const source = await this.readTemplate(type)
+    return ejs.render(source, props)
+  }
+
+  async sendTemplate<T extends EmailTemplateType>(
+    type: T,
+    input: { to: string; subject: string; props: EmailTemplateProps[T] },
+  ) {
+    const html = await this.renderTemplate(type, input.props)
+    return this.send({
+      from: await this.resolveSender(),
+      to: input.to,
+      subject: input.subject,
+      html,
+    })
+  }
+
+  private async resolveSender() {
+    const mailOptions = await this.configsService.get('mailOptions')
+    const senderEmail = mailOptions.from || mailOptions.smtp?.user
+    return `"Byline" <${senderEmail}>`
   }
 
   getInstance() {

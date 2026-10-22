@@ -1,4 +1,4 @@
-// Tables readers, accounts, sessions, apiKeys, passkeys, verifications intentionally keep camelCase property names for Better Auth drizzle-adapter compatibility.
+// Tables users, accounts, sessions, apiKeys, passkeys, verifications intentionally keep camelCase property names for Better Auth drizzle-adapter compatibility.
 import { sql } from 'drizzle-orm'
 import {
   boolean,
@@ -10,10 +10,11 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
+import { ALL_PERMISSIONS } from '../../constants/permission.constant'
 import { createdAt, tsCol, updatedAt } from './columns'
 
-export const readers = pgTable(
-  'readers',
+export const users = pgTable(
+  'users',
   {
     id: text('id').primaryKey().notNull(),
     createdAt: createdAt(),
@@ -25,37 +26,43 @@ export const readers = pgTable(
     username: text('username'),
     displayUsername: text('display_username'),
     image: text('image'),
-    role: text('role').notNull().default('reader'),
-    bannedAt: tsCol('banned_at'),
-    banReason: text('ban_reason'),
+    bio: text('bio'),
+    url: text('url'),
+    permissions: integer('permissions').notNull().default(ALL_PERMISSIONS),
+    isProfileOnly: boolean('is_profile_only').notNull().default(false),
+    deactivatedAt: tsCol('deactivated_at'),
   },
   (table) => [
-    uniqueIndex('readers_email_uniq')
+    uniqueIndex('users_email_uniq')
       .on(table.email)
       .where(sql`${table.email} is not null`),
-    uniqueIndex('readers_username_uniq')
+    uniqueIndex('users_username_uniq')
       .on(table.username)
       .where(sql`${table.username} is not null`),
-    index('readers_role_idx').on(table.role),
   ],
 )
 
-export const ownerProfiles = pgTable(
-  'owner_profiles',
+export const userInvites = pgTable(
+  'user_invites',
   {
     id: text('id').primaryKey().notNull(),
     createdAt: createdAt(),
-    readerId: text('reader_id')
-      .notNull()
-      .references(() => readers.id, { onDelete: 'cascade' }),
-    mail: text('mail'),
-    url: text('url'),
-    introduce: text('introduce'),
-    lastLoginIp: text('last_login_ip'),
-    lastLoginTime: tsCol('last_login_time'),
-    socialIds: jsonb('social_ids').$type<Record<string, unknown> | null>(),
+    email: text('email').notNull(),
+    displayName: text('display_name'),
+    tokenHash: text('token_hash').notNull(),
+    invitedBy: text('invited_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    expiresAt: tsCol('expires_at').notNull(),
+    acceptedAt: tsCol('accepted_at'),
+    acceptedUserId: text('accepted_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
   },
-  (table) => [uniqueIndex('owner_profiles_reader_id_uniq').on(table.readerId)],
+  (table) => [
+    uniqueIndex('user_invites_token_hash_uniq').on(table.tokenHash),
+    index('user_invites_email_idx').on(table.email),
+  ],
 )
 
 export const accounts = pgTable(
@@ -66,7 +73,7 @@ export const accounts = pgTable(
     updatedAt: updatedAt(),
     userId: text('user_id')
       .notNull()
-      .references(() => readers.id, { onDelete: 'cascade' }),
+      .references(() => users.id, { onDelete: 'cascade' }),
     accountId: text('account_id'),
     providerId: text('provider_id').notNull(),
     providerAccountId: text('provider_account_id'),
@@ -97,7 +104,7 @@ export const sessions = pgTable(
     updatedAt: updatedAt(),
     userId: text('user_id')
       .notNull()
-      .references(() => readers.id, { onDelete: 'cascade' }),
+      .references(() => users.id, { onDelete: 'cascade' }),
     token: text('token').notNull(),
     expiresAt: tsCol('expires_at'),
     ipAddress: text('ip_address'),
@@ -116,10 +123,10 @@ export const apiKeys = pgTable(
     id: text('id').primaryKey().notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
-    userId: text('user_id').references(() => readers.id, {
+    userId: text('user_id').references(() => users.id, {
       onDelete: 'cascade',
     }),
-    referenceId: text('reference_id').references(() => readers.id, {
+    referenceId: text('reference_id').references(() => users.id, {
       onDelete: 'cascade',
     }),
     configId: text('config_id'),
@@ -155,7 +162,7 @@ export const passkeys = pgTable(
     updatedAt: updatedAt(),
     userId: text('user_id')
       .notNull()
-      .references(() => readers.id, { onDelete: 'cascade' }),
+      .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name'),
     credentialId: text('credential_id').notNull(),
     publicKey: text('public_key').notNull(),
@@ -192,7 +199,7 @@ export const deviceCodes = pgTable(
     updatedAt: updatedAt(),
     deviceCode: text('device_code').notNull(),
     userCode: text('user_code').notNull(),
-    userId: text('user_id').references(() => readers.id, {
+    userId: text('user_id').references(() => users.id, {
       onDelete: 'cascade',
     }),
     expiresAt: tsCol('expires_at').notNull(),

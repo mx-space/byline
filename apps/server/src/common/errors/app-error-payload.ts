@@ -182,6 +182,11 @@ export type AppErrorPayloadMap = {
   [AppErrorCode.READER_NOT_FOUND]: WithId
   [AppErrorCode.USER_NOT_EXISTS]: undefined
   [AppErrorCode.USER_ALREADY_EXISTS]: undefined
+  [AppErrorCode.USER_NOT_FOUND]: WithId
+  [AppErrorCode.USER_CONFLICT]: undefined
+  [AppErrorCode.INVITE_NOT_FOUND]: undefined
+  [AppErrorCode.INVITE_EXPIRED]: undefined
+  [AppErrorCode.INVITE_ALREADY_ACCEPTED]: undefined
 
   // membership
   [AppErrorCode.MEMBERSHIP_REQUIRED]: undefined

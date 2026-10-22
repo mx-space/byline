@@ -7,7 +7,6 @@ import { ThrottlerModule } from '@nestjs/throttler'
 import { THROTTLE_OPTIONS } from '~/app.config'
 import { AiModule } from '~/modules/ai/ai.module'
 import { PostModule } from '~/modules/post/post.module'
-import { ReaderModule } from '~/modules/reader/reader.module'
 
 import { AssetService } from './helper.asset.service'
 import { CountingService } from './helper.counting.service'
@@ -59,7 +58,6 @@ const providers: Provider<any>[] = [
 
     forwardRef(() => AiModule),
     forwardRef(() => PostModule),
-    forwardRef(() => ReaderModule),
   ],
   providers,
   exports: providers,

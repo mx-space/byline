@@ -104,7 +104,7 @@ export class DeviceController {
     const session = await this.authService.getSessionUserFromHeaders(headers)
     const user = session?.user
 
-    if (!user || user.role !== 'owner') {
+    if (!user?.id) {
       const returnUrl = `${deviceBasePath}${userCode ? `?user_code=${encodeURIComponent(userCode)}` : ''}`
       const redirect = `${adminLoginPath}?redirect=${encodeURIComponent(returnUrl)}`
       return reply.redirect(redirect, 302)
@@ -141,7 +141,7 @@ export class DeviceController {
     const headers = new Headers()
     if (cookie) headers.set('cookie', cookie)
     const session = await this.authService.getSessionUserFromHeaders(headers)
-    if (!session?.user || session.user.role !== 'owner') {
+    if (!session?.user?.id) {
       throw createAppException(AppErrorCode.AUTH_NOT_LOGGED_IN)
     }
 

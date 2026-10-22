@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm'
 
-import { readers } from '~/database/schema'
+import { users } from '~/database/schema'
 import {
   assertSchemaCurrent,
   createDb,
@@ -12,7 +12,7 @@ import {
  * Bootstrap-time check called from `bootstrap.ts` before NestFactory creates
  * the application. We run the schema-version guard here as well, so the
  * resulting `SchemaBehindError` surfaces with a clear message rather than as
- * a confusing "table does not exist" from the readers query that follows.
+ * a confusing "table does not exist" from the users query that follows.
  */
 export const checkInit = async () => {
   const pool = await createPool()
@@ -22,8 +22,8 @@ export const checkInit = async () => {
 
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
-    .from(readers)
-    .where(eq(readers.role, 'owner'))
+    .from(users)
+    .where(eq(users.isProfileOnly, false))
 
   const isUserExist = Number(row?.count ?? 0) > 0
 

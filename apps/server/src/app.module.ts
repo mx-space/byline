@@ -30,13 +30,12 @@ import { HealthModule } from './modules/health/health.module'
 import { HelperModule as BizHelperModule } from './modules/helper/helper.module'
 import { InitModule } from './modules/init/init.module'
 import { OptionModule } from './modules/option/option.module'
-import { OwnerModule } from './modules/owner/owner.module'
 import { PostModule } from './modules/post/post.module'
 import { PublishModule } from './modules/publish/publish.module'
-import { ReaderModule } from './modules/reader/reader.module'
 import { ServerTimeModule } from './modules/server-time/server-time.module'
 import { SlugTrackerModule } from './modules/slug-tracker/slug-tracker.module'
 import { TaskModule } from './modules/task/task.module'
+import { UserModule } from './modules/user/user.module'
 import { WebhookModule } from './modules/webhook/webhook.module'
 import { DatabaseModule } from './processors/database/database.module'
 import { GatewayModule } from './processors/gateway/gateway.module'
@@ -69,11 +68,10 @@ import { SampleResponseInterceptor } from './shared/sample/sample-response.inter
     OptionModule,
     PostModule,
     PublishModule,
-    ReaderModule,
     ServerTimeModule,
     SlugTrackerModule,
     TaskModule,
-    OwnerModule,
+    UserModule,
     WebhookModule,
 
     // end biz

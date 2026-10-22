@@ -26,14 +26,6 @@ const ownerUser: SessionUser = {
   id: 'owner-1',
   email: 'owner@example.com',
   name: 'Owner',
-  role: 'owner',
-}
-
-const readerUser: SessionUser = {
-  id: 'reader-1',
-  email: 'reader@example.com',
-  name: 'Reader',
-  role: 'reader',
 }
 
 const normalizeHeader = (value?: string | string[]) =>
@@ -47,14 +39,6 @@ const mockAuthService = {
       return {
         user: ownerUser,
         session: { token: 'owner-session-token', provider: 'github' },
-        provider: 'github',
-      }
-    }
-
-    if (scenario === 'reader-session') {
-      return {
-        user: readerUser,
-        session: { token: 'reader-session-token', provider: 'github' },
         provider: 'github',
       }
     }
@@ -75,9 +59,9 @@ const mockAuthService = {
 
     return null
   }),
-  isOwnerReaderId: vi.fn(async (readerId: string) => readerId === ownerUser.id),
-  getReaderById: vi.fn(async (readerId: string) =>
-    readerId === ownerUser.id ? ownerUser : null,
+  isActiveUserId: vi.fn(async (userId: string) => userId === ownerUser.id),
+  getActiveUserById: vi.fn(async (userId: string) =>
+    userId === ownerUser.id ? ownerUser : null,
   ),
 }
 
@@ -102,7 +86,7 @@ class RolesGuardE2ETestController {
         isGuest: RequestContext.currentIsGuest(),
         readerId: RequestContext.currentReaderId(),
         authProvider: RequestContext.currentAuthProvider(),
-        userRole: RequestContext.currentUser()?.role ?? null,
+        userId: RequestContext.currentUser()?.id ?? null,
       },
     }
   }
@@ -147,7 +131,7 @@ describe('RolesGuard (e2e)', () => {
     await app.close()
   })
 
-  test('treats owner session as both admin-authorized and reader-identified', async () => {
+  test('treats a user session as both admin-authorized and reader-identified', async () => {
     const res = await app.inject({
       method: 'GET',
       url: '/roles-guard/probe',
@@ -169,34 +153,7 @@ describe('RolesGuard (e2e)', () => {
         isGuest: false,
         readerId: ownerUser.id,
         authProvider: 'github',
-        userRole: 'owner',
-      },
-    })
-  })
-
-  test('treats reader session as reader-identified but not admin-authorized', async () => {
-    const res = await app.inject({
-      method: 'GET',
-      url: '/roles-guard/probe',
-      headers: {
-        'x-test-auth-scenario': 'reader-session',
-      },
-    })
-
-    expect(res.statusCode).toBe(200)
-    expect(res.json()).toMatchObject({
-      decorator: {
-        hasAdminAccess: false,
-        hasReaderIdentity: true,
-        isGuest: false,
-      },
-      context: {
-        hasAdminAccess: false,
-        hasReaderIdentity: true,
-        isGuest: false,
-        readerId: readerUser.id,
-        authProvider: 'github',
-        userRole: null,
+        userId: ownerUser.id,
       },
     })
   })
@@ -223,7 +180,7 @@ describe('RolesGuard (e2e)', () => {
         isGuest: false,
         readerId: ownerUser.id,
         authProvider: null,
-        userRole: 'owner',
+        userId: ownerUser.id,
       },
     })
   })
@@ -250,7 +207,7 @@ describe('RolesGuard (e2e)', () => {
         isGuest: true,
         readerId: null,
         authProvider: null,
-        userRole: null,
+        userId: null,
       },
     })
   })

@@ -14,7 +14,6 @@ const ownerUser: SessionUser = {
   id: 'owner-1',
   email: 'owner@example.com',
   name: 'Owner',
-  role: 'owner',
 }
 
 const VALID_API_KEY = 'txo-valid-owner-key'
@@ -24,30 +23,29 @@ class BearerNarrowingTestController {
   @Get('protected')
   @UseGuards(AuthGuard)
   async protected(@CurrentUser() user: SessionUser) {
-    return { id: user.id, role: user.role }
+    return { id: user.id }
   }
 }
 
 const buildAuthService = () => {
-  const reader = {
+  const userRepository = {
     findById: vi.fn(async (id: string) =>
       id === ownerUser.id
         ? {
             id: ownerUser.id,
             email: ownerUser.email,
-            name: ownerUser.name,
-            image: null,
-            role: 'owner',
+            displayName: ownerUser.name,
+            avatar: null,
             handle: null,
             username: null,
-            displayUsername: null,
+            permissions: 1,
+            isProfileOnly: false,
+            deactivatedAt: null,
           }
         : null,
     ),
-    findOwner: vi.fn(async () => ({ id: ownerUser.id })),
   }
   const authRepository = { findApiKey: vi.fn().mockResolvedValue(null) }
-  const ownerRepository = {}
   const authInstance = {
     get: () => ({
       api: {
@@ -61,15 +59,11 @@ const buildAuthService = () => {
   }
   const service = new AuthService(
     authRepository as any,
-    reader as any,
-    ownerRepository as any,
+    userRepository as any,
     authInstance as any,
     { nextId: () => '740375270589665280' } as any,
   )
   vi.spyOn(service, 'getSessionUser').mockResolvedValue(null)
-  vi.spyOn(service, 'isOwnerReaderId').mockImplementation(
-    async (id) => id === ownerUser.id,
-  )
   return service
 }
 
@@ -102,14 +96,14 @@ describe('apiKey Bearer narrowing (e2e)', () => {
     await app.close()
   })
 
-  test('x-api-key header authenticates the owner', async () => {
+  test('x-api-key header authenticates an active user', async () => {
     const res = await app.inject({
       method: 'GET',
       url: '/bearer-narrow/protected',
       headers: { 'x-api-key': VALID_API_KEY },
     })
     expect(res.statusCode).toBe(200)
-    expect(res.json()).toMatchObject({ id: ownerUser.id, role: 'owner' })
+    expect(res.json()).toMatchObject({ id: ownerUser.id })
   })
 
   test('Authorization: Bearer api-key is no longer accepted', async () => {
