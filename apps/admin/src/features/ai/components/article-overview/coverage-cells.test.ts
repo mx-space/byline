@@ -78,8 +78,9 @@ describe('normaliseLangInput', () => {
     expect(normaliseLangInput(' EN ')).toBe('en')
   })
 
-  it('strips a region subtag', () => {
-    expect(normaliseLangInput('zh-CN')).toBe('zh')
+  it('keeps a region subtag in canonical case', () => {
+    expect(normaliseLangInput('zh-cn')).toBe('zh-CN')
+    expect(normaliseLangInput('pt_br')).toBe('pt-BR')
   })
 
   it('rejects anything that is not a language code', () => {

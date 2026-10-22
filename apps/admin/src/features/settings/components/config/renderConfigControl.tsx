@@ -5,6 +5,7 @@ import { TextArea, TextInput } from '~/ui/primitives/text-field'
 
 import { stringValue } from '../../utils/settings'
 import { TagsEditor } from '../TagsEditor'
+import { LanguageSelect } from './LanguageSelect'
 
 export function renderConfigControl(props: {
   field: ConfigFormField
@@ -14,6 +15,16 @@ export function renderConfigControl(props: {
 }) {
   const { field } = props
   const placeholder = field.ui.placeholder
+
+  if (field.key === 'defaultSourceLang') {
+    return (
+      <LanguageSelect
+        aria-label={field.title}
+        onChange={props.onChange}
+        value={stringValue(props.value) || 'en'}
+      />
+    )
+  }
 
   switch (field.ui.component) {
     case 'password': {

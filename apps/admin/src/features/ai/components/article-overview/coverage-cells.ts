@@ -4,6 +4,7 @@ import type {
   ArticleCoverage,
 } from '~/api/ai-overview'
 import { AI_OVERVIEW_CAPABILITIES } from '~/api/ai-overview'
+import { canonicalizeLanguageCode } from '~/lib/languages'
 
 export type CellState =
   'addable' | 'failed' | 'gap' | 'has' | 'na' | 'pending' | 'source'
@@ -61,10 +62,8 @@ export function coverageColumns(
   return [...langs].sort()
 }
 
-/** ISO 639-1/639-2 shape only — the server is the real authority. */
 export function normaliseLangInput(raw: string): string | null {
-  const value = raw.trim().split('-')[0].toLowerCase()
-  return /^[a-z]{2,3}$/.test(value) ? value : null
+  return canonicalizeLanguageCode(raw)
 }
 
 export function resolveCell(
