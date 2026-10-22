@@ -24,8 +24,6 @@ type TagDetailMapped = {
   summary?: string | null
   tags?: string[]
   pinAt?: Date | null
-  readCount?: number
-  likeCount?: number
 }
 
 @Injectable()

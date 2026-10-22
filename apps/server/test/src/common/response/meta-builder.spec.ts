@@ -1,7 +1,6 @@
 import {
   BaseResponseMetaSchema,
   type EntryTranslation,
-  type InteractionMeta,
 } from '~/common/response/meta.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
 import { PostMetaBuilder } from '~/modules/post/post-meta-builder'
@@ -77,26 +76,6 @@ describe('MetaObjectBuilder', () => {
     })
   })
 
-  test('interaction accepts a single InteractionMeta', () => {
-    const interaction: InteractionMeta = { isLiked: true, likeCount: 3 }
-    const meta = new MetaObjectBuilder().interaction(interaction).build()
-
-    expect(meta.interaction).toEqual(interaction)
-  })
-
-  test('interaction normalizes a Map into an id-keyed record', () => {
-    const map = new Map<string, InteractionMeta>([
-      ['1', { isLiked: true }],
-      ['2', { isLiked: false }],
-    ])
-    const meta = new MetaObjectBuilder().interaction(map).build()
-
-    expect(meta.interaction).toEqual({
-      1: { isLiked: true },
-      2: { isLiked: false },
-    })
-  })
-
   test('PostMetaBuilder.articles sets a ref map', () => {
     const meta = new PostMetaBuilder()
       .articles({
@@ -113,13 +92,11 @@ describe('MetaObjectBuilder', () => {
     const meta = new MetaObjectBuilder()
       .view('detail')
       .pagination({ page: 2, size: 20, total: 100, totalPages: 5 })
-      .interaction({ isLiked: false })
       .build()
 
     expect(BaseResponseMetaSchema.safeParse(meta).success).toBe(true)
     expect(meta.view).toBe('detail')
     expect(meta.pagination?.page).toBe(2)
-    expect(meta.interaction).toEqual({ isLiked: false })
   })
 
   test('build throws when a value violates the schema', () => {

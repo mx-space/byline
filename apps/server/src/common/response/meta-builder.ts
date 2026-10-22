@@ -1,10 +1,6 @@
 import type { z } from 'zod'
 
-import type {
-  EntryTranslation,
-  GlossaryMeta,
-  InteractionMeta,
-} from './meta.types'
+import type { EntryTranslation, GlossaryMeta } from './meta.types'
 import { BaseResponseMetaSchema } from './meta.types'
 
 type LegacyPaginationLike = {
@@ -55,12 +51,6 @@ export class MetaObjectBuilder<
 
   translation(value: EntryTranslation | Map<string, EntryTranslation>): this {
     ;(this.meta as Record<string, unknown>).translation =
-      value instanceof Map ? Object.fromEntries(value) : value
-    return this
-  }
-
-  interaction(value: InteractionMeta | Map<string, InteractionMeta>): this {
-    ;(this.meta as Record<string, unknown>).interaction =
       value instanceof Map ? Object.fromEntries(value) : value
     return this
   }

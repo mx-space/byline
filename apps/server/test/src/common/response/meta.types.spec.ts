@@ -2,7 +2,6 @@ import {
   ArticleTranslationSchema,
   EntryTranslationSchema,
   InsightsMetaSchema,
-  InteractionMetaSchema,
   ResponseMetaSchema,
 } from '~/common/response/meta.types'
 
@@ -65,13 +64,6 @@ describe('EntryTranslationSchema', () => {
 })
 
 describe('meta.types schemas', () => {
-  test('InteractionMetaSchema rejects unknown keys (strict)', () => {
-    expect(InteractionMetaSchema.safeParse({ isLiked: true }).success).toBe(
-      true,
-    )
-    expect(InteractionMetaSchema.safeParse({ '123': {} }).success).toBe(false)
-  })
-
   test('translation resolves a single EntryTranslation', () => {
     const parsed = ResponseMetaSchema.parse({
       translation: { article: { isTranslated: true, sourceLang: 'zh' } },
@@ -94,18 +86,6 @@ describe('meta.types schemas', () => {
       '1': { article: { isTranslated: true } },
       '2': { article: { isTranslated: false, sourceLang: 'zh' } },
     })
-  })
-
-  test('interaction resolves both a single value and an id-keyed map', () => {
-    expect(
-      ResponseMetaSchema.parse({ interaction: { isLiked: true } }).interaction,
-    ).toEqual({ isLiked: true })
-
-    expect(
-      ResponseMetaSchema.parse({
-        interaction: { '1': { isLiked: true }, '2': { isLiked: false } },
-      }).interaction,
-    ).toEqual({ '1': { isLiked: true }, '2': { isLiked: false } })
   })
 
   test('ResponseMetaSchema accepts insights with hasInLocale', () => {
