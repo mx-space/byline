@@ -2,6 +2,28 @@
 
 Command line tools for the [Byline](https://github.com/mx-space/byline) headless CMS.
 
+## Install
+
+Requires Node.js 22 or later.
+
+```sh
+pnpm add -g @mx-space/byline-cli
+# or run without installing
+npx @mx-space/byline-cli import mdx --help
+```
+
+The package installs a `byline` binary. API credentials come from flags or the
+environment:
+
+| Flag        | Environment      | Purpose                                             |
+| ----------- | ---------------- | --------------------------------------------------- |
+| `--api-url` | `BYLINE_API_URL` | API base URL, e.g. `https://cms.example.com/api/v3` |
+| `--api-key` | `BYLINE_API_KEY` | API key sent as `x-api-key`                         |
+| `--token`   | `BYLINE_TOKEN`   | session token sent as `Authorization: Bearer`       |
+
+The importer is also exported as a library (`planImport`, `executeImport`,
+`convertMdx`, `loadImportConfig`) for scripted migrations.
+
 ## `byline import mdx <dir>`
 
 Imports an MDX or Markdown content tree as Byline posts. It works with any
@@ -33,22 +55,29 @@ also looks up existing posts, users and categories (read-only).
 | `date` / `createdAt`                          | creation time, sent only with `--preserve-dates` |
 | `image` / `cover`                             | cover image (see image paths below)              |
 | `author` / `authors`                          | author keys, in byline order                     |
-| `seo.title`, `seo.description`, `seo.image`   | post SEO                                         |
+| `seo.title`, `seo.description`, `seo.image`   | SEO of the post or of that locale's translation  |
 | `tags` / `seo.tags`                           | tags                                             |
 | `summary` / `description` / `seo.description` | summary                                          |
 | `draft: true` / `published: false`            | the post is skipped                              |
+
+Translation files use `title`, `summary`, `tags` and `seo` from their own frontmatter.
+The source file decides category, date, cover and authors for every locale. A
+translation's `seo` block is stored on its translation row, and the server merges its
+non-empty fields over the source SEO when the post is read in that language.
 
 ### What the import does
 
 1. Converts each file to Lexical JSON with haklex nodes and validates it with
    `@haklex/rich-headless`.
 2. Resolves authors against existing users by `username`, then by display name.
-   Unknown authors become profile-only users from the authors file.
+   Unknown authors become profile-only users from the authors file. They stay
+   profile-only; to let one sign in later, invite them from the admin or with
+   `users.invite(id)` in the api-client, which keeps their id and bylines.
 3. Finds or creates categories.
 4. Creates the post in the source locale, or updates it when a post with the slug
    exists, through the draft and publish flow, without running AI resources.
-5. Writes every other locale as a locked manual translation, which publish-time
-   AI translation will not overwrite.
+5. Writes every other locale as a locked manual translation with its own SEO,
+   which publish-time AI translation will not overwrite.
 
 The import is idempotent: a content hash is stored in the post's `meta.bylineImport`,
 and unchanged posts are skipped unless `--force` is passed.
@@ -70,7 +99,8 @@ or paths relative to the config file.
 }
 ```
 
-Image paths in frontmatter and the body are handled by kind: relative paths
+Image paths in frontmatter (cover and `seo.image`, per locale) and the body are
+handled by kind: relative paths
 (`./hero.png`) are uploaded to Byline, URLs are kept, and site-absolute paths
 (`/images/hero.png`) are resolved against `siteUrl`. Without `siteUrl` they are
 kept as-is, which Byline accepts in the body but not as a post cover.
@@ -139,7 +169,44 @@ The authors file maps frontmatter keys to profiles:
 
 Add `"user": "<username or id>"` to point a key at an existing account.
 
-See `examples/lobehub/` for a complete configuration.
+## Example: LobeHub blog
+
+`examples/lobehub/` is the configuration for the LobeHub marketing blog: posts in
+`<category>/<slug>/index.mdx` with 16 translations each (`index.zh.mdx`,
+`index.pt-BR.mdx`, …), authors keyed by GitHub handle and LobeHub's MDX components
+mapped to haklex nodes.
+
+```sh
+byline import mdx ./docs/blogs \
+  --config node_modules/@mx-space/byline-cli/examples/lobehub/byline.import.json \
+  --dry-run
+```
+
+```text
+Dry run of ./docs/blogs (offline: no API lookups)
+Posts: 72 found; would create 72, update 0; unchanged 0, skipped 0, errors 0
+Locales: 17 (source en); 1152 translation files [en 72, ar 72, bg 72, de 72, …]
+SEO: 72 posts, 1152 translations
+Authors: 7 keys; 0 existing, would create 7 profile-only
+Categories: 0 existing, would create 4
+Components: Image 3701 -> image; X 935 -> embed; Callout 850 -> banner; …
+Unmapped components: none
+Issues: none
+```
+
+Then import for real, keeping the original publication dates:
+
+```sh
+BYLINE_API_URL=https://cms.example.com/api/v3 BYLINE_API_KEY=… \
+  byline import mdx ./docs/blogs \
+  --config node_modules/@mx-space/byline-cli/examples/lobehub/byline.import.json \
+  --preserve-dates
+```
+
+`zh` files become `zh-CN` through `localeAliases`, site-absolute image paths resolve
+against `https://lobehub.com`, and `LobeEvalLeaderboard` becomes a Dynamic Node. Point
+its `url` in `components.json` at the site's real component bundle before importing.
+Re-running the import only touches posts whose content changed.
 
 ## License
 
