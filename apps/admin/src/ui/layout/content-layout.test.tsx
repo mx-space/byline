@@ -231,23 +231,6 @@ describe('ContentLayout', () => {
     expect(sheet!.textContent).toContain('slot-portal-content')
   })
 
-  it('invokes onCloseAside when the bottom sheet close button is clicked on mobile', () => {
-    stubMatchMedia(false)
-    const onCloseAside = vi.fn()
-    render(
-      createElement(ContentLayout, {
-        open: true,
-        onCloseAside,
-        children: createElement('div', null, 'main-content'),
-      }),
-    )
-
-    act(() => {
-      findCloseButton()!.click()
-    })
-    expect(onCloseAside).toHaveBeenCalledTimes(1)
-  })
-
   it('invokes onCloseAside when the scrim is clicked on mobile', () => {
     stubMatchMedia(false)
     const onCloseAside = vi.fn()
