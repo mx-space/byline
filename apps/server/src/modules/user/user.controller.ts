@@ -142,10 +142,11 @@ export class UserController {
   @Auth()
   @RequirePermissions(UserPermission.ManageUsers)
   update(
+    @CurrentUser() user: SessionUser,
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: UpdateUserSchema }) body: UpdateUserDto,
   ) {
-    return this.userService.updateProfile(params.id, body)
+    return this.userService.updateProfile(params.id, body, user.id)
   }
 
   @Post('/:id/deactivate')

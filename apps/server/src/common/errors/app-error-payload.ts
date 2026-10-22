@@ -133,6 +133,7 @@ export type AppErrorPayloadMap = {
   [AppErrorCode.USER_ALREADY_EXISTS]: undefined
   [AppErrorCode.USER_NOT_FOUND]: WithId
   [AppErrorCode.USER_CONFLICT]: undefined
+  [AppErrorCode.USER_IDENTITY_LOCKED]: WithId
   [AppErrorCode.INVITE_NOT_FOUND]: undefined
   [AppErrorCode.INVITE_EXPIRED]: undefined
   [AppErrorCode.INVITE_ALREADY_ACCEPTED]: undefined

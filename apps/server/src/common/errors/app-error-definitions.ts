@@ -446,6 +446,12 @@ export const APP_ERROR_DEFINITIONS = {
     status: 409,
     message: 'A user with this email or username already exists',
   },
+  [AppErrorCode.USER_IDENTITY_LOCKED]: {
+    status: 403,
+    message:
+      "Only the account holder can change a sign-in account's email or username",
+    details: (p) => (p?.id ? { id: p.id } : undefined),
+  },
   [AppErrorCode.INVITE_NOT_FOUND]: {
     status: 404,
     message: 'Invite not found',
@@ -491,8 +497,6 @@ export const APP_ERROR_DEFINITIONS = {
     message: 'Webhook not found',
     details: (p) => (p?.id ? { id: p.id } : undefined),
   },
-
-  // bing
 } satisfies {
   [C in AppErrorCode]: AppErrorDefinition<C>
 }

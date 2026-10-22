@@ -25,6 +25,19 @@ const isUniqueViolation = (error: unknown) =>
   typeof error === 'object' &&
   (error as { code?: unknown }).code === '23505'
 
+// Another user rewriting a sign-in email would let them reset that account's
+// password through the mailbox they now control.
+const changesSignInIdentity = (existing: UserRow, dto: UpdateUserDto) => {
+  const emailChanged =
+    dto.email !== undefined &&
+    (dto.email?.toLowerCase() ?? null) !==
+      (existing.email?.toLowerCase() ?? null)
+  const usernameChanged =
+    dto.username !== undefined &&
+    dto.username !== (existing.username?.toLowerCase() ?? null)
+  return emailChanged || usernameChanged
+}
+
 @Injectable()
 export class UserService {
   constructor(
@@ -99,10 +112,18 @@ export class UserService {
     }
   }
 
-  async updateProfile(id: string, dto: UpdateUserDto) {
+  async updateProfile(id: string, dto: UpdateUserDto, actorId?: string) {
     const existing = await this.userRepository.findById(id)
     if (!existing) {
       throw createAppException(AppErrorCode.USER_NOT_FOUND, { id })
+    }
+    if (
+      actorId &&
+      actorId !== id &&
+      !existing.isProfileOnly &&
+      changesSignInIdentity(existing, dto)
+    ) {
+      throw createAppException(AppErrorCode.USER_IDENTITY_LOCKED, { id })
     }
     await this.assertIdentityAvailable(dto.username, dto.email, id)
     try {
