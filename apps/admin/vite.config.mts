@@ -1,0 +1,284 @@
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import babel from '@rolldown/plugin-babel'
+import tailwindcss from '@tailwindcss/vite'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
+import { codeInspectorPlugin } from 'code-inspector-plugin'
+import type { PluginOption } from 'vite'
+import { loadEnv } from 'vite'
+import { checker } from 'vite-plugin-checker'
+import { defineConfig } from 'vitest/config'
+
+import PKG from './package.json'
+import { adminRoutes } from './vite-plugins/admin-routes'
+import { esToolkitCompatShim } from './vite-plugins/es-toolkit-compat-shim'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// dns.setDefaultResultOrder('verbatim')
+export default ({ mode }) => {
+  const env = loadEnv(mode, process.cwd())
+  const { VITE_APP_PUBLIC_URL } = env
+  const isDev = mode === 'development'
+
+  return defineConfig({
+    plugins: [
+      esToolkitCompatShim(),
+      codeInspectorPlugin({ bundler: 'vite' }),
+      adminRoutes({ viewsDir: resolve(__dirname, 'src/views') }),
+      tailwindcss(),
+      react(),
+      babel({ presets: [reactCompilerPreset()] }),
+
+      checker({
+        enableBuild: true,
+      }),
+      htmlPlugin(env),
+      // nodePolyfills({
+      //   // To exclude specific polyfills, add them to this list.
+      //   exclude: [
+      //     'fs', // Excludes the polyfill for `fs` and `node:fs`.
+      //   ],
+      //   // Whether to polyfill `node:` protocol imports.
+      //   protocolImports: true,
+      // }),
+    ],
+
+    resolve: {
+      tsconfigPaths: true,
+      alias: {
+        path: 'path-browserify',
+        os: 'os-browserify',
+        'node-fetch': 'isomorphic-fetch',
+        buffer: 'buffer',
+      },
+    },
+
+    build: {
+      chunkSizeWarningLimit: 2500,
+      target: 'esnext',
+
+      // sourcemap: true,
+      rollupOptions: {
+        output: {
+          chunkFileNames: `js/[name]-[hash].js`,
+          entryFileNames: `js/[name]-[hash].js`,
+          manualChunks(id: string) {
+            if (!id.includes('node_modules')) return
+
+            const normalized = id.replaceAll('\\', '/')
+
+            if (normalized.includes('/react-dom/')) return 'vendor-react-dom'
+            if (
+              normalized.includes('/react/') ||
+              normalized.includes('/scheduler/')
+            ) {
+              return 'vendor-react'
+            }
+
+            if (normalized.includes('/@tanstack/')) return 'vendor-tanstack'
+            if (normalized.includes('/@base-ui-components/')) {
+              return 'vendor-base-ui'
+            }
+            if (normalized.includes('/lucide-react/')) return 'vendor-icons'
+
+            if (
+              normalized.includes('/@lexical/') ||
+              normalized.includes('/lexical/')
+            ) {
+              return 'editor-lexical'
+            }
+            if (normalized.includes('/katex/')) return 'editor-katex'
+            if (normalized.includes('/cytoscape/')) return 'editor-graph'
+            if (normalized.includes('/elkjs/')) return 'editor-elk'
+            if (normalized.includes('/roughjs/')) return 'editor-rough'
+
+            const haklexChunk = getScopedPackageChunk(
+              normalized,
+              '@haklex/',
+              'haklex',
+            )
+            if (haklexChunk) return haklexChunk
+
+            if (normalized.includes('/monaco-editor/')) return 'editor-monaco'
+          },
+        },
+      },
+    },
+    optimizeDeps: {
+      // Vite 8 esbuild optimizer drops re-export aliases in barrel modules;
+      // these trigger "Export 'X' is not defined" at runtime.
+      exclude: [
+        'lucide-react',
+        '@haklex/rich-compose',
+        'better-auth/client',
+        'better-auth/client/plugins',
+        '@better-auth/passkey/client',
+      ],
+      include: [
+        '@base-ui/react/button',
+        '@base-ui/react/checkbox',
+        '@base-ui/react/field',
+        '@base-ui/react/input',
+        '@base-ui/react/popover',
+        '@base-ui/react/switch',
+        '@codemirror/commands',
+        '@codemirror/lang-markdown',
+        '@codemirror/language',
+        '@codemirror/language-data',
+        '@codemirror/search',
+        '@codemirror/state',
+        '@codemirror/theme-one-dark',
+        '@codemirror/view',
+        '@ddietr/codemirror-themes/theme/github-light',
+        '@haklex/rich-agent-core',
+        '@haklex/rich-editor',
+        '@haklex/rich-editor-ui',
+        '@haklex/rich-editor/commands',
+        '@haklex/rich-editor/renderers',
+        '@haklex/rich-editor/static',
+        '@haklex/rich-ext-ai-agent',
+        '@haklex/rich-ext-chat',
+        '@haklex/rich-ext-chat/edit',
+        '@haklex/rich-ext-chat/node',
+        '@haklex/rich-ext-chat/renderer',
+        '@haklex/rich-ext-chat/static',
+        '@haklex/rich-ext-code-snippet',
+        '@haklex/rich-ext-code-snippet/edit',
+        '@haklex/rich-ext-code-snippet/node',
+        '@haklex/rich-ext-code-snippet/renderer',
+        '@haklex/rich-ext-code-snippet/static',
+        '@haklex/rich-ext-embed',
+        '@haklex/rich-ext-embed/static',
+        '@haklex/rich-ext-excalidraw',
+        '@haklex/rich-ext-excalidraw/static',
+        '@haklex/rich-ext-gallery',
+        '@haklex/rich-ext-gallery/node',
+        '@haklex/rich-ext-gallery/renderer',
+        '@haklex/rich-ext-gallery/static',
+        '@haklex/rich-ext-nested-doc',
+        '@haklex/rich-ext-nested-doc/static',
+        '@haklex/rich-plugin-block-handle',
+        '@haklex/rich-plugin-floating-toolbar',
+        '@haklex/rich-plugin-link-edit',
+        '@haklex/rich-plugin-litexml-paste',
+        '@haklex/rich-plugin-mention',
+        '@haklex/rich-plugin-slash-menu',
+        '@haklex/rich-plugin-table',
+        '@haklex/rich-plugin-toolbar',
+        '@haklex/rich-renderer-alert',
+        '@haklex/rich-renderer-alert/static',
+        '@haklex/rich-renderer-banner',
+        '@haklex/rich-renderer-banner/static',
+        '@haklex/rich-renderer-codeblock',
+        '@haklex/rich-renderer-codeblock/static',
+        '@haklex/rich-renderer-image',
+        '@haklex/rich-renderer-image/static',
+        '@haklex/rich-renderer-katex',
+        '@haklex/rich-renderer-linkcard',
+        '@haklex/rich-renderer-linkcard/static',
+        '@haklex/rich-renderer-mention',
+        '@haklex/rich-renderer-mention/static',
+        '@haklex/rich-renderer-mermaid',
+        '@haklex/rich-renderer-mermaid/static',
+        '@haklex/rich-renderer-ruby',
+        '@haklex/rich-renderer-ruby/static',
+        '@haklex/rich-renderer-video',
+        '@haklex/rich-renderer-video/static',
+        '@lexical/markdown',
+        '@lexical/react/LexicalComposerContext',
+        '@lexical/rich-text',
+        '@lezer/highlight',
+        '@lobehub/streamdown',
+        'lexical',
+        'maplibre-gl',
+        '@monaco-editor/react',
+        '@rehookify/datepicker',
+        'canvas-confetti',
+        'fuse.js',
+        'js-yaml',
+        'katex',
+        'lit',
+        'lit/directives/unsafe-html.js',
+        'monaco-editor',
+        'react-resizable-panels',
+        'shiki',
+        'zod',
+        'zustand',
+      ],
+    },
+
+    define: {
+      __DEV__: isDev,
+    },
+    base: !isDev ? VITE_APP_PUBLIC_URL || '' : '',
+
+    server: {
+      // https: true,
+      port: 9528,
+      warmup: {
+        clientFiles: isDev
+          ? [
+              './src/main.tsx',
+              './src/App.tsx',
+              './src/shell.tsx',
+              './src/router.tsx',
+              './src/layouts/protected-layout.tsx',
+              './src/views/dashboard/page.tsx',
+              './src/views/(content)/posts/page.tsx',
+              './src/views/(content)/notes/page.tsx',
+              './src/views/(content)/pages/page.tsx',
+              './src/views/(content)/drafts/page.tsx',
+              './src/views/(community)/comments/page.tsx',
+            ]
+          : [],
+      },
+    },
+    oxc: {
+      jsx: {
+        runtime: 'automatic',
+        importSource: 'react',
+      },
+    },
+    test: {
+      environment: 'happy-dom',
+      setupFiles: [resolve(__dirname, 'test/setup.ts')],
+    },
+  })
+}
+
+const htmlPlugin: (env: any) => PluginOption = (env) => {
+  return {
+    name: 'html-transform',
+    enforce: 'post',
+    transformIndexHtml(html) {
+      return html
+        .replace(
+          '<!-- Mix Space ADMIN DASHBOARD VERSION INJECT -->',
+          `<script>window.version = '${PKG.version}';</script>`,
+        )
+        .replaceAll('@gh-pages', `@page_v${PKG.version}`)
+        .replace(
+          '<!-- ENV INJECT -->',
+          `<script id="env_injection">window.injectData = {WEB_URL:'${
+            env.VITE_APP_WEB_URL || ''
+          }', GATEWAY: '${env.VITE_APP_GATEWAY || ''}',BASE_API: '${
+            env.VITE_APP_BASE_API || ''
+          }'}</script>`,
+        )
+    },
+  }
+}
+
+function getScopedPackageChunk(id: string, scope: string, prefix: string) {
+  const marker = `/node_modules/${scope}`
+  const markerIndex = id.lastIndexOf(marker)
+  if (markerIndex === -1) return
+
+  const packagePath = id.slice(markerIndex + marker.length)
+  const packageName = packagePath.split('/')[0]
+  if (!packageName) return
+
+  return `${prefix}-${packageName.replaceAll(/[^\w-]/g, '-')}`
+}

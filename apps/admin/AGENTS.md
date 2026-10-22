@@ -1,0 +1,285 @@
+# CLAUDE.md — apps/admin
+
+Guidance for Claude Code when working in the admin app inside the mx-core monorepo.
+
+## Project Overview
+
+This is the Mix Space admin dashboard — a React 19 SPA (package `@mx-admin/admin`).
+It lives at `apps/admin` within the mx-core monorepo and is built locally during the
+core build/release; it is no longer downloaded from GitHub releases. The built output
+(`apps/admin/dist`) is served by the sibling backend app `apps/core` under the route
+`/proxy/qaqdmin`. Built with Base UI primitives, React Router (HashRouter), TanStack
+Query, Sonner, and a Tailwind v4 layer.
+
+## Development Commands
+
+Run from the monorepo root (the workspace install is governed by the root) — see
+`apps/admin/package.json` scripts, or target the package directly with
+`pnpm --filter @mx-admin/admin run <script>`.
+
+Scope checks to changed files only — never run lint/typecheck/build over the whole
+tree just to verify a small edit. One-off file typecheck:
+`pnpm -C apps/admin exec tsc --noEmit --pretty false`.
+
+Env vars live in `apps/admin/.env` (see `apps/admin/.env.example`). `VITE_APP_BASE_API`
+is the mx-core API endpoint. All vars are optional and fall back to empty/same-origin,
+so a build with empty env will not crash.
+
+## Architecture Overview
+
+### Entry & Shell
+
+`main.tsx` → `App.tsx` (mounts providers, `HashRouter`, auth gate, installs theme tokens
+via `installThemeTokens`) → admin shell (nav chrome + `SocketBridge` + routes). All views
+in `routes.tsx` are `lazy()`-loaded and wrapped in `<Suspense>`; add new pages by
+registering a lazy import there. The `checkLogged` auth gate wraps everything except
+`/setup`, `/setup-api`, `/login`. Headless UI wrappers live in `apps/admin/src/ui/`.
+
+### API Layer (`apps/admin/src/api/`)
+
+API services use the fetch-based helpers in `apps/admin/src/api/http.ts`.
+
+When using TanStack Query, extract arrays with:
+```typescript
+select: (res: any) => Array.isArray(res) ? res : res?.data ?? []
+```
+
+**Error Classes:**
+- `BusinessError` — application-level errors (4xx responses)
+- `SystemError` — network/server errors (5xx responses, network failures)
+
+### Responsive Breakpoints
+
+- `phone:` — max-width: 768px
+- `tablet:` — max-width: 1023px
+- `desktop:` — min-width: 1024px
+
+## Code Style Rules
+
+### Validation
+
+After modifying code, run focused type checking and linting on the changed files only.
+Run a production build before reporting completion for broad application changes.
+
+### Gray Scale Colors
+
+All gray colors MUST use `neutral` instead of `gray` to match the Vercel-style design:
+- Good: `text-neutral-500`, `bg-neutral-800`, `border-neutral-200`
+- Bad: `text-gray-500`, `bg-gray-800`, `border-gray-200`
+
+This rule applies only to raw color usage. For app surfaces, foregrounds, and borders
+prefer the Design System v2 semantic tokens documented below.
+
+### Typography
+
+Do NOT use arbitrary font sizes (e.g. `text-[11px]`, `text-[13px]`). Use standard
+Tailwind classes:
+
+| Purpose | Class | Size | Use Case |
+|---------|-------|------|----------|
+| Page title | `text-2xl` | 24px | Main page titles |
+| Section title | `text-xl` | 20px | Section headers |
+| Card title | `text-lg` | 18px | Card titles |
+| Modal header | `text-base` | 16px | Modal headers |
+| Secondary title | `text-base` | 16px | Sub-headings, stats |
+| Body text | `text-sm` | 14px | List items, form labels, buttons |
+| Metadata | `text-xs` | 12px | Timestamps, badges, descriptions |
+
+## Design System v2
+
+The admin uses a token-driven Design System v2 (Notion-warm aesthetic, larger radii,
+cobalt accent). Tokens live in `apps/admin/src/styles/tokens.css` (`@theme` block plus
+`.dark { … }` overrides). Spec: `docs/superpowers/specs/2026-05-30-admin-ui-softening-design.md`.
+
+### Surface stack
+
+Three-layer surface model. Always reach for these tokens before raw `bg-white` /
+`bg-neutral-*`.
+
+| Token | Tailwind | Purpose |
+|---|---|---|
+| `--color-surface-page` | `bg-surface-page` | Outer shell, html background |
+| `--color-surface-card` | `bg-surface-card` | Primary content containers |
+| `--color-surface-inset` | `bg-surface-inset` | Empty states, code blocks, hover tint, in-card panels |
+| `--color-surface-overlay` | `bg-surface-overlay` | Popovers, dropdowns, tooltips |
+
+### Foreground
+
+| Token | Tailwind | Use |
+|---|---|---|
+| `--color-fg` | `text-fg` | Main copy, titles |
+| `--color-fg-muted` | `text-fg-muted` | Labels, sub-copy, meta |
+| `--color-fg-subtle` | `text-fg-subtle` | Placeholders, disabled, decorative dots/icons |
+
+### Borders
+
+| Token | Tailwind | Use |
+|---|---|---|
+| `--color-border` | `border-border` | Card edges, inputs, dividers (soft hairline rgba) |
+| `--color-border-strong` | `border-border-strong` | Hover, active, focus emphasis |
+
+### Accent
+
+Warm cobalt blue. Used for primary CTAs, links, focus rings, selected-row tints.
+
+| Token | Tailwind | Use |
+|---|---|---|
+| `--color-accent` | `bg-accent`, `text-accent`, `ring-accent` | Primary CTA bg, link/focus color |
+| `--color-accent-hover` | `bg-accent-hover` | Hover for primary CTA |
+| `--color-accent-soft` | `bg-accent-soft` | Selected row tint, soft accent fills |
+
+### Radii scale
+
+| Tailwind | Value | Use |
+|---|---|---|
+| `rounded-xs` | 6px | Tiny chips |
+| `rounded-sm` | 8px | Buttons, inputs, dropdown items |
+| `rounded-md` | 10px | List rows, code blocks, large inputs, tooltip cards |
+| `rounded-lg` | 12px | Cards, modals, drawers, popovers |
+| `rounded-xl` | 14px | Empty states, hero cards |
+| `rounded-full` | pill | Status pills, tags, badges |
+
+### Shadow scale
+
+| Tailwind | Use |
+|---|---|
+| `shadow-xs` | Input rest, ghost lift |
+| `shadow-sm` | Cards, panels, mobile row cards |
+| `shadow-md` | Popovers, dropdowns, chart tooltip |
+| `shadow-lg` | Modals, drawers |
+
+### Focus ring rule
+
+Single rule, applied via:
+
+```
+focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-accent/15
+```
+
+No `ring-offset-*`. The 3px soft-glow replaces the older 2px solid frame.
+
+### Status pill
+
+Import from `~/ui/data/StatusPill`. Six semantic tones — use only for these states:
+
+- `live`, `draft`, `error`, `scheduled`, `archived`, `pending`
+
+```tsx
+import { StatusPill } from '~/ui/data/StatusPill'
+
+<StatusPill tone="live">Published</StatusPill>
+```
+
+For app-specific labels (whispers, language tags, role badges, etc.) keep inline `<Badge />`
+or custom chips — `StatusPill` is reserved for the six standard publication-lifecycle tones.
+
+### Empty state
+
+Import from `~/ui/patterns/EmptyState` for standard "nothing here" surfaces:
+
+```tsx
+import { EmptyState } from '~/ui/patterns/EmptyState'
+
+<EmptyState
+  icon={<Inbox className="size-6" />}
+  title="No drafts yet"
+  description="Drafts you save will appear here."
+  action={<Button>Write something</Button>}
+/>
+```
+
+Layout is `--surface-inset` background, `rounded-xl`, icon tile on `--surface-card`
+with `shadow-xs`. Two-line copy (title + helper), optional CTA below.
+
+### Legacy aliases
+
+`--color-primary`, `--color-primary-shallow`, `--color-primary-deep` remain as
+aliases pointing at the new accent palette so older code keeps working. They are
+written by `installThemeTokens()` in `src/theme.ts`. **New code uses
+`--color-accent*` directly**; do not introduce new `--color-primary*` references.
+
+### Notes
+
+- `StatusPill`'s `archived` tone uses `neutral-{100,700}` (admin convention) instead
+  of the spec's `gray-{100,600}`. This is intentional — admin neutral-over-gray rule
+  applies even to the pattern.
+- Inter is loaded via Google Fonts CDN (`@import url(...)` in `index.css`) rather than
+  self-hosted, per the PR1 deferral. Self-hosting (Latin subset, ~80KB local woff2) is
+  a future polish.
+- Sidebar nav has a right-aligned tabular count column plumbed in the component, but
+  the route data model does not yet carry per-route counts. Populate when the model
+  surfaces them.
+
+## Layout Conventions
+
+New admin views must follow the master-detail / content-layout convention. The reusable
+shells live in `apps/admin/src/ui/layout/`:
+
+- `content-layout.tsx` — list+detail pages (comments, drafts, topics)
+- `page-layout.tsx` — page shell with header
+- companion pieces in the same dir (`header-back-button.tsx`, `sidebar-*`, `resize-handle.tsx`)
+
+## Configuration Files
+
+- `apps/admin/vite.config.mts` — Vite + react-compiler + Tailwind + checker; `base` uses
+  `VITE_APP_PUBLIC_URL` in production (empty = relative paths, the safe default); the html
+  plugin injects `WEB_URL`/`GATEWAY`/`BASE_API` into `window.injectData`
+- `apps/admin/src/constants/env.ts` — resolves API/web/gateway URLs (injected env first,
+  then `VITE_APP_*`)
+
+## Release
+
+Two channels publish the dashboard (full detail in `../../docs/admin-monorepo-migration.md`):
+
+- **With a core release** (`v*` tag): `release.yml` builds admin and bundles it into the
+  server zip + Docker image. It does NOT publish to R2.
+- **Independently** (admin-only fix, no core release): run
+  `../../scripts/release-admin.sh [patch|minor|major]` — bumps `package.json`, tags
+  `admin-v*`, and `admin-release.yml` builds + publishes to R2. This is the only R2 channel.
+
+The version baseline is `8.x`+ (above the retired GitHub channel) so a freshly bundled
+build supersedes any copy previously downloaded into the server's data directory.
+
+## AI Agent Chat (post pi-ai migration)
+
+The AI agent chat surface lives under `apps/admin/src/features/write/components/agent/`
+and `apps/admin/src/api/ai-agent.ts`. After the pi-ai migration:
+
+- **Transport** — `apps/admin/src/api/ai-agent.ts` consumes the
+  JSON-framed `AiAgentSseEvent` union via the shared TypeBox schema imported
+  from the neutral `@mx-space/ai` package
+  (`packages/ai/src/ai-agent-sse.ts`). Each SSE line is a single
+  `data: <json>\n\n` event — there is no `event:` prefix line. The transport
+  parses each frame and dispatches typed events to the session manager.
+- **Session manager** — buffers a draft `AssistantMessage` per turn,
+  accumulating text/thinking blocks by `contentIndex`. Tool-call blocks are
+  ONLY committed on `toolcall_end`; partial `toolcall_delta` is dropped on
+  abort or network drop.
+- **Multi-block rendering** — `MessageBubble` renders text, thinking, and
+  toolcall blocks in monotonic `contentIndex` order. Toolcall events for
+  haklex (`insert_node`/`replace_node`) wire back to the lexical editor via
+  a callback prop, NOT global state.
+- **Network drop** — the transport surfaces a `connection lost` UI without
+  crashing. Covered by `apps/admin/src/features/write/components/agent/*.test.tsx`
+  (jsdom vitest integration tests + a 50-frame interleaved fixture).
+- **Provider config** — `AIProviderDrawer` exposes 3 provider types
+  (`OpenAICompatible`, `Anthropic`, `Generic`), with a model `Combobox`
+  sourced from `GET /api/ai/registry/models` (10-minute stale, build-hash
+  cache key). Unknown legacy localStorage values (`openai`, `openrouter`)
+  are rewritten to `openai-compatible` on app boot by
+  `apps/admin/src/bootstrap/migrate-legacy-provider-type.ts`. The
+  `contextWindow` and `maxTokens` numeric inputs only render when the typed
+  model id is NOT in the registry (case-insensitive trim match).
+
+See `apps/core/CLAUDE.md` for the server-side wire-format invariants.
+
+## Related Projects (within the monorepo)
+
+- **apps/core** — backend API server (NestJS), the sibling workspace app. Serves the built
+  admin under `/proxy/qaqdmin` and reads it from disk at `<assetRoot>/index.html`.
+- **Shiroi** — Next.js blog frontend, located at `../../Shiroi` (relative to repo root).
+- **haklex** — rich editor packages (`@haklex/*`), consumed as published dependencies.
+
+### Rich Editor Integration
+
+Rich editor work is integrated as ordinary React components.

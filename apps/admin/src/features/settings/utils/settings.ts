@@ -1,0 +1,426 @@
+import {
+  Bell,
+  CreditCard,
+  Database,
+  FileText,
+  Globe,
+  ListPlus,
+  Puzzle,
+  Search,
+  Settings,
+  Shield,
+  Sparkles,
+  User,
+} from 'lucide-react'
+
+import type { ConfigFormField } from '~/api/options'
+import type { SearchIndexRebuildResult } from '~/api/search-index'
+import { translate as t } from '~/i18n/translate'
+import type { TranslationKey, TranslationValues } from '~/i18n/types'
+import type { CreateMetaPresetDto, MetaPresetField } from '~/models/meta-preset'
+
+import { aiProviderTypeOptions, typesWithOptions } from '../constants'
+import type {
+  AIConfig,
+  AIProviderConfig,
+  AIProviderModel,
+  AIProviderType,
+} from '../types/settings'
+
+type Translator = (key: TranslationKey, values?: TranslationValues) => string
+
+const groupIconMap: Record<string, typeof User> = {
+  bell: Bell,
+  'credit-card': CreditCard,
+  database: Database,
+  'file-text': FileText,
+  globe: Globe,
+  'list-plus': ListPlus,
+  puzzle: Puzzle,
+  search: Search,
+  settings: Settings,
+  shield: Shield,
+  sparkles: Sparkles,
+  user: User,
+}
+
+export function getGroupIcon(icon: string) {
+  return groupIconMap[icon] ?? Settings
+}
+
+export function shouldShowField(
+  field: ConfigFormField,
+  formData: Record<string, unknown>,
+  sectionPrefix: string,
+) {
+  const showWhen = field.ui.showWhen
+  if (!showWhen) return true
+
+  return Object.entries(showWhen).every(([key, expected]) => {
+    const actual = getPath(formData, `${sectionPrefix}.${key}`)
+    const values = Array.isArray(expected) ? expected : [expected]
+    return values.some((value) => String(actual) === String(value))
+  })
+}
+
+export function getPath(source: unknown, path: string) {
+  return path.split('.').reduce<unknown>((current, key) => {
+    if (!current || typeof current !== 'object') return undefined
+    return (current as Record<string, unknown>)[key]
+  }, source)
+}
+
+export function setPathImmutable<T extends Record<string, unknown>>(
+  source: T,
+  path: string,
+  value: unknown,
+): T {
+  const [head, ...rest] = path.split('.')
+  if (!head) return source
+
+  if (rest.length === 0) return { ...source, [head]: value }
+
+  const current =
+    source[head] && typeof source[head] === 'object'
+      ? (source[head] as Record<string, unknown>)
+      : {}
+
+  return {
+    ...source,
+    [head]: setPathImmutable(current, rest.join('.'), value),
+  }
+}
+
+export function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value ?? {})) as T
+}
+
+export function isDeepEqual(left: unknown, right: unknown) {
+  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null)
+}
+
+export function stringValue(value: unknown) {
+  if (value === undefined || value === null) return ''
+  return String(value)
+}
+
+export function formatDateTime(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('zh-CN', {
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
+}
+
+export function formatDateTimeInputValue(value: Date) {
+  const offsetDate = new Date(
+    value.getTime() - value.getTimezoneOffset() * 60_000,
+  )
+  return offsetDate.toISOString().slice(0, 16)
+}
+
+export function normalizeAIConfig(value: unknown): AIConfig {
+  if (!value || typeof value !== 'object') {
+    return { providers: [], version: 2 }
+  }
+  const config = value as AIConfig
+  return {
+    ...config,
+    version: 2,
+    providers: (config.providers ?? []).map((provider) => {
+      const endpoint = provider.endpoint ?? ''
+      const isLegacyVertex =
+        provider.type === 'openai-compatible' && isVertexEndpoint(endpoint)
+      return {
+        apiKey: provider.apiKey ?? '',
+        appendV1: provider.appendV1 ?? true,
+        contextWindow: provider.contextWindow ?? undefined,
+        defaultModel: provider.defaultModel ?? '',
+        enabled: Boolean(provider.enabled),
+        endpoint,
+        id: provider.id || crypto.randomUUID(),
+        maxTokens: provider.maxTokens ?? undefined,
+        modelListUrl: isLegacyVertex ? '' : (provider.modelListUrl ?? ''),
+        name: provider.name ?? '',
+        projectId: provider.projectId ?? extractVertexProjectId(endpoint) ?? '',
+        type: isLegacyVertex
+          ? ('google-vertex' as const)
+          : coerceAIProviderType(provider.type),
+        capabilities: isLegacyVertex
+          ? { image: true, speech: true, text: true }
+          : {
+              decision: provider.capabilities?.decision,
+              text: provider.capabilities?.text ?? true,
+              image: provider.capabilities?.image ?? false,
+              speech: provider.capabilities?.speech ?? false,
+            },
+      }
+    }),
+  }
+}
+
+function isVertexEndpoint(endpoint: string): boolean {
+  try {
+    const url = new URL(endpoint)
+    return (
+      url.hostname === 'aiplatform.googleapis.com' &&
+      url.pathname.endsWith('/endpoints/openapi')
+    )
+  } catch {
+    return false
+  }
+}
+
+function extractVertexProjectId(endpoint: string): string | undefined {
+  try {
+    const match = new URL(endpoint).pathname.match(/\/projects\/([^/]+)/)
+    return match?.[1] ? decodeURIComponent(match[1]) : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export function coerceAIProviderType(value: unknown): AIProviderType {
+  if (
+    value === 'typesafe' ||
+    value === 'anthropic' ||
+    value === 'generic' ||
+    value === 'google-vertex'
+  )
+    return value
+  return 'openai-compatible'
+}
+
+export function formatAIProviderLabel(provider: AIProviderConfig) {
+  const name = provider.name.trim()
+  if (name) return name
+  const option = aiProviderTypeOptions.find(
+    (option) => option.value === provider.type,
+  )
+  return option ? t(option.labelKey) : provider.type
+}
+
+export function getDefaultAIModel(type: AIProviderType) {
+  switch (type) {
+    case 'typesafe': {
+      return 'jev-latest'
+    }
+    case 'anthropic': {
+      return 'claude-sonnet-4.5'
+    }
+    case 'generic': {
+      return ''
+    }
+    case 'google-vertex': {
+      return 'google/gemini-3.6-flash'
+    }
+    case 'openai-compatible': {
+      return ''
+    }
+  }
+}
+
+export function getAIProviderNamePlaceholder(
+  t: Translator,
+  type: AIProviderType,
+) {
+  switch (type) {
+    case 'anthropic': {
+      return t('settings.ai.placeholder.nameAnthropic')
+    }
+    case 'generic': {
+      return t('settings.ai.placeholder.nameCompatible')
+    }
+    case 'google-vertex': {
+      return 'Google Vertex AI'
+    }
+    case 'openai-compatible': {
+      return t('settings.ai.placeholder.nameCompatible')
+    }
+  }
+}
+
+export function getAIProviderKeyPlaceholder(type: AIProviderType) {
+  switch (type) {
+    case 'anthropic': {
+      return 'sk-ant-...'
+    }
+    case 'generic':
+    case 'openai-compatible': {
+      return 'sk-...'
+    }
+    case 'google-vertex': {
+      return 'AQ.…'
+    }
+  }
+}
+
+export function getAIProviderModelPlaceholder(
+  t: Translator,
+  type: AIProviderType,
+) {
+  switch (type) {
+    case 'anthropic': {
+      return t('settings.ai.placeholder.modelAnthropic')
+    }
+    case 'generic': {
+      return t('settings.ai.placeholder.modelCompatible')
+    }
+    case 'google-vertex': {
+      return 'google/gemini-3.6-flash'
+    }
+    case 'openai-compatible': {
+      return t('settings.ai.placeholder.modelCompatible')
+    }
+  }
+}
+
+const PI_PROVIDER_HOSTNAMES: Record<string, string> = {
+  'api.anthropic.com': 'anthropic',
+  'api.deepseek.com': 'deepseek',
+  'api.openai.com': 'openai',
+  'openrouter.ai': 'openrouter',
+  'aiplatform.googleapis.com': 'google-vertex',
+}
+
+export function resolvePiProviderId(provider: {
+  endpoint?: string
+  type: AIProviderType
+}): string | null {
+  const endpoint = provider.endpoint?.trim()
+  if (endpoint) {
+    try {
+      const host = new URL(endpoint).hostname.toLowerCase()
+      if (PI_PROVIDER_HOSTNAMES[host]) return PI_PROVIDER_HOSTNAMES[host]
+    } catch {
+      // not a parseable URL — fall through to type fallback
+    }
+  }
+  switch (provider.type) {
+    case 'typesafe': {
+      return null
+    }
+    case 'anthropic': {
+      return 'anthropic'
+    }
+    case 'openai-compatible': {
+      return 'openai'
+    }
+    case 'google-vertex': {
+      return 'google-vertex'
+    }
+    case 'generic': {
+      return null
+    }
+  }
+}
+
+export function matchRegistryModel(
+  models: { id: string }[] | undefined,
+  modelId: string,
+): { id: string } | undefined {
+  const target = modelId.trim().toLowerCase()
+  if (!target) return undefined
+  return (models ?? []).find((m) => m.id.trim().toLowerCase() === target)
+}
+
+export function mergeModelOptions(
+  fetchedModels: AIProviderModel[] | undefined,
+  registryModels:
+    | Array<{
+        costs?: { inputPerMillion: number; outputPerMillion: number }
+        id: string
+        name?: string
+      }>
+    | undefined,
+): AIProviderModel[] {
+  const seen = new Set<string>()
+  const merged: AIProviderModel[] = []
+  for (const model of fetchedModels ?? []) {
+    const id = model.id.trim()
+    if (!id) continue
+    const key = id.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    merged.push({ ...model, id, name: model.name || id })
+  }
+  for (const model of registryModels ?? []) {
+    const id = model.id.trim()
+    if (!id) continue
+    const key = id.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    merged.push({
+      id,
+      name: model.name || id,
+      ...(model.costs
+        ? {
+            pricing: {
+              completion: String(model.costs.outputPerMillion / 1_000_000),
+              prompt: String(model.costs.inputPerMillion / 1_000_000),
+              unit: 'token' as const,
+            },
+          }
+        : {}),
+    })
+  }
+  return merged
+}
+
+export function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) return error.message
+  return fallback
+}
+
+export function formatSearchIndexStats(result: SearchIndexRebuildResult) {
+  return t('settings.maintenance.searchIndex.stats', {
+    created: result.created,
+    deleted: result.deleted,
+    skipped: result.skipped,
+    total: result.total,
+    updated: result.updated,
+  })
+}
+
+export function emptyMetaPreset(): CreateMetaPresetDto {
+  return {
+    enabled: true,
+    key: '',
+    label: '',
+    scope: 'both',
+    type: 'text',
+  }
+}
+
+export function metaPresetToForm(preset: MetaPresetField): CreateMetaPresetDto {
+  return {
+    allowCustomOption: preset.allowCustomOption,
+    children: preset.children,
+    description: preset.description ?? '',
+    enabled: preset.enabled,
+    key: preset.key,
+    label: preset.label,
+    options: preset.options,
+    placeholder: preset.placeholder ?? '',
+    scope: preset.scope,
+    type: preset.type,
+  }
+}
+
+export function validateMetaPreset(t: Translator, form: CreateMetaPresetDto) {
+  if (!form.key.trim()) return t('settings.meta.validation.needKey')
+  if (!/^[\w-]+$/.test(form.key))
+    return t('settings.meta.validation.invalidKey')
+  if (!form.label.trim()) return t('settings.meta.validation.needLabel')
+  if (typesWithOptions.includes(form.type) && !form.options?.length) {
+    return t('settings.meta.validation.needOption')
+  }
+  if (form.type === 'object' && !form.children?.length) {
+    return t('settings.meta.validation.needChildren')
+  }
+  return null
+}

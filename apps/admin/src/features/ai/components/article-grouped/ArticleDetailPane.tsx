@@ -1,0 +1,157 @@
+import { ArrowLeft, Loader2, Plus } from 'lucide-react'
+import { Link } from 'react-router'
+
+import type { ArticleInfo } from '~/api/ai'
+import { useI18n } from '~/i18n'
+import { FocusScope } from '~/ui/focus-scope'
+import type { ListAction } from '~/ui/list-actions'
+import { useListKeyboard } from '~/ui/list-actions'
+import type { ContextMenuItem } from '~/ui/overlay/context-menu'
+import { Button } from '~/ui/primitives/button'
+import { Scroll } from '~/ui/primitives/scroll'
+import { cn } from '~/utils/cn'
+
+import { ItemRow } from './ItemRow'
+import { getRefTypeMeta } from './refTypeMeta'
+import type { ArticleGroupedConfig } from './types'
+
+interface ArticleDetailPaneProps<TItem> {
+  config: ArticleGroupedConfig<TItem>
+  article: ArticleInfo
+  items: TItem[]
+  isLoading: boolean
+  onBack: () => void
+  onGenerate: () => void
+  onEdit: (item: TItem) => void
+  onDelete: (item: TItem) => void
+  /** Fires on keyboard focus traversal (j/k/arrow). Use to sync external state (e.g. open-drawer target). */
+  onItemFocus?: (item: TItem) => void
+  keyboardActions: ReadonlyArray<ListAction<TItem>>
+  buildMenu: (item: TItem) => ContextMenuItem[]
+}
+
+export function ArticleDetailPane<TItem>(props: ArticleDetailPaneProps<TItem>) {
+  const { t } = useI18n()
+  const scopeId = `${props.config.scopeIdPrefix}-items`
+  const meta = getRefTypeMeta(props.article.type)
+  const TypeIcon = meta.icon
+  const editPath = meta.editPath?.(props.article.id) ?? null
+  const GenerateIcon = props.config.generate.icon ?? Plus
+
+  const { selection } = useListKeyboard<TItem>({
+    scopeId,
+    items: props.items,
+    getId: props.config.getId,
+    resetOn: [props.article.id],
+    actions: props.keyboardActions,
+    onItemFocus: (id) => {
+      const item = props.items.find((it) => props.config.getId(it) === id)
+      if (item) props.onItemFocus?.(item)
+    },
+  })
+
+  const articleTitleNode = (
+    <span className="inline-flex min-w-0 items-center gap-2">
+      <TypeIcon aria-hidden="true" className="size-5 shrink-0 text-fg-subtle" />
+      <span className="truncate text-base font-semibold text-fg">
+        {props.article.title || t(meta.labelKey)}
+      </span>
+    </span>
+  )
+
+  return (
+    <FocusScope
+      className={cn(
+        'outline-hidden flex h-full min-h-0 flex-col bg-surface-card',
+      )}
+      id={scopeId}
+    >
+      <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            aria-label={t('common.back')}
+            className="inline-flex size-8 items-center justify-center rounded text-fg-muted transition-colors hover:bg-surface-inset hover:text-fg lg:hidden"
+            onClick={props.onBack}
+            type="button"
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+          </button>
+          <h2 className="truncate text-sm font-medium text-fg">
+            {t(props.config.detailSectionTitleKey)}
+          </h2>
+        </div>
+        <Button onClick={props.onGenerate} type="button" variant="subtle">
+          <GenerateIcon aria-hidden="true" className="size-4" />
+          {t(props.config.generate.labelKey)}
+        </Button>
+      </div>
+
+      <Scroll className="flex-1" innerClassName="p-4">
+        {editPath ? (
+          <Link
+            className="inline-flex max-w-full items-center gap-2 transition-colors hover:text-blue-600 dark:hover:text-blue-400"
+            to={editPath}
+          >
+            {articleTitleNode}
+          </Link>
+        ) : (
+          <div className="inline-flex max-w-full">{articleTitleNode}</div>
+        )}
+
+        <div className="my-4 h-px bg-surface-inset" />
+
+        <span className="text-xs font-medium text-fg-subtle">
+          {t(props.config.itemCountKey, { count: props.items.length })}
+        </span>
+
+        {props.isLoading && props.items.length === 0 ? (
+          <div className="flex justify-center py-8">
+            <Loader2
+              aria-hidden="true"
+              className="size-5 animate-spin text-fg-subtle"
+            />
+          </div>
+        ) : props.items.length === 0 ? (
+          <div className="mt-4 flex flex-col items-center gap-3 rounded border border-dashed border-border px-4 py-8 text-center">
+            <p className="text-sm text-fg-muted">
+              {t(props.config.inlineEmptyKey, {
+                kind: t(props.config.kindKey),
+              })}
+            </p>
+            <Button onClick={props.onGenerate} type="button" variant="subtle">
+              <GenerateIcon aria-hidden="true" className="size-4" />
+              {t(props.config.generate.labelKey)}
+            </Button>
+          </div>
+        ) : (
+          <div className="-mx-4 mt-3">
+            {props.items.map((item) => {
+              const id = props.config.getId(item)
+              return (
+                <ItemRow<TItem>
+                  buildMenu={props.buildMenu}
+                  createdAt={props.config.getCreatedAt(item)}
+                  id={id}
+                  item={item}
+                  key={id}
+                  lang={props.config.getLang(item)}
+                  onDelete={() => props.onDelete(item)}
+                  onSelect={(mode) => {
+                    if (mode === 'toggle') selection.toggle(id)
+                    else if (mode === 'range') selection.selectRange(id)
+                    else {
+                      selection.setCursor(id)
+                      props.onEdit(item)
+                    }
+                  }}
+                  preview={props.config.getPreview(item)}
+                  selected={selection.isSelected(id)}
+                />
+              )
+            })}
+          </div>
+        )}
+      </Scroll>
+    </FocusScope>
+  )
+}

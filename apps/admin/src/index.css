@@ -1,0 +1,373 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+@import './styles/tokens.css';
+@import 'sonner/dist/styles.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Responsive variants — phone / tablet (max-width) and desktop (min-width). */
+@custom-variant phone (@media (max-width: 768px));
+@custom-variant tablet (@media (max-width: 1023px));
+@custom-variant desktop (@media (min-width: 1024px));
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-neutral-200, currentColor);
+  }
+  :where(.dark, .dark *) {
+    border-color: var(--color-neutral-800, currentColor);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-neutral-400);
+  }
+  :where(.dark, .dark *) input::placeholder,
+  :where(.dark, .dark *) textarea::placeholder {
+    color: var(--color-neutral-500);
+  }
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+
+  --sans-font:
+    'Inter', -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI',
+    system-ui, sans-serif;
+
+  font-family: var(--sans-font);
+  background: var(--page-bg);
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--page-bg);
+  font-size: 0.875rem;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'ss01', 'cv11';
+
+  @apply overflow-hidden;
+}
+
+/* Suppress grid-template-columns transition while user drags the sidebar handle. */
+body[data-sidebar-resizing='true'] {
+  cursor: col-resize;
+  user-select: none;
+}
+body[data-sidebar-resizing='true'] main {
+  transition: none !important;
+}
+
+@layer base {
+  body a {
+    color: var(--color-primary);
+    transition: color 0.15s ease;
+    text-decoration: none;
+  }
+
+  body a:hover {
+    color: var(--color-primary-shallow);
+  }
+
+  /* 按钮样式重置 - 针对自定义按钮组件 */
+  button:focus,
+  button {
+    outline: unset;
+  }
+
+  button {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+  }
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 5px;
+}
+
+html:not(.dark) *::-webkit-scrollbar-thumb {
+  background-color: rgba(120, 119, 116, 0.4);
+}
+
+html:not(.dark) *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(120, 119, 116, 0.6);
+}
+
+html.dark *::-webkit-scrollbar-thumb {
+  background-color: rgba(168, 162, 158, 0.3);
+}
+
+html.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(168, 162, 158, 0.5);
+}
+
+html:not(.dark) *::-webkit-scrollbar-corner {
+  background: var(--color-surface-page);
+}
+
+html.dark *::-webkit-scrollbar-corner {
+  background: var(--color-surface-page);
+}
+
+/* Sonner toast styles - Vercel-minimal redesign */
+[data-sonner-toaster] {
+  font-family: var(--sans-font) !important;
+  --width: 360px;
+}
+
+/* Base toast — tight flex row, hairline border, soft single shadow (no inset) */
+[data-sonner-toast].sonner-toast {
+  align-items: flex-start !important;
+  padding: 10px 12px !important;
+  border-radius: 9px !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  font-family: var(--sans-font) !important;
+  font-feature-settings: 'cv11', 'ss01' !important;
+  gap: 9px !important;
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.4s !important;
+}
+
+html:not(.dark) [data-sonner-toast].sonner-toast {
+  background: var(--color-surface-card) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-fg) !important;
+  box-shadow:
+    0 4px 12px -4px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+html.dark [data-sonner-toast].sonner-toast {
+  background: var(--color-surface-card) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-fg) !important;
+  box-shadow:
+    0 4px 12px -4px rgba(0, 0, 0, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Icon container — 22x22 rounded square, optical-centered to title line */
+[data-sonner-toast] [data-icon] {
+  width: 22px !important;
+  height: 22px !important;
+  margin: -1px 0 0 !important;
+  border-radius: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+[data-sonner-toast] [data-icon] svg {
+  width: 13px !important;
+  height: 13px !important;
+}
+
+/* State tints + icon stroke — desaturated 8% tints */
+[data-sonner-toast][data-type='success'] [data-icon] {
+  background: rgba(5, 150, 105, 0.08) !important;
+}
+[data-sonner-toast][data-type='success'] [data-icon] svg {
+  color: #059669 !important;
+}
+
+[data-sonner-toast][data-type='error'] [data-icon] {
+  background: rgba(220, 38, 38, 0.08) !important;
+}
+[data-sonner-toast][data-type='error'] [data-icon] svg {
+  color: #dc2626 !important;
+}
+
+[data-sonner-toast][data-type='warning'] [data-icon] {
+  background: rgba(217, 119, 6, 0.08) !important;
+}
+[data-sonner-toast][data-type='warning'] [data-icon] svg {
+  color: #d97706 !important;
+}
+
+[data-sonner-toast][data-type='info'] [data-icon] {
+  background: rgba(2, 132, 199, 0.08) !important;
+}
+[data-sonner-toast][data-type='info'] [data-icon] svg {
+  color: #0284c7 !important;
+}
+
+/* Loading uses neutral tint (state-agnostic) */
+[data-sonner-toast][data-type='loading'] [data-icon] {
+  background: var(--color-surface-inset) !important;
+}
+[data-sonner-toast][data-type='loading'] [data-icon] svg {
+  color: var(--color-fg) !important;
+}
+
+/* Title — 13/600 with tighter tracking, locked to 20px line for baseline grid */
+.sonner-title {
+  margin: 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 20px !important;
+  letter-spacing: -0.005em !important;
+  color: var(--color-fg) !important;
+}
+
+/* Description — 12/500/18, muted foreground for stronger contrast than v1 */
+.sonner-description {
+  margin: 3px 0 0 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 18px !important;
+  letter-spacing: -0.003em !important;
+  color: var(--color-fg-muted) !important;
+}
+
+/* Close button — 18x18, optical-centered on title line.
+   Sonner default applies translate(35%, -35%) for its outside-corner look;
+   we override to none so our top/right pinning sits flush inside. */
+[data-sonner-toast][data-styled='true'] [data-close-button] {
+  width: 18px !important;
+  height: 18px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  border-radius: 4px !important;
+  top: 11px !important;
+  right: 9px !important;
+  left: auto !important;
+  transform: none !important;
+  opacity: 0.4 !important;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    color 0.15s !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  opacity: 1 !important;
+}
+
+[data-sonner-toast] [data-close-button] {
+  color: var(--color-fg-muted) !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  background: var(--color-surface-inset) !important;
+  color: var(--color-fg) !important;
+}
+
+/* Action button — mirrors <Button variant="primary"> with accent fill */
+.sonner-action-button {
+  margin-top: 8px !important;
+  height: 26px !important;
+  padding: 0 10px !important;
+  border-radius: 5px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.005em !important;
+  border: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  background: var(--color-accent) !important;
+  color: #ffffff !important;
+  transition:
+    background 0.15s,
+    color 0.15s !important;
+}
+
+.sonner-action-button:hover {
+  background: var(--color-accent-hover) !important;
+}
+
+/* Cancel button — mirrors <Button variant="subtle"> */
+.sonner-cancel-button {
+  margin-top: 8px !important;
+  height: 26px !important;
+  padding: 0 10px !important;
+  border-radius: 5px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.005em !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  background: var(--color-surface-card) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-fg) !important;
+  transition:
+    background 0.15s !important;
+}
+
+.sonner-cancel-button:hover {
+  background: var(--color-surface-inset) !important;
+}
+
+/* Mobile — shrink to viewport with 16px gutters */
+@media (max-width: 768px) {
+  [data-sonner-toaster] {
+    --width: calc(100vw - 32px) !important;
+  }
+}
+
+.modal-card {
+  @apply !w-[60rem] !max-w-[90vw];
+
+  &.sm {
+    @apply !w-[40rem];
+  }
+
+  &.xs {
+    @apply !w-[30rem];
+  }
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+[data-content-layout] [data-panel] {
+  transition: none;
+}
+
+@keyframes dock-sweep {
+  from {
+    background-position: 180% 0;
+  }
+  to {
+    background-position: -80% 0;
+  }
+}
+
+@keyframes dock-mark {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

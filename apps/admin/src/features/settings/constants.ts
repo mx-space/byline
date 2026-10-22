@@ -1,0 +1,229 @@
+import { ListPlus, Shield, User, Wrench } from 'lucide-react'
+
+import type { TranslationKey } from '~/i18n/types'
+import type { MetaFieldType, MetaPresetScope } from '~/models/meta-preset'
+import { adminQueryKeys } from '~/query/keys'
+
+import type {
+  AIProviderType,
+  OauthProviderField,
+  OauthProviderType,
+  SettingsGroupSummary,
+} from './types/settings'
+
+export const settingsQueryKey = adminQueryKeys.settings.root
+export const metaPresetsQueryKey = adminQueryKeys.metaPresets.root
+export const accountQueryKey = adminQueryKeys.settings.accountRoot
+
+export const systemGroupTranslationKeys: Record<
+  string,
+  { descriptionKey: TranslationKey; titleKey: TranslationKey }
+> = {
+  ai: {
+    descriptionKey: 'settings.group.ai.description',
+    titleKey: 'settings.group.ai.title',
+  },
+  content: {
+    descriptionKey: 'settings.group.content.description',
+    titleKey: 'settings.group.content.title',
+  },
+  integrations: {
+    descriptionKey: 'settings.group.integrations.description',
+    titleKey: 'settings.group.integrations.title',
+  },
+  membership: {
+    descriptionKey: 'settings.group.membership.description',
+    titleKey: 'settings.group.membership.title',
+  },
+  notification: {
+    descriptionKey: 'settings.group.notification.description',
+    titleKey: 'settings.group.notification.title',
+  },
+  search: {
+    descriptionKey: 'settings.group.search.description',
+    titleKey: 'settings.group.search.title',
+  },
+  site: {
+    descriptionKey: 'settings.group.site.description',
+    titleKey: 'settings.group.site.title',
+  },
+  storage: {
+    descriptionKey: 'settings.group.storage.description',
+    titleKey: 'settings.group.storage.title',
+  },
+  system: {
+    descriptionKey: 'settings.group.system.description',
+    titleKey: 'settings.group.system.title',
+  },
+}
+
+export const aiProviderTypeOptions: Array<{
+  labelKey: TranslationKey
+  value: AIProviderType
+}> = [
+  { labelKey: 'settings.ai.providerType.typesafe', value: 'typesafe' },
+  {
+    labelKey: 'settings.ai.providerType.openaiCompatible',
+    value: 'openai-compatible',
+  },
+  { labelKey: 'settings.ai.providerType.googleVertex', value: 'google-vertex' },
+  { labelKey: 'settings.ai.providerType.anthropic', value: 'anthropic' },
+  { labelKey: 'settings.ai.providerType.generic', value: 'generic' },
+]
+
+type SocialOption =
+  | { label: string; labelKey?: undefined; value: string }
+  | { label?: undefined; labelKey: TranslationKey; value: string }
+
+export const socialOptions: readonly SocialOption[] = [
+  { label: 'GitHub', value: 'github' },
+  { label: 'Weibo', value: 'weibo' },
+  { labelKey: 'settings.social.netease', value: 'netease' },
+  { labelKey: 'settings.social.bilibili', value: 'bilibili' },
+] as const
+
+export const staticGroupsBefore: SettingsGroupSummary[] = [
+  {
+    descriptionKey: 'settings.group.user.description',
+    icon: User,
+    key: 'user',
+    titleKey: 'settings.group.user.title',
+    type: 'user',
+  },
+]
+
+export const staticGroupsAfter: SettingsGroupSummary[] = [
+  {
+    descriptionKey: 'settings.group.account.description',
+    icon: Shield,
+    key: 'account',
+    titleKey: 'settings.group.account.title',
+    type: 'account',
+  },
+  {
+    descriptionKey: 'settings.group.metaPreset.description',
+    icon: ListPlus,
+    key: 'meta-preset',
+    titleKey: 'settings.group.metaPreset.title',
+    type: 'meta-preset',
+  },
+  {
+    descriptionKey: 'settings.group.maintenance.description',
+    icon: Wrench,
+    key: 'maintenance',
+    titleKey: 'settings.group.maintenance.title',
+    type: 'maintenance',
+  },
+]
+
+const clientCredentialFields: OauthProviderField[] = [
+  {
+    key: 'clientId',
+    label: 'Client ID',
+    placeholderKey: 'settings.oauth.clientIdPlaceholder',
+  },
+  {
+    key: 'clientSecret',
+    label: 'Client Secret',
+    placeholderKey: 'settings.oauth.clientSecretPlaceholder',
+    secret: true,
+  },
+]
+
+export const oauthProviders: Array<{
+  fields: OauthProviderField[]
+  label: string
+  type: OauthProviderType
+}> = [
+  { fields: clientCredentialFields, label: 'GitHub', type: 'github' },
+  { fields: clientCredentialFields, label: 'Google', type: 'google' },
+  {
+    fields: [
+      {
+        descriptionKey: 'settings.oauth.apple.servicesIdHelp',
+        key: 'clientId',
+        label: 'Services ID',
+        placeholder: 'dev.example.web',
+      },
+      {
+        descriptionKey: 'settings.oauth.apple.teamIdHelp',
+        key: 'teamId',
+        label: 'Team ID',
+        placeholder: 'ABCDE12345',
+      },
+      {
+        descriptionKey: 'settings.oauth.apple.keyIdHelp',
+        key: 'keyId',
+        label: 'Key ID',
+        placeholder: 'ABC1234567',
+      },
+      {
+        descriptionKey: 'settings.oauth.apple.privateKeyHelp',
+        key: 'privateKey',
+        label: 'Private Key (.p8)',
+        multiline: true,
+        placeholder: '-----BEGIN PRIVATE KEY-----',
+        secret: true,
+      },
+      {
+        descriptionKey: 'settings.oauth.apple.bundleIdHelp',
+        key: 'appBundleIdentifier',
+        label: 'App Bundle ID',
+        optional: true,
+        placeholder: 'dev.example.app',
+      },
+    ],
+    label: 'Apple',
+    type: 'apple',
+  },
+]
+
+export const fieldTypeLabelKeys: Record<MetaFieldType, TranslationKey> = {
+  boolean: 'settings.fieldType.boolean',
+  checkbox: 'settings.fieldType.checkbox',
+  'multi-select': 'settings.fieldType.multiSelect',
+  number: 'settings.fieldType.number',
+  object: 'settings.fieldType.object',
+  select: 'settings.fieldType.select',
+  tags: 'settings.fieldType.tags',
+  text: 'settings.fieldType.text',
+  textarea: 'settings.fieldType.textarea',
+  url: 'settings.fieldType.url',
+}
+
+export const scopeLabelKeys: Record<MetaPresetScope, TranslationKey> = {
+  both: 'settings.scope.both',
+  note: 'settings.scope.note',
+  post: 'settings.scope.post',
+}
+
+export const fieldTypeOptionKeys: Array<{
+  labelKey: TranslationKey
+  value: MetaFieldType
+}> = [
+  { labelKey: 'settings.fieldType.text', value: 'text' },
+  { labelKey: 'settings.fieldType.textarea', value: 'textarea' },
+  { labelKey: 'settings.fieldType.number', value: 'number' },
+  { labelKey: 'settings.fieldType.url', value: 'url' },
+  { labelKey: 'settings.fieldType.select', value: 'select' },
+  { labelKey: 'settings.fieldType.multiSelect', value: 'multi-select' },
+  { labelKey: 'settings.fieldType.checkbox', value: 'checkbox' },
+  { labelKey: 'settings.fieldType.tags', value: 'tags' },
+  { labelKey: 'settings.fieldType.boolean', value: 'boolean' },
+  { labelKey: 'settings.fieldType.object', value: 'object' },
+]
+
+export const scopeOptionKeys: Array<{
+  labelKey: TranslationKey
+  value: MetaPresetScope
+}> = [
+  { labelKey: 'settings.scope.post', value: 'post' },
+  { labelKey: 'settings.scope.note', value: 'note' },
+  { labelKey: 'settings.scope.both', value: 'both' },
+]
+
+export const typesWithOptions: MetaFieldType[] = [
+  'checkbox',
+  'multi-select',
+  'select',
+]
