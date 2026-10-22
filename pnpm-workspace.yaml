@@ -2,6 +2,7 @@ packages:
   - packages/*
   - apps/*
 allowBuilds:
+  '@mongodb-js/zstd': false
   '@code-inspector/core': false
   '@google/genai': false
   '@nestjs/core': true
