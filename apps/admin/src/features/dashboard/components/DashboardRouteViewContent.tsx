@@ -5,6 +5,7 @@ import { useMemo } from 'react'
 import { getDrafts } from '~/api/drafts'
 import { getPosts } from '~/api/posts'
 import { getAppInfo } from '~/api/system'
+import { OnboardingResumeBanner } from '~/features/setup/components/OnboardingResumeBanner'
 import { useI18n } from '~/i18n'
 import { DraftRefType } from '~/models/draft'
 import { EmptyState } from '~/ui/patterns/EmptyState'
@@ -86,6 +87,8 @@ export function DashboardRouteViewContent() {
       primary={
         <>
           <DeskGreeting className="phone:order-1" />
+
+          <OnboardingResumeBanner className="mb-6 phone:order-2" />
 
           {resumeItem ? (
             <DeskResumeCard className="phone:order-2" item={resumeItem} />
