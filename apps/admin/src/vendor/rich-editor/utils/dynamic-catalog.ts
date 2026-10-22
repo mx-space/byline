@@ -10,6 +10,7 @@ import {
   getDynamicComponentsUrl,
   registerDynamicComponentEntry,
 } from '~/api/dynamic-components'
+import { ApiRequestError } from '~/api/http'
 import { API_URL } from '~/constants/env'
 
 export type { DynamicCatalog, DynamicCatalogEntry }
@@ -27,13 +28,27 @@ function rememberCatalog(catalog: DynamicCatalog | null) {
   return catalog
 }
 
+const NAME_CONFLICT_CODE = 'DYNAMIC_COMPONENT_NAME_CONFLICT'
+const MAX_NAME_ATTEMPTS = 20
+
 export async function registerDynamicComponent(
   entry: DynamicCatalogEntry,
-): Promise<void> {
-  const catalog = await registerDynamicComponentEntry(entry)
-  rememberCatalog(catalog)
-  catalogUrls.add(entry.url)
-  cachedCatalogPromise = Promise.resolve(catalog)
+): Promise<DynamicCatalogEntry> {
+  for (let attempt = 1; ; attempt++) {
+    const candidate =
+      attempt === 1 ? entry : { ...entry, name: `${entry.name} ${attempt}` }
+    try {
+      const catalog = await registerDynamicComponentEntry(candidate)
+      rememberCatalog(catalog)
+      catalogUrls.add(entry.url)
+      cachedCatalogPromise = Promise.resolve(catalog)
+      return candidate
+    } catch (error) {
+      const conflict =
+        error instanceof ApiRequestError && error.code === NAME_CONFLICT_CODE
+      if (!conflict || attempt >= MAX_NAME_ATTEMPTS) throw error
+    }
+  }
 }
 
 export function isAllowedDynamicUrl(url: string): boolean {

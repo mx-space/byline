@@ -2,6 +2,8 @@
 
 import { beforeEach, expect, it, vi } from 'vitest'
 
+import { ApiRequestError } from '~/api/http'
+
 import {
   isAllowedDynamicUrl,
   registerDynamicComponent,
@@ -51,6 +53,27 @@ it('propagates a failed registration without allowing the url', async () => {
 
   await expect(registerDynamicComponent(rejected)).rejects.toThrow('boom')
   expect(isAllowedDynamicUrl(rejected.url)).toBe(false)
+})
+
+it('retries with a numbered name when another url already uses the name', async () => {
+  const revision = { ...entry, url: 'https://cdn.example/counter-v2.js' }
+  registerDynamicComponentEntry
+    .mockRejectedValueOnce(
+      new ApiRequestError('Name taken', 'DYNAMIC_COMPONENT_NAME_CONFLICT', 409),
+    )
+    .mockResolvedValueOnce({
+      version: 1,
+      components: [entry, { ...revision, name: 'Counter 2' }],
+    })
+
+  const registered = await registerDynamicComponent(revision)
+
+  expect(registered.name).toBe('Counter 2')
+  expect(registerDynamicComponentEntry).toHaveBeenLastCalledWith({
+    ...revision,
+    name: 'Counter 2',
+  })
+  expect(isAllowedDynamicUrl(revision.url)).toBe(true)
 })
 
 it('allows same-origin object storage urls without a catalog entry', () => {
