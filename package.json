@@ -1,0 +1,62 @@
+{
+  "name": "byline",
+  "private": true,
+  "description": "A slim, multi-author, AI-native headless CMS",
+  "packageManager": "pnpm@12.14.0+sha512.c18ba6d87993d3d164cb5e8948f32b2c06ee854487e06cd8d86781342fb3e5bb4634367034711e86802baa9c37bea906ce1929ad08d70884c97d801df13389a6",
+  "engines": {
+    "node": ">=26.0.0"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/mx-space/byline#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mx-space/byline"
+  },
+  "bugs": "https://github.com/mx-space/byline/issues",
+  "author": "Innei <https://innei.in>",
+  "scripts": {
+    "check:controller-response-envelope": "pnpm -C apps/server exec tsx ../../scripts/check-controller-response-envelope.ts",
+    "check:validate-false-paired": "pnpm -C apps/server exec tsx ../../scripts/check-validate-false-paired-with-check.ts",
+    "format": "prettier --write \"apps/**/*.ts\"",
+    "prepare": "simple-git-hooks",
+    "build": "pnpm -C \"apps/server\" run build",
+    "dev": "pnpm -C \"apps/server\" run dev",
+    "bundle": "pnpm -C \"apps/server\" run bundle",
+    "test": "pnpm -C \"apps/server\" run test",
+    "lint": "pnpm -C \"apps/server\" run lint",
+    "typecheck": "pnpm check:controller-response-envelope && pnpm check:validate-false-paired && pnpm -C \"apps/server\" run typecheck",
+    "migrate": "pnpm -C \"apps/server\" run migrate",
+    "dev:admin": "pnpm -C apps/admin run dev",
+    "build:admin": "pnpm -C apps/admin run build",
+    "typecheck:admin": "pnpm -C apps/admin run typecheck",
+    "lint:admin": "pnpm -C apps/admin run lint"
+  },
+  "devDependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "4.7.1",
+    "@lobehub/eslint-config": "^2.1.5",
+    "@types/node": "26.6.5",
+    "cross-env": "10.1.0",
+    "eslint": "^10.13.0",
+    "lint-staged": "17.6.0",
+    "prettier": "3.9.10",
+    "prettier-package-json": "2.8.0",
+    "prettier-plugin-ember-template-tag": "2.1.8",
+    "redis-memory-server": "0.17.1",
+    "rimraf": "6.1.3",
+    "rolldown": "1.2.12",
+    "simple-git-hooks": "2.14.0",
+    "ts-node": "10.9.2",
+    "tsconfig-paths": "4.2.0",
+    "typescript": "6.0.3",
+    "vite-tsconfig-paths": "6.1.1"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --cache --fix",
+      "prettier --ignore-path ./.prettierignore --write "
+    ]
+  }
+}
