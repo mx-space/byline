@@ -373,8 +373,6 @@ CREATE TABLE "file_references" (
 	"ref_id" text,
 	"ref_type" text,
 	"s3_object_key" text,
-	"reader_id" text,
-	"uploaded_by" text,
 	"mime_type" text,
 	"byte_size" bigint,
 	"detached_at" timestamp
@@ -451,7 +449,6 @@ ALTER TABLE "dynamic_components" ADD CONSTRAINT "dynamic_components_created_by_u
 ALTER TABLE "post_authors" ADD CONSTRAINT "post_authors_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "post_authors" ADD CONSTRAINT "post_authors_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "posts" ADD CONSTRAINT "posts_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "file_references" ADD CONSTRAINT "file_references_reader_id_users_id_fk" FOREIGN KEY ("reader_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_usages" ADD CONSTRAINT "file_usages_file_reference_id_file_references_id_fk" FOREIGN KEY ("file_reference_id") REFERENCES "public"."file_references"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "webhook_events" ADD CONSTRAINT "webhook_events_hook_id_webhooks_id_fk" FOREIGN KEY ("hook_id") REFERENCES "public"."webhooks"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "ai_agent_conversation_session_idx" ON "ai_agent_conversations" USING btree ("session_id");--> statement-breakpoint
@@ -507,7 +504,6 @@ CREATE INDEX CONCURRENTLY "posts_tags_gin_idx" ON "posts" USING gin ("tags");-->
 CREATE INDEX "file_references_file_url_idx" ON "file_references" USING btree ("file_url");--> statement-breakpoint
 CREATE INDEX "file_references_ref_idx" ON "file_references" USING btree ("ref_id","ref_type");--> statement-breakpoint
 CREATE INDEX "file_references_status_created_idx" ON "file_references" USING btree ("status","created_at");--> statement-breakpoint
-CREATE INDEX "file_references_reader_status_created_idx" ON "file_references" USING btree ("reader_id","status","created_at");--> statement-breakpoint
 CREATE INDEX "file_references_status_detached_idx" ON "file_references" USING btree ("status","detached_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "file_usages_reference_source_uniq" ON "file_usages" USING btree ("file_reference_id","source_type","source_id","source_field");--> statement-breakpoint
 CREATE INDEX "file_usages_source_idx" ON "file_usages" USING btree ("source_type","source_id");--> statement-breakpoint

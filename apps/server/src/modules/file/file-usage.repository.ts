@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, eq, inArray, ne, or, sql } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import { fileReferences, fileUsages } from '~/database/schema'
@@ -8,7 +8,6 @@ import { parseEntityId } from '~/shared/id/entity-id'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 
 import { FileReferenceStatus } from './file-reference.enum'
-import { FileUploadedBy } from './file-reference.types'
 import type { FileUsageInput } from './file-usage.types'
 
 const INSERT_BATCH_SIZE = 500
@@ -31,15 +30,7 @@ export class FileUsageRepository {
       ? await this.db
           .select({ id: fileReferences.id })
           .from(fileReferences)
-          .where(
-            and(
-              inArray(fileReferences.fileUrl, uniqueUrls),
-              or(
-                ne(fileReferences.uploadedBy, FileUploadedBy.Reader),
-                sql`${fileReferences.uploadedBy} IS NULL`,
-              )!,
-            )!,
-          )
+          .where(inArray(fileReferences.fileUrl, uniqueUrls))
       : []
 
     return this.db.transaction(async (tx) => {

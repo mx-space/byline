@@ -15,7 +15,6 @@ import {
   type FileReferenceRow,
   FileReferenceStatus,
   FileReferenceType,
-  FileUploadedBy,
 } from './file-reference.types'
 import { FileReferenceUsageRepository } from './file-reference-usage.repository'
 import {
@@ -200,8 +199,6 @@ export class FileReferenceService {
       fileUrl: file.fileUrl,
       s3ObjectKey: file.s3ObjectKey ?? null,
       byteSize: file.byteSize ?? null,
-      uploadedBy: file.uploadedBy ?? FileUploadedBy.Owner,
-      readerId: file.readerId ?? null,
       refType: file.refType ?? null,
       refId: file.refId ?? null,
       storageRemoved,
@@ -311,10 +308,7 @@ export class FileReferenceService {
         await Promise.all(
           options.ids.map((id) => this.fileReferenceRepository.findById(id)),
         )
-      ).filter(
-        (ref): ref is FileReferenceRow =>
-          !!ref && ref.uploadedBy !== FileUploadedBy.Reader,
-      )
+      ).filter((ref): ref is FileReferenceRow => !!ref)
       const orphanFiles = await this.filterIsolatedFiles(candidates)
       let deletedCount = 0
       for (const ref of orphanFiles) {

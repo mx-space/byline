@@ -1,4 +1,3 @@
-import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import {
   bigint,
   boolean,
@@ -11,7 +10,6 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
-import { users } from './auth'
 import { createdAt, pkText, refText, tsCol } from './columns'
 
 export const options = pgTable(
@@ -35,10 +33,6 @@ export const fileReferences = pgTable(
     refId: refText('ref_id'),
     refType: text('ref_type'),
     s3ObjectKey: text('s3_object_key'),
-    readerId: text('reader_id').references((): AnyPgColumn => users.id, {
-      onDelete: 'set null',
-    }),
-    uploadedBy: text('uploaded_by'),
     mimeType: text('mime_type'),
     byteSize: bigint('byte_size', { mode: 'number' }),
     detachedAt: timestamp('detached_at', {
@@ -50,11 +44,6 @@ export const fileReferences = pgTable(
     index('file_references_file_url_idx').on(table.fileUrl),
     index('file_references_ref_idx').on(table.refId, table.refType),
     index('file_references_status_created_idx').on(
-      table.status,
-      table.createdAt,
-    ),
-    index('file_references_reader_status_created_idx').on(
-      table.readerId,
       table.status,
       table.createdAt,
     ),

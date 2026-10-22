@@ -95,8 +95,6 @@ export class FileController {
         fileName: file.fileName,
         fileUrl: file.fileUrl,
         status: file.status,
-        uploadedBy: file.uploadedBy,
-        readerId: file.readerId,
         mimeType: file.mimeType,
         byteSize: file.byteSize,
         refType: file.refType,

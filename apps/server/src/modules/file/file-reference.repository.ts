@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, desc, eq, inArray, lt, ne, notExists, or, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, lt, ne, notExists, sql } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import { aiTtsBlocks, fileReferences, fileUsages } from '~/database/schema'
@@ -16,7 +16,6 @@ import {
   type FileReferenceRow,
   FileReferenceStatus,
   FileReferenceType,
-  FileUploadedBy,
 } from './file-reference.types'
 
 const mapRow = (row: typeof fileReferences.$inferSelect): FileReferenceRow => ({
@@ -27,8 +26,6 @@ const mapRow = (row: typeof fileReferences.$inferSelect): FileReferenceRow => ({
   refId: row.refId ? (toEntityId(row.refId) as EntityId) : null,
   refType: (row.refType ?? null) as FileReferenceType | null,
   s3ObjectKey: row.s3ObjectKey,
-  readerId: row.readerId ?? null,
-  uploadedBy: (row.uploadedBy ?? null) as FileUploadedBy | null,
   mimeType: row.mimeType ?? null,
   byteSize: row.byteSize ?? null,
   detachedAt: row.detachedAt ?? null,
@@ -46,10 +43,6 @@ export class FileReferenceRepository extends BaseRepository {
 
   private ownerOrphanWhere() {
     return and(
-      or(
-        ne(fileReferences.uploadedBy, FileUploadedBy.Reader),
-        sql`${fileReferences.uploadedBy} IS NULL`,
-      ),
       notExists(
         this.db
           .select({ id: fileUsages.id })
@@ -125,8 +118,6 @@ export class FileReferenceRepository extends BaseRepository {
     refType?: FileReferenceType | null
     refId?: EntityId | string | null
     s3ObjectKey?: string | null
-    readerId?: string | null
-    uploadedBy?: FileUploadedBy | null
     mimeType?: string | null
     byteSize?: number | null
   }): Promise<FileReferenceRow> {
@@ -141,8 +132,6 @@ export class FileReferenceRepository extends BaseRepository {
         refType: input.refType ?? null,
         refId: input.refId ? parseEntityId(input.refId) : null,
         s3ObjectKey: input.s3ObjectKey ?? null,
-        readerId: input.readerId ?? null,
-        uploadedBy: input.uploadedBy ?? null,
         mimeType: input.mimeType ?? null,
         byteSize: input.byteSize ?? null,
       })
@@ -169,7 +158,6 @@ export class FileReferenceRepository extends BaseRepository {
             fileUrl: file.fileUrl,
             fileName: file.fileName,
             status: FileReferenceStatus.Pending,
-            uploadedBy: FileUploadedBy.Owner,
           })),
         )
         .returning()
@@ -365,10 +353,6 @@ export class FileReferenceRepository extends BaseRepository {
       .where(
         and(
           eq(fileReferences.status, FileReferenceStatus.Pending),
-          or(
-            ne(fileReferences.uploadedBy, FileUploadedBy.Reader),
-            sql`${fileReferences.uploadedBy} IS NULL`,
-          )!,
           lt(fileReferences.createdAt, threshold),
         )!,
       )
@@ -379,12 +363,6 @@ export class FileReferenceRepository extends BaseRepository {
     const rows = await this.db
       .select()
       .from(fileReferences)
-      .where(
-        or(
-          ne(fileReferences.uploadedBy, FileUploadedBy.Reader),
-          sql`${fileReferences.uploadedBy} IS NULL`,
-        )!,
-      )
       .orderBy(desc(fileReferences.createdAt))
     return rows.map(mapRow)
   }
@@ -395,15 +373,7 @@ export class FileReferenceRepository extends BaseRepository {
     const rows = await this.db
       .select()
       .from(fileReferences)
-      .where(
-        and(
-          or(
-            ne(fileReferences.uploadedBy, FileUploadedBy.Reader),
-            sql`${fileReferences.uploadedBy} IS NULL`,
-          )!,
-          lt(fileReferences.createdAt, threshold),
-        )!,
-      )
+      .where(lt(fileReferences.createdAt, threshold))
       .orderBy(desc(fileReferences.createdAt))
     return rows.map(mapRow)
   }

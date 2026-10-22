@@ -26,7 +26,6 @@ import { alphabet } from '~/constants/other.constant'
  * - {ext} Extension (with dot)
  * - {type} File type
  * - {localFolder:<n>} Original folder of the file; number specifies depth
- * - {readerId} Reader ID (for comment uploads only)
  */
 export interface FilenameTemplateContext {
   /**
@@ -43,11 +42,6 @@ export interface FilenameTemplateContext {
    * Local folder path (used for the localFolder placeholder)
    */
   localFolderPath?: string
-
-  /**
-   * Reader ID (used for the {readerId} placeholder in comment uploads)
-   */
-  readerId?: string
 }
 
 /**
@@ -99,12 +93,7 @@ export function replaceFilenameTemplate(
   context: FilenameTemplateContext,
 ): string {
   const now = new Date()
-  const {
-    originalFilename,
-    fileType = '',
-    localFolderPath,
-    readerId = '',
-  } = context
+  const { originalFilename, fileType = '', localFolderPath } = context
 
   // Extract filename and extension
   const ext = path.extname(originalFilename).toLowerCase()
@@ -142,9 +131,6 @@ export function replaceFilenameTemplate(
 
   // File type placeholder
   result = result.replaceAll('{type}', fileType)
-
-  // Reader ID placeholder (for comment uploads only)
-  result = result.replaceAll('{readerId}', readerId)
 
   // Local folder placeholder: {localFolder:<n>}
   // eslint-disable-next-line unicorn/better-regex

@@ -8,10 +8,7 @@ import type {
   FileReferenceRow,
 } from '~/modules/file/file-reference.repository'
 import { FileReferenceService } from '~/modules/file/file-reference.service'
-import {
-  FileReferenceStatus,
-  FileUploadedBy,
-} from '~/modules/file/file-reference.types'
+import { FileReferenceStatus } from '~/modules/file/file-reference.types'
 
 vi.mock('node:fs/promises', () => ({ unlink: vi.fn() }))
 vi.mock('~/constants/path.constant', () => ({ STATIC_FILE_DIR: '/static' }))
@@ -26,8 +23,6 @@ const createRef = (
   refId: null,
   refType: null,
   s3ObjectKey: null,
-  readerId: null,
-  uploadedBy: FileUploadedBy.Owner,
   mimeType: null,
   byteSize: null,
   detachedAt: null,
@@ -46,9 +41,12 @@ const createService = () => {
   const configsService = {
     get: vi.fn(async (key: string) => {
       if (key === 'url') {
-        return { webUrl: 'https://innei.in', serverUrl: 'https://api.innei.in' }
+        return {
+          webUrl: 'https://example.com',
+          serverUrl: 'https://api.example.com',
+        }
       }
-      return { customDomain: 'https://cdn.innei.in' }
+      return { customDomain: 'https://cdn.example.com' }
     }),
   }
   const service = new FileReferenceService(
@@ -179,21 +177,5 @@ describe('FileReferenceService', () => {
     ).resolves.toEqual({ deletedCount: 1 })
     expect(unlink).toHaveBeenCalledWith('/static/file/nested/archive.zip')
     expect(repository.deleteById).toHaveBeenCalledWith(isolated.id)
-  })
-
-  it('keeps reader uploads outside owner isolated-file deletion', async () => {
-    const { repository, service, usageRepository } = createService()
-    const readerUpload = createRef({
-      id: 'reader-file' as any,
-      fileUrl: 'https://api.example.com/objects/image/comment.png',
-      uploadedBy: FileUploadedBy.Reader,
-    })
-    repository.findById.mockResolvedValue(readerUpload)
-
-    await expect(
-      service.batchDeleteOrphans({ ids: [readerUpload.id] }),
-    ).resolves.toEqual({ deletedCount: 0 })
-    expect(usageRepository.findReferencedUrls).not.toHaveBeenCalled()
-    expect(repository.deleteById).not.toHaveBeenCalled()
   })
 })

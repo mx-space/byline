@@ -27,12 +27,10 @@ export interface OrphanFile {
   fileUrl: string
   id: string
   mimeType?: null | string
-  readerId?: null | string
   refId?: null | string
   refType?: null | string
   palette?: { dominant?: string; swatches?: string[] } | null
   status?: 'active' | 'detached' | 'pending'
-  uploadedBy?: null | string
 }
 
 export interface FileListPagination {

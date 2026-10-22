@@ -5,7 +5,6 @@ import type { FileReferenceRepository } from '~/modules/file/file-reference.repo
 import {
   type FileReferenceRow,
   FileReferenceStatus,
-  FileUploadedBy,
 } from '~/modules/file/file-reference.types'
 import type { FileReferenceInventoryService } from '~/modules/file/file-reference-inventory.service'
 import { FileReferenceReconciliationService } from '~/modules/file/file-reference-reconciliation.service'
@@ -24,12 +23,10 @@ const createRef = (
   fileName: fileUrl.split('/').at(-1)!,
   fileUrl,
   mimeType: null,
-  readerId: null,
   refId: null,
   refType: null,
   s3ObjectKey: null,
   status,
-  uploadedBy: FileUploadedBy.Owner,
 })
 
 const createService = () => {

@@ -20,10 +20,7 @@ import { SnowflakeGenerator } from '~/database/id'
 import * as schema from '~/database/schema'
 import { FileReferenceRepository } from '~/modules/file/file-reference.repository'
 import { FileReferenceService } from '~/modules/file/file-reference.service'
-import {
-  FileReferenceStatus,
-  FileUploadedBy,
-} from '~/modules/file/file-reference.types'
+import { FileReferenceStatus } from '~/modules/file/file-reference.types'
 import { FileReferenceInventoryService } from '~/modules/file/file-reference-inventory.service'
 import { FileReferenceReconciliationService } from '~/modules/file/file-reference-reconciliation.service'
 import { FileReferenceUsageRepository } from '~/modules/file/file-reference-usage.repository'
@@ -112,16 +109,14 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
     }
   }
 
-  it('rebuilds non-empty post, cover, option, owner profile, local, and reader fixtures idempotently', async () => {
+  it('rebuilds non-empty post, cover, option, user profile, and local fixtures idempotently', async () => {
     const sharedUrl = `${serverUrl}/objects/image/shared-cover.png`
     const unusedUrl = `${serverUrl}/objects/file/unused.pdf`
     const legacyUrl = `${serverUrl}/objects/file/%E8%B5%84%E6%96%99%20100%25%23.zip`
-    const readerUrl = `${serverUrl}/objects/image/reader-upload.png`
     const sharedPath = await putFile('image', 'shared-cover.png')
     const unusedPath = await putFile('file', 'unused.pdf')
     const legacyPath = await putFile('file', '资料 100%#.zip')
     const orphanPath = await putFile('file', 'orphan.json')
-    const readerPath = await putFile('image', 'reader-upload.png')
 
     await db.insert(schema.categories).values({
       id: '1001',
@@ -153,7 +148,6 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
         fileName: 'shared-cover.png',
         fileUrl: sharedUrl,
         status: FileReferenceStatus.Pending,
-        uploadedBy: FileUploadedBy.Owner,
       },
       {
         id: '2002',
@@ -161,22 +155,12 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
         fileName: 'unused.pdf',
         fileUrl: unusedUrl,
         status: FileReferenceStatus.Active,
-        uploadedBy: FileUploadedBy.Owner,
-      },
-      {
-        id: '2003',
-        createdAt: oldCreatedAt,
-        fileName: 'reader-upload.png',
-        fileUrl: readerUrl,
-        readerId: 'reader-fixture',
-        status: FileReferenceStatus.Pending,
-        uploadedBy: FileUploadedBy.Reader,
       },
     ])
 
     await expect(reconciliation.reconcile()).resolves.toEqual({
       applied: false,
-      discoveredLocalFiles: 5,
+      discoveredLocalFiles: 4,
       isolatedFiles: 2,
       missingReferences: 2,
       referencedFiles: 2,
@@ -190,7 +174,7 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
 
     await expect(reconciliation.reconcile({ apply: true })).resolves.toEqual({
       applied: true,
-      discoveredLocalFiles: 5,
+      discoveredLocalFiles: 4,
       isolatedFiles: 2,
       missingReferences: 2,
       referencedFiles: 2,
@@ -206,7 +190,6 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
         fileName: schema.fileReferences.fileName,
         id: schema.fileReferences.id,
         status: schema.fileReferences.status,
-        uploadedBy: schema.fileReferences.uploadedBy,
       })
       .from(schema.fileReferences)
       .orderBy(asc(schema.fileReferences.fileName))
@@ -215,31 +198,21 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
         fileName: 'orphan.json',
         id: expect.any(String),
         status: FileReferenceStatus.Pending,
-        uploadedBy: FileUploadedBy.Owner,
-      },
-      {
-        fileName: 'reader-upload.png',
-        id: '2003',
-        status: FileReferenceStatus.Pending,
-        uploadedBy: FileUploadedBy.Reader,
       },
       {
         fileName: 'shared-cover.png',
         id: '2001',
         status: FileReferenceStatus.Active,
-        uploadedBy: FileUploadedBy.Owner,
       },
       {
         fileName: 'unused.pdf',
         id: '2002',
         status: FileReferenceStatus.Pending,
-        uploadedBy: FileUploadedBy.Owner,
       },
       {
         fileName: '资料 100%#.zip',
         id: expect.any(String),
         status: FileReferenceStatus.Active,
-        uploadedBy: FileUploadedBy.Owner,
       },
     ])
 
@@ -281,21 +254,17 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
       usages: 3,
     })
     await expect(db.select().from(schema.fileReferences)).resolves.toHaveLength(
-      5,
+      4,
     )
     await expect(db.select().from(schema.fileUsages)).resolves.toHaveLength(3)
 
-    await db
-      .update(schema.fileReferences)
-      .set({ createdAt: oldCreatedAt })
-      .where(eq(schema.fileReferences.uploadedBy, FileUploadedBy.Owner))
+    await db.update(schema.fileReferences).set({ createdAt: oldCreatedAt })
     await expect(fileReferenceService.cleanupOrphanFiles(60)).resolves.toEqual({
       deletedCount: 2,
       totalOrphan: 2,
     })
     expect(await exists(sharedPath)).toBe(true)
     expect(await exists(legacyPath)).toBe(true)
-    expect(await exists(readerPath)).toBe(true)
     expect(await exists(unusedPath)).toBe(false)
     expect(await exists(orphanPath)).toBe(false)
   })
@@ -317,14 +286,12 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
         fileName: 'collision.png',
         fileUrl: collisionUrl,
         status: FileReferenceStatus.Pending,
-        uploadedBy: FileUploadedBy.Owner,
       },
       {
         id: '3003',
         fileName: 'styled.png',
         fileUrl: styledUrl,
         status: FileReferenceStatus.Pending,
-        uploadedBy: FileUploadedBy.Owner,
       },
     ])
 
@@ -386,7 +353,6 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
       fileName: 'blk-0-abc123456789.mp3',
       fileUrl: audioUrl,
       status: FileReferenceStatus.Pending,
-      uploadedBy: FileUploadedBy.Owner,
     })
 
     await expect(fileReferenceService.listOrphanFiles(1, 24)).resolves.toEqual(
@@ -478,14 +444,12 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
         fileName: 'pending.png',
         fileUrl: `${serverUrl}/objects/image/pending.png`,
         status: FileReferenceStatus.Pending,
-        uploadedBy: FileUploadedBy.Owner,
       },
       {
         id: '4002',
         fileName: 'active.png',
         fileUrl: `${serverUrl}/objects/image/active.png`,
         status: FileReferenceStatus.Active,
-        uploadedBy: FileUploadedBy.Owner,
       },
     ])
     await db.insert(schema.fileUsages).values({

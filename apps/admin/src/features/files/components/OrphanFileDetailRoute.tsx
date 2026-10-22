@@ -103,11 +103,6 @@ function buildSections(args: {
                 ? relativeTimeFromNow(raw.detachedAt)
                 : unknown,
             },
-            {
-              key: 'uploadedBy',
-              label: t('files.detail.field.uploadedBy'),
-              value: raw.uploadedBy ?? unknown,
-            },
           ]}
         />
       ),
@@ -122,11 +117,6 @@ function buildSections(args: {
               key: 'ref',
               label: t('files.detail.field.refType'),
               value: ref,
-            },
-            {
-              key: 'reader',
-              label: t('files.detail.field.readerId'),
-              value: raw.readerId ?? unknown,
             },
           ]}
         />
