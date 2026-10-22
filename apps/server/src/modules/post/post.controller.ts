@@ -103,6 +103,7 @@ export class PostController {
   }
 
   @Get('/')
+  @BypassCaseTransform(['[].meta'])
   async getPaginate(
     @Query({ schema: PostPagerSchema }) query: PostPagerDto,
     @HasAdminAccess() isAuthenticated: boolean,
@@ -217,6 +218,7 @@ export class PostController {
   }
 
   @Get('/latest')
+  @BypassCaseTransform(['meta'])
   async getLatest(
     @HasAdminAccess() isAuthenticated: boolean,
     @Lang() lang?: string,

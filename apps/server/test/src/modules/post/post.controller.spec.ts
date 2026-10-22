@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { BYPASS_CASE_TRANSFORM_METADATA } from '~/constants/system.constant'
 import { PostController } from '~/modules/post/post.controller'
 
 const lexicalContent = JSON.stringify({ root: { children: [] } })
@@ -436,5 +437,19 @@ describe('PostController.getByCateAndSlug', () => {
     expect(postTm?.article?.text).toBeUndefined()
     expect(postTm?.article?.content).toBeUndefined()
     expect(postTm?.article?.contentFormat).toBeUndefined()
+  })
+})
+
+describe('PostController response casing', () => {
+  it('keeps post meta keys verbatim on every read route', () => {
+    const bypass = (handler: keyof PostController) =>
+      Reflect.getMetadata(
+        BYPASS_CASE_TRANSFORM_METADATA,
+        PostController.prototype[handler],
+      )
+    expect(bypass('getPaginate')).toEqual(['[].meta'])
+    expect(bypass('getLatest')).toEqual(['meta'])
+    expect(bypass('getById')).toEqual(['meta'])
+    expect(bypass('getByCateAndSlug')).toEqual(['meta'])
   })
 })
