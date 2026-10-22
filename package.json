@@ -13,7 +13,7 @@
     "url": "https://github.com/mx-space/byline"
   },
   "bugs": "https://github.com/mx-space/byline/issues",
-  "author": "Innei <https://innei.in>",
+  "author": "Innei",
   "scripts": {
     "check:controller-response-envelope": "pnpm -C apps/server exec tsx ../../scripts/check-controller-response-envelope.ts",
     "check:validate-false-paired": "pnpm -C apps/server exec tsx ../../scripts/check-validate-false-paired-with-check.ts",

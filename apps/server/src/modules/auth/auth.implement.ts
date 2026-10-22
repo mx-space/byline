@@ -229,15 +229,18 @@ export async function CreateAuth(
     ? '/device'
     : `/api/v${API_VERSION}/device`
   // `fallback` is mandatory: Better Auth throws on any request Host absent
-  // from allowedHosts when it is unset.
+  // from allowedHosts when it is unset. It also refuses an empty allowedHosts,
+  // so the default (empty) allowlist pins the static server origin instead.
   const fallbackOrigin = normalizeOrigin(serverUrl)
   const dynamicBaseURL: BetterAuthOptions['baseURL'] =
     isDev || !fallbackOrigin
       ? undefined
-      : {
-          allowedHosts: CROSS_DOMAIN.allowedOrigins,
-          fallback: fallbackOrigin,
-        }
+      : CROSS_DOMAIN.allowedOrigins.length === 0
+        ? fallbackOrigin
+        : {
+            allowedHosts: CROSS_DOMAIN.allowedOrigins,
+            fallback: fallbackOrigin,
+          }
   const auth = betterAuth({
     telemetry: { enabled: false },
     database: drizzleAdapter(db, {
@@ -250,7 +253,7 @@ export async function CreateAuth(
     basePath: isDev ? '/auth' : `/api/v${API_VERSION}/auth`,
     trustedOrigins: async (request) => {
       // Apple posts its callback from appleid.apple.com (response_mode=form_post)
-      const alwaysTrustedOrigins = ['yohaku://', APPLE_ORIGIN]
+      const alwaysTrustedOrigins = [APPLE_ORIGIN]
       if (isDev) {
         if (!request) return ['http://localhost:2323', ...alwaysTrustedOrigins]
         const origin = request.headers.get('origin')

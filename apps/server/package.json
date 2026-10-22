@@ -12,7 +12,7 @@
     "directory": "apps/server",
     "url": "https://github.com/mx-space/byline"
   },
-  "author": "Innei <https://innei.in>",
+  "author": "Innei",
   "issues": "https://github.com/mx-space/byline/issues",
   "scripts": {
     "prebuild": "rimraf dist",

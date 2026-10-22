@@ -4,19 +4,7 @@ export const API_VERSION = 3
 export const CROSS_DOMAIN = {
   allowedOrigins: process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
-    : [
-        'innei.ren',
-        '*.innei.ren',
-
-        'localhost:*',
-        '127.0.0.1',
-        'mbp.cc',
-        'local.innei.test',
-        '22333322.xyz',
-        '*.dev',
-      ],
-
-  // allowedReferer: 'innei.ren',
+    : [],
 }
 
 export const REDIS = {

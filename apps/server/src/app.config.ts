@@ -28,7 +28,6 @@ const {
   THROTTLE_LIMIT,
   JWT_SECRET,
   JWTSECRET,
-  MX_DISABLE_TELEMETRY,
 } = process.env
 
 const ENV_JWT_SECRET = JWT_SECRET || JWTSECRET
@@ -75,7 +74,7 @@ const commander = program
 
   .option(
     '--allowed_origins <string>',
-    'allowed origins, e.g. innei.ren,*.innei.ren',
+    'extra CORS origins (hosts, wildcards allowed), e.g. example.com,*.example.com',
     ALLOWED_ORIGINS,
   )
   .option('-c, --config <path>', 'load yaml config from file')
@@ -148,9 +147,6 @@ const commander = program
     'enable memory dump for debug, send SIGUSR2 to dump memory',
   )
 
-  // telemetry
-  .option('--disable_telemetry', 'disable anonymous telemetry')
-
   // snowflake
   .option(
     '--snowflake_worker_id <number>',
@@ -188,28 +184,13 @@ export const API_VERSION = 3
 
 export const DEMO_MODE = argv.demo || false
 
+const parseAllowedOrigins = (raw: unknown): string[] => {
+  const list = Array.isArray(raw) ? raw : String(raw ?? '').split(',')
+  return list.map((item) => String(item).trim()).filter(Boolean)
+}
+
 export const CROSS_DOMAIN = {
-  allowedOrigins: argv.allowed_origins
-    ? argv.allowed_origins?.split?.(',')
-    : [
-        'innei.ren',
-        '*.innei.ren',
-
-        'localhost:*',
-        '127.0.0.1',
-        'mbp.cc',
-        'local.innei.test',
-        '22333322.xyz',
-        '*.dev',
-        '*.vercel.app',
-        'innei.in',
-        '*.innei.in',
-
-        'localhost:9528',
-        'localhost:2323',
-      ],
-
-  // allowedReferer: 'innei.ren',
+  allowedOrigins: parseAllowedOrigins(argv.allowed_origins),
 }
 
 const redisConnection = argv.redis_connection_string
@@ -296,10 +277,6 @@ if (
   throw new Error(
     'MX_SECRET_STORAGE_V2 requires encryption and a JWT_SECRET of at least 32 characters',
   )
-}
-
-export const TELEMETRY = {
-  enable: !parseBooleanishValue(argv.disable_telemetry ?? MX_DISABLE_TELEMETRY),
 }
 
 function parseSnowflakeWorkerId(): number {

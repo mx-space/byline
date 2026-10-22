@@ -6,9 +6,8 @@ import { Logger } from '@innei/pretty-logger-nestjs'
 import { NestFactory } from '@nestjs/core'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import pc from 'picocolors'
-import wcmatch from 'wildcard-match'
 
-import { CROSS_DOMAIN, DEBUG_MODE, PORT, TELEMETRY } from './app.config'
+import { CROSS_DOMAIN, DEBUG_MODE, PORT } from './app.config'
 import { AppModule } from './app.module'
 import { fastifyApp } from './common/adapters/fastify.adapter'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor'
@@ -19,15 +18,35 @@ import { logger } from './global/consola.global'
 import { isDev, isMainProcess, isTest } from './global/env.global'
 import { createWsAdapter } from './processors/gateway/ws/ws-adapter.factory'
 import { checkInit } from './utils/check-init.util'
-import {
-  sendTelemetry,
-  startHeartbeat,
-  stopHeartbeat,
-} from './utils/telemetry.util'
+import { createHostMatcher, parseOriginHost } from './utils/cors.util'
 
-const Origin: false | string[] = Array.isArray(CROSS_DOMAIN.allowedOrigins)
-  ? [...CROSS_DOMAIN.allowedOrigins]
-  : false
+const CORS_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+
+const allowAllCors: FastifyCorsOptions = {
+  credentials: true,
+  methods: CORS_METHODS,
+  origin: (origin, callback) => callback(null, origin || ''),
+}
+
+const createAllowlistCors = (patterns: readonly string[]) => {
+  const isAllowedHost = createHostMatcher(patterns)
+  const options: FastifyCorsOptions = {
+    delegator: (request, callback) => {
+      const originHost = parseOriginHost(request.headers.origin)
+      const allowed =
+        !!originHost &&
+        (originHost === request.headers.host || isAllowedHost(originHost))
+      callback(null, {
+        origin: allowed,
+        credentials: true,
+        preflightContinue: false,
+        optionsSuccessStatus: 204,
+        methods: CORS_METHODS,
+      })
+    },
+  }
+  return options
+}
 
 export async function bootstrap() {
   const startedAt = performance.now()
@@ -43,39 +62,8 @@ export async function bootstrap() {
   // Replace NestJS built-in logger with our custom Logger
   app.useLogger(app.get(Logger))
 
-  const allowAllCors: FastifyCorsOptions = {
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    origin: (origin, callback) => callback(null, origin || ''),
-  }
-  // If Origin is not an array, allow all cross-origin requests
-
   app.enableCors(
-    isDev
-      ? allowAllCors
-      : Origin
-        ? {
-            origin: (origin, callback) => {
-              let currentHost: string
-              try {
-                currentHost = new URL(origin || '').host
-              } catch {
-                currentHost = origin || ''
-              }
-              const allow = Origin.some((host) => wcmatch(host)(currentHost))
-
-              if (allow) {
-                callback(null, origin || '')
-              } else {
-                callback(null, false)
-              }
-            },
-            credentials: true,
-            preflightContinue: false,
-            optionsSuccessStatus: 204,
-            methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-          }
-        : allowAllCors,
+    isDev ? allowAllCors : createAllowlistCors(CROSS_DOMAIN.allowedOrigins),
   )
 
   if (isDev || DEBUG_MODE.logging) {
@@ -124,20 +112,9 @@ export async function bootstrap() {
       logger.success(`[${prefix + pid}] Server listen on: ${url}`)
       logger.info(`Server is up. ${pc.yellow(`+${performance.now() | 0}ms`)}`)
 
-      if (TELEMETRY.enable) {
-        logger.info(
-          '[Telemetry] Anonymous telemetry is enabled. To disable, use --disable_telemetry or set MX_DISABLE_TELEMETRY=true',
-        )
-        sendTelemetry('startup')
-        startHeartbeat()
-      } else {
-        logger.info('[Telemetry] Telemetry is disabled.')
-      }
-
       // process.once: second Ctrl+C falls through to Node default for force-kill.
       const shutdown = async (signal: NodeJS.Signals) => {
         logger.info(`Received ${signal}, shutting down...`)
-        if (TELEMETRY.enable) stopHeartbeat()
         try {
           await app.close()
         } catch (e) {
