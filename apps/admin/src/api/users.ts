@@ -40,6 +40,7 @@ export interface UserInvite {
   expiresAt: string
   id: string
   invitedBy: string | null
+  userId: string | null
 }
 
 export interface CreatedUserInvite extends UserInvite {
@@ -137,6 +138,13 @@ export function getInvites() {
 
 export function createInvite(data: { displayName?: string; email: string }) {
   return postJson<CreatedUserInvite, typeof data>('/users/invites', data)
+}
+
+export function inviteExistingUser(
+  id: string,
+  data: { displayName?: string; email?: string },
+) {
+  return postJson<CreatedUserInvite, typeof data>(`/users/${id}/invite`, data)
 }
 
 export function revokeInvite(id: string) {

@@ -3,20 +3,25 @@ import { Check, Copy, Loader2, UserPlus } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 
-import type { CreatedUserInvite } from '~/api/users'
-import { createInvite } from '~/api/users'
+import type { CreatedUserInvite, UserDetail } from '~/api/users'
+import { createInvite, inviteExistingUser } from '~/api/users'
 import { useI18n } from '~/i18n'
 import { ModalFooter, ModalHeader } from '~/ui/feedback/modal'
 import { present, useModal } from '~/ui/feedback/modal-imperative'
 import { Button } from '~/ui/primitives/button'
 import { TextInput } from '~/ui/primitives/text-field'
 
-import { getUserErrorMessage } from '../utils/users'
+import { getUserDisplayName, getUserErrorMessage } from '../utils/users'
 
-function InviteUserModal() {
+interface InviteUserModalProps {
+  user?: Pick<UserDetail, 'displayName' | 'email' | 'id' | 'username'>
+}
+
+function InviteUserModal(props: InviteUserModalProps) {
   const { t } = useI18n()
   const modal = useModal<CreatedUserInvite>()
-  const [email, setEmail] = useState('')
+  const target = props.user
+  const [email, setEmail] = useState(target?.email ?? '')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState('')
   const [created, setCreated] = useState<CreatedUserInvite | null>(null)
@@ -24,10 +29,12 @@ function InviteUserModal() {
 
   const mutation = useMutation({
     mutationFn: () =>
-      createInvite({
-        displayName: displayName.trim() || undefined,
-        email: email.trim(),
-      }),
+      target
+        ? inviteExistingUser(target.id, { email: email.trim() })
+        : createInvite({
+            displayName: displayName.trim() || undefined,
+            email: email.trim(),
+          }),
     onError: (mutationError: unknown) =>
       setError(getUserErrorMessage(mutationError, t('users.invite.failed'))),
     onSuccess: setCreated,
@@ -84,7 +91,17 @@ function InviteUserModal() {
 
   return (
     <form className="flex min-h-0 flex-col" onSubmit={submit}>
-      <ModalHeader icon={UserPlus} title={t('users.invite.title')} />
+      <ModalHeader
+        icon={UserPlus}
+        subtitle={target ? t('users.invite.existingDescription') : undefined}
+        title={
+          target
+            ? t('users.invite.existingTitle', {
+                name: getUserDisplayName(target),
+              })
+            : t('users.invite.title')
+        }
+      />
       <div className="grid gap-4 px-5 py-5">
         <TextInput
           autoFocus
@@ -97,11 +114,13 @@ function InviteUserModal() {
           type="email"
           value={email}
         />
-        <TextInput
-          label={t('users.field.displayName')}
-          onChange={setDisplayName}
-          value={displayName}
-        />
+        {target ? null : (
+          <TextInput
+            label={t('users.field.displayName')}
+            onChange={setDisplayName}
+            value={displayName}
+          />
+        )}
         {error ? (
           <p className="text-xs text-red-600 dark:text-red-400" role="alert">
             {error}
@@ -123,10 +142,10 @@ function InviteUserModal() {
   )
 }
 
-export async function presentInviteUser() {
-  return await present<Record<string, never>, CreatedUserInvite>(
+export async function presentInviteUser(user?: InviteUserModalProps['user']) {
+  return await present<InviteUserModalProps, CreatedUserInvite>(
     InviteUserModal,
-    {},
+    { user },
     { modalProps: { popupStyle: { width: 'min(94vw, 32rem)' } } },
   )
 }

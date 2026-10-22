@@ -55,6 +55,7 @@ export function PendingInvites() {
                       time: new Date(invite.expiresAt).toLocaleString(),
                     })}
                 {invite.displayName ? ` · ${invite.email}` : ''}
+                {invite.userId ? ` · ${t('users.invite.linkedAuthor')}` : ''}
               </div>
             </div>
             <button

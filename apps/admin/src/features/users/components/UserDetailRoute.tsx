@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Loader2, UserCheck, UserX } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, Loader2, Mail, UserCheck, UserX } from 'lucide-react'
 import { useParams } from 'react-router'
 import { toast } from 'sonner'
 
@@ -19,10 +19,12 @@ import { Scroll } from '~/ui/primitives/scroll'
 import { cn } from '~/utils/cn'
 
 import {
+  canEditSignInIdentity,
   getUserDisplayName,
   getUserErrorMessage,
   getUserStatus,
 } from '../utils/users'
+import { presentInviteUser } from './InviteUserModal'
 import { UserAvatar } from './UserAvatar'
 import { UserProfileForm } from './UserProfileForm'
 import { useUsersRouteContext } from './users-route-context'
@@ -32,6 +34,7 @@ export function UserDetailRoute() {
   const { t } = useI18n()
   const { id = '' } = useParams<{ id: string }>()
   const ctx = useUsersRouteContext()
+  const queryClient = useQueryClient()
 
   const userQuery = useQuery({
     enabled: Boolean(id),
@@ -72,6 +75,14 @@ export function UserDetailRoute() {
   const isSelf = user.id === ctx.currentUserId
   const name = getUserDisplayName(user)
 
+  const inviteToSignIn = async () => {
+    const created = await presentInviteUser(user)
+    if (!created) return
+    await queryClient.invalidateQueries({
+      queryKey: adminQueryKeys.users.invites(),
+    })
+  }
+
   const toggleStatus = async () => {
     if (status === 'deactivated') {
       statusMutation.mutate('reactivate')
@@ -109,22 +120,35 @@ export function UserDetailRoute() {
           <UserStatusBadge status={status} />
         </div>
         {isSelf ? null : (
-          <Button
-            className="h-8 px-2"
-            disabled={statusMutation.isPending}
-            onClick={() => void toggleStatus()}
-            type="button"
-            variant="subtle"
-          >
-            {status === 'deactivated' ? (
-              <UserCheck aria-hidden="true" className="size-3.5" />
-            ) : (
-              <UserX aria-hidden="true" className="size-3.5" />
-            )}
-            {status === 'deactivated'
-              ? t('users.action.reactivate')
-              : t('users.action.deactivate')}
-          </Button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {status === 'profileOnly' ? (
+              <Button
+                className="h-8 px-2"
+                onClick={() => void inviteToSignIn()}
+                type="button"
+                variant="subtle"
+              >
+                <Mail aria-hidden="true" className="size-3.5" />
+                {t('users.invite.existingAction')}
+              </Button>
+            ) : null}
+            <Button
+              className="h-8 px-2"
+              disabled={statusMutation.isPending}
+              onClick={() => void toggleStatus()}
+              type="button"
+              variant="subtle"
+            >
+              {status === 'deactivated' ? (
+                <UserCheck aria-hidden="true" className="size-3.5" />
+              ) : (
+                <UserX aria-hidden="true" className="size-3.5" />
+              )}
+              {status === 'deactivated'
+                ? t('users.action.reactivate')
+                : t('users.action.deactivate')}
+            </Button>
+          </div>
         )}
       </div>
       <Scroll
@@ -137,6 +161,7 @@ export function UserDetailRoute() {
           </p>
         ) : null}
         <UserProfileForm
+          identityLocked={!canEditSignInIdentity(user, ctx.currentUserId)}
           key={user.updatedAt ?? user.id}
           onSubmit={async (input) => {
             try {

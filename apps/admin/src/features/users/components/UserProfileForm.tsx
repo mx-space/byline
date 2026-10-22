@@ -33,19 +33,27 @@ function toFormState(user?: Partial<UserDetail>): ProfileFormState {
   }
 }
 
-export function toProfileInput(form: ProfileFormState): UserProfileInput {
-  return {
+export function toProfileInput(
+  form: ProfileFormState,
+  options: { identityLocked?: boolean } = {},
+): UserProfileInput {
+  const profile: UserProfileInput = {
     avatar: form.avatar.trim() || null,
     bio: form.bio.trim() || null,
     displayName: form.displayName.trim(),
-    email: form.email.trim() || null,
     url: form.url.trim() || null,
+  }
+  if (options.identityLocked) return profile
+  return {
+    ...profile,
+    email: form.email.trim() || null,
     ...(form.username.trim() ? { username: form.username.trim() } : {}),
   }
 }
 
 export function UserProfileForm(props: {
   footer?: ReactNode
+  identityLocked?: boolean
   onSubmit: (input: UserProfileInput) => Promise<unknown>
   submitLabel?: string
   user?: Partial<UserDetail>
@@ -75,7 +83,9 @@ export function UserProfileForm(props: {
     }
     setSubmitting(true)
     try {
-      await props.onSubmit(toProfileInput(form))
+      await props.onSubmit(
+        toProfileInput(form, { identityLocked: props.identityLocked }),
+      )
     } finally {
       setSubmitting(false)
     }
@@ -136,11 +146,13 @@ export function UserProfileForm(props: {
           value={form.displayName}
         />
         <TextInput
+          disabled={props.identityLocked}
           label={t('users.field.username')}
           onChange={setField('username')}
           value={form.username}
         />
         <TextInput
+          disabled={props.identityLocked}
           label={t('users.field.email')}
           onChange={setField('email')}
           type="email"
@@ -153,6 +165,11 @@ export function UserProfileForm(props: {
           value={form.url}
         />
       </div>
+      {props.identityLocked ? (
+        <p className="-mt-2 text-xs text-fg-muted">
+          {t('users.field.identityLocked')}
+        </p>
+      ) : null}
       <TextArea
         label={t('users.field.bio')}
         onChange={setField('bio')}

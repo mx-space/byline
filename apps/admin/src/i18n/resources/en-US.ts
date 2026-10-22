@@ -289,6 +289,9 @@ export const enUS = {
   'ai.translation.editLabel.summary': 'Summary',
   'ai.translation.editLabel.text': 'Body',
   'ai.translation.editLabel.title': 'Title',
+  'ai.translation.editLabel.seo': 'SEO',
+  'ai.translation.editLabel.seoDescription':
+    'Overrides the source SEO for this language. Empty fields fall back to the source.',
   'ai.translation.editTitle': 'Edit translation',
   'ai.translation.emptyDescription':
     'Select an article from the left to view AI translations',
@@ -1720,6 +1723,17 @@ export const enUS = {
     'Mail is not configured, so no email was sent. Share the link below.',
   'users.invite.copyLink': 'Copy link',
   'users.invite.done': 'Done',
+  'users.invite.existingAction': 'Invite to sign in',
+  'users.invite.existingTitle': 'Invite {name} to sign in',
+  'users.invite.existingDescription':
+    'Accepting the invite turns this author profile into a sign-in account. Posts and bylines stay attached.',
+  'users.invite.linkedAuthor': 'Existing author',
+  'users.field.identityLocked':
+    'Only the account holder can change the email or username of a sign-in account.',
+  'users.error.identityLocked':
+    "Only the account holder can change a sign-in account's email or username.",
+  'users.error.conflict':
+    'This email or username already belongs to another account.',
   'users.invite.pendingTitle': 'Pending invites ({count})',
   'users.invite.expired': 'Expired',
   'users.invite.expiresAt': 'Expires {time}',
