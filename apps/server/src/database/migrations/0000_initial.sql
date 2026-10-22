@@ -76,7 +76,8 @@ CREATE TABLE "ai_translations" (
 	"content_format" text,
 	"content" text,
 	"source_block_snapshots" jsonb,
-	"source_meta_hashes" jsonb
+	"source_meta_hashes" jsonb,
+	"is_locked" boolean DEFAULT false NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "ai_tts" (

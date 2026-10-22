@@ -1,5 +1,5 @@
 {
-  "id": "5a7aae37-3556-4838-81d5-8ba834c170b0",
+  "id": "b7f69e73-e486-4d47-9649-9e160f9dc77c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -616,6 +616,13 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_locked": {
+          "name": "is_locked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {

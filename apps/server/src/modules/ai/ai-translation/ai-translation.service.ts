@@ -55,7 +55,10 @@ import {
 import { buildGroupedWithOrphans } from '../grouped-with-orphans.util'
 import type { IModelRuntime } from '../runtime'
 import { AiTranslationRepository } from './ai-translation.repository'
-import type { GetTranslationsGroupedQueryDto } from './ai-translation.schema'
+import type {
+  GetTranslationsGroupedQueryDto,
+  WriteManualTranslationDto,
+} from './ai-translation.schema'
 import type {
   ArticleContent,
   ArticleDocument,
@@ -186,6 +189,7 @@ export class AiTranslationService
           refId: payload.refId,
           targetLanguages: failedLangs,
           force: payload.force,
+          regenerateLocked: payload.regenerateLocked,
           title: payload.title,
           refType: payload.refType,
         }
@@ -224,15 +228,31 @@ export class AiTranslationService
     this.checkAborted(context)
 
     const aiConfig = await this.configService.get('ai')
-    const languages = normalizeTargetLangs(
+    const requestedLanguages = normalizeTargetLangs(
       resolveTargetLanguages(
         payload.targetLanguages,
         aiConfig.translationTargetLanguages,
       ),
     )
 
-    if (!languages.length) {
+    if (!requestedLanguages.length) {
       await context.appendLog('warn', 'No target languages specified')
+      return
+    }
+
+    const { languages, skipped } = await this.excludeLockedLanguages(
+      payload.refId,
+      requestedLanguages,
+      payload.regenerateLocked,
+    )
+    if (skipped.length) {
+      await context.appendLog(
+        'info',
+        `Skipping locked translations: ${skipped.join(', ')}`,
+      )
+    }
+    if (!languages.length) {
+      await context.setResult({ translations: [], skippedLocked: skipped })
       return
     }
 
@@ -339,7 +359,7 @@ export class AiTranslationService
       }
     }
 
-    await context.setResult({ translations })
+    await context.setResult({ translations, skippedLocked: skipped })
 
     // Set status based on results
     if (failedCount === languages.length) {
@@ -602,6 +622,9 @@ export class AiTranslationService
     if (!translation) {
       return null
     }
+    if (translation.isLocked) {
+      return translation
+    }
 
     const sourceLang =
       this.getMetaLang(document) || translation.sourceLang || 'unknown'
@@ -720,6 +743,21 @@ export class AiTranslationService
       reviewerRuntime,
       styleHints: this.composeStyleHints(aiConfig, refType),
     })
+  }
+
+  async excludeLockedLanguages(
+    refId: string,
+    languages: string[],
+    regenerateLocked?: boolean,
+  ): Promise<{ languages: string[]; skipped: string[] }> {
+    if (regenerateLocked) return { languages, skipped: [] }
+    const locked = new Set(
+      await this.aiTranslationRepository.listLockedLangs(refId),
+    )
+    return {
+      languages: languages.filter((lang) => !locked.has(lang)),
+      skipped: languages.filter((lang) => locked.has(lang)),
+    }
   }
 
   async generateTranslation(
@@ -1091,6 +1129,7 @@ export class AiTranslationService
       summary?: string
       tags?: string[]
       content?: string
+      isLocked?: boolean
     },
   ) {
     const existing = await this.aiTranslationRepository.findById(id)
@@ -1104,6 +1143,7 @@ export class AiTranslationService
     if (data.subtitle !== undefined) patch.subtitle = data.subtitle ?? null
     if (data.summary !== undefined) patch.summary = data.summary
     if (data.tags !== undefined) patch.tags = data.tags
+    if (data.isLocked !== undefined) patch.isLocked = data.isLocked
 
     if (data.content !== undefined) {
       patch.content = data.content
@@ -1120,6 +1160,60 @@ export class AiTranslationService
       throw createAppException(AppErrorCode.AI_TRANSLATION_NOT_FOUND)
     }
     return updated
+  }
+
+  async writeManualTranslation(
+    articleId: string,
+    rawLang: string,
+    data: WriteManualTranslationDto,
+  ): Promise<AITranslationModel> {
+    const lang = normalizeTargetLangs([rawLang])[0]
+    if (!lang) {
+      throw createAppException(AppErrorCode.INVALID_PARAMETER, {
+        message: `Unsupported language: ${rawLang}`,
+      })
+    }
+    const { document, type } =
+      await this.resolveArticleForTranslation(articleId)
+    const source = this.toArticleContent(document)
+    const sourceLang =
+      (data.sourceLang && normalizeTargetLangs([data.sourceLang])[0]) ||
+      this.getMetaLang(document) ||
+      'unknown'
+    const existing = await this.aiTranslationRepository.findByRef(
+      articleId,
+      type,
+      lang,
+    )
+
+    const persisted = await this.aiTranslationRepository.upsert({
+      hash: this.computeContentHash(source, sourceLang),
+      refId: articleId,
+      refType: type,
+      lang,
+      sourceLang,
+      title: data.title,
+      text: data.text ?? this.lexicalService.lexicalToMarkdown(data.content),
+      subtitle: data.subtitle ?? null,
+      summary: data.summary ?? null,
+      tags: data.tags ?? [],
+      sourceModifiedAt: document.modifiedAt ?? document.createdAt ?? new Date(),
+      aiModel: null,
+      aiProvider: null,
+      contentFormat: ContentFormat.Lexical,
+      content: data.content,
+      sourceBlockSnapshots: this.buildSourceSnapshots(source),
+      sourceMetaHashes: this.buildSourceMetaHashes(source),
+      isLocked: true,
+    })
+
+    this.emitTranslationEvent(
+      existing
+        ? BusinessEvents.TRANSLATION_UPDATE
+        : BusinessEvents.TRANSLATION_CREATE,
+      persisted,
+    )
+    return persisted
   }
 
   async deleteTranslation(id: string) {

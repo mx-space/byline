@@ -38,6 +38,7 @@ export interface TranslationTaskPayload {
   refId: string
   targetLanguages?: string[]
   force?: boolean
+  regenerateLocked?: boolean
   // Human-readable info
   title?: string
   refType?: string
@@ -123,7 +124,8 @@ export function computeAITaskDedupKey(
     case AITaskType.Translation: {
       const p = payload as TranslationTaskPayload
       const langs = canonicalTargetLangs(p.targetLanguages)
-      return `${p.refId}:${p.force ? 'force' : 'inc'}:${langs}`
+      const mode = `${p.force ? 'force' : 'inc'}${p.regenerateLocked ? ':unlock' : ''}`
+      return `${p.refId}:${mode}:${langs}`
     }
     case AITaskType.TranslationBatch: {
       const p = payload as TranslationBatchTaskPayload

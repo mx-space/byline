@@ -20,6 +20,7 @@ export interface PublishTaskPayload {
   branchId: string
   documentId: string
   expectedPublishedRevisionId: string | null
+  regenerateLockedTranslations?: boolean
   operation: PublishOperation
   refId: string | null
   refType: DraftRefType

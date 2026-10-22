@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Res,
 } from '@nestjs/common'
@@ -34,8 +35,12 @@ import {
   GetTranslationsGroupedQuerySchema,
   type GetTranslationStreamQueryDto,
   GetTranslationStreamQuerySchema,
+  type ManualTranslationParamsDto,
+  ManualTranslationParamsSchema,
   type UpdateTranslationDto,
   UpdateTranslationSchema,
+  type WriteManualTranslationDto,
+  WriteManualTranslationSchema,
 } from './ai-translation.schema'
 import { AiTranslationService } from './ai-translation.service'
 
@@ -115,6 +120,17 @@ export class AiTranslationController {
     @Query({ schema: GetTranslationQuerySchema }) query: GetTranslationQueryDto,
   ) {
     return this.service.getTranslationForArticle(params.id, query.lang)
+  }
+
+  @Put('/article/:id/:lang')
+  @Auth()
+  writeManualTranslation(
+    @Param({ schema: ManualTranslationParamsSchema })
+    params: ManualTranslationParamsDto,
+    @Body({ schema: WriteManualTranslationSchema })
+    body: WriteManualTranslationDto,
+  ) {
+    return this.service.writeManualTranslation(params.id, params.lang, body)
   }
 
   @Get('/article/:id/languages')

@@ -30,6 +30,7 @@ export const CreateTranslationTaskSchema = z.object({
     .max(MAX_LANGS_PER_TASK)
     .optional(),
   force: z.boolean().optional(),
+  regenerateLocked: z.boolean().optional(),
 })
 
 export type CreateTranslationTaskDto = z.infer<

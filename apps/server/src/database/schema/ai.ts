@@ -40,6 +40,7 @@ export const aiTranslations = pgTable(
     content: text('content'),
     sourceBlockSnapshots: jsonb('source_block_snapshots').$type<unknown>(),
     sourceMetaHashes: jsonb('source_meta_hashes').$type<unknown>(),
+    isLocked: boolean('is_locked').notNull().default(false),
   },
   (table) => [
     uniqueIndex('ai_translations_ref_lang_uniq').on(

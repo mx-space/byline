@@ -109,6 +109,7 @@ export class PublishService implements OnModuleInit {
       branchId: branch.id,
       documentId: branch.documentId,
       expectedPublishedRevisionId: dto.expectedPublishedRevisionId,
+      regenerateLockedTranslations: dto.regenerateLockedTranslations,
       operation: !existing
         ? 'first-publish'
         : online
@@ -155,7 +156,13 @@ export class PublishService implements OnModuleInit {
     await context.setResult(result)
 
     try {
-      await this.prepareResources(byMode('sync'), committed.id, result, context)
+      await this.prepareResources(
+        byMode('sync'),
+        committed.id,
+        result,
+        context,
+        payload.regenerateLockedTranslations,
+      )
     } catch (error) {
       result.newerDraftChanges = await this.hasNewerBranchHead(payload)
       await context.setResult(result)
@@ -173,7 +180,12 @@ export class PublishService implements OnModuleInit {
       result.articleCommitted = true
     }
 
-    await this.startAsyncResources(byMode('async'), committed.id, result)
+    await this.startAsyncResources(
+      byMode('async'),
+      committed.id,
+      result,
+      payload.regenerateLockedTranslations,
+    )
     await this.drafts.setPublishAiResources(payload.documentId, aiResources)
 
     result.newerDraftChanges = await this.hasNewerBranchHead(payload)
@@ -278,6 +290,7 @@ export class PublishService implements OnModuleInit {
     refId: string,
     result: PublishTaskResult,
     context: TaskExecuteContext,
+    regenerateLocked?: boolean,
   ) {
     if (!resources.length) return
     await context.updateProgress(
@@ -289,7 +302,11 @@ export class PublishService implements OnModuleInit {
 
     for (const resource of resources) {
       throwIfAborted(context.signal)
-      const created = await this.createResourceTask(resource, refId)
+      const created = await this.createResourceTask(
+        resource,
+        refId,
+        regenerateLocked,
+      )
       result.resources[resource] = created.taskId
     }
     await context.setResult(result)
@@ -317,10 +334,15 @@ export class PublishService implements OnModuleInit {
     resources: PublishAiResource[],
     refId: string,
     result: PublishTaskResult,
+    regenerateLocked?: boolean,
   ) {
     for (const resource of resources) {
       try {
-        const created = await this.createResourceTask(resource, refId)
+        const created = await this.createResourceTask(
+          resource,
+          refId,
+          regenerateLocked,
+        )
         result.resources[resource] = created.taskId
       } catch (error) {
         this.logger.warn(
@@ -330,7 +352,11 @@ export class PublishService implements OnModuleInit {
     }
   }
 
-  private createResourceTask(resource: PublishAiResource, refId: string) {
+  private createResourceTask(
+    resource: PublishAiResource,
+    refId: string,
+    regenerateLocked?: boolean,
+  ) {
     switch (resource) {
       case 'summary': {
         return this.aiTasks.createSummaryTask({ refId })
@@ -339,7 +365,10 @@ export class PublishService implements OnModuleInit {
         return this.aiTasks.createInsightsTask({ refId })
       }
       case 'translation': {
-        return this.aiTasks.createTranslationTask({ refId })
+        return this.aiTasks.createTranslationTask({
+          refId,
+          ...(regenerateLocked ? { regenerateLocked: true } : {}),
+        })
       }
       case 'tts': {
         return this.aiTasks.createTtsTask({ refId })

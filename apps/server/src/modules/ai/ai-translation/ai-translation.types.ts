@@ -47,6 +47,7 @@ export interface AiTranslationRow {
   content: string | null
   sourceBlockSnapshots: unknown
   sourceMetaHashes: unknown
+  isLocked: boolean
   createdAt: Date
   updatedAt: Date | null
   generationMetrics?: GenerationMetricsDto | null

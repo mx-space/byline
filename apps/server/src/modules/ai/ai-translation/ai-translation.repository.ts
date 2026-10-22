@@ -43,6 +43,7 @@ const mapTranslation = (
   content: row.content,
   sourceBlockSnapshots: row.sourceBlockSnapshots,
   sourceMetaHashes: row.sourceMetaHashes,
+  isLocked: row.isLocked,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt ?? null,
 })
@@ -273,10 +274,11 @@ export class AiTranslationRepository extends BaseRepository {
   async upsert(
     input: Omit<
       AiTranslationRow,
-      'id' | 'refId' | 'createdAt' | 'updatedAt'
+      'id' | 'refId' | 'createdAt' | 'updatedAt' | 'isLocked'
     > & {
       id?: EntityId | string
       refId: EntityId | string
+      isLocked?: boolean
     },
   ): Promise<AiTranslationRow> {
     const refBig = parseEntityId(input.refId)
@@ -295,6 +297,7 @@ export class AiTranslationRepository extends BaseRepository {
       content: input.content,
       sourceBlockSnapshots: input.sourceBlockSnapshots,
       sourceMetaHashes: input.sourceMetaHashes,
+      isLocked: input.isLocked ?? false,
       updatedAt: new Date(),
     }
     return this.db.transaction(async (tx) => {
@@ -370,6 +373,7 @@ export class AiTranslationRepository extends BaseRepository {
       update.sourceBlockSnapshots = patch.sourceBlockSnapshots
     if (patch.sourceMetaHashes !== undefined)
       update.sourceMetaHashes = patch.sourceMetaHashes
+    if (patch.isLocked !== undefined) update.isLocked = patch.isLocked
     update.updatedAt = patch.updatedAt ?? new Date()
     const [row] = await this.db
       .update(aiTranslations)
@@ -377,6 +381,19 @@ export class AiTranslationRepository extends BaseRepository {
       .where(eq(aiTranslations.id, parseEntityId(id)))
       .returning()
     return row ? mapTranslation(row) : null
+  }
+
+  async listLockedLangs(refId: EntityId | string): Promise<string[]> {
+    const rows = await this.db
+      .select({ lang: aiTranslations.lang })
+      .from(aiTranslations)
+      .where(
+        and(
+          eq(aiTranslations.refId, parseEntityId(refId)),
+          eq(aiTranslations.isLocked, true),
+        ),
+      )
+    return rows.map((row) => row.lang)
   }
 
   async deleteForRefId(refId: EntityId | string): Promise<number> {

@@ -11,7 +11,8 @@ export type FreshnessStatus = 'valid' | 'stale' | 'unknown'
 type TranslationSnapshot = Pick<
   AITranslationModel,
   'refId' | 'hash' | 'sourceLang' | 'sourceModifiedAt' | 'createdAt'
->
+> &
+  Partial<Pick<AITranslationModel, 'isLocked'>>
 
 @Injectable()
 export class TranslationConsistencyService extends BaseTranslationService {
@@ -124,6 +125,9 @@ export class TranslationConsistencyService extends BaseTranslationService {
     article: TranslationSourceSnapshot,
     translation: TranslationSnapshot,
   ): FreshnessStatus {
+    // A locked translation is maintained by hand and stays authoritative after source edits.
+    if (translation.isLocked) return 'valid'
+
     const articleTimestamp = article.modifiedAt ?? article.createdAt ?? null
 
     if (
