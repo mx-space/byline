@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { checkInit } from '~/api/system'
-import { bgUrl } from '~/constants/env'
 import { useI18n } from '~/i18n'
+import { authBackdropStyle } from '~/lib/auth-backdrop'
 import { cn } from '~/utils/cn'
 
 import { setupSteps } from '../constants'
@@ -45,11 +45,7 @@ export function SetupRouteViewContent() {
   return (
     <main
       className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-neutral-950 p-4 text-white"
-      style={{
-        backgroundImage: `linear-gradient(rgba(10,10,10,.42), rgba(10,10,10,.58)), url(${bgUrl})`,
-        backgroundPosition: 'center',
-        backgroundSize: 'cover',
-      }}
+      style={authBackdropStyle}
     >
       <div className="mb-8 flex items-center gap-3">
         {setupSteps.map((item, index) => {

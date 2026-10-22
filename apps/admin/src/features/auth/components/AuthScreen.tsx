@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { bgUrl } from '~/constants/env'
+import { authBackdropStyle } from '~/lib/auth-backdrop'
 
 import faviconUrl from '../../../../favicon.png'
 
@@ -12,11 +12,7 @@ export function AuthScreen(props: {
   return (
     <main
       className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-neutral-950 p-4 text-white"
-      style={{
-        backgroundImage: `linear-gradient(rgba(10,10,10,.42), rgba(10,10,10,.58)), url(${bgUrl})`,
-        backgroundPosition: 'center',
-        backgroundSize: 'cover',
-      }}
+      style={authBackdropStyle}
     >
       <section className="flex w-full max-w-sm flex-col items-center">
         <img
