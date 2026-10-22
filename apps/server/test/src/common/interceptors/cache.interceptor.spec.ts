@@ -8,6 +8,7 @@ vi.mock('~/global/env.global', async (importOriginal) => {
 })
 
 const { REDIS } = await import('~/app.config')
+const { RequestContext } = await import('~/common/contexts/request.context')
 const { HttpCacheInterceptor } =
   await import('~/common/interceptors/cache.interceptor')
 
@@ -258,5 +259,32 @@ describe('HttpCacheInterceptor entitlement-keyed caching', () => {
     expect(cacheManager.get).not.toHaveBeenCalled()
     expect(cacheManager.set).not.toHaveBeenCalled()
     expect(reply.headers['cache-control']).toContain('private')
+  })
+
+  it('keys shared cache entries by the header-derived request language', async () => {
+    const store = new Map<string, unknown>()
+    const runAs = async (lang: string | undefined, title: string) => {
+      const { interceptor } = createInterceptor(store)
+      const request = baseRequest({ url: '/posts/1' })
+      const reply = createReply()
+      const context = new RequestContext(request as any, {} as any)
+      context.lang = lang
+      const result = await RequestContext.run(context, async () =>
+        firstValueFrom(
+          (await interceptor.intercept(
+            createContext(request, reply),
+            createHandler({ data: { title } }),
+          )) as any,
+        ),
+      )
+      return { result, reply }
+    }
+
+    await runAs('zh-TW', 'zh-TW title')
+    const { result, reply } = await runAs(undefined, 'source title')
+
+    expect(result).toEqual({ data: { title: 'source title' } })
+    expect(store.size).toBe(2)
+    expect(reply.headers.vary).toBe('x-lang, accept-language')
   })
 })

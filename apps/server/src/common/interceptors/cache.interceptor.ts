@@ -20,6 +20,8 @@ import {
 } from '~/transformers/get-req.transformer'
 import { hashString } from '~/utils/tool.util'
 
+const LANGUAGE_VARY_HEADERS = ['x-lang', 'accept-language']
+
 @Injectable()
 export class HttpCacheInterceptor implements NestInterceptor {
   private readonly logger = new Logger(HttpCacheInterceptor.name)
@@ -133,6 +135,7 @@ export class HttpCacheInterceptor implements NestInterceptor {
   private setCacheHeader(res: FastifyReply, ttl: number) {
     if (res.raw.statusCode !== 200) return
     res.header('x-mx-cache', 'hit')
+    this.varyOnLanguage(res)
 
     if (HTTP_CACHE.enableCDNHeader) {
       const cdnValue = `max-age=${ttl}, stale-while-revalidate=60`
@@ -157,6 +160,18 @@ export class HttpCacheInterceptor implements NestInterceptor {
     }
   }
 
+  private varyOnLanguage(res: FastifyReply) {
+    const current = res.getHeader('vary')
+    const values = new Set(
+      (typeof current === 'string' ? current : '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    )
+    for (const header of LANGUAGE_VARY_HEADERS) values.add(header)
+    res.header('vary', [...values].join(', '))
+  }
+
   private trackBy(context: ExecutionContext): string {
     const request = this.getRequest(context)
     const httpServer = this.httpAdapterHost.httpAdapter
@@ -177,11 +192,9 @@ export class HttpCacheInterceptor implements NestInterceptor {
       META.HTTP_CACHE_META_OPTIONS,
       context.getHandler(),
     )
-    if (!cacheOptions?.withQuery) {
-      return key
-    }
-
-    const queryString = this.getRequest(context).url.split('?')[1]
+    const queryString = cacheOptions?.withQuery
+      ? this.getRequest(context).url.split('?')[1]
+      : undefined
     const lang = RequestContext.currentLang()
     const base = queryString ? `${key}?${hashString(queryString)}` : key
     return lang ? `${base}#${lang}` : base
