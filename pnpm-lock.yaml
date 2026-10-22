@@ -163,9 +163,6 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@mx-space/ai': link:/Users/innei/git/innei-repo/mx-core-shared/packages/ai
-  '@mx-space/editor': link:/Users/innei/git/innei-repo/mx-core-shared/packages/editor
-  '@mx-space/ws-client': link:/Users/innei/git/innei-repo/mx-core-shared/packages/ws-client
   eslint-plugin-react-compiler>zod: 3.25.76
   get-pixels@^3>request: ./external/request
   better-auth: 1.6.27
@@ -458,11 +455,11 @@ importers:
         specifier: 4.7.0
         version: 4.7.0(monaco-editor@0.57.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@mx-space/editor':
-        specifier: link:/Users/innei/git/innei-repo/mx-core-shared/packages/editor
-        version: link:../../../mx-core-shared/packages/editor
+        specifier: 0.4.0
+        version: 0.4.0(typescript@6.0.3)
       '@mx-space/ws-client':
-        specifier: link:/Users/innei/git/innei-repo/mx-core-shared/packages/ws-client
-        version: link:../../../mx-core-shared/packages/ws-client
+        specifier: 0.2.0
+        version: 0.2.0
       '@pierre/diffs':
         specifier: 1.5.1
         version: 1.5.1(@shikijs/themes@4.5.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -690,14 +687,14 @@ importers:
         specifier: 0.52.0
         version: 0.52.0(typescript@6.0.3)
       '@mx-space/ai':
-        specifier: link:/Users/innei/git/innei-repo/mx-core-shared/packages/ai
-        version: link:../../../mx-core-shared/packages/ai
+        specifier: 0.2.0
+        version: 0.2.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(lexical@0.52.0(typescript@6.0.3))(react@19.3.1)(supports-color@5.5.0)(typescript@6.0.3)(undici@8.12.3)(ws@8.22.0)
       '@mx-space/editor':
-        specifier: link:/Users/innei/git/innei-repo/mx-core-shared/packages/editor
-        version: link:../../../mx-core-shared/packages/editor
+        specifier: 0.4.0
+        version: 0.4.0(typescript@6.0.3)
       '@mx-space/ws-client':
-        specifier: link:/Users/innei/git/innei-repo/mx-core-shared/packages/ws-client
-        version: link:../../../mx-core-shared/packages/ws-client
+        specifier: 0.2.0
+        version: 0.2.0
       '@nestjs/cache-manager':
         specifier: 12.0.0
         version: 12.0.0(@nestjs/common@12.1.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@5.5.0))(@nestjs/core@12.1.2)(cache-manager@7.2.9)(keyv@5.6.0)(rxjs@7.8.2)
@@ -3438,6 +3435,15 @@ packages:
   '@mongodb-js/zstd@7.0.0':
     resolution: {integrity: sha512-mQ2s0pYYiav+tzCDR05Zptem8Ey2v8s11lri5RKGhTtL4COVCvVCk5vtyRYNT+9L8qSfyOqqefF9UtnW8mC5jA==}
     engines: {node: '>= 20.19.0'}
+
+  '@mx-space/ai@0.2.0':
+    resolution: {integrity: sha512-0FiXx+9cOwPZFalKzZx/T92F6DodvFJ/By5rukR4+QCbbgFBN0gy16ul38RL5mIUtdA92aBI8YkGhlGMhwxrKA==}
+
+  '@mx-space/editor@0.4.0':
+    resolution: {integrity: sha512-0SJvr8jzlboBhbCQdfVItbNZStYU2FqXYhV3Vu51Fo4X3gh1XbT5cUGUYG0rgdNnKN0SjR6cC7y8FF4Nr5ZQIQ==}
+
+  '@mx-space/ws-client@0.2.0':
+    resolution: {integrity: sha512-5BrruNStfOoMqCqAKCzRI6kIeYe7wuCHGMxUVyarSg/FzfYQyKL+hhj4rEMZE6kZIgNhIOcy9jpetZc0mIFrfg==}
 
   '@napi-rs/nice-android-arm-eabi@1.1.1':
     resolution: {integrity: sha512-kjirL3N6TnRPv5iuHw36wnucNqXAO46dzK9oPb0wj076R5Xm8PfUVA9nAFB5ZNMmfJQJVKACAPd/Z2KYMppthw==}
@@ -13616,6 +13622,48 @@ snapshots:
       node-addon-api: 8.9.2
       prebuild-install: 7.1.3
     optional: true
+
+  '@mx-space/ai@0.2.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(lexical@0.52.0(typescript@6.0.3))(react@19.3.1)(supports-color@5.5.0)(typescript@6.0.3)(undici@8.12.3)(ws@8.22.0)':
+    dependencies:
+      '@earendil-works/pi-agent-core': 0.99.1(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(supports-color@5.5.0)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+      '@earendil-works/pi-ai': 0.99.1(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(supports-color@5.5.0)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
+      '@haklex/rich-headless': 0.52.0(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
+      '@innei/message-engine': 0.5.0(@earendil-works/pi-agent-core@0.99.1(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(supports-color@5.5.0)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))(react@19.3.1)
+      es-toolkit: 1.52.0
+      json5: 2.2.3
+      jsonrepair: 3.15.0
+      typebox: 1.3.35
+      zod: 4.6.5
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-provider-node'
+      - '@modelcontextprotocol/sdk'
+      - '@smithy/hash-node'
+      - '@smithy/signature-v4'
+      - bufferutil
+      - kerberos
+      - lexical
+      - react
+      - supports-color
+      - typescript
+      - undici
+      - utf-8-validate
+      - ws
+
+  '@mx-space/editor@0.4.0(typescript@6.0.3)':
+    dependencies:
+      '@haklex/rich-headless': 0.52.0(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
+      '@haklex/rich-litexml': 0.52.0(typescript@6.0.3)
+      '@lexical/headless': 0.52.0(typescript@6.0.3)
+      '@lexical/markdown': 0.52.0(typescript@6.0.3)
+      '@noble/hashes': 2.4.0
+      lexical: 0.52.0(typescript@6.0.3)
+    transitivePeerDependencies:
+      - bufferutil
+      - canvas
+      - typescript
+      - utf-8-validate
+
+  '@mx-space/ws-client@0.2.0': {}
 
   '@napi-rs/nice-android-arm-eabi@1.1.1':
     optional: true

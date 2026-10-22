@@ -20,21 +20,6 @@ if (
   )
 }
 
-// @mx-space/ai resolves its own peer variant of these from packages/ai; without
-// dedupe the server would load two pi-ai copies with separate provider registries.
-const sharedAiDependencies = [
-  '@earendil-works/pi-agent-core',
-  '@earendil-works/pi-ai',
-  '@haklex/rich-headless',
-  '@haklex/rich-litexml',
-  '@innei/message-engine',
-  '@lexical/headless',
-  '@lexical/markdown',
-  'lexical',
-  'typebox',
-  'zod',
-]
-
 export default defineConfig({
   root: './test',
   test: {
@@ -49,7 +34,6 @@ export default defineConfig({
   },
 
   resolve: {
-    dedupe: sharedAiDependencies,
     alias: {
       '~/app.config': resolve(__dirname, './src/app.config.test.ts'),
       '~/common/decorators/auth.decorator': resolve(

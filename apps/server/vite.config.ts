@@ -1,8 +1,7 @@
-import { realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import swc from 'unplugin-swc'
-import { defineConfig, searchForWorkspaceRoot } from 'vite'
+import { defineConfig } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import zodCompiler from 'zod-compiler/vite'
 
@@ -30,48 +29,11 @@ const escapeNonAsciiPlugin = () => ({
   },
 })
 
-// @mx-space/ai resolves its own peer variant of these from packages/ai; without
-// dedupe the server would load two pi-ai copies with separate provider registries.
-const sharedAiDependencies = [
-  '@earendil-works/pi-agent-core',
-  '@earendil-works/pi-ai',
-  '@haklex/rich-headless',
-  '@haklex/rich-litexml',
-  '@innei/message-engine',
-  '@lexical/headless',
-  '@lexical/markdown',
-  'lexical',
-  'typebox',
-  'zod',
-]
-
-// While @mx-space/* are `link:` overrides their sources live outside the
-// workspace, and vite-node's fs.strict denies their `?raw` prompt imports.
-const sharedPackageRoots = [
-  '@mx-space/ai',
-  '@mx-space/editor',
-  '@mx-space/ws-client',
-].flatMap((name) => {
-  try {
-    return [realpathSync(resolve(__dirname, 'node_modules', name))]
-  } catch {
-    return []
-  }
-})
-
 export default defineConfig(({ command }) => {
   const isBuild = command === 'build'
 
   return {
     esbuild: false,
-    resolve: {
-      dedupe: sharedAiDependencies,
-    },
-    server: {
-      fs: {
-        allow: [searchForWorkspaceRoot(__dirname), ...sharedPackageRoots],
-      },
-    },
     define: {
       __DEV__: isBuild ? 'false' : 'true',
       __TEST__: 'false',
