@@ -155,6 +155,38 @@ const a = 1
     expect(texts(nodes[0])).toBe('中文第一行中文第二行 and English words')
   })
 
+  it('keeps a space at Korean soft line breaks', () => {
+    const { nodes } = blocks('정책을\n참조하십시오')
+    expect(texts(nodes[0])).toBe('정책을 참조하십시오')
+  })
+
+  it('keeps the link of a linked image as a text link below it', () => {
+    const { nodes, issues } = blocks(
+      '[![Product Hunt badge](https://img.example/badge.svg)](https://ph.example/p)',
+    )
+    expect(nodes.map((node) => node.type)).toEqual(['image', 'paragraph'])
+    expect(nodes[1].children![0]).toMatchObject({
+      type: 'link',
+      url: 'https://ph.example/p',
+    })
+    expect(texts(nodes[1])).toBe('Product Hunt badge')
+    expect(issues).toEqual([])
+  })
+
+  it('keeps the link of an html anchor around an image', () => {
+    const { nodes, issues } =
+      blocks(`<a href="https://ph.example/p" target="_blank">
+  <img alt="PH badge" src="https://img.example/badge.svg" />
+</a>`)
+    expect(nodes.map((node) => node.type)).toEqual(['image', 'paragraph'])
+    expect(nodes[1].children![0]).toMatchObject({
+      type: 'link',
+      url: 'https://ph.example/p',
+    })
+    expect(texts(nodes[1])).toBe('PH badge')
+    expect(issues).toEqual([])
+  })
+
   it('collects footnotes into a footnote section', () => {
     const { nodes } = blocks('Claim[^1].\n\n[^1]: Source text')
     expect(nodes[0].children!.some((node) => node.type === 'footnote')).toBe(
@@ -307,19 +339,22 @@ describe('convertMdx components', () => {
     expect(issues).toEqual([])
   })
 
-  it('reports a link dropped around an image', () => {
+  it('keeps image attributes when a link wraps the image', () => {
     const { nodes, issues } = blocks(
       '<a href="https://ph.test">\n  <img alt="Badge" src="https://img.test/b.svg" width="250" />\n</a>\n\n[![Shot](https://img.test/s.png)](https://shot.test)\n',
     )
-    expect(nodes.map((node) => node.type)).toEqual(['image', 'image'])
+    expect(nodes.map((node) => node.type)).toEqual([
+      'image',
+      'paragraph',
+      'image',
+      'paragraph',
+    ])
     expect(nodes[0]).toMatchObject({
       src: 'https://img.test/b.svg',
       width: 250,
     })
-    expect(issues.map((issue) => issue.message)).toEqual([
-      'link to https://ph.test around block content dropped',
-      'link to https://shot.test around block content dropped',
-    ])
+    expect(nodes[3].children![0]).toMatchObject({ url: 'https://shot.test' })
+    expect(issues).toEqual([])
   })
 })
 

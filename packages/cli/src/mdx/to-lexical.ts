@@ -294,17 +294,29 @@ export class MdastToLexical {
     const items = this.inline(children, format)
     const inline = items.filter((item) => !isBlockItem(item)) as LexicalNode[]
     const blocks = items.filter(isBlockItem)
-    if (blocks.length)
-      this.reportDroppedLink(url, children[0]?.position?.start.line)
-    return [...(inline.length ? [link(url, inline, title)] : []), ...blocks]
+    if (inline.length) return [link(url, inline, title), ...blocks]
+    if (!blocks.length) return []
+    return [
+      ...blocks,
+      this.linkAfterBlocks(
+        url,
+        title,
+        blocks.map((item) => item.block),
+        format,
+      ),
+    ]
   }
 
-  reportDroppedLink(url: string, line?: number) {
-    this.report({
-      kind: 'dropped-node',
-      message: `link to ${url} around block content dropped`,
-      line,
-    })
+  linkAfterBlocks(
+    url: string,
+    title: string | null,
+    blocks: readonly LexicalNode[],
+    format = 0,
+  ): LexicalNode {
+    const altText = blocks
+      .map((block) => block.altText)
+      .find((value) => typeof value === 'string' && value.trim())
+    return link(url, [text(String(altText ?? url).trim(), format)], title)
   }
 
   withLiftedBlocks(
@@ -463,7 +475,7 @@ export class MdastToLexical {
   }
 }
 
-const CJK = /[\u2E80-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF\uFF00-\uFFEF]/
+const CJK = /[\u2E80-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/
 
 const joinSoftBreaks = (value: string) =>
   value.replaceAll(/[\t ]*\n[\t ]*/g, (match, offset: number) => {

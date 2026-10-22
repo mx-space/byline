@@ -14,6 +14,7 @@ import {
   isInlineNode,
   type LexicalNode,
   lineBreak,
+  paragraph,
   rootState,
   TEXT_FORMAT,
 } from './lexical-nodes'
@@ -48,6 +49,9 @@ const childText = (children: readonly unknown[]): string =>
     .replaceAll(/\s+/g, ' ')
     .trim()
 
+const hasLink = (node: LexicalNode): boolean =>
+  node.type === 'link' || (node.children ?? []).some(hasLink)
+
 const isBlank = (node: RootContent) =>
   (node.type === 'text' && !node.value.trim()) ||
   (node.type === 'paragraph' && !childText(node.children))
@@ -71,6 +75,19 @@ export class JsxConverter {
   }
 
   private inlineWrapperBlocks(element: MdxJsxFlowElement): LexicalNode[] {
+    const out = this.wrappedChildBlocks(element)
+    if (element.name !== 'a') return out
+    const { attributes } = readAttributes(element)
+    const href = typeof attributes.href === 'string' ? attributes.href : ''
+    const linked = out.some(
+      (node) => node.type === 'paragraph' && hasLink(node),
+    )
+    if (!href || linked || !out.length) return out
+    const title = typeof attributes.title === 'string' ? attributes.title : null
+    return [...out, paragraph([this.host.linkAfterBlocks(href, title, out)])]
+  }
+
+  private wrappedChildBlocks(element: MdxJsxFlowElement): LexicalNode[] {
     return element.children.flatMap((child) => {
       if (child.type === 'paragraph') {
         const wrapped: MdxJsxTextElement = {
@@ -82,15 +99,7 @@ export class JsxConverter {
         }
         return this.host.paragraphs(this.inline(wrapped, 0))
       }
-      const blocks = this.host.blocks([child])
-      if (element.name === 'a' && blocks.length) {
-        const { attributes } = readAttributes(element)
-        this.host.reportDroppedLink(
-          String(attributes.href ?? ''),
-          child.position?.start.line,
-        )
-      }
-      return blocks
+      return this.host.blocks([child])
     })
   }
 
