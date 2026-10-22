@@ -158,7 +158,7 @@ export function SidebarBody(props: { onCollapseSidebar?: () => void }) {
         label: 'GitHub',
         onClick: () => {
           window.open(
-            'https://github.com/mx-space',
+            'https://github.com/mx-space/byline',
             '_blank',
             'noopener,noreferrer',
           )
@@ -185,9 +185,7 @@ export function SidebarBody(props: { onCollapseSidebar?: () => void }) {
             decoding="async"
             src={faviconUrl}
           />
-          <span className="truncate text-sm font-medium text-fg">
-            Mix Space
-          </span>
+          <span className="truncate text-sm font-medium text-fg">Byline</span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {props.onCollapseSidebar ? (

@@ -1,28 +1,33 @@
-# CLAUDE.md — apps/admin
+# AGENTS.md — apps/admin
 
-Guidance for Claude Code when working in the admin app inside the mx-core monorepo.
+Guidance for coding agents working in the Byline admin app.
 
 ## Project Overview
 
-This is the Mix Space admin dashboard — a React 19 SPA (package `@mx-admin/admin`).
-It lives at `apps/admin` within the mx-core monorepo and is built locally during the
-core build/release; it is no longer downloaded from GitHub releases. The built output
-(`apps/admin/dist`) is served by the sibling backend app `apps/core` under the route
-`/proxy/qaqdmin`. Built with Base UI primitives, React Router (HashRouter), TanStack
-Query, Sonner, and a Tailwind v4 layer.
+This is the Byline admin dashboard, a React 19 SPA (package `@mx-space/byline-admin`).
+It lives at `apps/admin` and is built into the server release and Docker image; the
+sibling app `apps/server` serves the built output. It was derived from mx-core's admin
+and pruned to Byline's v1 inventory (see `../../docs/superpowers/specs/2026-10-22-byline-design.md`):
+write (editor, publish dialog and dock, AI agent with the dynamic component flow), posts,
+drafts, categories, files (including orphan cleanup), AI resources, tasks, webhooks,
+settings, auth and setup. Built with Base UI primitives, React Router (HashRouter),
+TanStack Query, Sonner, and a Tailwind v4 layer.
+
+Do not reintroduce personal-blog modules (notes, pages, comments, says, recently,
+friends, subscriptions, snippets, topics, readers, analytics, backup, and so on).
 
 ## Development Commands
 
 Run from the monorepo root (the workspace install is governed by the root) — see
 `apps/admin/package.json` scripts, or target the package directly with
-`pnpm --filter @mx-admin/admin run <script>`.
+`pnpm --filter @mx-space/byline-admin run <script>`.
 
 Scope checks to changed files only — never run lint/typecheck/build over the whole
 tree just to verify a small edit. One-off file typecheck:
 `pnpm -C apps/admin exec tsc --noEmit --pretty false`.
 
 Env vars live in `apps/admin/.env` (see `apps/admin/.env.example`). `VITE_APP_BASE_API`
-is the mx-core API endpoint. All vars are optional and fall back to empty/same-origin,
+is the Byline API endpoint. All vars are optional and fall back to empty/same-origin,
 so a build with empty env will not crash.
 
 ## Architecture Overview
@@ -215,7 +220,7 @@ written by `installThemeTokens()` in `src/theme.ts`. **New code uses
 New admin views must follow the master-detail / content-layout convention. The reusable
 shells live in `apps/admin/src/ui/layout/`:
 
-- `content-layout.tsx` — list+detail pages (comments, drafts, topics)
+- `content-layout.tsx` — list+detail pages (drafts, files, tasks)
 - `page-layout.tsx` — page shell with header
 - companion pieces in the same dir (`header-back-button.tsx`, `sidebar-*`, `resize-handle.tsx`)
 
@@ -226,19 +231,6 @@ shells live in `apps/admin/src/ui/layout/`:
   plugin injects `WEB_URL`/`GATEWAY`/`BASE_API` into `window.injectData`
 - `apps/admin/src/constants/env.ts` — resolves API/web/gateway URLs (injected env first,
   then `VITE_APP_*`)
-
-## Release
-
-Two channels publish the dashboard (full detail in `../../docs/admin-monorepo-migration.md`):
-
-- **With a core release** (`v*` tag): `release.yml` builds admin and bundles it into the
-  server zip + Docker image. It does NOT publish to R2.
-- **Independently** (admin-only fix, no core release): run
-  `../../scripts/release-admin.sh [patch|minor|major]` — bumps `package.json`, tags
-  `admin-v*`, and `admin-release.yml` builds + publishes to R2. This is the only R2 channel.
-
-The version baseline is `8.x`+ (above the retired GitHub channel) so a freshly bundled
-build supersedes any copy previously downloaded into the server's data directory.
 
 ## AI Agent Chat (post pi-ai migration)
 
@@ -271,14 +263,21 @@ and `apps/admin/src/api/ai-agent.ts`. After the pi-ai migration:
   `contextWindow` and `maxTokens` numeric inputs only render when the typed
   model id is NOT in the registry (case-insensitive trim match).
 
-See `apps/core/CLAUDE.md` for the server-side wire-format invariants.
+See `apps/server/AGENTS.md` for the server-side wire-format invariants.
 
-## Related Projects (within the monorepo)
+## Related Projects
 
-- **apps/core** — backend API server (NestJS), the sibling workspace app. Serves the built
-  admin under `/proxy/qaqdmin` and reads it from disk at `<assetRoot>/index.html`.
-- **Shiroi** — Next.js blog frontend, located at `../../Shiroi` (relative to repo root).
-- **haklex** — rich editor packages (`@haklex/*`), consumed as published dependencies.
+- **apps/server**: the Byline API server (NestJS), the sibling workspace app.
+- **haklex**: rich editor packages (`@haklex/*`), consumed as published dependencies.
+
+## Dynamic Component Catalog
+
+`src/vendor/rich-editor/utils/dynamic-catalog.ts` keeps the editor-facing interface
+(`DynamicCatalogEntry`, `registerDynamicComponent`, `isAllowedDynamicUrl`, the agent system
+message). Storage goes through `src/api/dynamic-components.ts`: `GET /dynamic-components`
+returns `{ version, components }`, and `POST /dynamic-components` appends one entry on the
+server atomically and returns the updated catalog. Entry `propsSchema` is free-form JSON, so
+the module reads responses without the shared deep key camelizing.
 
 ### Rich Editor Integration
 

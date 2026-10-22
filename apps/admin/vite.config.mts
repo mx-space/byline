@@ -192,12 +192,10 @@ export default ({ mode }) => {
         '@lezer/highlight',
         '@lobehub/streamdown',
         'lexical',
-        'maplibre-gl',
         '@monaco-editor/react',
         '@rehookify/datepicker',
         'canvas-confetti',
         'fuse.js',
-        'js-yaml',
         'katex',
         'lit',
         'lit/directives/unsafe-html.js',
@@ -227,10 +225,7 @@ export default ({ mode }) => {
               './src/layouts/protected-layout.tsx',
               './src/views/dashboard/page.tsx',
               './src/views/(content)/posts/page.tsx',
-              './src/views/(content)/notes/page.tsx',
-              './src/views/(content)/pages/page.tsx',
               './src/views/(content)/drafts/page.tsx',
-              './src/views/(community)/comments/page.tsx',
             ]
           : [],
       },
@@ -255,7 +250,7 @@ const htmlPlugin: (env: any) => PluginOption = (env) => {
     transformIndexHtml(html) {
       return html
         .replace(
-          '<!-- Mix Space ADMIN DASHBOARD VERSION INJECT -->',
+          '<!-- ADMIN VERSION INJECT -->',
           `<script>window.version = '${PKG.version}';</script>`,
         )
         .replaceAll('@gh-pages', `@page_v${PKG.version}`)
