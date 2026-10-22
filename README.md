@@ -16,10 +16,11 @@ A slim, multi-author, AI-native headless CMS for product sites and landing-page 
 
 Requirements: Docker with Compose v2.
 
-1. Build the image. Set `BYLINE_IMAGE` to use another tag; extra arguments go to `docker build`.
+1. Compose pulls `innei/byline:latest` from Docker Hub. To run a local build instead, build it and point `BYLINE_IMAGE` at it; extra arguments go to `docker build`.
 
    ```sh
    ./scripts/docker-build.sh            # tags byline:latest
+   export BYLINE_IMAGE=byline:latest
    ```
 
 2. Start the stack. `JWT_SECRET` is required. It signs sessions and tokens, so keep it stable across restarts.
@@ -51,10 +52,10 @@ docker run -d -p 2333:2333 \
   -e PG_URL=postgres://byline:byline@db:5432/byline \
   -e REDIS_URL=redis://redis:6379 \
   -v byline-data:/root/.byline \
-  byline:latest
+  innei/byline:latest
 ```
 
-Run `docker run --rm ... byline:latest node migrate.mjs` to migrate as a separate release step.
+Run `docker run --rm ... innei/byline:latest node migrate.mjs` to migrate as a separate release step.
 
 ## Configuration
 

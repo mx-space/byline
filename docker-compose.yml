@@ -33,7 +33,7 @@ x-runtime-safety: &runtime-safety
 services:
   byline:
     <<: *runtime-safety
-    image: ${BYLINE_IMAGE:-byline:latest}
+    image: ${BYLINE_IMAGE:-innei/byline:latest}
     restart: unless-stopped
     ports:
       - '${BYLINE_PORT:-2333}:2333'
@@ -50,7 +50,7 @@ services:
 
   migrate:
     <<: *runtime-safety
-    image: ${BYLINE_IMAGE:-byline:latest}
+    image: ${BYLINE_IMAGE:-innei/byline:latest}
     command: ['node', 'migrate.mjs']
     restart: 'no'
     environment: *byline-env
