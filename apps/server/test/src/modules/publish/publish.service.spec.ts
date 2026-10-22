@@ -130,6 +130,7 @@ const harness = (options: { online?: boolean } = {}) => {
     aiTasks,
     branch,
     create,
+    service,
     drafts,
     order,
     payload: () => payload!,
@@ -327,5 +328,51 @@ describe('CreatePublishJobSchema aiResources', () => {
 
   it('leaves aiResources undefined when omitted', () => {
     expect(CreatePublishJobSchema.parse(base).aiResources).toBeUndefined()
+  })
+})
+
+describe('CreatePublishJobSchema expectedPublishedRevisionId', () => {
+  it('defaults to null when omitted', () => {
+    expect(
+      CreatePublishJobSchema.parse({ branchId: '1', revisionId: '2' })
+        .expectedPublishedRevisionId,
+    ).toBeNull()
+  })
+
+  it('keeps an explicit published revision id', () => {
+    expect(
+      CreatePublishJobSchema.parse({
+        branchId: '1',
+        revisionId: '2',
+        expectedPublishedRevisionId: '3',
+      }).expectedPublishedRevisionId,
+    ).toBe('3')
+  })
+
+  it('publishes a never-published draft without the field', async () => {
+    const { branch, tasks, service } = harness()
+    branch.document.publishedRevisionId = null as never
+    branch.document.refId = null as never
+
+    await service.create({
+      ...CreatePublishJobSchema.parse({ branchId: '1', revisionId: '2' }),
+      branchId: branch.id,
+      revisionId: branch.headRevisionId,
+    })
+
+    expect(tasks.createTask).toHaveBeenCalledTimes(1)
+  })
+
+  it('still guards an already published draft when the field is omitted', async () => {
+    const { branch, tasks, service } = harness()
+
+    await expect(
+      service.create({
+        ...CreatePublishJobSchema.parse({ branchId: '1', revisionId: '2' }),
+        branchId: branch.id,
+        revisionId: branch.headRevisionId,
+      }),
+    ).rejects.toMatchObject({ code: AppErrorCode.PUBLISHED_REVISION_CHANGED })
+    expect(tasks.createTask).not.toHaveBeenCalled()
   })
 })

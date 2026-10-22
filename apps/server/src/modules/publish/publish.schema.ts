@@ -27,7 +27,7 @@ export const CreatePublishJobSchema = z.object({
     .optional(),
   branchId: zEntityId,
   confirmDiverged: z.boolean().default(false),
-  expectedPublishedRevisionId: zEntityId.nullable(),
+  expectedPublishedRevisionId: zEntityId.nullable().default(null),
   regenerateLockedTranslations: z.boolean().default(false),
   revisionId: zEntityId,
 })
