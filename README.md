@@ -167,14 +167,42 @@ pnpm dev:admin    # admin dev server on :9528
 
 ## CI and releases
 
-`.github/workflows/ci.yml` runs lint, typecheck, the envelope and `validate: false` checks, the migration linter and every test suite on pushes and pull requests to `main`. Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds `linux/amd64` and `linux/arm64` images, pushes them to Docker Hub as `innei/byline` (semver tags plus `latest` for stable versions) and creates a GitHub Release.
+`.github/workflows/ci.yml` runs lint, typecheck, the envelope and `validate: false` checks, the migration linter and every test suite on pushes and pull requests to `main`.
 
-Required repository secrets:
+### Server image
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds `linux/amd64` and `linux/arm64` images, pushes them to Docker Hub as `innei/byline` (semver tags plus `latest` for stable versions) and creates a GitHub Release. It needs two repository secrets:
 
 | Secret | Used for |
 | --- | --- |
 | `DOCKERHUB_USERNAME` | Docker Hub login for the image push |
 | `DOCKERHUB_TOKEN` | Docker Hub access token with write access to `innei/byline` |
+
+### npm packages
+
+`.github/workflows/publish.yml` publishes `@mx-space/byline-api-client` and `@mx-space/byline-cli`. Bump `version` in the package's `package.json`, commit, then push a tag named after the package directory:
+
+```sh
+git tag api-client@0.2.0 && git push origin api-client@0.2.0
+git tag cli@0.2.0 && git push origin cli@0.2.0
+```
+
+The workflow can also be started by hand (`workflow_dispatch`) with the package to publish. It refuses a tag whose version differs from `package.json`, runs the package's typecheck, tests and build, packs it with `pnpm pack` (which rewrites `workspace:` ranges and applies `publishConfig`), checks the packed manifest for leftover `workspace:` ranges, and publishes the tarball with `npm publish --provenance --access public`. Versions with a prerelease suffix go to the `next` dist-tag.
+
+Publishing uses npm [trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC). There is no `NPM_TOKEN` secret and nothing is published from a local machine. The workflow installs npm 12.2.0, since trusted publishing needs npm 11.5.1 or later and Node.js 22.14.0 or later, and runs on GitHub-hosted runners, the only kind trusted publishing supports.
+
+Each package needs a Trusted Publisher configured on npmjs.com (package **Settings** > **Trusted publishing** > GitHub Actions):
+
+| Field | Value |
+| --- | --- |
+| Organization or user | `mx-space` |
+| Repository | `byline` |
+| Workflow filename | `publish.yml` (file name only) |
+| Environment name | leave empty |
+
+The `repository.url` in each `package.json` must match `mx-space/byline`, and the configuration is only checked when a publish runs. Once the first trusted publish succeeds, set **Publishing access** to "Require two-factor authentication and disallow tokens"; trusted publishing keeps working because it does not use tokens. Provenance is only generated while the repository is public.
+
+A Trusted Publisher can only be added to a package that already exists on the registry (the `npm trust` docs state "The package you're configuring must already exist on the npm registry"). `@mx-space/byline-api-client` and `@mx-space/byline-cli` have never been published, so each needs one bootstrap version published by an `@mx-space` org member before the workflow can take over. After that first version exists, add the Trusted Publisher, either in the web UI or with `npm trust github <package> --file publish.yml --repo mx-space/byline --allow-publish` (npm 11.15.0 or later), and publish every later version through the workflow.
 
 ## License
 
