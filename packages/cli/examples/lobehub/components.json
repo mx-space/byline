@@ -52,7 +52,19 @@
     },
     "Steps": {
       "node": "steps",
-      "children": { "sections": "steps", "heading": 3 }
+      "children": {
+        "sections": "steps",
+        "heading": 3,
+        "title": {
+          "replace": [
+            {
+              "pattern": "^(?:(?:Step|Stap|Paso|Schritt|Bước|Стъпка|Шаг|Étape|Adım|Passo|ステップ|Passaggio|Krok|Etapa|Método|Metodo|Metoda|Méthode|Methode|Method|Метод|Способ|Yöntem|Cách|방법|단계|الخطوة|الطريقة)\\s*(?:\\d+|[一二三四五六七八九十]+|\\p{L}+)|\\d+\\s*(?:단계|\\.\\s*Adım)|第\\s*[一二三四五六七八九十\\d]+\\s*[步种種]|(?:步[骤驟]|方法|方式)\\s*[一二三四五六七八九十\\d]+)\\s*[:：.．]\\s*",
+              "with": ""
+            }
+          ],
+          "reportUnmatched": true
+        }
+      }
     },
     "X": {
       "node": "embed",

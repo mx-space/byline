@@ -493,7 +493,102 @@ describe('convertMdx markdown templates', () => {
   })
 })
 
+describe('convertMdx replace rules', () => {
+  const stripStep = {
+    replace: [
+      {
+        pattern: String.raw`^(?:Step\s*\d+|第[一二三]步)\s*[:：]\s*`,
+        with: '',
+      },
+    ],
+    reportUnmatched: true,
+  }
+
+  it('rewrites section titles and reports titles no rule matched', () => {
+    const { nodes, issues } = blocks(
+      `<Steps>
+  ### Step 1: Install
+
+  a
+
+  ### 第二步：配置
+
+  b
+
+  ### Done
+
+  c
+</Steps>`,
+      parseComponentMap({
+        components: {
+          Steps: {
+            node: 'steps',
+            children: { sections: 'steps', heading: 3, title: stripStep },
+          },
+        },
+      }),
+    )
+    const steps = nodes[0].steps as Array<{ title: string }>
+    expect(steps.map((step) => step.title)).toEqual(['Install', '配置', 'Done'])
+    expect(issues).toEqual([
+      expect.objectContaining({
+        kind: 'unmatched-replace',
+        component: 'Steps',
+        message: expect.stringContaining('Done'),
+      }),
+    ])
+  })
+
+  it('rewrites prop values', () => {
+    const { nodes, issues } = blocks(
+      '<Tweet id="x-123" />',
+      parseComponentMap({
+        components: {
+          Tweet: {
+            node: 'embed',
+            props: {
+              url: {
+                from: 'id',
+                replace: [{ pattern: '^x-', with: 'https://x.com/i/status/' }],
+              },
+            },
+          },
+        },
+      }),
+    )
+    expect(nodes[0]).toMatchObject({ url: 'https://x.com/i/status/123' })
+    expect(issues).toEqual([])
+  })
+})
+
 describe('parseComponentMap', () => {
+  it('rejects a replace rule whose pattern is not a valid regular expression', () => {
+    expect(() =>
+      parseComponentMap({
+        components: {
+          T: {
+            node: 'embed',
+            props: { url: { from: 'id', replace: [{ pattern: '(' }] } },
+          },
+        },
+      }),
+    ).toThrow(/pattern/)
+    expect(() =>
+      parseComponentMap({
+        components: {
+          S: {
+            node: 'steps',
+            children: {
+              sections: 'steps',
+              heading: 3,
+              title: { replace: [{ pattern: '[' }] },
+            },
+          },
+        },
+      }),
+    ).toThrow(/pattern/)
+  })
+
   it('rejects a sections mode without a heading depth from 1 to 6', () => {
     expect(() =>
       parseComponentMap({

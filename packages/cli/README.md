@@ -157,7 +157,12 @@ The component map turns JSX components into haklex nodes:
   depth `n` into `{ id, title, content }` items, as steps use; the heading's
   plain text is the title). Content before the first heading joins the first
   item, and a component with no heading of that depth is unwrapped; both are
-  reported.
+  reported. `"title": { "replace": [...], "reportUnmatched": true }` rewrites
+  each title, for example to strip a "Step 1:" prefix the node already numbers,
+  and reports titles no rule matched.
+- `replace` is a list of `{ "pattern", "with", "flags" }` regular-expression
+  rules (flags default to `u`). A prop spec accepts it too and applies it to
+  string values after `map`.
 - `markdown` renders a component from a Markdown template. `{prop}` is
   replaced by the attribute value, escaped as literal text, and the result is
   converted like the rest of the post. A template line whose props are missing

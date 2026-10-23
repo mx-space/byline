@@ -42,6 +42,7 @@ export type IssueKind =
   | 'esm'
   | 'expression'
   | 'restructured'
+  | 'unmatched-replace'
 
 export interface ConvertIssue {
   kind: IssueKind

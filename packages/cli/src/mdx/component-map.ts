@@ -2,6 +2,17 @@ import { UnresolvedExpression } from './jsx-attributes'
 
 export type PropValueType = 'string' | 'number' | 'boolean' | 'json'
 
+export interface ReplaceRule {
+  pattern: string
+  with?: string
+  flags?: string
+}
+
+export interface StringTransform {
+  replace: ReplaceRule[]
+  reportUnmatched?: boolean
+}
+
 export type PropSpec =
   | string
   | {
@@ -9,6 +20,7 @@ export type PropSpec =
       value?: unknown
       template?: string
       map?: Record<string, unknown>
+      replace?: ReplaceRule[]
       default?: unknown
       type?: PropValueType
     }
@@ -18,7 +30,7 @@ export type ChildrenMode =
   | 'unwrap'
   | { state: string }
   | { cells: string }
-  | { sections: string; heading: number }
+  | { sections: string; heading: number; title?: StringTransform }
 
 export interface NativeComponentMapping {
   node: string
@@ -86,6 +98,46 @@ export const BUILTIN_HTML_COMPONENTS: Record<string, ComponentMapping> = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
 
+const toRegExp = (rule: ReplaceRule) =>
+  new RegExp(rule.pattern, rule.flags ?? 'u')
+
+const checkReplaceRules = (rules: unknown, where: string) => {
+  if (!Array.isArray(rules)) {
+    throw new TypeError(`${where}.replace must be an array`)
+  }
+  for (const rule of rules) {
+    if (!isRecord(rule) || typeof rule.pattern !== 'string') {
+      throw new TypeError(
+        `${where}.replace needs a string pattern in every rule`,
+      )
+    }
+    try {
+      toRegExp(rule as unknown as ReplaceRule)
+    } catch (error) {
+      throw new Error(
+        `${where}.replace pattern ${JSON.stringify(rule.pattern)} is invalid: ${(error as Error).message}`,
+        { cause: error },
+      )
+    }
+  }
+}
+
+export const applyReplace = (
+  value: string,
+  rules: readonly ReplaceRule[],
+): { value: string; matched: boolean } => {
+  let matched = false
+  let next = value
+  for (const rule of rules) {
+    const regex = toRegExp(rule)
+    if (!regex.test(next)) continue
+    matched = true
+    regex.lastIndex = 0
+    next = next.replace(regex, rule.with ?? '')
+  }
+  return { value: next, matched }
+}
+
 export const parseComponentMap = (
   raw: unknown,
   source = 'component map',
@@ -113,8 +165,29 @@ export const parseComponentMap = (
     if ('markdown' in mapping && typeof mapping.markdown !== 'string') {
       throw new Error(`${source}: components.${name}.markdown must be a string`)
     }
+    if (isRecord(mapping.props)) {
+      for (const [prop, spec] of Object.entries(mapping.props)) {
+        if (isRecord(spec) && 'replace' in spec) {
+          checkReplaceRules(
+            spec.replace,
+            `${source}: components.${name}.props.${prop}`,
+          )
+        }
+      }
+    }
     const children = mapping.children
     if (isRecord(children) && 'sections' in children) {
+      if (children.title !== undefined) {
+        if (!isRecord(children.title)) {
+          throw new TypeError(
+            `${source}: components.${name}.children.title must be an object`,
+          )
+        }
+        checkReplaceRules(
+          children.title.replace,
+          `${source}: components.${name}.children.title`,
+        )
+      }
       const { heading } = children
       if (
         typeof children.sections !== 'string' ||
@@ -227,6 +300,9 @@ export const applyPropSpecs = (
     if (normalized.map && value !== undefined) {
       const key = String(value)
       value = key in normalized.map ? normalized.map[key] : normalized.default
+    }
+    if (normalized.replace && typeof value === 'string') {
+      value = applyReplace(value, normalized.replace).value
     }
     value = coerce(value, normalized.type)
     if (value === undefined) value = normalized.default

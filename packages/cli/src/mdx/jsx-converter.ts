@@ -3,11 +3,13 @@ import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx'
 
 import {
   applyPropSpecs,
+  applyReplace,
   type ComponentMap,
   type DynamicComponentMapping,
   type MarkdownComponentMapping,
   type NativeComponentMapping,
   resolveMapping,
+  type StringTransform,
 } from './component-map'
 import {
   type JsxElement,
@@ -243,7 +245,13 @@ export class JsxConverter {
         rootState(this.host.childrenToBlocks([child])),
       )
     } else if (typeof mode === 'object' && 'sections' in mode) {
-      node[mode.sections] = this.sections(name, children, mode.heading, line)
+      node[mode.sections] = this.sections(
+        name,
+        children,
+        mode.heading,
+        mode.title,
+        line,
+      )
     }
     return node
   }
@@ -252,6 +260,7 @@ export class JsxConverter {
     name: string,
     children: RootContent[],
     depth: number,
+    titleTransform: StringTransform | undefined,
     line?: number,
   ) {
     const lead: RootContent[] = []
@@ -272,9 +281,27 @@ export class JsxConverter {
         line,
       })
     }
+    const unmatched: string[] = []
+    const titles = items.map((item) => {
+      if (!titleTransform) return item.title
+      const { value, matched } = applyReplace(
+        item.title,
+        titleTransform.replace,
+      )
+      if (!matched && titleTransform.reportUnmatched) unmatched.push(item.title)
+      return value.trim()
+    })
+    if (unmatched.length) {
+      this.host.report({
+        kind: 'unmatched-replace',
+        component: name,
+        message: `<${name}> titles no replace rule matched: ${unmatched.map((title) => JSON.stringify(title)).join(', ')}`,
+        line,
+      })
+    }
     return items.map((item, index) => ({
       id: `s${index + 1}`,
-      title: item.title,
+      title: titles[index],
       content: rootState(this.host.childrenToBlocks(item.body)),
     }))
   }
