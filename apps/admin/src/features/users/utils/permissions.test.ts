@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   ALL_PERMISSIONS,
+  applyPermissionRole,
   describeCustomPermissions,
   hasPermission,
   matchPermissionRole,
@@ -52,5 +53,21 @@ describe('permission roles', () => {
       base: null,
       added: [Permission.ManageSettings],
     })
+  })
+
+  it('gives the owner mask back when every bit is switched on again', () => {
+    const off = togglePermission(ALL_PERMISSIONS, Permission.ManageSettings)
+    expect(togglePermission(off, Permission.ManageSettings)).toBe(
+      ALL_PERMISSIONS,
+    )
+  })
+
+  it('keeps Manage users when members pick a role for themselves', () => {
+    expect(applyPermissionRole('editor', { isSelf: true })).toBe(
+      PERMISSION_ROLES.editor | Permission.ManageUsers,
+    )
+    expect(applyPermissionRole('editor', { isSelf: false })).toBe(
+      PERMISSION_ROLES.editor,
+    )
   })
 })

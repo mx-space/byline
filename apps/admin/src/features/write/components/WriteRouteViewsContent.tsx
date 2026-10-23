@@ -1331,7 +1331,7 @@ function WritePage(props: { kind: WriteKind }) {
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (draftConflictResolving) return
+    if (!canPublish || draftConflictResolving) return
     if (draftConflict) {
       setDraftConflictDialogOpen(true)
       return

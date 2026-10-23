@@ -6,7 +6,9 @@ import { Auth } from '~/common/decorators/auth.decorator'
 import { PKG } from '~/utils/pkg.util'
 
 import { HttpCache } from './common/decorators/cache.decorator'
+import { RequirePermissions } from './common/decorators/permission.decorator'
 import { AllowAllCorsInterceptor } from './common/interceptors/allow-all-cors.interceptor'
+import { UserPermission } from './constants/permission.constant'
 import { isDev } from './global/env.global'
 import { RedisService } from './processors/redis/redis.service'
 
@@ -45,6 +47,7 @@ export class AppController {
   @Get('/clean_catch')
   @HttpCache.disable
   @Auth()
+  @RequirePermissions(UserPermission.ManageSettings)
   async cleanCatch() {
     await this.redisService.cleanCatch()
   }
@@ -52,6 +55,7 @@ export class AppController {
   @Get('/clean_redis')
   @HttpCache.disable
   @Auth()
+  @RequirePermissions(UserPermission.ManageSettings)
   async cleanAllRedisKey() {
     await this.redisService.cleanAllRedisKey()
   }

@@ -12,12 +12,12 @@ import { Switch } from '~/ui/primitives/switch'
 
 import type { PermissionRoleOrCustom } from '../utils/permissions'
 import {
+  applyPermissionRole,
   describeCustomPermissions,
   hasPermission,
   matchPermissionRole,
   Permission,
   PERMISSION_FIELDS,
-  PERMISSION_ROLES,
   ROLE_LABEL_KEYS,
   togglePermission,
 } from '../utils/permissions'
@@ -90,7 +90,9 @@ export function UserPermissionsCard(props: UserPermissionsCardProps) {
             className="w-44"
             disabled={!props.canEdit}
             onValueChange={(value) => {
-              if (value !== 'custom') setMask(PERMISSION_ROLES[value])
+              if (value !== 'custom') {
+                setMask(applyPermissionRole(value, { isSelf: props.isSelf }))
+              }
             }}
             options={roleOptions}
             value={role}

@@ -111,7 +111,16 @@ export function hasPermission(
 
 export function togglePermission(mask: number, bit: PermissionBit) {
   const known = mask === ALL_PERMISSIONS ? KNOWN_PERMISSIONS : mask
-  return known ^ bit
+  const next = known ^ bit
+  return next === KNOWN_PERMISSIONS ? ALL_PERMISSIONS : next
+}
+
+export function applyPermissionRole(
+  role: PermissionRole,
+  options: { isSelf: boolean },
+) {
+  const mask = PERMISSION_ROLES[role]
+  return options.isSelf ? mask | Permission.ManageUsers : mask
 }
 
 export function matchPermissionRole(mask: number): PermissionRoleOrCustom {

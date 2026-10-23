@@ -16,6 +16,7 @@ export type PublishSnapshot = RevisionSnapshot
 
 export interface PublishTaskPayload {
   actorId?: string
+  defaultAuthorId?: string
   aiResources: PublishAiResourceRequest[]
   branchId: string
   documentId: string

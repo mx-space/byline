@@ -176,9 +176,10 @@ export class DraftService {
   private async assertCanEdit(actor: DraftActor, document: ContentDocumentRow) {
     if (hasPermission(actor, UserPermission.EditOthersPost)) return
     const owns =
-      document.refId && document.refType === DraftRefType.Post
-        ? await this.draftRepository.isPostAuthor(document.refId, actor.id)
-        : document.createdBy === actor.id
+      document.createdBy === actor.id ||
+      (!!document.refId &&
+        document.refType === DraftRefType.Post &&
+        (await this.draftRepository.isPostAuthor(document.refId, actor.id)))
     if (!owns) throw createAppException(AppErrorCode.PERMISSION_DENIED)
   }
 

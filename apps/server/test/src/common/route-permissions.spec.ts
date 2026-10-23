@@ -5,7 +5,7 @@ import { PERMISSIONS_METADATA } from '~/common/decorators/permission.decorator'
 import { UserPermission } from '~/constants/permission.constant'
 
 const controllers = import.meta.glob<Record<string, unknown>>(
-  '../../../src/modules/**/*.controller.ts',
+  '../../../src/**/*.controller.ts',
   { eager: true },
 )
 
@@ -24,9 +24,17 @@ const OPEN_TO_ANY_MEMBER = new Set([
   'InitController.createFirstUser',
   'UserInviteController.accept',
   'UserController.updateMe',
+])
+
+const CHECKED_IN_HANDLER = new Set([
   'TaskController.cancelTask',
   'TaskController.retryTask',
   'TaskController.cancelTasksByGroupId',
+])
+
+const MUTATING_GETS = new Set([
+  'AppController.cleanCatch',
+  'AppController.cleanAllRedisKey',
 ])
 
 type Route = { name: string; required: number[] | undefined }
@@ -43,9 +51,10 @@ const mutatingRoutes = (): Route[] => {
         const handler = proto[key]
         if (key === 'constructor' || typeof handler !== 'function') continue
         const method = Reflect.getMetadata(METHOD_METADATA, handler)
-        if (!MUTATING.has(method)) continue
+        const name = `${value.name}.${key}`
+        if (!MUTATING.has(method) && !MUTATING_GETS.has(name)) continue
         routes.push({
-          name: `${value.name}.${key}`,
+          name,
           required:
             Reflect.getMetadata(PERMISSIONS_METADATA, handler) ??
             Reflect.getMetadata(PERMISSIONS_METADATA, value),
@@ -69,15 +78,20 @@ describe('route permissions', () => {
     const missing = routes
       .filter((route) => !route.required?.length)
       .map((route) => route.name)
-      .filter((name) => !OPEN_TO_ANY_MEMBER.has(name))
+      .filter(
+        (name) =>
+          !OPEN_TO_ANY_MEMBER.has(name) && !CHECKED_IN_HANDLER.has(name),
+      )
     expect(missing).toEqual([])
   })
 
   it('keeps the allowlist pointing at real routes', () => {
     const names = new Set(routes.map((route) => route.name))
-    expect([...OPEN_TO_ANY_MEMBER].filter((name) => !names.has(name))).toEqual(
-      [],
-    )
+    expect(
+      [...OPEN_TO_ANY_MEMBER, ...CHECKED_IN_HANDLER, ...MUTATING_GETS].filter(
+        (name) => !names.has(name),
+      ),
+    ).toEqual([])
   })
 
   it('maps publishing, translations and settings to their bits', () => {

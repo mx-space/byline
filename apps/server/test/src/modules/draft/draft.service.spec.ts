@@ -303,6 +303,23 @@ describe('DraftService ownership', () => {
     expect(repository.saveBranch).not.toHaveBeenCalled()
   })
 
+  it('keeps a post editable by the member who started it after someone else publishes it', async () => {
+    const { repository, service } = harness()
+    repository.findBranchById.mockResolvedValue(branch)
+    repository.findDocumentById.mockResolvedValue({
+      ...document,
+      createdBy: 'writer',
+    })
+    repository.isPostAuthor.mockResolvedValue(false)
+    repository.saveBranch.mockResolvedValue({ kind: 'missing' })
+
+    const error = await service
+      .update(branch.id, save as never, author)
+      .catch((reason) => reason)
+
+    expect(error.code).toBe(AppErrorCode.DRAFT_NOT_FOUND)
+  })
+
   it('lets the creator of an unpublished post keep editing it, and nobody else', async () => {
     const { repository, service } = harness()
     repository.findBranchById.mockResolvedValue(branch)
