@@ -1,14 +1,20 @@
-import type { PhrasingContent, RootContent } from 'mdast'
+import type { Heading, PhrasingContent, RootContent } from 'mdast'
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx'
 
 import {
   applyPropSpecs,
   type ComponentMap,
   type DynamicComponentMapping,
+  type MarkdownComponentMapping,
   type NativeComponentMapping,
   resolveMapping,
 } from './component-map'
-import { type JsxElement, readAttributes, toPlainValue } from './jsx-attributes'
+import {
+  type JsxElement,
+  readAttributes,
+  toPlainValue,
+  UnresolvedExpression,
+} from './jsx-attributes'
 import {
   dynamic,
   isInlineNode,
@@ -18,6 +24,7 @@ import {
   rootState,
   TEXT_FORMAT,
 } from './lexical-nodes'
+import { parseMarkdown } from './parse'
 import type { InlineItem, MdastToLexical } from './to-lexical'
 import { hasFlowChildren } from './to-lexical'
 
@@ -51,6 +58,24 @@ const childText = (children: readonly unknown[]): string =>
 
 const hasLink = (node: LexicalNode): boolean =>
   node.type === 'link' || (node.children ?? []).some(hasLink)
+
+const plainText = (nodes: readonly PhrasingContent[]): string =>
+  nodes
+    .map((node) => {
+      if ('value' in node && typeof node.value === 'string') return node.value
+      if (node.type === 'break') return ' '
+      return 'children' in node
+        ? plainText(node.children as PhrasingContent[])
+        : ''
+    })
+    .join('')
+    .replaceAll(/\s+/g, ' ')
+    .trim()
+
+const isSectionHeading = (node: RootContent, depth: number): node is Heading =>
+  node.type === 'heading' && node.depth === depth
+
+const MARKDOWN_PUNCTUATION = /[!#()*<>[\\\]_`|~]/g
 
 const isBlank = (node: RootContent) =>
   (node.type === 'text' && !node.value.trim()) ||
@@ -135,6 +160,27 @@ export class JsxConverter {
     if ('dynamic' in mapping) {
       return [{ block: this.dynamicNode(element, mapping, line) }]
     }
+    if ('markdown' in mapping) {
+      return this.markdownBlocks(element, mapping, line).map((block) => ({
+        block,
+      }))
+    }
+    const mode = mapping.children
+    if (
+      typeof mode === 'object' &&
+      'sections' in mode &&
+      !(element.children as RootContent[]).some((child) =>
+        isSectionHeading(child, mode.heading),
+      )
+    ) {
+      this.host.report({
+        kind: 'restructured',
+        component: name,
+        message: `<${name}> has no h${mode.heading} to split at; its children were unwrapped`,
+        line,
+      })
+      return this.unwrapChildren(element, format)
+    }
     const node = this.nativeNode(element, mapping)
     const inline = mapping.inline ?? isInlineNode(node)
     const items: InlineItem[] = inline ? [node] : [{ block: node }]
@@ -196,8 +242,91 @@ export class JsxConverter {
       node[mode.cells] = children.map((child) =>
         rootState(this.host.childrenToBlocks([child])),
       )
+    } else if (typeof mode === 'object' && 'sections' in mode) {
+      node[mode.sections] = this.sections(name, children, mode.heading, line)
     }
     return node
+  }
+
+  private sections(
+    name: string,
+    children: RootContent[],
+    depth: number,
+    line?: number,
+  ) {
+    const lead: RootContent[] = []
+    const items: Array<{ title: string; body: RootContent[] }> = []
+    for (const child of children) {
+      if (isSectionHeading(child, depth)) {
+        items.push({ title: plainText(child.children), body: [] })
+      } else {
+        ;(items.at(-1)?.body ?? lead).push(child)
+      }
+    }
+    if (lead.length) {
+      items[0].body.unshift(...lead)
+      this.host.report({
+        kind: 'restructured',
+        component: name,
+        message: `<${name}> content before the first h${depth} was moved into the first item`,
+        line,
+      })
+    }
+    return items.map((item, index) => ({
+      id: `s${index + 1}`,
+      title: item.title,
+      content: rootState(this.host.childrenToBlocks(item.body)),
+    }))
+  }
+
+  private markdownBlocks(
+    element: JsxElement,
+    mapping: MarkdownComponentMapping,
+    line?: number,
+  ): LexicalNode[] {
+    const name = element.name!
+    const { attributes } = readAttributes(element)
+    const missing = new Set<string>()
+    const lines = mapping.markdown.split('\n').flatMap((templateLine) => {
+      let complete = true
+      const filled = templateLine.replaceAll(
+        /\{(\w+)\}/gu,
+        (_, key: string) => {
+          const value = attributes[key]
+          if (
+            value === undefined ||
+            value === null ||
+            value === '' ||
+            value instanceof UnresolvedExpression
+          ) {
+            complete = false
+            missing.add(key)
+            return ''
+          }
+          return String(value).replaceAll(MARKDOWN_PUNCTUATION, '\\$&')
+        },
+      )
+      return complete ? [filled] : []
+    })
+    if (missing.size) {
+      this.host.report({
+        kind: 'unresolved-prop',
+        component: name,
+        message: `<${name}> template lines dropped for missing props: ${[...missing].join(', ')}`,
+        line,
+      })
+    }
+    if (childText(element.children)) {
+      this.host.report({
+        kind: 'dropped-node',
+        component: name,
+        message: `<${name}> is rendered from a markdown template; its children were dropped`,
+        line,
+      })
+    }
+    return this.host.childrenToBlocks(
+      parseMarkdown(lines.join('\n'), 'md').children,
+    )
   }
 
   private dynamicNode(

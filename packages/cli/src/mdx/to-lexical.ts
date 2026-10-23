@@ -41,6 +41,7 @@ export type IssueKind =
   | 'dropped-node'
   | 'esm'
   | 'expression'
+  | 'restructured'
 
 export interface ConvertIssue {
   kind: IssueKind

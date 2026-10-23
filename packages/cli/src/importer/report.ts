@@ -26,6 +26,7 @@ const describeTarget = (map: ComponentMap, name: string) => {
   if ('skip' in mapping) return 'skip'
   if ('unwrap' in mapping) return 'unwrap'
   if ('dynamic' in mapping) return `dynamic ${mapping.dynamic.url}`
+  if ('markdown' in mapping) return 'markdown template'
   return mapping.node
 }
 

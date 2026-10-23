@@ -358,7 +358,158 @@ describe('convertMdx components', () => {
   })
 })
 
+describe('convertMdx sections children', () => {
+  const sectionsMap = parseComponentMap({
+    components: {
+      Steps: {
+        node: 'steps',
+        children: { sections: 'steps', heading: 3 },
+      },
+    },
+  })
+
+  it('splits children at the heading depth into titled items', () => {
+    const { nodes, issues } = blocks(
+      `<Steps>
+  ### **Step 1: Install**
+
+  Run it.
+
+  #### Note
+
+  Deeper headings stay in the content.
+
+  ### Configure \`env\`
+
+  Done.
+</Steps>`,
+      sectionsMap,
+    )
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0]).toMatchObject({ type: 'steps', version: 1 })
+    const steps = nodes[0].steps as Array<{
+      id: string
+      title: string
+      content: { root: LexicalNode }
+    }>
+    expect(steps.map((step) => step.title)).toEqual([
+      'Step 1: Install',
+      'Configure env',
+    ])
+    expect(new Set(steps.map((step) => step.id)).size).toBe(2)
+    expect(steps[0].content.root.children!.map((node) => node.type)).toEqual([
+      'paragraph',
+      'heading',
+      'paragraph',
+    ])
+    expect(texts(steps[1].content.root)).toBe('Done.')
+    expect(issues).toEqual([])
+  })
+
+  it('keeps content before the first heading in the first item and reports it', () => {
+    const { nodes, issues } = blocks(
+      `<Steps>
+  Before anything.
+
+  ### One
+
+  Body.
+</Steps>`,
+      sectionsMap,
+    )
+    const steps = nodes[0].steps as Array<{ content: { root: LexicalNode } }>
+    expect(steps).toHaveLength(1)
+    expect(texts(steps[0].content.root)).toBe('Before anything.Body.')
+    expect(issues).toEqual([
+      expect.objectContaining({ kind: 'restructured', component: 'Steps' }),
+    ])
+  })
+
+  it('unwraps the children and reports it when no heading matches', () => {
+    const { nodes, issues } = blocks(
+      `<Steps>
+  ## Wrong depth
+
+  Text.
+</Steps>`,
+      sectionsMap,
+    )
+    expect(nodes.map((node) => node.type)).toEqual(['heading', 'paragraph'])
+    expect(issues).toEqual([
+      expect.objectContaining({ kind: 'restructured', component: 'Steps' }),
+    ])
+  })
+})
+
+describe('convertMdx markdown templates', () => {
+  const cardMap = parseComponentMap({
+    components: {
+      Cards: {
+        node: 'grid-container',
+        props: { cols: { value: 3 } },
+        children: { cells: 'cells' },
+      },
+      Card: { markdown: '![{title}]({image})\n\n[{title}]({href})' },
+    },
+  })
+
+  it('renders a component through a markdown template', () => {
+    const { nodes, issues } = blocks(
+      `<Cards>
+  <Card href="https://a.test/x_(1)" image="https://img.test/a.png" title="A [beta] *new*" />
+</Cards>`,
+      cardMap,
+    )
+    expect(nodes[0]).toMatchObject({ type: 'grid-container', cols: 3 })
+    const cell = (nodes[0].cells as Array<{ root: LexicalNode }>)[0].root
+    const [image, linked] = cell.children!
+    expect(image).toMatchObject({
+      type: 'image',
+      src: 'https://img.test/a.png',
+      altText: 'A [beta] *new*',
+    })
+    expect(linked.children![0]).toMatchObject({
+      type: 'link',
+      url: 'https://a.test/x_(1)',
+    })
+    expect(texts(linked)).toBe('A [beta] *new*')
+    expect(issues).toEqual([])
+  })
+
+  it('drops template lines whose placeholders have no value and reports them', () => {
+    const { nodes, issues } = blocks(
+      '<Card href="https://a.test" title="A" />',
+      cardMap,
+    )
+    expect(nodes.map((node) => node.type)).toEqual(['paragraph'])
+    expect(nodes[0].children![0]).toMatchObject({ type: 'link' })
+    expect(issues).toEqual([
+      expect.objectContaining({
+        kind: 'unresolved-prop',
+        component: 'Card',
+        message: expect.stringContaining('image'),
+      }),
+    ])
+  })
+})
+
 describe('parseComponentMap', () => {
+  it('rejects a sections mode without a heading depth from 1 to 6', () => {
+    expect(() =>
+      parseComponentMap({
+        components: {
+          S: { node: 'steps', children: { sections: 'steps', heading: 7 } },
+        },
+      }),
+    ).toThrow(/heading/)
+  })
+
+  it('rejects a markdown template that is not a string', () => {
+    expect(() =>
+      parseComponentMap({ components: { C: { markdown: 1 } } }),
+    ).toThrow(/markdown/)
+  })
+
   it('rejects ambiguous mappings', () => {
     expect(() =>
       parseComponentMap({ components: { A: { node: 'image', skip: true } } }),

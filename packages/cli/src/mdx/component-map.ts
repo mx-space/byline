@@ -14,7 +14,11 @@ export type PropSpec =
     }
 
 export type ChildrenMode =
-  'drop' | 'unwrap' | { state: string } | { cells: string }
+  | 'drop'
+  | 'unwrap'
+  | { state: string }
+  | { cells: string }
+  | { sections: string; heading: number }
 
 export interface NativeComponentMapping {
   node: string
@@ -31,9 +35,14 @@ export interface DynamicComponentMapping {
   }
 }
 
+export interface MarkdownComponentMapping {
+  markdown: string
+}
+
 export type ComponentMapping =
   | NativeComponentMapping
   | DynamicComponentMapping
+  | MarkdownComponentMapping
   | { unwrap: true }
   | { skip: true }
 
@@ -93,13 +102,30 @@ export const parseComponentMap = (
     if (!isRecord(mapping)) {
       throw new Error(`${source}: components.${name} must be an object`)
     }
-    const kinds = ['node', 'dynamic', 'unwrap', 'skip'].filter(
+    const kinds = ['node', 'dynamic', 'markdown', 'unwrap', 'skip'].filter(
       (key) => key in mapping,
     )
     if (kinds.length !== 1) {
       throw new Error(
-        `${source}: components.${name} needs exactly one of node, dynamic, unwrap, skip`,
+        `${source}: components.${name} needs exactly one of node, dynamic, markdown, unwrap, skip`,
       )
+    }
+    if ('markdown' in mapping && typeof mapping.markdown !== 'string') {
+      throw new Error(`${source}: components.${name}.markdown must be a string`)
+    }
+    const children = mapping.children
+    if (isRecord(children) && 'sections' in children) {
+      const { heading } = children
+      if (
+        typeof children.sections !== 'string' ||
+        !Number.isInteger(heading) ||
+        (heading as number) < 1 ||
+        (heading as number) > 6
+      ) {
+        throw new Error(
+          `${source}: components.${name}.children.sections needs a key and a heading depth from 1 to 6`,
+        )
+      }
     }
     if ('dynamic' in mapping) {
       const dynamic = mapping.dynamic

@@ -127,6 +127,11 @@ The component map turns JSX components into haklex nodes:
       "props": { "cols": { "value": 2 } },
       "children": { "cells": "cells" }
     },
+    "Card": { "markdown": "![{title}]({image})\n\n[{title}]({href})" },
+    "Steps": {
+      "node": "steps",
+      "children": { "sections": "steps", "heading": 3 }
+    },
     "Tweet": {
       "node": "embed",
       "props": { "url": { "template": "https://x.com/i/status/{id}" } }
@@ -147,7 +152,17 @@ The component map turns JSX components into haklex nodes:
   `{ from, value, template, map, default, type }`.
 - `children` is `drop` (default), `unwrap` (children follow the node),
   `{ "state": key }` (children become a nested editor state, as banners use) or
-  `{ "cells": key }` (each child becomes one nested state, as grids use).
+  `{ "cells": key }` (each child becomes one nested state, as grids use) or
+  `{ "sections": key, "heading": n }` (children are split at each heading of
+  depth `n` into `{ id, title, content }` items, as steps use; the heading's
+  plain text is the title). Content before the first heading joins the first
+  item, and a component with no heading of that depth is unwrapped; both are
+  reported.
+- `markdown` renders a component from a Markdown template. `{prop}` is
+  replaced by the attribute value, escaped as literal text, and the result is
+  converted like the rest of the post. A template line whose props are missing
+  is dropped and reported. Use it for components that only lay out their props,
+  such as a card with an image and a link.
 - `dynamic` produces a haklex Dynamic Node `{ url, props }`. Its props are not
   translatable, so components carrying prose should map to native nodes.
 - Unmapped components follow `unknown` or `--unknown`: `placeholder` keeps a

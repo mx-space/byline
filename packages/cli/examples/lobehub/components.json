@@ -40,25 +40,19 @@
       "children": { "state": "content" }
     },
     "Card": {
-      "node": "link-card",
-      "props": {
-        "url": "href",
-        "title": "title",
-        "image": "image",
-        "description": "desc"
-      }
+      "markdown": "![{title}]({image})\n\n[{title}]({href})"
     },
     "Cards": {
       "node": "grid-container",
       "props": {
-        "cols": { "value": 2 },
+        "cols": { "value": 3 },
         "gap": { "value": "16px" }
       },
       "children": { "cells": "cells" }
     },
     "Steps": {
-      "node": "nested-doc",
-      "children": { "state": "content" }
+      "node": "steps",
+      "children": { "sections": "steps", "heading": 3 }
     },
     "X": {
       "node": "embed",
