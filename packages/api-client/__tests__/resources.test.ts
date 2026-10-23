@@ -305,6 +305,45 @@ describe('translations, catalog and files', () => {
     })
   })
 
+  it('updates and removes a dynamic component by id', async () => {
+    const catalog = {
+      version: 1,
+      components: [
+        {
+          id: '7',
+          name: 'Chart',
+          url: 'https://cdn.test/chart-2.js',
+          parent_url: 'https://cdn.test/chart-1.js',
+          previous_urls: ['https://cdn.test/chart-1.js'],
+          initial_height: 300,
+          props_schema: { data_url: { type: 'string' } },
+        },
+      ],
+    }
+    const { fetch, calls } = mockFetch(() => ({ body: { data: catalog } }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+
+    const { data } = await client.dynamicComponents.update('7', {
+      url: 'https://cdn.test/chart-2.js',
+      parentUrl: 'https://cdn.test/chart-1.js',
+      propsSchema: { data_url: { type: 'string' } },
+    })
+    await client.dynamicComponents.remove('7')
+
+    expect(calls[0].method).toBe('PATCH')
+    expect(calls[0].url.pathname).toBe('/dynamic-components/7')
+    expect(calls[0].body).toMatchObject({
+      propsSchema: { data_url: { type: 'string' } },
+    })
+    expect(data.components[0]).toMatchObject({
+      id: '7',
+      previousUrls: ['https://cdn.test/chart-1.js'],
+      propsSchema: { data_url: { type: 'string' } },
+    })
+    expect(calls[1].method).toBe('DELETE')
+    expect(calls[1].url.pathname).toBe('/dynamic-components/7')
+  })
+
   it('uploads files as multipart form data', async () => {
     const { fetch, calls } = mockFetch(() => ({
       body: { data: { url: 'http://x/objects/image/a.png', name: 'a.png' } },

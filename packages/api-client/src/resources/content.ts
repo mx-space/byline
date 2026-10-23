@@ -9,6 +9,7 @@ import type {
   Translation,
   TranslationPatch,
   TranslationTaskInput,
+  UpdateDynamicComponentInput,
   UploadedFile,
 } from '../types'
 
@@ -122,6 +123,22 @@ export class DynamicComponentsResource {
       'POST',
       '/dynamic-components',
       { body: input, preserve: CATALOG_PRESERVE },
+    )
+  }
+
+  update(id: string, input: UpdateDynamicComponentInput) {
+    return this.http.request<DynamicComponentCatalog>(
+      'PATCH',
+      `/dynamic-components/${encodeURIComponent(id)}`,
+      { body: input, preserve: CATALOG_PRESERVE },
+    )
+  }
+
+  remove(id: string) {
+    return this.http.request<DynamicComponentCatalog>(
+      'DELETE',
+      `/dynamic-components/${encodeURIComponent(id)}`,
+      { preserve: CATALOG_PRESERVE },
     )
   }
 }
