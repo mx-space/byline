@@ -1,0 +1,2 @@
+ALTER TABLE "content_documents" ADD COLUMN "created_by" text;--> statement-breakpoint
+ALTER TABLE "content_documents" ADD CONSTRAINT "content_documents_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;

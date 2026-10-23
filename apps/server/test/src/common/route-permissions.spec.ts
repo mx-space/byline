@@ -84,6 +84,7 @@ describe('route permissions', () => {
     expect(bitOf('PublishController.create')).toEqual([
       UserPermission.PublishPost,
     ])
+    expect(bitOf('PostController.patch')).toEqual([UserPermission.PublishPost])
     expect(bitOf('PostController.deletePost')).toEqual([
       UserPermission.PublishPost,
     ])

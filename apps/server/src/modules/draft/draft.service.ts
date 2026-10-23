@@ -4,11 +4,13 @@ import { Injectable } from '@nestjs/common'
 
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { BusinessEvents, EventScope } from '~/constants/business-event.constant'
+import { UserPermission } from '~/constants/permission.constant'
 import { FileReferenceType } from '~/modules/file/file-reference.enum'
 import { FileReferenceService } from '~/modules/file/file-reference.service'
 import { DatabaseService } from '~/processors/database/database.service'
 import { EventManagerService } from '~/processors/helper/helper.event.service'
 import type { EntityId } from '~/shared/id/entity-id'
+import { hasPermission } from '~/utils/permission.util'
 
 import { DraftRefType } from './draft.enum'
 import { DraftRepository } from './draft.repository'
@@ -22,6 +24,7 @@ import type {
   ContentPublicationEventRow,
   ContentRevisionRow,
   DocumentShareRow,
+  DraftActor,
   DraftBranchRow,
   DraftBranchView,
   DraftListFilter,
@@ -170,7 +173,19 @@ export class DraftService {
     return this.contextForDocument(document)
   }
 
-  async create(dto: CreateDraftDto): Promise<DraftBranchView> {
+  private async assertCanEdit(actor: DraftActor, document: ContentDocumentRow) {
+    if (hasPermission(actor, UserPermission.EditOthersPost)) return
+    const owns =
+      document.refId && document.refType === DraftRefType.Post
+        ? await this.draftRepository.isPostAuthor(document.refId, actor.id)
+        : document.createdBy === actor.id
+    if (!owns) throw createAppException(AppErrorCode.PERMISSION_DENIED)
+  }
+
+  async create(
+    dto: CreateDraftDto,
+    actor: DraftActor,
+  ): Promise<DraftBranchView> {
     const snapshot = canonicalSnapshot(dto.refType as DraftRefType, dto.data)
     let document: ContentDocumentRow
     let base: ContentRevisionRow
@@ -197,6 +212,7 @@ export class DraftService {
           id: dto.baseRevisionId,
         })
       }
+      await this.assertCanEdit(actor, foundDocument)
       document = foundDocument
       base = revision
     } else if (dto.refId) {
@@ -209,6 +225,7 @@ export class DraftService {
           id: document.id,
         })
       }
+      await this.assertCanEdit(actor, document)
       const published = await this.draftRepository.findRevisionById(
         document.publishedRevisionId,
       )
@@ -224,6 +241,7 @@ export class DraftService {
         null,
         snapshot,
         false,
+        actor.id,
       )
       document = created.document
       base = created.revision
@@ -245,7 +263,11 @@ export class DraftService {
     return view
   }
 
-  async update(id: string, dto: UpdateDraftDto): Promise<DraftBranchView> {
+  async update(
+    id: string,
+    dto: UpdateDraftDto,
+    actor: DraftActor,
+  ): Promise<DraftBranchView> {
     const branch = await this.draftRepository.findBranchById(id)
     if (!branch) {
       throw createAppException(AppErrorCode.DRAFT_NOT_FOUND, { id })
@@ -256,6 +278,7 @@ export class DraftService {
     if (!document) {
       throw createAppException(AppErrorCode.DRAFT_NOT_FOUND, { id })
     }
+    await this.assertCanEdit(actor, document)
     const snapshot = canonicalSnapshot(document.refType, dto.data)
     const result = await this.draftRepository.saveBranch(
       id,
@@ -383,11 +406,13 @@ export class DraftService {
   async setShare(
     documentId: string,
     dto: SetDraftShareDto,
+    actor: DraftActor,
   ): Promise<DocumentShareRow> {
     const document = await this.draftRepository.findDocumentById(documentId)
     if (!document) {
       throw createAppException(AppErrorCode.DRAFT_NOT_FOUND, { id: documentId })
     }
+    await this.assertCanEdit(actor, document)
     if (dto.mode === 'pinned') {
       const revision = await this.draftRepository.findRevisionById(
         dto.revisionId,
@@ -417,7 +442,16 @@ export class DraftService {
     )
   }
 
-  async deleteShare(documentId: string): Promise<void> {
+  async deleteShare(documentId: string, actor: DraftActor): Promise<void> {
+    if (!hasPermission(actor, UserPermission.EditOthersPost)) {
+      const document = await this.draftRepository.findDocumentById(documentId)
+      if (!document) {
+        throw createAppException(AppErrorCode.DRAFT_SHARE_NOT_FOUND, {
+          id: documentId,
+        })
+      }
+      await this.assertCanEdit(actor, document)
+    }
     const removed = await this.draftRepository.deleteShareByDocument(documentId)
     if (!removed) {
       throw createAppException(AppErrorCode.DRAFT_SHARE_NOT_FOUND, {
@@ -459,7 +493,17 @@ export class DraftService {
     }
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, actor: DraftActor): Promise<void> {
+    if (!hasPermission(actor, UserPermission.EditOthersPost)) {
+      const target = await this.draftRepository.findBranchById(id)
+      const document =
+        target &&
+        (await this.draftRepository.findDocumentById(target.documentId))
+      if (!document) {
+        throw createAppException(AppErrorCode.DRAFT_NOT_FOUND, { id })
+      }
+      await this.assertCanEdit(actor, document)
+    }
     const branch = await this.draftRepository.archiveBranch(id)
     if (!branch) {
       throw createAppException(AppErrorCode.DRAFT_NOT_FOUND, { id })

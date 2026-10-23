@@ -435,7 +435,7 @@ export class PostController {
 
   @Patch('/:id')
   @Auth()
-  @RequirePermissions(UserPermission.EditPost)
+  @RequirePermissions(UserPermission.PublishPost)
   async patch(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: PartialPostSchema }) body: PartialPostDto,

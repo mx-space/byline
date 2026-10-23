@@ -15,6 +15,13 @@
       "when": 1792763082677,
       "tag": "0001_invite_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792763655827,
+      "tag": "0002_document_created_by",
+      "breakpoints": true
     }
   ]
 }

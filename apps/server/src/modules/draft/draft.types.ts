@@ -19,8 +19,14 @@ export interface RevisionSnapshot {
   typeSpecificData: Record<string, unknown> | null
 }
 
+export interface DraftActor {
+  id: string
+  permissions?: number | null
+}
+
 export interface ContentDocumentRow {
   createdAt: Date
+  createdBy: string | null
   id: EntityId
   publishAiResources: PublishAiResourceRequest[] | null
   publishedRevisionId: EntityId | null

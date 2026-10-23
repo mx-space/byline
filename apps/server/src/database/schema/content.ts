@@ -115,6 +115,9 @@ export const contentDocuments = pgTable(
     updatedAt: updatedAt(),
     refType: text('ref_type').notNull(),
     refId: refText('ref_id'),
+    createdBy: text('created_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
     publishedRevisionId: refText('published_revision_id').references(
       (): AnyPgColumn => contentRevisions.id,
       { onDelete: 'set null' },
