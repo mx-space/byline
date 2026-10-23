@@ -28,7 +28,7 @@ export const convertMdx = (
     options.componentMap ?? parseComponentMap(undefined),
   )
   const raw = converter.convert(tree)
-  const { state, markdown } = normalizeState(raw)
+  const { state, markdown } = normalizeState(raw, { blockIds: true })
   return {
     frontmatter: data,
     state,

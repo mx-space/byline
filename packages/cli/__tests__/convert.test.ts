@@ -254,6 +254,7 @@ describe('convertMdx components', () => {
       url: 'https://cdn.test/chart.mjs',
       initialHeight: 480,
       props: { dataUrl: 'https://data.test/x.json' },
+      $: { blockId: expect.any(String) },
     })
     expect(issues).toEqual([
       expect.objectContaining({ kind: 'dropped-node', component: 'Chart' }),
@@ -355,6 +356,52 @@ describe('convertMdx components', () => {
     })
     expect(nodes[3].children![0]).toMatchObject({ url: 'https://shot.test' })
     expect(issues).toEqual([])
+  })
+})
+
+describe('convertMdx editor normalization', () => {
+  it('formats lists the way the editor does, so opening a post changes nothing', () => {
+    const { nodes } = blocks('- **Bold** start\n- plain')
+    expect(nodes[0]).toMatchObject({ type: 'list', textFormat: 1 })
+  })
+
+  it('normalizes nested states inside items, such as step content', () => {
+    const { nodes } = blocks(
+      `<Steps>
+  ### One
+
+  - **Bold** start
+</Steps>`,
+      parseComponentMap({
+        components: {
+          Steps: { node: 'steps', children: { sections: 'steps', heading: 3 } },
+        },
+      }),
+    )
+    const steps = nodes[0].steps as Array<{ content: { root: LexicalNode } }>
+    expect(steps[0].content.root.children![0]).toMatchObject({
+      type: 'list',
+      textFormat: 1,
+    })
+  })
+  it('gives every top-level block the stable id the editor would add', () => {
+    const source =
+      '# A\n\nSame\n\nSame\n\n<Steps>\n  ### One\n\n  Inner\n</Steps>'
+    const map = parseComponentMap({
+      components: {
+        Steps: { node: 'steps', children: { sections: 'steps', heading: 3 } },
+      },
+    })
+    const ids = (nodes: LexicalNode[]) =>
+      nodes.map((node) => (node.$ as { blockId?: string } | undefined)?.blockId)
+    const first = blocks(source, map).nodes
+    const blockIds = ids(first)
+    expect(blockIds).toHaveLength(4)
+    for (const id of blockIds) expect(id).toMatch(/^[\w-]{8}$/)
+    expect(new Set(blockIds).size).toBe(4)
+    expect(ids(blocks(source, map).nodes)).toEqual(blockIds)
+    const steps = first[3].steps as Array<{ content: { root: LexicalNode } }>
+    expect(steps[0].content.root.children![0]).not.toHaveProperty('$')
   })
 })
 
