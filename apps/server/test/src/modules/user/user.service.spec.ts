@@ -26,7 +26,7 @@ const createService = (row: UserRow) => {
   const repository = {
     findById: vi.fn(async () => row),
     findByIdDetailed: vi.fn(async () => row),
-    existsByUsernameOrEmail: vi.fn(async () => false),
+    findIdentityConflict: vi.fn(async () => null),
     updateProfile: vi.fn(async () => row),
   }
   const apiCache = { invalidate: vi.fn() }

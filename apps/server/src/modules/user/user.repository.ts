@@ -107,24 +107,28 @@ export class UserRepository extends BaseRepository {
     return row ? mapRow(row) : null
   }
 
-  async existsByUsernameOrEmail(
+  async findIdentityConflict(
     username: string | null | undefined,
     email: string | null | undefined,
     excludeId?: string,
-  ) {
-    const conditions: SQL[] = []
-    if (username) conditions.push(eq(users.username, username))
-    if (email) conditions.push(sql`lower(${users.email}) = lower(${email})`)
-    if (conditions.length === 0) return false
-    const matches = or(...conditions)!
+  ): Promise<'username' | 'email' | null> {
+    const usernameMatch = username ? eq(users.username, username) : null
+    const emailMatch = email
+      ? sql`lower(${users.email}) = lower(${email})`
+      : null
+    if (!usernameMatch && !emailMatch) return null
+    const matches = or(
+      ...[usernameMatch, emailMatch].filter((c): c is SQL => c !== null),
+    )!
     const [row] = await this.db
-      .select({ id: users.id })
+      .select({ username: users.username })
       .from(users)
       .where(
         excludeId ? and(matches, sql`${users.id} <> ${excludeId}`) : matches,
       )
       .limit(1)
-    return !!row
+    if (!row) return null
+    return username && row.username === username ? 'username' : 'email'
   }
 
   async countActive(): Promise<number> {

@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { ApiRequestError } from '~/api/http'
 import { acceptInvite, getPublicInvite } from '~/api/users'
+import { getUserConflictField } from '~/features/users/utils/users'
 import { useI18n } from '~/i18n'
 import type { TranslationKey } from '~/i18n/types'
 import { Button } from '~/ui/primitives/button'
@@ -14,6 +15,11 @@ import { TextInput } from '~/ui/primitives/text-field'
 
 import { readErrorMessage } from '../utils/login'
 import { authFormClassName, authLinkClassName, AuthScreen } from './AuthScreen'
+
+const CONFLICT_ERROR_KEYS = {
+  email: 'auth.invite.error.emailTaken',
+  username: 'auth.invite.error.usernameTaken',
+} satisfies Record<string, TranslationKey>
 
 const INVITE_ERROR_KEYS: Record<string, TranslationKey> = {
   INVITE_ALREADY_ACCEPTED: 'auth.invite.error.accepted',
@@ -46,8 +52,14 @@ export function InviteAcceptRouteView() {
         password,
         username: username.trim(),
       }),
-    onError: (error: unknown) =>
-      toast.error(readErrorMessage(error, t('auth.invite.acceptFailed'))),
+    onError: (error: unknown) => {
+      const conflict = getUserConflictField(error)
+      toast.error(
+        conflict
+          ? t(CONFLICT_ERROR_KEYS[conflict])
+          : readErrorMessage(error, t('auth.invite.acceptFailed')),
+      )
+    },
     onSuccess: () => {
       toast.success(t('auth.invite.accepted'))
       navigate('/login', { replace: true })

@@ -1,17 +1,23 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Check, Copy, Loader2, UserPlus } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 
 import type { CreatedUserInvite, UserDetail } from '~/api/users'
-import { createInvite, inviteExistingUser } from '~/api/users'
+import { createInvite, getUsers, inviteExistingUser } from '~/api/users'
 import { useI18n } from '~/i18n'
+import { adminQueryKeys } from '~/query/keys'
 import { ModalFooter, ModalHeader } from '~/ui/feedback/modal'
 import { present, useModal } from '~/ui/feedback/modal-imperative'
 import { Button } from '~/ui/primitives/button'
+import { SelectField } from '~/ui/primitives/select'
 import { TextInput } from '~/ui/primitives/text-field'
 
-import { getUserDisplayName, getUserErrorMessage } from '../utils/users'
+import {
+  buildInviteRequest,
+  getUserDisplayName,
+  getUserErrorMessage,
+} from '../utils/users'
 
 interface InviteUserModalProps {
   user?: Pick<UserDetail, 'displayName' | 'email' | 'id' | 'username'>
@@ -23,18 +29,34 @@ function InviteUserModal(props: InviteUserModalProps) {
   const target = props.user
   const [email, setEmail] = useState(target?.email ?? '')
   const [displayName, setDisplayName] = useState('')
+  const [linkedAuthorId, setLinkedAuthorId] = useState('')
   const [error, setError] = useState('')
   const [created, setCreated] = useState<CreatedUserInvite | null>(null)
   const [copied, setCopied] = useState(false)
 
+  const authorsQuery = useQuery({
+    enabled: !target,
+    queryFn: () => getUsers({ page: 1, size: 100, status: 'profile_only' }),
+    queryKey: adminQueryKeys.users.list({ search: '', status: 'profile_only' }),
+  })
+  const linkableAuthors = (authorsQuery.data?.data ?? []).filter(
+    (author) => !author.deactivatedAt,
+  )
+
   const mutation = useMutation({
-    mutationFn: () =>
-      target
-        ? inviteExistingUser(target.id, { email: email.trim() })
+    mutationFn: () => {
+      const request = buildInviteRequest({
+        displayName,
+        email,
+        linkedAuthorId: target?.id ?? linkedAuthorId,
+      })
+      return request.kind === 'existing'
+        ? inviteExistingUser(request.userId, { email: request.email })
         : createInvite({
-            displayName: displayName.trim() || undefined,
-            email: email.trim(),
-          }),
+            displayName: request.displayName,
+            email: request.email,
+          })
+    },
     onError: (mutationError: unknown) =>
       setError(getUserErrorMessage(mutationError, t('users.invite.failed'))),
     onSuccess: setCreated,
@@ -114,7 +136,31 @@ function InviteUserModal(props: InviteUserModalProps) {
           type="email"
           value={email}
         />
-        {target ? null : (
+        {target || linkableAuthors.length === 0 ? null : (
+          <div className="grid gap-1.5 text-sm">
+            <span className="font-medium text-fg">
+              {t('users.invite.linkAuthor')}
+            </span>
+            <SelectField
+              aria-label={t('users.invite.linkAuthor')}
+              onValueChange={setLinkedAuthorId}
+              options={[
+                { label: t('users.invite.linkAuthorNone'), value: '' },
+                ...linkableAuthors.map((author) => ({
+                  label: getUserDisplayName(author),
+                  value: author.id,
+                })),
+              ]}
+              value={linkedAuthorId}
+            />
+            {linkedAuthorId ? (
+              <p className="text-xs text-fg-muted">
+                {t('users.invite.linkAuthorHint')}
+              </p>
+            ) : null}
+          </div>
+        )}
+        {target || linkedAuthorId ? null : (
           <TextInput
             label={t('users.field.displayName')}
             onChange={setDisplayName}

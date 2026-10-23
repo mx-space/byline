@@ -1687,6 +1687,8 @@ export const zhCN = {
   'auth.invite.error.notFound': '邀请链接无效。',
   'auth.invite.error.expired': '邀请已过期，请重新申请。',
   'auth.invite.error.accepted': '邀请已被使用，请直接登录。',
+  'auth.invite.error.usernameTaken': '该用户名已被占用，请换一个。',
+  'auth.invite.error.emailTaken': '该邮箱已有账号，请直接登录。',
   'auth.invite.backToLogin': '返回登录',
   'auth.reset.title': '重置密码',
   'auth.reset.requestSubtitle': '我们会向你的邮箱发送重置链接。',
@@ -1753,8 +1755,14 @@ export const zhCN = {
   'users.invite.existingDescription':
     '接受邀请后，该作者资料会转为可登录的账号，文章和署名保持不变。',
   'users.invite.linkedAuthor': '已有作者',
+  'users.invite.linkAuthor': '关联已有作者',
+  'users.invite.linkAuthorNone': '不关联，新建账号',
+  'users.invite.linkAuthorHint':
+    '对方接受后，所选作者会转为可登录账号，文章和署名保持不变。',
   'users.field.identityLocked': '登录账号的邮箱和用户名只能由账号本人修改。',
   'users.error.identityLocked': '登录账号的邮箱和用户名只能由账号本人修改。',
+  'users.error.usernameTaken': '该用户名已被其他账号或作者使用。',
+  'users.error.emailTaken': '该邮箱已被其他账号或作者使用。',
   'users.error.conflict': '该邮箱或用户名已被其他账号使用。',
   'users.invite.pendingTitle': '待接受的邀请（{count}）',
   'users.invite.expired': '已过期',

@@ -31,10 +31,47 @@ export function canEditSignInIdentity(
   return user.isProfileOnly || user.id === currentUserId
 }
 
+const CONFLICT_MESSAGE_KEYS: Record<UserConflictField, TranslationKey> = {
+  email: 'users.error.emailTaken',
+  username: 'users.error.usernameTaken',
+}
+
+export type UserConflictField = 'email' | 'username'
+
+export function getUserConflictField(error: unknown): UserConflictField | null {
+  if (!(error instanceof ApiRequestError) || error.code !== 'USER_CONFLICT') {
+    return null
+  }
+  const field = error.details?.field
+  return field === 'email' || field === 'username' ? field : null
+}
+
 export function getUserErrorMessage(error: unknown, fallback: string) {
+  const conflict = getUserConflictField(error)
+  if (conflict) return translate(CONFLICT_MESSAGE_KEYS[conflict])
   if (error instanceof ApiRequestError && typeof error.code === 'string') {
     const key = USER_ERROR_MESSAGE_KEYS[error.code]
     if (key) return translate(key)
   }
   return error instanceof Error && error.message ? error.message : fallback
+}
+
+export type InviteRequest =
+  | { email: string; kind: 'existing'; userId: string }
+  | { displayName: string | undefined; email: string; kind: 'new' }
+
+export function buildInviteRequest(input: {
+  displayName: string
+  email: string
+  linkedAuthorId: string
+}): InviteRequest {
+  const email = input.email.trim()
+  if (input.linkedAuthorId) {
+    return { email, kind: 'existing', userId: input.linkedAuthorId }
+  }
+  return {
+    displayName: input.displayName.trim() || undefined,
+    email,
+    kind: 'new',
+  }
 }

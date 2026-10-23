@@ -4,7 +4,12 @@ import { ApiRequestError } from '~/api/http'
 import { translate } from '~/i18n/translate'
 
 import { toProfileInput } from '../components/UserProfileForm'
-import { canEditSignInIdentity, getUserErrorMessage } from './users'
+import {
+  buildInviteRequest,
+  canEditSignInIdentity,
+  getUserConflictField,
+  getUserErrorMessage,
+} from './users'
 
 const form = {
   avatar: '',
@@ -60,9 +65,53 @@ describe('getUserErrorMessage', () => {
     )
   })
 
+  it('names the taken field of a USER_CONFLICT', () => {
+    const taken = (field: string) =>
+      new ApiRequestError('server text', 'USER_CONFLICT', 409, { field })
+    expect(getUserConflictField(taken('username'))).toBe('username')
+    expect(getUserConflictField(taken('email'))).toBe('email')
+    expect(getUserErrorMessage(taken('email'), 'fallback')).toBe(
+      translate('users.error.emailTaken'),
+    )
+    const legacy = new ApiRequestError('server text', 'USER_CONFLICT', 409)
+    expect(getUserConflictField(legacy)).toBeNull()
+    expect(getUserErrorMessage(legacy, 'fallback')).toBe(
+      translate('users.error.conflict'),
+    )
+  })
+
   it('keeps the server message for unmapped codes', () => {
     const error = new ApiRequestError('Invite expired', 'INVITE_EXPIRED', 410)
     expect(getUserErrorMessage(error, 'fallback')).toBe('Invite expired')
     expect(getUserErrorMessage(null, 'fallback')).toBe('fallback')
+  })
+})
+
+describe('buildInviteRequest', () => {
+  it('invites a linked author so accepting converts that author', () => {
+    expect(
+      buildInviteRequest({
+        displayName: 'Ignored',
+        email: ' a@b.test ',
+        linkedAuthorId: '42',
+      }),
+    ).toEqual({ email: 'a@b.test', kind: 'existing', userId: '42' })
+  })
+
+  it('creates a new account when no author is linked', () => {
+    expect(
+      buildInviteRequest({
+        displayName: ' Ada ',
+        email: 'a@b.test',
+        linkedAuthorId: '',
+      }),
+    ).toEqual({ displayName: 'Ada', email: 'a@b.test', kind: 'new' })
+    expect(
+      buildInviteRequest({
+        displayName: ' ',
+        email: 'a@b.test',
+        linkedAuthorId: '',
+      }),
+    ).toEqual({ displayName: undefined, email: 'a@b.test', kind: 'new' })
   })
 })

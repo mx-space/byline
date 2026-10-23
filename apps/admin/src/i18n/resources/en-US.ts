@@ -1783,6 +1783,10 @@ export const enUS = {
   'auth.invite.error.expired': 'This invite has expired. Ask for a new one.',
   'auth.invite.error.accepted':
     'This invite was already used. Sign in instead.',
+  'auth.invite.error.usernameTaken':
+    'This username is already taken. Pick another one.',
+  'auth.invite.error.emailTaken':
+    'This email already has an account. Sign in instead.',
   'auth.invite.backToLogin': 'Back to sign in',
   'auth.reset.title': 'Reset password',
   'auth.reset.requestSubtitle': 'We will email you a reset link.',
@@ -1854,10 +1858,18 @@ export const enUS = {
   'users.invite.existingDescription':
     'Accepting the invite turns this author profile into a sign-in account. Posts and bylines stay attached.',
   'users.invite.linkedAuthor': 'Existing author',
+  'users.invite.linkAuthor': 'Link an existing author',
+  'users.invite.linkAuthorNone': 'None, create a new account',
+  'users.invite.linkAuthorHint':
+    'When the invite is accepted, this author becomes a sign-in account. Posts and bylines stay attached.',
   'users.field.identityLocked':
     'Only the account holder can change the email or username of a sign-in account.',
   'users.error.identityLocked':
     "Only the account holder can change a sign-in account's email or username.",
+  'users.error.usernameTaken':
+    'This username is already used by another account or author.',
+  'users.error.emailTaken':
+    'This email is already used by another account or author.',
   'users.error.conflict':
     'This email or username already belongs to another account.',
   'users.invite.pendingTitle': 'Pending invites ({count})',

@@ -439,6 +439,7 @@ export const APP_ERROR_DEFINITIONS = {
   [AppErrorCode.USER_CONFLICT]: {
     status: 409,
     message: 'A user with this email or username already exists',
+    details: (p) => (p?.field ? { field: p.field } : undefined),
   },
   [AppErrorCode.USER_IDENTITY_LOCKED]: {
     status: 403,

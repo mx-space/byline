@@ -325,6 +325,23 @@ describe('users, invites and sign-in gates (PostgreSQL)', () => {
     })
   })
 
+  it('names the taken username when accepting an invite', async () => {
+    const inviter = (await users.list({ search: 'founder', page: 1, size: 1 }))
+      .data[0]
+    await users.createProfileOnly({ displayName: 'Taken', username: 'taken' })
+    const invite = await invites.create(
+      { email: 'newcomer@example.test' },
+      { id: inviter.id },
+    )
+
+    await expect(
+      invites.accept(invite.token, { username: 'taken', password: PASSWORD }),
+    ).rejects.toMatchObject({
+      code: AppErrorCode.USER_CONFLICT,
+      details: { field: 'username' },
+    })
+  })
+
   it('still refuses to invite an email that already signs in', async () => {
     const inviter = (await users.list({ search: 'founder', page: 1, size: 1 }))
       .data[0]

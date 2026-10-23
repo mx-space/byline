@@ -131,15 +131,12 @@ export class UserService {
     email: string | null | undefined,
     excludeId?: string,
   ) {
-    if (
-      await this.userRepository.existsByUsernameOrEmail(
-        username,
-        email,
-        excludeId,
-      )
-    ) {
-      throw createAppException(AppErrorCode.USER_CONFLICT)
-    }
+    const field = await this.userRepository.findIdentityConflict(
+      username,
+      email,
+      excludeId,
+    )
+    if (field) throw createAppException(AppErrorCode.USER_CONFLICT, { field })
   }
 
   async updateProfile(id: string, dto: UpdateUserDto, actorId?: string) {
