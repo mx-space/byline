@@ -107,6 +107,7 @@ import { openPublishProcessDock } from '~/features/write/components/PublishProce
 import { TtsGenerationEntry } from '~/features/write/components/tts/TtsGenerationEntry'
 import { VersionTreePanel } from '~/features/write/components/VersionTreePanel'
 import { MetaPresetSection } from '~/features/write/meta-presets'
+import { draftFingerprint } from '~/features/write/utils/draft-fingerprint'
 import type { DraftMergeConflict } from '~/features/write/utils/merge-draft-conflict'
 import { mergeDraftConflict } from '~/features/write/utils/merge-draft-conflict'
 import type { PostBylineState } from '~/features/write/utils/post-byline-state'
@@ -2915,23 +2916,7 @@ function getDraftFingerprint(
   state: WriteFormState,
   refId?: string,
 ) {
-  const data = toDraftData(kind, state, refId)
-  const typeSpecificData: Record<string, unknown> = {
-    ...data.typeSpecificData,
-  }
-
-  typeSpecificData.pin = Boolean(typeSpecificData.pin)
-  if (Array.isArray(typeSpecificData.tags)) {
-    typeSpecificData.tags = [...typeSpecificData.tags].sort()
-  }
-
-  return serializeListKey([
-    {
-      ...data,
-      images: data.images?.map((image) => image.src).sort(),
-      typeSpecificData,
-    },
-  ])
+  return draftFingerprint(toDraftData(kind, state, refId))
 }
 
 function toDraftData(
