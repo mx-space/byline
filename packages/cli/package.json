@@ -61,7 +61,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@haklex/rich-headless": "0.54.1",
+    "@haklex/rich-headless": "0.54.2",
     "@lexical/headless": "^0.52.0",
     "lexical": "^0.52.0",
     "remark-gfm": "^4.0.1",
