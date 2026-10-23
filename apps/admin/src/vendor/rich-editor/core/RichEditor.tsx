@@ -5,7 +5,6 @@ import {
 } from '@haklex/rich-editor'
 import { chatEditNodes } from '@haklex/rich-ext-chat'
 import { codeSnippetEditNodes } from '@haklex/rich-ext-code-snippet'
-import { DynamicEditNode, DynamicPlugin } from '@haklex/rich-ext-dynamic'
 import { embedEditNodes, EmbedPlugin } from '@haklex/rich-ext-embed'
 import {
   ExcalidrawEditNode,
@@ -34,11 +33,13 @@ import type { Klass, LexicalNode, SerializedEditorState } from 'lexical'
 import type { ReactNode } from 'react'
 import { useCallback, useMemo } from 'react'
 
+import { BylineDynamicEditNode } from '../dynamic/BylineDynamicEditNode'
+import { DynamicInsertPlugin } from '../dynamic/DynamicInsertPlugin'
 import { enhancedEditRendererConfig } from './configs/enhanced-edit-renderer-config'
 import { RichRenderer } from './RichRenderer'
 
 const defaultExtraNodes = [
-  DynamicEditNode,
+  BylineDynamicEditNode,
   ExcalidrawEditNode,
   ...embedEditNodes,
   ...linkCardEditNodes,
@@ -128,7 +129,7 @@ export function RichEditor({
         <LiteXmlPastePlugin />
         <FloatingToolbarPlugin actions={floatingToolbarActions} />
         <FloatingLinkEditorPlugin renderExtraActions={renderLinkExtraActions} />
-        <DynamicPlugin />
+        <DynamicInsertPlugin />
         <ExcalidrawPlugin />
         <EmbedPlugin selfHostnames={selfHostnames} />
         <PasteLinkCardPlugin />
