@@ -1,11 +1,10 @@
 import type { ExecutionContext } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
+import { lastValueFrom, of } from 'rxjs'
 
+import { PERMISSIONS_METADATA } from '~/common/decorators/permission.decorator'
 import { AppErrorCode } from '~/common/errors'
-import {
-  PERMISSIONS_METADATA,
-  PermissionsGuard,
-} from '~/common/guards/permissions.guard'
+import { PermissionsInterceptor } from '~/common/interceptors/permissions.interceptor'
 import {
   ALL_PERMISSIONS,
   matchPermissionPreset,
@@ -48,10 +47,11 @@ describe('permission presets', () => {
   })
 })
 
-describe('PermissionsGuard', () => {
-  const contextFor = (user: unknown, required: number[]) => {
+describe('PermissionsInterceptor', () => {
+  const contextFor = (user: unknown, required?: number[]) => {
     const handler = () => {}
-    Reflect.defineMetadata(PERMISSIONS_METADATA, required, handler)
+    if (required)
+      Reflect.defineMetadata(PERMISSIONS_METADATA, required, handler)
     return {
       getHandler: () => handler,
       getClass: () => class {},
@@ -59,29 +59,45 @@ describe('PermissionsGuard', () => {
       switchToHttp: () => ({ getRequest: () => ({ raw: {}, user }) }),
     } as unknown as ExecutionContext
   }
+  const next = { handle: () => of('handled') }
+  const interceptor = new PermissionsInterceptor(new Reflector())
 
   it('rejects a member without the bit with PERMISSION_DENIED', () => {
-    const guard = new PermissionsGuard(new Reflector())
     expect(() =>
-      guard.canActivate(
+      interceptor.intercept(
         contextFor({ permissions: UserPermission.EditPost }, [
           UserPermission.PublishPost,
         ]),
+        next,
       ),
     ).toThrow(expect.objectContaining({ code: AppErrorCode.PERMISSION_DENIED }))
   })
 
-  it('lets a member with every required bit through', () => {
-    const guard = new PermissionsGuard(new Reflector())
-    expect(
-      guard.canActivate(
-        contextFor(
-          {
-            permissions: UserPermission.EditPost | UserPermission.PublishPost,
-          },
-          [UserPermission.PublishPost],
+  it('rejects a request with no user as not logged in', () => {
+    expect(() =>
+      interceptor.intercept(
+        contextFor(undefined, [UserPermission.PublishPost]),
+        next,
+      ),
+    ).toThrow(
+      expect.objectContaining({ code: AppErrorCode.AUTH_NOT_LOGGED_IN }),
+    )
+  })
+
+  it('passes a member with every required bit, and routes without metadata', async () => {
+    const member = {
+      permissions: UserPermission.EditPost | UserPermission.PublishPost,
+    }
+    await expect(
+      lastValueFrom(
+        interceptor.intercept(
+          contextFor(member, [UserPermission.PublishPost]),
+          next,
         ),
       ),
-    ).toBe(true)
+    ).resolves.toBe('handled')
+    await expect(
+      lastValueFrom(interceptor.intercept(contextFor(undefined), next)),
+    ).resolves.toBe('handled')
   })
 })

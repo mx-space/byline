@@ -1,3 +1,5 @@
+import type { PermissionPreset } from '~/constants/permission.constant'
+
 export interface UserRow {
   id: string
   email: string | null
@@ -23,7 +25,10 @@ export interface UserListParams {
   size?: number
   search?: string
   status?: UserStatusFilter
+  role?: UserRoleFilter
 }
+
+export type UserRoleFilter = PermissionPreset | 'custom'
 
 export interface UserCreateInput {
   id: string
@@ -35,6 +40,7 @@ export interface UserCreateInput {
   bio?: string | null
   url?: string | null
   isProfileOnly?: boolean
+  permissions?: number
 }
 
 export interface UserProfilePatch {
@@ -63,6 +69,7 @@ export interface UserInviteRow {
   acceptedAt: Date | null
   acceptedUserId: string | null
   userId: string | null
+  permissions: number | null
   createdAt: Date
 }
 

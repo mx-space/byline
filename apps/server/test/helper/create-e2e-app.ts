@@ -5,6 +5,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { AppExceptionFilter } from '~/common/filters/app-exception.filter'
 import { HttpCacheInterceptor } from '~/common/interceptors/cache.interceptor'
 import { DbQueryInterceptor } from '~/common/interceptors/db-query.interceptor'
+import { PermissionsInterceptor } from '~/common/interceptors/permissions.interceptor'
 import { ResponseInterceptor } from '~/common/interceptors/response.interceptor'
 import { ApiCacheService } from '~/processors/redis/api-cache.service'
 
@@ -22,6 +23,10 @@ export const createE2EApp = (module: ModuleMetadata) => {
     nestModule.providers ||= []
 
     nestModule.providers.push(
+      {
+        provide: APP_INTERCEPTOR,
+        useClass: PermissionsInterceptor,
+      },
       {
         provide: APP_INTERCEPTOR,
         useClass: DbQueryInterceptor,

@@ -17,6 +17,7 @@ const mapRow = (row: typeof userInvites.$inferSelect): UserInviteRow => ({
   acceptedAt: row.acceptedAt,
   acceptedUserId: row.acceptedUserId,
   userId: row.userId ?? null,
+  permissions: row.permissions ?? null,
   createdAt: row.createdAt,
 })
 
@@ -33,6 +34,7 @@ export class UserInviteRepository extends BaseRepository {
     tokenHash: string
     invitedBy?: string | null
     userId?: string | null
+    permissions?: number | null
     expiresAt: Date
   }): Promise<UserInviteRow> {
     const [row] = await this.db
@@ -44,6 +46,7 @@ export class UserInviteRepository extends BaseRepository {
         tokenHash: input.tokenHash,
         invitedBy: input.invitedBy ?? null,
         userId: input.userId ?? null,
+        permissions: input.permissions ?? null,
         expiresAt: input.expiresAt,
       })
       .returning()

@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
 import { zAllowedUrl, zPaginationPage } from '~/common/zod'
+import {
+  ALL_PERMISSIONS,
+  KNOWN_PERMISSIONS,
+  PERMISSION_PRESETS,
+} from '~/constants/permission.constant'
 
 const zUsername = z
   .string()
@@ -9,6 +14,20 @@ const zUsername = z
   .max(64)
   .regex(/^[\w.-]+$/, 'Username may only contain letters, digits, _ . -')
   .transform((value) => value.toLowerCase())
+
+const zKnownPermissions = z
+  .number()
+  .int()
+  .min(0)
+  .refine(
+    (mask) => (mask & ~KNOWN_PERMISSIONS) === 0,
+    'Unknown permission bits',
+  )
+
+const zMemberPermissions = z.union([
+  z.literal(ALL_PERMISSIONS),
+  zKnownPermissions,
+])
 
 const zOptionalText = (max: number) =>
   z
@@ -53,6 +72,15 @@ export const UserListQuerySchema = z.object({
   size: z.coerce.number().int().positive().max(100).default(20),
   search: z.string().trim().optional(),
   status: z.enum(['all', 'active', 'deactivated', 'profile_only']).optional(),
+  role: z
+    .enum([
+      ...(Object.keys(PERMISSION_PRESETS) as [
+        keyof typeof PERMISSION_PRESETS,
+        ...(keyof typeof PERMISSION_PRESETS)[],
+      ]),
+      'custom',
+    ])
+    .optional(),
 })
 
 export type UserListQueryDto = z.infer<typeof UserListQuerySchema>
@@ -73,6 +101,7 @@ export type AuthorIdentityDto = z.infer<typeof AuthorIdentitySchema>
 export const CreateInviteSchema = z.object({
   email: z.email(),
   displayName: z.string().trim().min(1).max(120).optional(),
+  permissions: zKnownPermissions.optional(),
 })
 
 export type CreateInviteDto = z.infer<typeof CreateInviteSchema>
@@ -80,7 +109,16 @@ export type CreateInviteDto = z.infer<typeof CreateInviteSchema>
 export const InviteExistingUserSchema = z.object({
   email: z.email().optional(),
   displayName: z.string().trim().min(1).max(120).optional(),
+  permissions: zKnownPermissions.optional(),
 })
+
+export const UpdateUserPermissionsSchema = z.object({
+  permissions: zMemberPermissions,
+})
+
+export type UpdateUserPermissionsDto = z.infer<
+  typeof UpdateUserPermissionsSchema
+>
 
 export type InviteExistingUserDto = z.infer<typeof InviteExistingUserSchema>
 

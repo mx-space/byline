@@ -15,6 +15,7 @@ import { ExtendThrottlerGuard } from './common/guards/throttler.guard'
 import { HttpCacheInterceptor } from './common/interceptors/cache.interceptor'
 import { DbQueryInterceptor } from './common/interceptors/db-query.interceptor'
 import { IdempotenceInterceptor } from './common/interceptors/idempotence.interceptor'
+import { PermissionsInterceptor } from './common/interceptors/permissions.interceptor'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { RequestContextMiddleware } from './common/middlewares/request-context.middleware'
 import { AppMigrationsModule } from './database/app-migrations/app-migrations.module'
@@ -81,6 +82,10 @@ import { SampleResponseInterceptor } from './shared/sample/sample-response.inter
   ].filter(Boolean) as Type<NestModule>[],
   controllers: [AppController],
   providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: PermissionsInterceptor,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: DbQueryInterceptor,

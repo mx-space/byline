@@ -15,6 +15,11 @@ export type UserPermissionFlag =
 // Every bit of a signed int4 is set so permissions added later are granted to existing users without a backfill.
 export const ALL_PERMISSIONS = 0x7fffffff
 
+export const KNOWN_PERMISSIONS = Object.values(UserPermission).reduce(
+  (mask, bit) => mask | bit,
+  0,
+)
+
 export const PERMISSION_PRESETS = {
   owner: ALL_PERMISSIONS,
   editor:
