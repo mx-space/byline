@@ -2,9 +2,11 @@ import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
+import { UserPermission } from '~/constants/permission.constant'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 
 import { DraftRefType } from './draft.enum'
@@ -37,6 +39,7 @@ export class DraftController {
 
   @Post('/')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   create(@Body({ schema: CreateDraftSchema }) body: CreateDraftDto) {
     return this.draftService.create(body)
   }
@@ -98,6 +101,7 @@ export class DraftController {
 
   @Put('/documents/:documentId/share')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   setShare(
     @Param({ schema: DraftDocumentIdSchema }) params: DraftDocumentIdDto,
     @Body({ schema: SetDraftShareSchema }) body: SetDraftShareDto,
@@ -107,6 +111,7 @@ export class DraftController {
 
   @Delete('/documents/:documentId/share')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   async deleteShare(
     @Param({ schema: DraftDocumentIdSchema }) params: DraftDocumentIdDto,
   ) {
@@ -146,6 +151,7 @@ export class DraftController {
 
   @Put('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   update(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: UpdateDraftSchema }) body: UpdateDraftDto,
@@ -155,6 +161,7 @@ export class DraftController {
 
   @Delete('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   async delete(@Param({ schema: EntityIdSchema }) params: EntityIdDto) {
     await this.draftService.delete(params.id)
     return { success: true }

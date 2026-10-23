@@ -4,11 +4,13 @@ import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { BypassCaseTransform } from '~/common/decorators/bypass-case-transform.decorator'
 import { Lang } from '~/common/decorators/lang.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { HasAdminAccess } from '~/common/decorators/role.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { withMeta } from '~/common/response/envelope.types'
 import type { ArticleTranslation } from '~/common/response/meta.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
+import { UserPermission } from '~/constants/permission.constant'
 import { TranslationEntryService } from '~/modules/ai/ai-translation/translation-entry.service'
 import {
   applyArticleTranslationInPlace,
@@ -433,6 +435,7 @@ export class PostController {
 
   @Patch('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   async patch(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: PartialPostSchema }) body: PartialPostDto,
@@ -445,6 +448,7 @@ export class PostController {
 
   @Delete('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.PublishPost)
   async deletePost(@Param({ schema: EntityIdSchema }) params: EntityIdDto) {
     const { id } = params
     await this.postService.deletePost(id)
@@ -452,6 +456,7 @@ export class PostController {
 
   @Patch('/:id/publish')
   @Auth()
+  @RequirePermissions(UserPermission.PublishPost)
   async setPublishStatus(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: SetPostPublishStatusSchema }) body: SetPostPublishStatusDto,

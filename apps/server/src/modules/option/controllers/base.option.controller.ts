@@ -1,6 +1,8 @@
 import { Body, Get, Param, Patch } from '@nestjs/common'
 
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
+import { UserPermission } from '~/constants/permission.constant'
 import {
   attachAiProviderOptionsToFormDSL,
   generateFormDSL,
@@ -43,6 +45,7 @@ export class BaseOptionController {
   }
 
   @Patch('/:key')
+  @RequirePermissions(UserPermission.ManageSettings)
   async patch(
     @Param('key') key: keyof IConfig,
     @Body() body: Record<string, any>,

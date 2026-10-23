@@ -14,8 +14,10 @@ import type { FastifyReply } from 'fastify'
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { HTTPDecorators } from '~/common/decorators/http.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
+import { UserPermission } from '~/constants/permission.constant'
 import {
   type CreateTranslationAllTaskDto,
   CreateTranslationAllTaskSchema,
@@ -53,6 +55,7 @@ export class AiTranslationController {
 
   @Post('/task')
   @Auth()
+  @RequirePermissions(UserPermission.EditTranslation)
   createTranslationTask(
     @Body({ schema: CreateTranslationTaskSchema })
     body: CreateTranslationTaskDto,
@@ -62,6 +65,7 @@ export class AiTranslationController {
 
   @Post('/task/batch')
   @Auth()
+  @RequirePermissions(UserPermission.EditTranslation)
   createTranslationBatchTask(
     @Body({ schema: CreateTranslationBatchTaskSchema })
     body: CreateTranslationBatchTaskDto,
@@ -71,6 +75,7 @@ export class AiTranslationController {
 
   @Post('/task/all')
   @Auth()
+  @RequirePermissions(UserPermission.EditTranslation)
   createTranslationAllTask(
     @Body({ schema: CreateTranslationAllTaskSchema })
     body: CreateTranslationAllTaskDto,
@@ -101,6 +106,7 @@ export class AiTranslationController {
 
   @Patch('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditTranslation)
   updateTranslation(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: UpdateTranslationSchema }) body: UpdateTranslationDto,
@@ -110,6 +116,7 @@ export class AiTranslationController {
 
   @Delete('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditTranslation)
   deleteTranslation(@Param({ schema: EntityIdSchema }) params: EntityIdDto) {
     return this.service.deleteTranslation(params.id)
   }
@@ -124,6 +131,7 @@ export class AiTranslationController {
 
   @Put('/article/:id/:lang')
   @Auth()
+  @RequirePermissions(UserPermission.EditTranslation)
   writeManualTranslation(
     @Param({ schema: ManualTranslationParamsSchema })
     params: ManualTranslationParamsDto,

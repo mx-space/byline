@@ -2,9 +2,11 @@ import { Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common'
 
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
+import { UserPermission } from '~/constants/permission.constant'
 import { TaskQueueService } from '~/processors/task-queue'
 import { type StringIdDto, StringIdSchema } from '~/shared/dto/id.dto'
 
@@ -78,12 +80,14 @@ export class TaskController {
   }
 
   @Delete('/:id')
+  @RequirePermissions(UserPermission.ManageSettings)
   async deleteTask(@Param({ schema: StringIdSchema }) params: StringIdDto) {
     await this.taskQueueService.deleteTask(params.id)
     return { success: true }
   }
 
   @Delete('/')
+  @RequirePermissions(UserPermission.ManageSettings)
   async deleteTasks(
     @Query({ schema: DeleteTasksQuerySchema }) query: DeleteTasksQueryDto,
   ) {

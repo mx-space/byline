@@ -4,9 +4,11 @@ import { z } from 'zod'
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { CurrentReaderId } from '~/common/decorators/current-user.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { HasAdminAccess } from '~/common/decorators/role.decorator'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
+import { UserPermission } from '~/constants/permission.constant'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 import { type BasicPagerDto, BasicPagerSchema } from '~/shared/dto/pager.dto'
 
@@ -47,6 +49,7 @@ export class AiTtsController {
 
   @Post('/task')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   createTask(@Body({ schema: CreateTtsTaskSchema }) body: CreateTtsTaskDto) {
     return this.taskService.createTtsTask({
       refId: body.refId,
@@ -96,6 +99,7 @@ export class AiTtsController {
 
   @Delete('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   delete(@Param({ schema: EntityIdSchema }) params: EntityIdDto) {
     return this.service.deleteById(params.id)
   }

@@ -20,6 +20,8 @@ import { Auth } from '~/common/decorators/auth.decorator'
 import { BypassCaseTransform } from '~/common/decorators/bypass-case-transform.decorator'
 import { WithFastifyRouteOptions } from '~/common/decorators/fastify-route-options.decorator'
 import { HTTPDecorators } from '~/common/decorators/http.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
+import { UserPermission } from '~/constants/permission.constant'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 import { applyRawCorsHeaders } from '~/utils/sse.util'
 
@@ -57,6 +59,7 @@ export class AiAgentController {
   @HttpCode(200)
   @Auth()
   @HTTPDecorators.RawResponse
+  @RequirePermissions(UserPermission.EditPost)
   async chatProxy(
     @Body({ schema: ChatProxySchema }) body: ChatProxyDto,
     @Req() request: FastifyRequest,
@@ -125,6 +128,7 @@ export class AiAgentController {
   @Auth()
   @WithFastifyRouteOptions({ bodyLimit: CONVERSATION_PAYLOAD_BYTES })
   @BypassCaseTransform(['data.messages[]'])
+  @RequirePermissions(UserPermission.EditPost)
   createConversation(
     @Body({ schema: CreateConversationSchema }) body: CreateConversationDto,
   ) {
@@ -149,6 +153,7 @@ export class AiAgentController {
 
   @Patch('/conversations/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   updateConversation(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: UpdateConversationSchema }) body: UpdateConversationDto,
@@ -159,6 +164,7 @@ export class AiAgentController {
   @Patch('/conversations/:id/messages')
   @Auth()
   @WithFastifyRouteOptions({ bodyLimit: CONVERSATION_PAYLOAD_BYTES })
+  @RequirePermissions(UserPermission.EditPost)
   appendMessages(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: AppendMessagesSchema }) body: AppendMessagesDto,
@@ -169,6 +175,7 @@ export class AiAgentController {
   @Put('/conversations/:id/messages')
   @Auth()
   @WithFastifyRouteOptions({ bodyLimit: CONVERSATION_PAYLOAD_BYTES })
+  @RequirePermissions(UserPermission.EditPost)
   replaceMessages(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: ReplaceMessagesSchema }) body: ReplaceMessagesDto,
@@ -178,6 +185,7 @@ export class AiAgentController {
 
   @Delete('/conversations/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   deleteConversation(@Param({ schema: EntityIdSchema }) params: EntityIdDto) {
     return this.conversationService.deleteById(params.id)
   }
@@ -185,6 +193,7 @@ export class AiAgentController {
   @Post('/conversations/:id/title')
   @HttpCode(200)
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   generateConversationTitle(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
   ) {

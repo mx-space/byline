@@ -5,7 +5,9 @@ import type { FastifyReply } from 'fastify'
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { HTTPDecorators } from '~/common/decorators/http.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
+import { UserPermission } from '~/constants/permission.constant'
 import { DatabaseService } from '~/processors/database/database.service'
 import { ImageService } from '~/processors/helper/helper.image.service'
 import { UrlBuilderService } from '~/processors/helper/helper.url-builder.service'
@@ -54,6 +56,7 @@ export class HelperController {
   @Post('/refresh-images')
   @HttpCode(200)
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   async refreshImages() {
     const postService = this.moduleRef.get(PostService, { strict: false })
     const imageService = this.moduleRef.get(ImageService, { strict: false })

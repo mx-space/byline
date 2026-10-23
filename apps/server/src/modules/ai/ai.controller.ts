@@ -11,8 +11,10 @@ import { Body, Get, HttpCode, Logger, Param, Post, Query } from '@nestjs/common'
 
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { OK_DATA } from '~/common/response/envelope.types'
+import { UserPermission } from '~/constants/permission.constant'
 
 import { ConfigsService } from '../configs/configs.service'
 import {
@@ -134,6 +136,7 @@ export class AiController {
   @Post('/models/list')
   @HttpCode(200)
   @Auth()
+  @RequirePermissions(UserPermission.ManageSettings)
   async fetchModelsList(
     @Body() body: FetchModelsDto,
   ): Promise<{ models: ModelInfo[]; error?: string }> {
@@ -174,6 +177,7 @@ export class AiController {
   @Post('/test')
   @HttpCode(200)
   @Auth()
+  @RequirePermissions(UserPermission.ManageSettings)
   async testProviderConnection(
     @Body() body: TestConnectionDto,
   ): Promise<{ ok: boolean }> {

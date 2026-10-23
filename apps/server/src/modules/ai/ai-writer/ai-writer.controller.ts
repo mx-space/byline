@@ -2,7 +2,9 @@ import { Body, HttpCode, Post } from '@nestjs/common'
 
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
+import { UserPermission } from '~/constants/permission.constant'
 
 import {
   AiQueryType,
@@ -18,6 +20,7 @@ export class AiWriterController {
   @Post('generate')
   @HttpCode(200)
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   async generate(@Body({ schema: GenerateAiSchema }) body: GenerateAiDto) {
     switch (body.type) {
       case AiQueryType.TitleSlug: {

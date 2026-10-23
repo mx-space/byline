@@ -15,11 +15,13 @@ import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { HTTPDecorators } from '~/common/decorators/http.decorator'
 import { Lang } from '~/common/decorators/lang.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { HasAdminAccess } from '~/common/decorators/role.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
 import { POST_SERVICE_TOKEN } from '~/constants/injection.constant'
+import { UserPermission } from '~/constants/permission.constant'
 import { TranslationEntryService } from '~/modules/ai/ai-translation/translation-entry.service'
 import {
   applyArticleTranslationInPlace,
@@ -380,6 +382,7 @@ export class CategoryController {
   @Post('/')
   @Auth()
   @HTTPDecorators.Idempotence()
+  @RequirePermissions(UserPermission.ManageCategories)
   create(@Body({ schema: CategorySchema }) body: CategoryDto) {
     const { name, slug } = body
     return this.categoryService.create(name, slug!)
@@ -387,6 +390,7 @@ export class CategoryController {
 
   @Put('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.ManageCategories)
   async modify(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: CategorySchema }) body: CategoryDto,
@@ -400,6 +404,7 @@ export class CategoryController {
   @Patch('/:id')
   @HttpCode(204)
   @Auth()
+  @RequirePermissions(UserPermission.ManageCategories)
   async patch(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: PartialCategorySchema }) body: PartialCategoryDto,
@@ -410,6 +415,7 @@ export class CategoryController {
 
   @Delete('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.ManageCategories)
   deleteCategory(@Param({ schema: EntityIdSchema }) params: EntityIdDto) {
     return this.categoryService.deleteById(params.id)
   }

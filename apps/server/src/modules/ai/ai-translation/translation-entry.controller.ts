@@ -11,8 +11,10 @@ import {
 
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
+import { UserPermission } from '~/constants/permission.constant'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 
 import {
@@ -34,6 +36,7 @@ export class TranslationEntryController {
   @Post('/generate')
   @HttpCode(200)
   @Auth()
+  @RequirePermissions(UserPermission.EditTranslation)
   generateEntries(
     @Body({ schema: GenerateEntriesSchema }) body?: GenerateEntriesDto,
   ) {
@@ -54,6 +57,7 @@ export class TranslationEntryController {
 
   @Patch('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditTranslation)
   updateEntry(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: UpdateEntrySchema }) body: UpdateEntryDto,
@@ -66,6 +70,7 @@ export class TranslationEntryController {
 
   @Delete('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditTranslation)
   deleteEntry(@Param({ schema: EntityIdSchema }) params: EntityIdDto) {
     return this.translationEntryService.deleteEntry(params.id)
   }

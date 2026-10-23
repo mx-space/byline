@@ -12,9 +12,11 @@ import {
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { HTTPDecorators } from '~/common/decorators/http.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
 import { BusinessEvents } from '~/constants/business-event.constant'
+import { UserPermission } from '~/constants/permission.constant'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 import { type BasicPagerDto, BasicPagerSchema } from '~/shared/dto/pager.dto'
 
@@ -33,6 +35,7 @@ export class WebhookController {
   constructor(private readonly service: WebhookService) {}
 
   @Post('/')
+  @RequirePermissions(UserPermission.ManageSettings)
   create(@Body({ schema: WebhookSchema }) body: WebhookDto) {
     body.events = this.service.transformEvents(body.events)
 
@@ -50,6 +53,7 @@ export class WebhookController {
   }
 
   @Patch('/:id')
+  @RequirePermissions(UserPermission.ManageSettings)
   update(
     @Body({ schema: PartialWebhookSchema }) body: WebhookDtoPartial,
     @Param({ schema: EntityIdSchema }) { id }: EntityIdDto,
@@ -60,6 +64,7 @@ export class WebhookController {
   }
 
   @Delete('/:id')
+  @RequirePermissions(UserPermission.ManageSettings)
   delete(@Param({ schema: EntityIdSchema }) { id }: EntityIdDto) {
     return this.service.deleteWebhook(id)
   }
@@ -79,11 +84,13 @@ export class WebhookController {
   @Post('/redispatch/:id')
   @HttpCode(200)
   @HTTPDecorators.Idempotence()
+  @RequirePermissions(UserPermission.ManageSettings)
   redispatch(@Param({ schema: EntityIdSchema }) { id }: EntityIdDto) {
     return this.service.redispatch(id)
   }
 
   @Delete('/clear/:id')
+  @RequirePermissions(UserPermission.ManageSettings)
   clear(@Param({ schema: EntityIdSchema }) { id }: EntityIdDto) {
     return this.service.clearDispatchEvents(id)
   }
