@@ -11,6 +11,7 @@ export type AppErrorPayloadMap = {
   [AppErrorCode.NOT_FOUND]: { message?: string; id?: string } | undefined
   [AppErrorCode.NO_CONTENT_MODIFIABLE]: undefined
   [AppErrorCode.DEMO_FORBIDDEN]: undefined
+  [AppErrorCode.PERMISSION_DENIED]: undefined
   [AppErrorCode.RESOURCE_NOT_FOUND]: WithId
   [AppErrorCode.CONTENT_NOT_FOUND]: WithId
   [AppErrorCode.CONTENT_NOT_FOUND_CANT_PROCESS]: OptMessage
@@ -135,6 +136,8 @@ export type AppErrorPayloadMap = {
   [AppErrorCode.INVITE_EXPIRED]: undefined
   [AppErrorCode.INVITE_ALREADY_ACCEPTED]: undefined
   [AppErrorCode.DYNAMIC_COMPONENT_NAME_CONFLICT]: { name: string }
+  [AppErrorCode.DYNAMIC_COMPONENT_URL_CONFLICT]: { url: string }
+  [AppErrorCode.DYNAMIC_COMPONENT_NOT_FOUND]: WithId
 
   // post
   [AppErrorCode.POST_NOT_FOUND]: WithId

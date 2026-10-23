@@ -43,6 +43,10 @@ export const APP_ERROR_DEFINITIONS = {
     status: 400,
     message: 'No content to modify',
   },
+  [AppErrorCode.PERMISSION_DENIED]: {
+    status: 403,
+    message: 'You do not have permission to do this',
+  },
   [AppErrorCode.DEMO_FORBIDDEN]: {
     status: 403,
     message: 'This operation is not allowed in demo mode',
@@ -463,6 +467,16 @@ export const APP_ERROR_DEFINITIONS = {
     status: 409,
     message: 'Another dynamic component already uses this name',
     details: (p) => ({ name: p.name }),
+  },
+  [AppErrorCode.DYNAMIC_COMPONENT_URL_CONFLICT]: {
+    status: 409,
+    message: 'Another dynamic component already uses this url',
+    details: (p) => ({ url: p.url }),
+  },
+  [AppErrorCode.DYNAMIC_COMPONENT_NOT_FOUND]: {
+    status: 404,
+    message: 'Dynamic component not found',
+    details: (p) => (p?.id ? { id: p.id } : undefined),
   },
 
   // post
