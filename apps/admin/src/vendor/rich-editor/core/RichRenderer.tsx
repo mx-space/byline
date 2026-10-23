@@ -9,6 +9,7 @@ import { embedNodes } from '@haklex/rich-ext-embed/static'
 import { ExcalidrawNode } from '@haklex/rich-ext-excalidraw/static'
 import { galleryNodes } from '@haklex/rich-ext-gallery/static'
 import { nestedDocNodes } from '@haklex/rich-ext-nested-doc/static'
+import { stepsNodes } from '@haklex/rich-ext-steps/static'
 import type { Klass, LexicalNode, SerializedEditorState } from 'lexical'
 import { useCallback, useMemo } from 'react'
 
@@ -21,6 +22,7 @@ const defaultExtraNodes = [
   ...galleryNodes,
   ...codeSnippetNodes,
   ...chatNodes,
+  ...stepsNodes,
   ...nestedDocNodes,
 ]
 

@@ -79,10 +79,11 @@ overrides:
   '@lexical/text': 0.52.0
   '@lexical/utils': 0.52.0
   '@lexical/yjs': 0.52.0
-  # The published @mx-space/editor still pins the 0.33 haklex line; keep one
-  # litexml registry runtime until a newer release lands.
-  '@mx-space/editor>@haklex/rich-headless': 0.52.0
-  '@mx-space/editor>@haklex/rich-litexml': 0.52.0
+  # The published @mx-space/editor and @mx-space/ai pin their own haklex
+  # versions; keep one headless/litexml runtime across the workspace.
+  '@mx-space/ai>@haklex/rich-headless': 0.53.1
+  '@mx-space/editor>@haklex/rich-headless': 0.53.1
+  '@mx-space/editor>@haklex/rich-litexml': 0.53.1
   '@esbuild-kit/core-utils>esbuild': 0.25.12
   '@cloudflare/workers-types': 5.20261005.1
   '@fastify/static': 10.1.5
