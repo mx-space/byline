@@ -8,6 +8,7 @@ import {
   aiTranslations,
   aiTtsBlocks,
   contentRevisions,
+  dynamicComponents,
   options,
   posts,
   translationEntries,
@@ -134,6 +135,10 @@ export class FileReferenceUsageRepository {
           SELECT 1 FROM ${translationEntries} AS item
           WHERE concat_ws(E'\n', item.source_text, item.translated_text) ~ candidate.pattern
         )
+        OR EXISTS (
+          SELECT 1 FROM ${dynamicComponents} AS item
+          WHERE concat_ws(E'\n', item.url, item.parent_url, array_to_string(item.previous_urls, E'\n')) ~ candidate.pattern
+        )
     `)
 
     return new Set(result.rows.map((row) => row.fileUrl))
@@ -153,6 +158,7 @@ export class FileReferenceUsageRepository {
       insightRows,
       ttsBlockRows,
       translationEntryRows,
+      dynamicComponentRows,
     ] = await Promise.all([
       this.db
         .select({
@@ -206,6 +212,14 @@ export class FileReferenceUsageRepository {
           translatedText: translationEntries.translatedText,
         })
         .from(translationEntries),
+      this.db
+        .select({
+          id: dynamicComponents.id,
+          url: dynamicComponents.url,
+          parentUrl: dynamicComponents.parentUrl,
+          previousUrls: dynamicComponents.previousUrls,
+        })
+        .from(dynamicComponents),
     ])
 
     const sources: PersistedUsageSource[] = []
@@ -227,6 +241,7 @@ export class FileReferenceUsageRepository {
     append('ai_insight', insightRows)
     append('ai_tts', ttsBlockRows)
     append('translation_entry', translationEntryRows)
+    append('dynamic_component', dynamicComponentRows)
 
     return findUsageMatchesInSources(uniqueUrls, sources)
   }

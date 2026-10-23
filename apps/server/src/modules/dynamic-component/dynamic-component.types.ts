@@ -6,6 +6,7 @@ export interface DynamicComponentRow {
   initialHeight: number
   propsSchema: Record<string, unknown>
   parentUrl: string | null
+  previousUrls: string[]
   createdBy: string | null
   createdAt: Date
 }
@@ -18,3 +19,5 @@ export interface DynamicComponentUpsertInput {
   propsSchema: Record<string, unknown>
   parentUrl: string | null
 }
+
+export type DynamicComponentPatch = Partial<DynamicComponentUpsertInput>

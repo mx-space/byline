@@ -258,6 +258,10 @@ export const dynamicComponents = pgTable(
       .notNull()
       .default(sql`'{}'::jsonb`),
     parentUrl: text('parent_url'),
+    previousUrls: text('previous_urls')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     createdBy: text('created_by').references((): AnyPgColumn => users.id, {
       onDelete: 'set null',
     }),

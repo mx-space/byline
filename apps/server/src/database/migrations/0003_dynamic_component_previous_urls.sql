@@ -1,0 +1,1 @@
+ALTER TABLE "dynamic_components" ADD COLUMN "previous_urls" text[] DEFAULT '{}'::text[] NOT NULL;
