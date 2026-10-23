@@ -1,81 +1,165 @@
-import { useI18n } from '~/i18n'
+import { Checkbox, createStaticStyles, cx, Tag, Tooltip } from '@lobehub/ui'
+
 import type { DraftModel } from '~/models/draft'
 import type { ListAction, ListRowSelectMode } from '~/ui/list-actions'
 import { buildMenuItemsFromActions, ListRow } from '~/ui/list-actions'
-import { Badge } from '~/ui/primitives/badge'
-import { Checkbox } from '~/ui/primitives/checkbox'
-import { cn } from '~/utils/cn'
-import { relativeTimeFromNow } from '~/utils/time'
 
-import { refTypeMeta } from '../constants'
+import { useDraftCopy } from '../copy'
+import {
+  draftAuthorIds,
+  draftHasConflict,
+  draftSavedAt,
+  draftTitle,
+  relativeDraftTime,
+} from '../utils/draft-decision'
+import { DraftKindTag } from './DraftKindTag'
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  body: css`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  `,
+  byline: css`
+    overflow: hidden;
+    min-width: 0;
+    font-size: ${cssVar.fontSizeSM};
+    color: ${cssVar.colorTextTertiary};
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  check: css`
+    display: flex;
+    padding-block-start: 2px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  `,
+  line: css`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  `,
+  row: css`
+    cursor: pointer;
+
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+
+    margin-inline: 8px;
+    padding-block: 12px;
+    padding-inline: 8px 12px;
+    border-radius: ${cssVar.borderRadius};
+
+    &:hover {
+      background: ${cssVar.colorFillTertiary};
+    }
+
+    &[aria-current='true'] {
+      background: ${cssVar.colorFillSecondary};
+    }
+
+    &:hover [data-row-check],
+    &:focus-within [data-row-check],
+    &[data-selected] [data-row-check],
+    [data-selecting] & [data-row-check] {
+      opacity: 1;
+    }
+  `,
+  time: css`
+    flex: none;
+    margin-inline-start: auto;
+    font-size: ${cssVar.fontSizeSM};
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  title: css`
+    overflow: hidden;
+    flex: 1;
+
+    min-width: 0;
+    margin: 0;
+
+    font-size: ${cssVar.fontSize};
+    font-weight: 500;
+    color: ${cssVar.colorText};
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  untitled: css`
+    color: ${cssVar.colorTextTertiary};
+  `,
+}))
 
 export function DraftRow(props: {
   actions: ReadonlyArray<ListAction<DraftModel>>
+  authorNames: (ids: string[]) => string
   checked: boolean
   cursor?: boolean
   draft: DraftModel
   isDetailTarget: boolean
-  onCheck: (id: string, checked: boolean) => void
+  onCheck: () => void
   onSelect: (mode: ListRowSelectMode) => void
-  selected: boolean
 }) {
-  const { t } = useI18n()
-  const meta = refTypeMeta[props.draft.document.refType]
-  const Icon = meta.icon
-  const title = props.draft.headRevision.title || t('drafts.row.untitled')
-
-  const menuItems = () => buildMenuItemsFromActions(props.actions, props.draft)
+  const { copy, format } = useDraftCopy()
+  const untitled = copy('untitled')
+  const title = draftTitle(props.draft, untitled)
+  const savedAt = draftSavedAt(props.draft)
+  const authorIds = draftAuthorIds(props.draft)
 
   return (
     <ListRow
-      as="article"
       ariaCurrent={props.isDetailTarget}
-      className={cn(
-        'group grid cursor-default grid-cols-[auto_minmax(0,1fr)] gap-x-3 border-b border-border px-4 py-3 last:border-b-0',
-        'hover:bg-surface-inset',
-        'data-popup-open:bg-surface-inset',
-        'data-selected:bg-accent-soft data-selected:text-fg',
-        'data-selected:hover:bg-accent-soft',
-        'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent/40',
-      )}
+      as="article"
+      className={styles.row}
       cursor={props.cursor}
       dataId={props.draft.id}
       leading={
-        <Checkbox
-          aria-label={t('drafts.list.checkboxAria', { title })}
-          checked={props.checked}
-          className="mt-1"
-          cursor={props.cursor}
-          onCheckedChange={(checked) => props.onCheck(props.draft.id, checked)}
-        />
+        <span className={styles.check} data-row-check="">
+          <Checkbox
+            aria-label={copy('checkboxAria', { title })}
+            checked={props.checked}
+            onChange={() => props.onCheck()}
+          />
+        </span>
       }
-      menuItems={menuItems}
+      menuItems={() => buildMenuItemsFromActions(props.actions, props.draft)}
       onSelect={props.onSelect}
       role="row"
-      selected={props.selected}
+      selected={props.checked}
     >
-      <div className="flex min-w-0 items-start gap-3">
-        <Badge className="mt-0.5" tone={meta.tone}>
-          <Icon aria-hidden="true" className="size-3" />
-          {t(meta.labelKey)}
-        </Badge>
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <h3 className="truncate text-sm font-medium text-fg">{title}</h3>
-          </div>
-          <div className="mt-1 flex flex-wrap gap-2 text-xs text-fg-muted">
-            <span>
-              {props.draft.document.refId
-                ? t('drafts.row.editing')
-                : t('drafts.row.creating')}
-            </span>
-            <span>{props.draft.headRevision.contentFormat}</span>
-            <time dateTime={props.draft.updatedAt ?? props.draft.createdAt}>
-              {relativeTimeFromNow(
-                props.draft.updatedAt ?? props.draft.createdAt,
+      <div className={styles.body}>
+        <div className={styles.line}>
+          <h3
+            className={cx(styles.title, title === untitled && styles.untitled)}
+          >
+            {title}
+          </h3>
+          <Tooltip title={format.dateTime(savedAt)}>
+            <time className={styles.time} dateTime={savedAt}>
+              {relativeDraftTime(
+                savedAt,
+                format.relativeTime,
+                copy('emptyValue'),
               )}
             </time>
-          </div>
+          </Tooltip>
+        </div>
+        <div className={styles.line}>
+          <DraftKindTag draft={props.draft} size="small" />
+          {draftHasConflict(props.draft) ? (
+            <Tag color="error" size="small">
+              {copy('conflict')}
+            </Tag>
+          ) : null}
+          {authorIds.length > 0 ? (
+            <span className={styles.byline}>
+              {props.authorNames(authorIds)}
+            </span>
+          ) : null}
         </div>
       </div>
     </ListRow>

@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { Loader2, Sparkles } from 'lucide-react'
 import { Link } from 'react-router'
 
@@ -12,6 +13,74 @@ import { CoverPresetPicker } from './CoverPresetPicker'
 import { CoverPromptEditor } from './CoverPromptEditor'
 import type { useCoverGeneration } from './use-cover-generation'
 
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u1928799c: css`
+    width: min(90vw, 28rem);
+  `,
+  u2b5fa9a9: css`
+    min-height: 0px;
+    flex: 1 1 0%;
+  `,
+  u06ae061d: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 1rem;
+    }
+    padding: 1rem;
+  `,
+  u5a250822: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.375rem;
+    }
+  `,
+  ucd6c15f2: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u6da6a3c3: css`
+    width: 100%;
+  `,
+  u0bb529bd: css`
+    width: 1rem;
+    height: 1rem;
+    @keyframes byline-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    animation: byline-spin 1s linear infinite;
+  `,
+  uf58545da: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorWarning};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorWarning};
+    }
+  `,
+  u130717d3: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.25rem;
+    color: ${cssVar.colorWarning};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorWarning};
+    }
+  `,
+  u2f506536: css`
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+}))
+
 type CoverGenerationDrawerProps = ReturnType<typeof useCoverGeneration>
 
 export function CoverGenerationDrawer(props: CoverGenerationDrawerProps) {
@@ -23,12 +92,15 @@ export function CoverGenerationDrawer(props: CoverGenerationDrawerProps) {
       onClose={props.closeDrawer}
       open={props.open}
       title={t('write.coverGeneration.title')}
-      widthClassName="w-[min(90vw,28rem)]"
+      widthClassName={lobeStyles.u1928799c}
     >
-      <Scroll className="min-h-0 flex-1" innerClassName="space-y-4 p-4">
+      <Scroll
+        className={lobeStyles.u2b5fa9a9}
+        innerClassName={lobeStyles.u06ae061d}
+      >
         {props.models.length > 0 ? (
-          <div className="space-y-1.5">
-            <span className="text-xs font-medium text-fg-muted">
+          <div className={lobeStyles.u5a250822}>
+            <span className={lobeStyles.ucd6c15f2}>
               {t('write.coverGeneration.modelLabel')}
             </span>
             <SelectField
@@ -58,37 +130,34 @@ export function CoverGenerationDrawer(props: CoverGenerationDrawerProps) {
             setPromptText={props.setPromptText}
           />
         ) : (
-          <div className="space-y-1.5">
+          <div className={lobeStyles.u5a250822}>
             <Button
-              className="w-full"
+              className={lobeStyles.u6da6a3c3}
               disabled={!props.canDraftPrompt || props.isDraftingPrompt}
               onClick={props.onViewEditPrompt}
               type="button"
               variant="secondary"
             >
               {props.isDraftingPrompt ? (
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
               ) : null}
               {props.isDraftingPrompt
                 ? t('write.coverGeneration.draftingHint')
                 : t('write.coverGeneration.viewEditPrompt')}
             </Button>
             {!props.canDraftPrompt ? (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
+              <p className={lobeStyles.uf58545da}>
                 {t('write.coverGeneration.needTitleHint')}
               </p>
             ) : null}
             {props.writerProviderMissing ? (
-              <p className="text-xs leading-5 text-amber-600 dark:text-amber-400">
+              <p className={lobeStyles.u130717d3}>
                 {t('write.coverGeneration.writerProviderMissingHint')}{' '}
-                <Link
-                  className="underline underline-offset-2 hover:text-fg"
-                  to="/setting/ai"
-                >
+                <Link className={lobeStyles.u2f506536} to="/setting/ai">
                   {t('write.coverGeneration.writerProviderMissingLink')}
                 </Link>{' '}
                 <button
-                  className="underline underline-offset-2 hover:text-fg"
+                  className={lobeStyles.u2f506536}
                   onClick={props.onWriteManually}
                   type="button"
                 >
@@ -100,23 +169,23 @@ export function CoverGenerationDrawer(props: CoverGenerationDrawerProps) {
         )}
 
         <Button
-          className="w-full"
+          className={lobeStyles.u6da6a3c3}
           disabled={!props.canGenerate || props.isGenerating}
           onClick={props.onGenerate}
           type="button"
         >
           {props.isGenerating ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+            <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
           ) : (
-            <Sparkles aria-hidden="true" className="size-4" />
+            <Sparkles aria-hidden="true" className={lobeStyles.uf7b5fa97} />
           )}
           {props.isGenerating
             ? t('write.coverGeneration.generating')
             : t('write.coverGeneration.generate')}
         </Button>
 
-        <div className="space-y-1.5">
-          <span className="text-xs font-medium text-fg-muted">
+        <div className={lobeStyles.u5a250822}>
+          <span className={lobeStyles.ucd6c15f2}>
             {t('write.coverGeneration.candidatesTitle')}
           </span>
           <CoverGenerationCandidates

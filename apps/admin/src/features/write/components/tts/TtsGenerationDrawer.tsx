@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { AudioLines, Loader2, RefreshCw, Sparkles } from 'lucide-react'
 
 import { TtsSegmentPlayer } from '~/features/_shared/components/tts/TtsSegmentPlayer'
@@ -10,6 +11,172 @@ import { cn } from '~/utils/cn'
 
 import type { useTtsGeneration } from './use-tts-generation'
 
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ube28d39b: css`
+    width: min(90vw, 32rem);
+  `,
+  u2b5fa9a9: css`
+    min-height: 0px;
+    flex: 1 1 0%;
+  `,
+  u06ae061d: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 1rem;
+    }
+    padding: 1rem;
+  `,
+  u6978b7c6: css`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  `,
+  u71989f49: css`
+    border-radius: 999px;
+    border-width: 1px;
+    border-style: solid;
+    padding-inline: 0.75rem;
+    padding-block: 0.25rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  `,
+  u4b06353b: css`
+    &:focus-visible {
+      outline: none;
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, ${cssVar.colorPrimary} 15%, transparent);
+    }
+  `,
+  u122af085: css`
+    border-color: ${cssVar.colorPrimary};
+    background-color: ${cssVar.colorPrimaryBg};
+    color: ${cssVar.colorPrimary};
+  `,
+  ua805ecfc: css`
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorBgContainer};
+    color: ${cssVar.colorTextSecondary};
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+  `,
+  u59d40084: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u6ed543e2: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.75rem;
+    }
+  `,
+  u07cf7244: css`
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 0.75rem;
+    row-gap: 0.5rem;
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+    padding: 0.75rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+  u152c1189: css`
+    display: flex;
+    gap: 0.5rem;
+  `,
+  u36e579c0: css`
+    flex: 1 1 0%;
+  `,
+  u0bb529bd: css`
+    width: 1rem;
+    height: 1rem;
+    @keyframes byline-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    animation: byline-spin 1s linear infinite;
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+  u0e55306e: css`
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u61324a98: css`
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  ud956d652: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.5rem;
+    }
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+    padding: 0.75rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+  ubd9c32d0: css`
+    border-color: ${cssVar.colorErrorBg};
+    background-color: ${cssVar.colorErrorBg};
+    color: ${cssVar.colorError};
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorError};
+    }
+    :where(.dark, .dark *) & {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorError} 40%,
+        transparent
+      );
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorError};
+    }
+  `,
+  ud1afa777: css`
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+    color: ${cssVar.colorTextSecondary};
+  `,
+  ud27e9536: css`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  `,
+  u3032cae0: css`
+    font-variant-numeric: tabular-nums;
+  `,
+  uab3196fb: css`
+    height: 0.375rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background-color: ${cssVar.colorBgContainer};
+  `,
+  u47e0f650: css`
+    height: 100%;
+    border-radius: 999px;
+    background-color: ${cssVar.colorPrimary};
+    transition-property: width;
+  `,
+}))
+
 type TtsGenerationDrawerProps = ReturnType<typeof useTtsGeneration>
 
 export function TtsGenerationDrawer(props: TtsGenerationDrawerProps) {
@@ -21,21 +188,22 @@ export function TtsGenerationDrawer(props: TtsGenerationDrawerProps) {
       onClose={props.closeDrawer}
       open={props.open}
       title={t('write.ttsGeneration.title')}
-      widthClassName="w-[min(90vw,32rem)]"
+      widthClassName={lobeStyles.ube28d39b}
     >
-      <Scroll className="min-h-0 flex-1" innerClassName="space-y-4 p-4">
+      <Scroll
+        className={lobeStyles.u2b5fa9a9}
+        innerClassName={lobeStyles.u06ae061d}
+      >
         {props.rows.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
+          <div className={lobeStyles.u6978b7c6}>
             {props.rows.map((row) => {
               const active = row.lang === props.activeLang
               return (
                 <button
                   className={cn(
-                    'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                    'focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-accent/15',
-                    active
-                      ? 'border-accent bg-accent-soft text-accent'
-                      : 'border-border bg-surface-card text-fg-muted hover:text-fg',
+                    lobeStyles.u71989f49,
+                    lobeStyles.u4b06353b,
+                    active ? lobeStyles.u122af085 : lobeStyles.ua805ecfc,
                   )}
                   key={row.lang}
                   onClick={() => props.setActiveLang(row.lang)}
@@ -49,12 +217,12 @@ export function TtsGenerationDrawer(props: TtsGenerationDrawerProps) {
         ) : null}
 
         {props.isLoading ? (
-          <p className="text-xs text-fg-subtle">
+          <p className={lobeStyles.u59d40084}>
             {t('write.ttsGeneration.status.loading')}
           </p>
         ) : props.activeRow ? (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-md border border-border bg-surface-inset p-3 text-xs">
+          <div className={lobeStyles.u6ed543e2}>
+            <div className={lobeStyles.u07cf7244}>
               <ConfigItem
                 label={t('write.ttsGeneration.modelLabel')}
                 value={props.activeRow.model}
@@ -74,7 +242,7 @@ export function TtsGenerationDrawer(props: TtsGenerationDrawerProps) {
                 })}
               />
             </div>
-            <p className="text-xs text-fg-subtle">
+            <p className={lobeStyles.u59d40084}>
               {t('write.ttsGeneration.charCount', {
                 count: props.activeRow.charCount,
               })}
@@ -98,36 +266,36 @@ export function TtsGenerationDrawer(props: TtsGenerationDrawerProps) {
           />
         ) : null}
 
-        <div className="flex gap-2">
+        <div className={lobeStyles.u152c1189}>
           <Button
-            className="flex-1"
+            className={lobeStyles.u36e579c0}
             disabled={props.isRunning}
             onClick={props.generate}
             type="button"
           >
             {props.isRunning ? (
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
             ) : (
-              <Sparkles aria-hidden="true" className="size-4" />
+              <Sparkles aria-hidden="true" className={lobeStyles.uf7b5fa97} />
             )}
             {t('write.ttsGeneration.generate')}
           </Button>
           <Button
-            className="flex-1"
+            className={lobeStyles.u36e579c0}
             disabled={props.isRunning}
             onClick={props.regenerate}
             type="button"
             variant="secondary"
           >
             {props.isRunning ? (
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
             ) : (
-              <RefreshCw aria-hidden="true" className="size-4" />
+              <RefreshCw aria-hidden="true" className={lobeStyles.uf7b5fa97} />
             )}
             {t('write.ttsGeneration.regenerate')}
           </Button>
         </div>
-        <p className="text-xs text-fg-subtle">
+        <p className={lobeStyles.u59d40084}>
           {t('write.ttsGeneration.regenerateHint')}
         </p>
       </Scroll>
@@ -138,8 +306,8 @@ export function TtsGenerationDrawer(props: TtsGenerationDrawerProps) {
 function ConfigItem(props: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-fg-subtle">{props.label}</div>
-      <div className="font-medium text-fg">{props.value}</div>
+      <div className={lobeStyles.u0e55306e}>{props.label}</div>
+      <div className={lobeStyles.u61324a98}>{props.value}</div>
     </div>
   )
 }
@@ -156,13 +324,13 @@ function RunStatusPanel(props: {
   return (
     <div
       className={cn(
-        'space-y-2 rounded-md border p-3 text-xs',
+        lobeStyles.ud956d652,
         props.runStatus === 'failed'
-          ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-950 dark:bg-red-950/40 dark:text-red-300'
-          : 'border-border bg-surface-inset text-fg-muted',
+          ? lobeStyles.ubd9c32d0
+          : lobeStyles.ud1afa777,
       )}
     >
-      <div className="flex items-center justify-between">
+      <div className={lobeStyles.ud27e9536}>
         <span>
           {props.runStatus === 'running'
             ? t('write.ttsGeneration.status.generating')
@@ -171,13 +339,13 @@ function RunStatusPanel(props: {
               : t('write.ttsGeneration.status.failed')}
         </span>
         {props.runStatus === 'running' && props.progress !== null ? (
-          <span className="tabular-nums">{Math.round(percent)}%</span>
+          <span className={lobeStyles.u3032cae0}>{Math.round(percent)}%</span>
         ) : null}
       </div>
       {props.runStatus === 'running' ? (
-        <div className="h-1.5 overflow-hidden rounded-full bg-surface-card">
+        <div className={lobeStyles.uab3196fb}>
           <div
-            className="h-full rounded-full bg-accent transition-[width]"
+            className={lobeStyles.u47e0f650}
             style={{ width: `${percent}%` }}
           />
         </div>

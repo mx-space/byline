@@ -1,12 +1,10 @@
+import { Alert, Button, Flexbox, Switch, Text, toast } from '@lobehub/ui'
+import { Form, useForm } from '@lobehub/ui/form'
+import { Check } from 'lucide-react'
 import type { PropsWithChildren } from 'react'
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
+import { useEffect, useRef, useState } from 'react'
 
-import { useI18n } from '~/i18n'
-import { Button } from '~/ui/primitives/button'
-import { Switch } from '~/ui/primitives/switch'
-import { cn } from '~/utils/cn'
-
+import { useSetupCopy } from '../copy'
 import {
   useOnboardingAiConfig,
   useSaveOnboardingAiConfig,
@@ -14,11 +12,11 @@ import {
 import { nextSummaryLanguages, onboardingLanguages } from '../utils/onboarding'
 import { getErrorMessage } from '../utils/setup'
 import {
-  OnboardingAsideTitle,
   OnboardingCard,
   OnboardingFooter,
   OnboardingShell,
 } from './OnboardingShell'
+import { wizardStyles } from './wizard-styles'
 
 interface FeatureDraft {
   insights: boolean
@@ -33,12 +31,14 @@ export function AiFeaturesStep(props: {
   onLater?: () => void
   onNext: () => void
 }) {
-  const { t } = useI18n()
+  // lobe-design-ignore DETAIL-NO-EMPTY: 目标语言是固定清单，不是请求回来的列表
+  const copy = useSetupCopy()
   const configQuery = useOnboardingAiConfig()
   const save = useSaveOnboardingAiConfig()
   const config = configQuery.data
   const [draft, setDraft] = useState<FeatureDraft | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const lock = useRef(false)
   const ttsAvailable = Boolean(
     config?.tts?.model?.providerId && config.tts.model.model,
   )
@@ -66,151 +66,135 @@ export function AiFeaturesStep(props: {
     })
   }
 
-  const submit = async () => {
-    if (!config || !draft || submitting) return
-    setSubmitting(true)
-    try {
-      await save({
-        ...config,
-        enableInsights: draft.insights,
-        enableSummary: draft.summary,
-        enableTranslation: draft.translation,
-        summaryTargetLanguages: nextSummaryLanguages(config, draft.languages),
-        translationTargetLanguages: draft.languages,
-        tts: { ...config.tts, enable: ttsAvailable && draft.tts },
-      })
-      props.onNext()
-    } catch (error) {
-      toast.error(
-        getErrorMessage(error, t('setup.onboarding.ai.features.saveError')),
-      )
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const previewLanguages = onboardingLanguages.filter((language) =>
-    draft?.languages.includes(language.code),
-  )
+  const form = useForm({
+    initialValues: { ready: true },
+    onSubmit: async () => {
+      if (!config || !draft || lock.current) return
+      lock.current = true
+      setSubmitting(true)
+      try {
+        await save({
+          ...config,
+          enableInsights: draft.insights,
+          enableSummary: draft.summary,
+          enableTranslation: draft.translation,
+          summaryTargetLanguages: nextSummaryLanguages(config, draft.languages),
+          translationTargetLanguages: draft.languages,
+          tts: { ...config.tts, enable: ttsAvailable && draft.tts },
+        })
+        props.onNext()
+      } catch (error) {
+        toast.error(getErrorMessage(error, copy('featuresSaveError')))
+      } finally {
+        lock.current = false
+        setSubmitting(false)
+      }
+    },
+  })
 
   return (
-    <OnboardingShell
-      aside={
-        <>
-          <OnboardingAsideTitle>
-            {t('setup.onboarding.ai.features.asideTitle')}
-          </OnboardingAsideTitle>
-          <div className="flex flex-col gap-2 rounded-sm border border-border bg-white p-3 shadow-xs">
-            {draft?.translation && previewLanguages.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                <LanguageTag active>
-                  {t('setup.onboarding.ai.features.asideSource')}
-                </LanguageTag>
-                {previewLanguages.map((language) => (
-                  <LanguageTag key={language.code}>
-                    {language.label}
-                  </LanguageTag>
-                ))}
-              </div>
+    <OnboardingShell onLater={props.onLater} step="ai-features">
+      <Form form={form} layout="vertical">
+        <OnboardingCard
+          description={copy('featuresDescription')}
+          footer={
+            <OnboardingFooter onBack={props.onBack}>
+              <Button
+                data-testid="onboarding-submit"
+                disabled={!draft || submitting}
+                htmlType="submit"
+                loading={submitting}
+                title={!draft ? copy('featuresBlocked') : undefined}
+                type="primary"
+              >
+                {copy('featuresContinue')}
+              </Button>
+            </OnboardingFooter>
+          }
+          title={copy('featuresTitle')}
+        >
+          <div className={wizardStyles.stack}>
+            {configQuery.isPending ? (
+              <Text type="secondary">{copy('featuresBlocked')}</Text>
             ) : null}
-            <div className="h-3 w-3/4 rounded-xs bg-surface-inset" />
-            <div className="h-2 w-full rounded-xs bg-surface-inset" />
-            {draft?.summary ? (
-              <div className="rounded-xs bg-surface-inset px-2.5 py-2 text-sm text-fg-muted">
-                <span className="font-medium text-fg">
-                  {t('setup.onboarding.ai.features.asideSummary')}
-                </span>
-                {' · '}
-                {t('setup.onboarding.ai.features.asidePlaceholder')}
-              </div>
+            {configQuery.isError ? (
+              <Alert showIcon title={copy('providersLoadError')} type="error" />
             ) : null}
-          </div>
-        </>
-      }
-      onLater={props.onLater}
-      step="ai-features"
-    >
-      <OnboardingCard
-        description={t('setup.onboarding.ai.features.description')}
-        footer={
-          <OnboardingFooter onBack={props.onBack}>
-            <Button
-              data-testid="onboarding-submit"
-              disabled={!draft || submitting}
-              onClick={() => void submit()}
-              type="button"
+            {configQuery.isError ? (
+              <Button
+                htmlType="button"
+                onClick={() => void configQuery.refetch()}
+                type="text"
+              >
+                {copy('retry')}
+              </Button>
+            ) : null}
+            <FeatureRow
+              checked={Boolean(draft?.translation)}
+              hint={copy('featuresTranslationHint')}
+              id="translation"
+              label={copy('featuresTranslation')}
+              onCheckedChange={(translation) => update({ translation })}
             >
-              {t('setup.onboarding.ai.features.submit')}
-            </Button>
-          </OnboardingFooter>
-        }
-        title={t('setup.onboarding.ai.features.title')}
-      >
-        <div className="-my-1 divide-y divide-border">
-          <FeatureRow
-            checked={Boolean(draft?.translation)}
-            hint={t('setup.onboarding.ai.features.translationHint')}
-            id="translation"
-            label={t('setup.onboarding.ai.features.translation')}
-            onCheckedChange={(translation) => update({ translation })}
-          >
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-sm text-fg-muted">
-                {t('setup.onboarding.ai.features.targetLanguages')}
-              </span>
-              {onboardingLanguages.map((language) => {
-                const selected = Boolean(
-                  draft?.languages.includes(language.code),
-                )
-                return (
-                  <button
-                    aria-pressed={selected}
-                    className={cn(
-                      'h-6 rounded-xs px-2 text-sm transition-colors disabled:opacity-50',
-                      selected
-                        ? 'bg-accent-soft text-accent'
-                        : 'bg-surface-inset text-fg hover:bg-black/[0.06]',
-                    )}
-                    data-testid={`onboarding-language-${language.code}`}
-                    disabled={!draft?.translation}
-                    key={language.code}
-                    onClick={() => toggleLanguage(language.code)}
-                    type="button"
-                  >
-                    {language.label}
-                  </button>
-                )
-              })}
-            </div>
-          </FeatureRow>
-          <FeatureRow
-            checked={Boolean(draft?.summary)}
-            hint={t('setup.onboarding.ai.features.summaryHint')}
-            id="summary"
-            label={t('setup.onboarding.ai.features.summary')}
-            onCheckedChange={(summary) => update({ summary })}
-          />
-          <FeatureRow
-            checked={Boolean(draft?.insights)}
-            hint={t('setup.onboarding.ai.features.insightsHint')}
-            id="insights"
-            label={t('setup.onboarding.ai.features.insights')}
-            onCheckedChange={(insights) => update({ insights })}
-          />
-          <FeatureRow
-            checked={ttsAvailable && Boolean(draft?.tts)}
-            disabled={!ttsAvailable}
-            hint={
-              ttsAvailable
-                ? t('setup.onboarding.ai.features.ttsHint')
-                : t('setup.onboarding.ai.features.ttsUnavailable')
-            }
-            id="tts"
-            label={t('setup.onboarding.ai.features.tts')}
-            onCheckedChange={(tts) => update({ tts })}
-          />
-        </div>
-      </OnboardingCard>
+              <div className={wizardStyles.choices}>
+                <Text as="span" type="secondary">
+                  {copy('featuresLanguages')}
+                </Text>
+                {onboardingLanguages.map((language) => {
+                  const selected = Boolean(
+                    draft?.languages.includes(language.code),
+                  )
+                  return (
+                    <Button
+                      aria-pressed={selected}
+                      data-testid={`onboarding-language-${language.code}`}
+                      disabled={!draft?.translation}
+                      htmlType="button"
+                      icon={selected ? Check : undefined}
+                      key={language.code}
+                      onClick={() => toggleLanguage(language.code)}
+                      title={
+                        draft?.translation
+                          ? undefined
+                          : copy('featuresLanguageBlocked')
+                      }
+                      type="default"
+                    >
+                      {language.label}
+                    </Button>
+                  )
+                })}
+              </div>
+            </FeatureRow>
+            <FeatureRow
+              checked={Boolean(draft?.summary)}
+              hint={copy('featuresSummaryHint')}
+              id="summary"
+              label={copy('featuresSummary')}
+              onCheckedChange={(summary) => update({ summary })}
+            />
+            <FeatureRow
+              checked={Boolean(draft?.insights)}
+              hint={copy('featuresInsightsHint')}
+              id="insights"
+              label={copy('featuresInsights')}
+              onCheckedChange={(insights) => update({ insights })}
+            />
+            <FeatureRow
+              checked={ttsAvailable && Boolean(draft?.tts)}
+              disabled={!ttsAvailable}
+              hint={
+                ttsAvailable
+                  ? copy('featuresTtsHint')
+                  : copy('featuresTtsUnavailable')
+              }
+              id="tts"
+              label={copy('featuresTts')}
+              onCheckedChange={(tts) => update({ tts })}
+            />
+          </div>
+        </OnboardingCard>
+      </Form>
     </OnboardingShell>
   )
 }
@@ -227,37 +211,23 @@ function FeatureRow(
 ) {
   return (
     <div
-      className="flex flex-col gap-3 py-4"
+      className={wizardStyles.feature}
       data-testid={`onboarding-feature-${props.id}`}
     >
-      <div className="flex items-start gap-3">
-        <span className="min-w-0 flex-1 text-sm">
-          <span className="block font-medium text-fg">{props.label}</span>
-          <span className="mt-0.5 block text-fg-muted">{props.hint}</span>
-        </span>
+      <Flexbox align="flex-start" gap={12} horizontal>
+        <Flexbox direction="vertical" gap={4} style={{ flex: 1, minWidth: 0 }}>
+          <Text>{props.label}</Text>
+          <Text type="secondary">{props.hint}</Text>
+        </Flexbox>
         <Switch
           aria-label={props.label}
           checked={props.checked}
           disabled={props.disabled}
-          onCheckedChange={props.onCheckedChange}
+          onChange={props.onCheckedChange}
+          {...(props.disabled ? { 'data-disabled': '' } : {})}
         />
-      </div>
+      </Flexbox>
       {props.checked ? props.children : null}
     </div>
-  )
-}
-
-function LanguageTag(props: PropsWithChildren<{ active?: boolean }>) {
-  return (
-    <span
-      className={cn(
-        'inline-flex h-6 items-center rounded-xs px-2 text-sm',
-        props.active
-          ? 'bg-accent-soft text-accent'
-          : 'bg-surface-inset text-fg',
-      )}
-    >
-      {props.children}
-    </span>
   )
 }

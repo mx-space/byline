@@ -168,24 +168,20 @@ class CodeBlockElement extends LitElement {
       border-radius: 0.5rem;
       overflow: hidden;
     }
-
     .codeblock-header {
       display: flex;
       align-items: center;
       height: 40px;
-
       background-color: color-mix(in srgb, currentColor 6%, transparent);
       border-bottom: 1px solid color-mix(in srgb, currentColor 8%, transparent);
     }
-
     .codeblock-lang-selector {
       /* Reset button styles */
       appearance: none;
       border: none;
       background: transparent;
       color: inherit;
-      font: inherit;
-      /* Layout */
+      font: inherit; /* Layout */
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -194,19 +190,16 @@ class CodeBlockElement extends LitElement {
       margin: 0 4px;
       border-radius: 6px;
       cursor: pointer;
-      transition: background-color 0.15s cubic-bezier(0.33, 1, 0.68, 1); /* ease-out */
+      transition: background-color 0.15s cubic-bezier(0.33, 1, 0.68, 1); /* */
       user-select: none;
     }
-
     .codeblock-lang-selector:hover {
       background-color: color-mix(in srgb, currentColor 8%, transparent);
     }
-
     .codeblock-lang-selector:focus-visible {
       outline: none;
       box-shadow: 0 0 0 2px var(--primary-color, #3b82f6);
     }
-
     .codeblock-lang-icon {
       display: inline-flex;
       align-items: center;
@@ -215,12 +208,10 @@ class CodeBlockElement extends LitElement {
       height: 20px;
       flex-shrink: 0;
     }
-
     .codeblock-lang-icon svg {
       width: 100%;
       height: 100%;
     }
-
     .codeblock-lang-name {
       font-family: var(
         --font-sans,
@@ -230,10 +221,9 @@ class CodeBlockElement extends LitElement {
         Roboto,
         sans-serif
       );
-      font-size: 12px; /* text-xs */
+      font-size: 12px; /* */
       font-weight: 500;
     }
-
     .codeblock-lang-chevron {
       color: currentColor;
       opacity: 0.5;
@@ -241,39 +231,30 @@ class CodeBlockElement extends LitElement {
       transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1); /* ease-spring */
       transform-origin: center;
     }
-
     .codeblock-lang-chevron.open {
       transform: rotate(180deg);
-    }
-
-    /* Reduced motion preference */
+    } /* Reduced motion preference */
     @media (prefers-reduced-motion: reduce) {
       .codeblock-lang-selector,
       .codeblock-lang-chevron {
         transition-duration: 0.01ms !important;
       }
     }
-
     .codeblock-area {
       display: flex;
       background-color: color-mix(in srgb, currentColor 5%, transparent);
     }
-
     .codeblock-editor {
       display: block;
       width: 100%;
-    }
-
-    /* Force CodeMirror to use auto height instead of full height */
+    } /* Force CodeMirror to use auto height instead of full height */
     .codeblock-editor .cm-editor {
       height: auto !important;
       background: transparent;
     }
-
     .codeblock-editor .cm-gutters {
       display: none;
     }
-
     .codeblock-editor .cm-scroller {
       font-family:
         ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
@@ -282,11 +263,9 @@ class CodeBlockElement extends LitElement {
       line-height: 1.5;
       padding: 0;
       overflow: auto;
-      background: transparent;
-      /* Reset any inherited height */
+      background: transparent; /* Reset any inherited height */
       min-height: auto !important;
     }
-
     .codeblock-editor .cm-content {
       padding: 0.75rem;
       box-sizing: border-box;
@@ -294,17 +273,14 @@ class CodeBlockElement extends LitElement {
       font-size: inherit;
       line-height: inherit;
       white-space: pre;
-      tab-size: 2;
-      /* Reset max-width and margin from outer editor */
+      tab-size: 2; /* Reset max-width and margin from outer editor */
       max-width: none !important;
       margin: 0 !important;
     }
-
     .codeblock-editor .cm-content .cm-line {
       margin: 0 !important;
       padding: 0;
     }
-
     .codeblock-editor .cm-focused {
       outline: none;
     }
@@ -595,196 +571,7 @@ class CodeBlockElement extends LitElement {
     // Inject styles if not already done
     if (!this.dropdownStyleEl) {
       this.dropdownStyleEl = document.createElement('style')
-      this.dropdownStyleEl.textContent = `
-        /* Dropdown entry animation */
-        @keyframes dropdown-enter {
-          from {
-            opacity: 0;
-            transform: scale(0.95) translateY(-4px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-
-        /* Modal backdrop */
-        .cm-codeblock-dropdown-backdrop {
-          position: fixed;
-          inset: 0;
-          z-index: 9999;
-        }
-
-        .cm-codeblock-dropdown {
-          position: fixed;
-          z-index: 10000;
-          min-width: 180px;
-          max-width: 240px;
-          background: #171717; /* neutral-900 */
-          border: none;
-          border-radius: 8px;
-          /* Vercel-style shadow for dark mode (shadow simulates border) */
-          box-shadow:
-            0 0 0 1px rgba(255, 255, 255, 0.08),
-            0 8px 24px rgba(0, 0, 0, 0.5),
-            0 16px 32px rgba(0, 0, 0, 0.4);
-          max-height: 280px;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
-          font-size: 14px; /* text-sm */
-          color: #fafafa; /* neutral-50 */
-          /* Entry animation */
-          animation: dropdown-enter 0.2s cubic-bezier(0.22, 1, 0.36, 1); /* ease-spring */
-          transform-origin: top left;
-        }
-        .cm-codeblock-dropdown.light {
-          background: #fff;
-          color: #171717; /* neutral-900 */
-          /* Vercel-style shadow for light mode */
-          box-shadow:
-            0 0 0 1px rgba(0, 0, 0, 0.08),
-            0 8px 24px rgba(0, 0, 0, 0.12),
-            0 16px 32px rgba(0, 0, 0, 0.08);
-        }
-        .cm-codeblock-dropdown-search {
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .cm-codeblock-dropdown.light .cm-codeblock-dropdown-search {
-          border-bottom-color: rgba(0, 0, 0, 0.08);
-        }
-        .cm-codeblock-dropdown-input {
-          width: 100%;
-          height: 32px;
-          padding: 0 10px;
-          font-family: inherit;
-          font-size: 12px; /* text-xs */
-          color: inherit;
-          background: transparent;
-          border: none;
-          border-radius: 0;
-          outline: none;
-          box-sizing: border-box;
-        }
-        .cm-codeblock-dropdown-input::placeholder {
-          color: #737373; /* neutral-500 */
-        }
-        .cm-codeblock-dropdown-list {
-          flex: 1;
-          overflow-y: auto;
-          padding: 4px;
-        }
-        .cm-codeblock-dropdown-list::-webkit-scrollbar {
-          width: 6px;
-        }
-        .cm-codeblock-dropdown-list::-webkit-scrollbar-track {
-          background: transparent;
-          margin: 4px 0;
-        }
-        .cm-codeblock-dropdown-list::-webkit-scrollbar-thumb {
-          background: #404040; /* neutral-700 */
-          border-radius: 3px;
-        }
-        .cm-codeblock-dropdown-list::-webkit-scrollbar-thumb:hover {
-          background: #525252; /* neutral-600 */
-        }
-        .cm-codeblock-dropdown.light .cm-codeblock-dropdown-list::-webkit-scrollbar-thumb {
-          background: #d4d4d4; /* neutral-300 */
-        }
-        .cm-codeblock-dropdown.light .cm-codeblock-dropdown-list::-webkit-scrollbar-thumb:hover {
-          background: #a3a3a3; /* neutral-400 */
-        }
-        .cm-codeblock-dropdown-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          height: 32px;
-          padding: 0 8px;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 12px; /* text-xs */
-          transition: background-color 0.1s cubic-bezier(0.33, 1, 0.68, 1); /* ease-out */
-        }
-        .cm-codeblock-dropdown-item:hover,
-        .cm-codeblock-dropdown-item.highlighted {
-          background-color: #262626; /* neutral-800 */
-          color: #fafafa; /* neutral-50 - ensure text visibility */
-        }
-        .cm-codeblock-dropdown.light .cm-codeblock-dropdown-item:hover,
-        .cm-codeblock-dropdown.light .cm-codeblock-dropdown-item.highlighted {
-          background-color: #f5f5f5; /* neutral-100 */
-          color: #171717; /* neutral-900 */
-        }
-        .cm-codeblock-dropdown-item.selected {
-          background-color: #262626; /* neutral-800 */
-        }
-        .cm-codeblock-dropdown.light .cm-codeblock-dropdown-item.selected {
-          background-color: #f5f5f5; /* neutral-100 */
-        }
-        .cm-codeblock-dropdown-icon {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 16px;
-          height: 16px;
-          flex-shrink: 0;
-        }
-        .cm-codeblock-dropdown-icon svg {
-          width: 100%;
-          height: 100%;
-        }
-        .cm-codeblock-dropdown-name {
-          flex: 1;
-          font-weight: 450;
-        }
-        .cm-codeblock-dropdown-empty {
-          padding: 16px 8px;
-          text-align: center;
-          color: #737373; /* neutral-500 */
-          font-size: 12px; /* text-xs */
-        }
-        .cm-codeblock-dropdown-custom {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          height: 32px;
-          padding: 0 8px;
-          margin: 4px;
-          border-radius: 6px;
-          border-top: 1px solid #262626; /* neutral-800 */
-          cursor: pointer;
-          color: #a3a3a3; /* neutral-400 */
-          font-size: 12px; /* text-xs */
-          transition: background-color 0.1s cubic-bezier(0.33, 1, 0.68, 1), color 0.1s cubic-bezier(0.33, 1, 0.68, 1); /* ease-out */
-        }
-        .cm-codeblock-dropdown.light .cm-codeblock-dropdown-custom {
-          border-top-color: #e5e5e5; /* neutral-200 */
-          color: #737373; /* neutral-500 */
-        }
-        .cm-codeblock-dropdown-custom:hover,
-        .cm-codeblock-dropdown-custom.highlighted {
-          background-color: #262626; /* neutral-800 */
-          color: #fafafa; /* neutral-50 */
-        }
-        .cm-codeblock-dropdown.light .cm-codeblock-dropdown-custom:hover,
-        .cm-codeblock-dropdown.light .cm-codeblock-dropdown-custom.highlighted {
-          background-color: #f5f5f5; /* neutral-100 */
-          color: #171717; /* neutral-900 */
-        }
-
-        /* Reduced motion preference */
-        @media (prefers-reduced-motion: reduce) {
-          .cm-codeblock-dropdown {
-            animation: none;
-          }
-          .cm-codeblock-dropdown-input,
-          .cm-codeblock-dropdown-item,
-          .cm-codeblock-dropdown-custom {
-            transition-duration: 0.01ms !important;
-          }
-        }
-      `
+      this.dropdownStyleEl.textContent = `/* Dropdown entry animation */ @keyframes dropdown-enter { from { opacity: 0; transform: scale(0.95) translateY(-4px); } to { opacity: 1; transform: scale(1) translateY(0); } } /* Modal backdrop */ .cm-codeblock-dropdown-backdrop { position: fixed; inset: 0; z-index: 9999; } .cm-codeblock-dropdown { position: fixed; z-index: 10000; min-width: 180px; max-width: 240px; background: #171717; /* neutral-900 */ border: none; border-radius: 8px; /* Vercel-style for dark mode (shadow simulates border) */ box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.5), 0 16px 32px rgba(0, 0, 0, 0.4); max-height: 280px; display: flex; flex-direction: column; overflow: hidden; font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif); font-size: 14px; /* */ color: #fafafa; /* neutral-50 */ /* Entry animation */ animation: dropdown-enter 0.2s cubic-bezier(0.22, 1, 0.36, 1); /* ease-spring */ transform-origin: top left; } .cm-codeblock-dropdown.light { background: #fff; color: #171717; /* neutral-900 */ /* Vercel-style for light mode */ box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.12), 0 16px 32px rgba(0, 0, 0, 0.08); } .cm-codeblock-dropdown-search { border-bottom: 1px solid rgba(255, 255, 255, 0.08); } .cm-codeblock-dropdown.light .cm-codeblock-dropdown-search { border-bottom-color: rgba(0, 0, 0, 0.08); } .cm-codeblock-dropdown-input { width: 100%; height: 32px; padding: 0 10px; font-family: inherit; font-size: 12px; /* */ color: inherit; background: transparent; border: none; border-radius: 0; outline: none; box-sizing: border-box; } .cm-codeblock-dropdown-input::placeholder { color: #737373; /* neutral-500 */ } .cm-codeblock-dropdown-list { flex: 1; overflow-y: auto; padding: 4px; } .cm-codeblock-dropdown-list::-webkit-scrollbar { width: 6px; } .cm-codeblock-dropdown-list::-webkit-scrollbar-track { background: transparent; margin: 4px 0; } .cm-codeblock-dropdown-list::-webkit-scrollbar-thumb { background: #404040; /* neutral-700 */ border-radius: 3px; } .cm-codeblock-dropdown-list::-webkit-scrollbar-thumb:hover { background: #525252; /* neutral-600 */ } .cm-codeblock-dropdown.light .cm-codeblock-dropdown-list::-webkit-scrollbar-thumb { background: #d4d4d4; /* neutral-300 */ } .cm-codeblock-dropdown.light .cm-codeblock-dropdown-list::-webkit-scrollbar-thumb:hover { background: #a3a3a3; /* neutral-400 */ } .cm-codeblock-dropdown-item { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-radius: 6px; cursor: pointer; font-size: 12px; /* */ transition: background-color 0.1s cubic-bezier(0.33, 1, 0.68, 1); /* */ } .cm-codeblock-dropdown-item:hover, .cm-codeblock-dropdown-item.highlighted { background-color: #262626; /* neutral-800 */ color: #fafafa; /* neutral-50 - ensure text visibility */ } .cm-codeblock-dropdown.light .cm-codeblock-dropdown-item:hover, .cm-codeblock-dropdown.light .cm-codeblock-dropdown-item.highlighted { background-color: #f5f5f5; /* neutral-100 */ color: #171717; /* neutral-900 */ } .cm-codeblock-dropdown-item.selected { background-color: #262626; /* neutral-800 */ } .cm-codeblock-dropdown.light .cm-codeblock-dropdown-item.selected { background-color: #f5f5f5; /* neutral-100 */ } .cm-codeblock-dropdown-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex-shrink: 0; } .cm-codeblock-dropdown-icon svg { width: 100%; height: 100%; } .cm-codeblock-dropdown-name { flex: 1; font-weight: 450; } .cm-codeblock-dropdown-empty { padding: 16px 8px; text-align: center; color: #737373; /* neutral-500 */ font-size: 12px; /* */ } .cm-codeblock-dropdown-custom { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; margin: 4px; border-radius: 6px; border-top: 1px solid #262626; /* neutral-800 */ cursor: pointer; color: #a3a3a3; /* neutral-400 */ font-size: 12px; /* */ transition: background-color 0.1s cubic-bezier(0.33, 1, 0.68, 1), color 0.1s cubic-bezier(0.33, 1, 0.68, 1); /* */ } .cm-codeblock-dropdown.light .cm-codeblock-dropdown-custom { border-top-color: #e5e5e5; /* neutral-200 */ color: #737373; /* neutral-500 */ } .cm-codeblock-dropdown-custom:hover, .cm-codeblock-dropdown-custom.highlighted { background-color: #262626; /* neutral-800 */ color: #fafafa; /* neutral-50 */ } .cm-codeblock-dropdown.light .cm-codeblock-dropdown-custom:hover, .cm-codeblock-dropdown.light .cm-codeblock-dropdown-custom.highlighted { background-color: #f5f5f5; /* neutral-100 */ color: #171717; /* neutral-900 */ } /* Reduced motion preference */ @media (prefers-reduced-motion: reduce) { .cm-codeblock-dropdown { animation: none; } .cm-codeblock-dropdown-input, .cm-codeblock-dropdown-item, .cm-codeblock-dropdown-custom { transition-duration: 0.01ms !important; } }`
       document.head.appendChild(this.dropdownStyleEl)
     }
 

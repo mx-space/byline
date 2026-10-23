@@ -1,18 +1,24 @@
+import {
+  ActionIcon,
+  Button,
+  confirmModal,
+  DropdownMenu,
+  Empty,
+  Flexbox,
+  InputNumber,
+  Select,
+  Switch,
+  Tag,
+  toast,
+} from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
-import { Pencil, Plus, Settings, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Settings2, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { getModelsByCapability } from '~/api/ai'
 import { useI18n } from '~/i18n'
 import type { TranslationKey } from '~/i18n/types'
-import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
-import { Button } from '~/ui/primitives/button'
-import { SelectField } from '~/ui/primitives/select'
-import { FormSwitch, Switch } from '~/ui/primitives/switch'
-import { TextInput } from '~/ui/primitives/text-field'
-import { cn } from '~/utils/cn'
 
 import {
   type AIProviderPreset,
@@ -20,18 +26,23 @@ import {
   createProviderFromPreset,
   groupAIProviderPresets,
 } from '../../config/aiProviderPresets'
+import { settingsAiCopy, settingsCopy } from '../../copy'
 import type {
   AIConfig,
+  AIModelAssignment,
+  AIProviderCapability,
   AIProviderConfig,
   AIProviderModel,
 } from '../../types/settings'
 import { formatAIProviderLabel } from '../../utils/settings'
-import { EmptyState, FieldShell, SettingsSection } from '../SettingsPrimitives'
+import { SettingRow, SettingsGroup } from '../SettingsPrimitives'
 import { AIModelAssignmentField } from './AIModelAssignmentField'
 import { AIProviderDrawer } from './AIProviderDrawer'
 import { presentAIProviderPresetModal } from './AIProviderPresetModal'
 import { AITextListField } from './AITextListField'
 import { TtsVoiceField } from './TtsVoiceField'
+
+const MODEL_STALE_MS = 24 * 60 * 60 * 1000
 
 const PRESET_CATEGORY_LABEL_KEYS: Record<
   AIProviderPresetCategory,
@@ -56,9 +67,9 @@ const PRESET_NAME_KEYS: Partial<Record<string, TranslationKey>> = {
   xai: 'settings.ai.preset.name.xai',
 }
 
-async function getProviderModels(
-  capability: 'decision' | 'image' | 'speech' | 'text',
-) {
+const ASPECT_RATIOS = ['1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16']
+
+async function getProviderModels(capability: AIProviderCapability) {
   const response = await getModelsByCapability(capability)
   const entries: Array<[string, AIProviderModel[]]> = response.map(
     (provider) => [provider.providerId, provider.models ?? []],
@@ -66,62 +77,77 @@ async function getProviderModels(
   return Object.fromEntries(entries) as Record<string, AIProviderModel[]>
 }
 
+function useCapabilityModels(
+  capability: AIProviderCapability,
+  modelCacheKey: readonly unknown[],
+  enabled: boolean,
+) {
+  const query = useQuery({
+    enabled,
+    queryFn: () => getProviderModels(capability),
+    queryKey:
+      capability === 'text' ? modelCacheKey : [...modelCacheKey, capability],
+    staleTime: MODEL_STALE_MS,
+  })
+  return query.data ?? {}
+}
+
 export function AIConfigEditor(props: {
   modelCacheKey: readonly unknown[]
   onChange: (value: AIConfig) => void
   value: AIConfig
 }) {
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
+  const ai = (key: Parameters<typeof settingsAiCopy>[1]) =>
+    settingsAiCopy(locale, key)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const providers = props.value.providers ?? []
-  const hasEnabledTextProvider = providers.some(
-    (provider) => provider.enabled && (provider.capabilities?.text ?? true),
-  )
-  const hasEnabledSpeechProvider = providers.some(
-    (provider) => provider.enabled && provider.capabilities?.speech,
-  )
-  const hasEnabledImageProvider = providers.some(
-    (provider) => provider.enabled && provider.capabilities?.image,
-  )
-  const modelsQuery = useQuery({
-    enabled: hasEnabledTextProvider,
-    queryFn: () => getProviderModels('text'),
-    queryKey: props.modelCacheKey,
-    staleTime: 24 * 60 * 60 * 1000,
-  })
-  const speechModelsQuery = useQuery({
-    enabled: hasEnabledSpeechProvider,
-    queryFn: () => getProviderModels('speech'),
-    queryKey: [...props.modelCacheKey, 'speech'],
-    staleTime: 24 * 60 * 60 * 1000,
-  })
-  const imageModelsQuery = useQuery({
-    enabled: hasEnabledImageProvider,
-    queryFn: () => getProviderModels('image'),
-    queryKey: [...props.modelCacheKey, 'image'],
-    staleTime: 24 * 60 * 60 * 1000,
-  })
-  const decisionModelsQuery = useQuery({
-    enabled: providers.some((p) => p.enabled && p.capabilities?.decision),
-    queryFn: () => getProviderModels('decision'),
-    queryKey: [...props.modelCacheKey, 'decision'],
-    staleTime: 24 * 60 * 60 * 1000,
-  })
-  const decisionModels = decisionModelsQuery.data ?? {}
-  const providerModels = modelsQuery.data ?? {}
-  const speechProviderModels = speechModelsQuery.data ?? {}
-  const imageProviderModels = imageModelsQuery.data ?? {}
+  const config = props.value
+  const providers = config.providers ?? []
+  const hasEnabled = (capability: AIProviderCapability) =>
+    providers.some(
+      (provider) =>
+        provider.enabled &&
+        (capability === 'text'
+          ? (provider.capabilities?.text ?? true)
+          : Boolean(provider.capabilities?.[capability])),
+    )
 
-  const updateConfig = (patch: Partial<AIConfig>) =>
-    props.onChange({ ...props.value, ...patch })
+  const textModels = useCapabilityModels(
+    'text',
+    props.modelCacheKey,
+    hasEnabled('text'),
+  )
+  const speechModels = useCapabilityModels(
+    'speech',
+    props.modelCacheKey,
+    hasEnabled('speech'),
+  )
+  const imageModels = useCapabilityModels(
+    'image',
+    props.modelCacheKey,
+    hasEnabled('image'),
+  )
+  const decisionModels = useCapabilityModels(
+    'decision',
+    props.modelCacheKey,
+    hasEnabled('decision'),
+  )
 
-  const updateProvider = (id: string, patch: Partial<AIProviderConfig>) => {
-    updateConfig({
+  const update = (patch: Partial<AIConfig>) =>
+    props.onChange({ ...config, ...patch })
+
+  const updateProvider = (id: string, patch: Partial<AIProviderConfig>) =>
+    update({
       providers: providers.map((provider) =>
         provider.id === id ? { ...provider, ...patch } : provider,
       ),
     })
-  }
+
+  const updateImage = (patch: NonNullable<AIConfig['imageGeneration']>) =>
+    update({ imageGeneration: { ...config.imageGeneration, ...patch } })
+
+  const updateTts = (patch: NonNullable<AIConfig['tts']>) =>
+    update({ tts: { ...config.tts, ...patch } })
 
   const addProviderFromPreset = async (preset: AIProviderPreset) => {
     const values = preset.templateFields?.length
@@ -129,469 +155,529 @@ export function AIConfigEditor(props: {
       : {}
     if (values === undefined) return
     const provider = createProviderFromPreset(preset, values)
-    updateConfig({ providers: [...providers, provider] })
+    update({ providers: [...providers, provider] })
     setEditingId(provider.id)
   }
 
-  const presetGroups = groupAIProviderPresets()
-
   const deleteProvider = (id: string) => {
     const references = [
-      props.value.decisionModel,
-      props.value.summaryModel,
-      props.value.writerModel,
-      props.value.translationModel,
-      props.value.translationReviewModel,
-      props.value.fieldTranslationModel,
-      props.value.insightsModel,
-      props.value.insightsTranslationModel,
-      props.value.imageGeneration?.model,
-      props.value.tts?.model,
+      config.decisionModel,
+      config.summaryModel,
+      config.writerModel,
+      config.translationModel,
+      config.translationReviewModel,
+      config.fieldTranslationModel,
+      config.insightsModel,
+      config.insightsTranslationModel,
+      config.imageGeneration?.model,
+      config.tts?.model,
     ]
     if (references.some((assignment) => assignment?.providerId === id)) {
       toast.warning(t('settings.ai.error.providerInUse'))
       return
     }
-    updateConfig({
-      providers: providers.filter((provider) => provider.id !== id),
+    const provider = providers.find((item) => item.id === id)
+    confirmModal({
+      cancelText: settingsCopy(locale, 'leaveCancel'),
+      content: settingsCopy(locale, 'removeProviderBody'),
+      okButtonProps: { danger: true },
+      okText: settingsCopy(locale, 'removeProviderConfirm'),
+      onOk: () =>
+        update({ providers: providers.filter((item) => item.id !== id) }),
+      title: settingsCopy(locale, 'removeProviderTitle', {
+        name: provider ? formatAIProviderLabel(provider) : id,
+      }),
     })
   }
 
+  const capabilityLabels = (provider: AIProviderConfig) =>
+    [
+      provider.capabilities?.decision
+        ? t('settings.ai.capability.decision')
+        : null,
+      (provider.capabilities?.text ?? true)
+        ? t('settings.ai.capability.text')
+        : null,
+      provider.capabilities?.image ? t('settings.ai.capability.image') : null,
+      provider.capabilities?.speech ? t('settings.ai.capability.speech') : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || ai('providerCapabilityNone')
+
+  const modelRow = (input: {
+    capability?: AIProviderCapability
+    desc: string
+    divider?: boolean
+    label: string
+    models: Record<string, AIProviderModel[]>
+    onChange: (value: AIModelAssignment | null) => void
+    placeholder?: string
+    value?: AIModelAssignment | null
+  }) => (
+    <SettingRow
+      desc={input.desc}
+      divider={input.divider ?? true}
+      label={input.label}
+      wide
+    >
+      <AIModelAssignmentField
+        capability={input.capability}
+        label={input.label}
+        modelPlaceholder={input.placeholder}
+        models={input.models}
+        onChange={input.onChange}
+        providers={providers}
+        value={input.value}
+      />
+    </SettingRow>
+  )
+
+  const toggleRow = (input: {
+    checked: boolean
+    desc: string
+    divider?: boolean
+    label: string
+    onChange: (checked: boolean) => void
+  }) => (
+    <SettingRow
+      desc={input.desc}
+      divider={input.divider}
+      label={input.label}
+      width="auto"
+    >
+      <Switch
+        aria-label={input.label}
+        checked={input.checked}
+        onChange={input.onChange}
+      />
+    </SettingRow>
+  )
+
+  const languagesRow = (input: {
+    desc: string
+    onChange: (value: string[]) => void
+    value?: string[]
+  }) => (
+    <SettingRow desc={input.desc} divider label={ai('targetLanguages')} wide>
+      <AITextListField
+        label={ai('targetLanguages')}
+        onChange={input.onChange}
+        value={input.value ?? []}
+      />
+    </SettingRow>
+  )
+
+  const numberRow = (input: {
+    desc: string
+    label: string
+    max: number
+    min: number
+    onChange: (value: number) => void
+    step?: number
+    value: number
+    fallback: number
+  }) => (
+    <SettingRow desc={input.desc} divider label={input.label} width={160}>
+      <InputNumber
+        aria-label={input.label}
+        max={input.max}
+        min={input.min}
+        onChange={(next) =>
+          input.onChange(typeof next === 'number' ? next : input.fallback)
+        }
+        step={input.step}
+        style={{ width: '100%' }}
+        value={input.value}
+      />
+    </SettingRow>
+  )
+
+  const selectRow = <V extends string>(input: {
+    desc: string
+    label: string
+    onChange: (value: V) => void
+    options: Array<{ label: ReactNode; value: V }>
+    value: V
+  }) => (
+    <SettingRow desc={input.desc} divider label={input.label} width={160}>
+      <Select
+        aria-label={input.label}
+        onChange={(next) => {
+          if (typeof next === 'string') input.onChange(next as V)
+        }}
+        options={input.options}
+        style={{ width: '100%' }}
+        value={input.value}
+      />
+    </SettingRow>
+  )
+
+  const presetItems = groupAIProviderPresets().map((group) => ({
+    children: group.presets.map((preset) => {
+      const nameKey = PRESET_NAME_KEYS[preset.id]
+      return {
+        desc: preset.endpoint || undefined,
+        key: preset.id,
+        label: nameKey ? t(nameKey) : preset.name,
+        onClick: () => void addProviderFromPreset(preset),
+      }
+    }),
+    key: group.category,
+    label: t(PRESET_CATEGORY_LABEL_KEYS[group.category]),
+    type: 'group' as const,
+  }))
+
   const editingProvider =
     providers.find((provider) => provider.id === editingId) ?? null
+  const image = config.imageGeneration
+  const tts = config.tts
 
   return (
     <>
-      <div className="space-y-10">
-        <SettingsSection
-          actions={
-            <DropdownMenu>
-              <DropdownMenu.Trigger
-                className="inline-flex h-8 items-center gap-2 rounded-sm border border-border bg-surface-card px-3 text-sm font-medium text-fg shadow-xs outline-hidden transition-colors hover:bg-surface-inset focus-visible:ring-[3px] focus-visible:ring-accent/15 data-[popup-open]:bg-surface-inset"
-                type="button"
-              >
-                <Plus aria-hidden="true" className="size-4" />
-                {t('settings.ai.action.addProvider')}
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="end" className="min-w-56">
-                {presetGroups.map((group, index) => (
-                  <DropdownMenu.Group key={group.category}>
-                    {index > 0 ? <DropdownMenu.Separator /> : null}
-                    <DropdownMenu.GroupLabel>
-                      {t(PRESET_CATEGORY_LABEL_KEYS[group.category])}
-                    </DropdownMenu.GroupLabel>
-                    {group.presets.map((preset) => {
-                      const nameKey = PRESET_NAME_KEYS[preset.id]
-                      return (
-                        <DropdownMenu.Item
-                          className="items-start py-2"
-                          key={preset.id}
-                          onClick={() => void addProviderFromPreset(preset)}
-                        >
-                          <span className="flex min-w-0 flex-col gap-0.5">
-                            <span className="truncate font-medium">
-                              {nameKey ? t(nameKey) : preset.name}
-                            </span>
-                            {preset.endpoint ? (
-                              <span className="truncate text-xs text-fg-subtle">
-                                {preset.endpoint}
-                              </span>
-                            ) : null}
-                          </span>
-                        </DropdownMenu.Item>
-                      )
-                    })}
-                  </DropdownMenu.Group>
-                ))}
-              </DropdownMenu.Content>
-            </DropdownMenu>
-          }
-          description={t('settings.ai.provider.sectionTitleDescription')}
-          title={t('settings.ai.provider.sectionTitle')}
-        >
-          {providers.length === 0 ? (
-            <EmptyState
-              icon={<Settings className="size-7" />}
-              label={t('settings.ai.empty.providers')}
-            />
-          ) : (
-            <div className="divide-y divide-neutral-100 dark:divide-neutral-900">
-              {providers.map((provider) => (
-                <ProviderRow
-                  key={provider.id}
-                  onDelete={() => {
-                    if (
-                      window.confirm(t('settings.ai.confirm.deleteProvider'))
-                    ) {
-                      deleteProvider(provider.id)
-                    }
-                  }}
-                  onEdit={() => setEditingId(provider.id)}
-                  onToggle={(enabled) =>
+      <SettingsGroup
+        desc={ai('providersDesc')}
+        extra={
+          <DropdownMenu items={presetItems} placement="bottomRight">
+            <Button icon={Plus} size="small">
+              {t('settings.ai.action.addProvider')}
+            </Button>
+          </DropdownMenu>
+        }
+        title={ai('providersTitle')}
+      >
+        {providers.length === 0 ? (
+          <Empty
+            description={ai('providersEmpty')}
+            icon={Settings2}
+            title={t('settings.ai.empty.providers')}
+          />
+        ) : (
+          providers.map((provider, index) => (
+            <SettingRow
+              desc={capabilityLabels(provider)}
+              divider={index > 0}
+              key={provider.id}
+              label={
+                <Flexbox align="center" as="span" gap={8} horizontal>
+                  <span>{formatAIProviderLabel(provider)}</span>
+                  {provider.enabled ? null : (
+                    <Tag size="small">{ai('providerDisabled')}</Tag>
+                  )}
+                </Flexbox>
+              }
+              width="auto"
+            >
+              <Flexbox align="center" gap={4} horizontal>
+                <Switch
+                  aria-label={t('settings.oauth.switch.enabled')}
+                  checked={provider.enabled}
+                  onChange={(enabled) =>
                     updateProvider(provider.id, { enabled })
                   }
-                  provider={provider}
                 />
-              ))}
-            </div>
-          )}
-        </SettingsSection>
+                <ActionIcon
+                  icon={Pencil}
+                  onClick={() => setEditingId(provider.id)}
+                  title={t('settings.ai.provider.editAction')}
+                />
+                <ActionIcon
+                  icon={Trash2}
+                  onClick={() => deleteProvider(provider.id)}
+                  title={t('common.delete')}
+                />
+              </Flexbox>
+            </SettingRow>
+          ))
+        )}
+      </SettingsGroup>
 
-        <SettingsSection title={t('settings.ai.section.decision')}>
-          <AIModelAssignmentField
-            capability="decision"
-            label={t('settings.ai.section.decision')}
-            description={t('settings.ai.decision.description')}
-            models={decisionModels}
-            providers={providers}
-            value={props.value.decisionModel}
-            onChange={(decisionModel) => updateConfig({ decisionModel })}
+      <SettingsGroup
+        desc={ai('translationDesc')}
+        extra={
+          <Switch
+            aria-label={t('settings.ai.switch.enableTranslation')}
+            checked={Boolean(config.enableTranslation)}
+            onChange={(enableTranslation) => update({ enableTranslation })}
           />
-        </SettingsSection>
+        }
+        title={ai('translationTitle')}
+      >
+        {config.enableTranslation ? (
+          <>
+            {languagesRow({
+              desc: ai('translationLanguagesDesc'),
+              onChange: (translationTargetLanguages) =>
+                update({ translationTargetLanguages }),
+              value: config.translationTargetLanguages,
+            })}
+            {modelRow({
+              desc: ai('translationModelDesc'),
+              label: ai('translationModelLabel'),
+              models: textModels,
+              onChange: (translationModel) => update({ translationModel }),
+              value: config.translationModel,
+            })}
+            {modelRow({
+              desc: ai('fieldTranslationDesc'),
+              label: ai('fieldTranslationLabel'),
+              models: textModels,
+              onChange: (fieldTranslationModel) =>
+                update({ fieldTranslationModel }),
+              value: config.fieldTranslationModel,
+            })}
+            {toggleRow({
+              checked: Boolean(config.enableTranslationReview),
+              desc: ai('translationReviewDesc'),
+              divider: true,
+              label: t('settings.ai.switch.enableTranslationReview'),
+              onChange: (enableTranslationReview) =>
+                update({ enableTranslationReview }),
+            })}
+            {config.enableTranslationReview
+              ? modelRow({
+                  desc: ai('translationReviewModelDesc'),
+                  label: ai('translationReviewModelLabel'),
+                  models: textModels,
+                  onChange: (translationReviewModel) =>
+                    update({ translationReviewModel }),
+                  value: config.translationReviewModel,
+                })
+              : null}
+          </>
+        ) : null}
+      </SettingsGroup>
 
-        <FeatureSection
-          assignment={
-            <AIModelAssignmentField
-              label={t('settings.ai.assignment.summaryLabel')}
-              models={providerModels}
-              onChange={(summaryModel) => updateConfig({ summaryModel })}
-              providers={providers}
-              value={props.value.summaryModel}
-            />
-          }
-          description={t('settings.ai.section.summaryDescription')}
-          enabled={Boolean(props.value.enableSummary)}
-          onEnabledChange={(enableSummary) => updateConfig({ enableSummary })}
-          title={t('settings.ai.section.summary')}
-          toggleLabel={t('settings.ai.switch.enableSummary')}
-        >
-          <AITextListField
-            disabled={!props.value.enableSummary}
-            label={t('settings.ai.switch.summaryTargetLanguages')}
-            onChange={(summaryTargetLanguages) =>
-              updateConfig({ summaryTargetLanguages })
-            }
-            value={props.value.summaryTargetLanguages ?? []}
+      <SettingsGroup
+        desc={ai('summaryDesc')}
+        extra={
+          <Switch
+            aria-label={t('settings.ai.switch.enableSummary')}
+            checked={Boolean(config.enableSummary)}
+            onChange={(enableSummary) => update({ enableSummary })}
           />
-        </FeatureSection>
+        }
+        title={ai('summaryTitle')}
+      >
+        {config.enableSummary ? (
+          <>
+            {modelRow({
+              desc: ai('summaryModelDesc'),
+              label: ai('summaryModelLabel'),
+              models: textModels,
+              onChange: (summaryModel) => update({ summaryModel }),
+              value: config.summaryModel,
+            })}
+            {languagesRow({
+              desc: ai('summaryLanguagesDesc'),
+              onChange: (summaryTargetLanguages) =>
+                update({ summaryTargetLanguages }),
+              value: config.summaryTargetLanguages,
+            })}
+          </>
+        ) : null}
+      </SettingsGroup>
 
-        <FeatureSection
-          assignment={
-            <>
-              <AIModelAssignmentField
-                label={t('settings.ai.assignment.insightsLabel')}
-                models={providerModels}
-                onChange={(insightsModel) => updateConfig({ insightsModel })}
-                providers={providers}
-                value={props.value.insightsModel}
-              />
-              <AIModelAssignmentField
-                label={t('settings.ai.assignment.insightsTranslationLabel')}
-                models={providerModels}
-                onChange={(insightsTranslationModel) =>
-                  updateConfig({ insightsTranslationModel })
-                }
-                providers={providers}
-                value={props.value.insightsTranslationModel}
-              />
-            </>
-          }
-          description={t('settings.ai.section.insightsDescription')}
-          enabled={Boolean(props.value.enableInsights)}
-          onEnabledChange={(enableInsights) => updateConfig({ enableInsights })}
-          title={t('settings.ai.section.insights')}
-          toggleLabel={t('settings.ai.switch.enableInsights')}
-        >
-          <FormSwitch
-            checked={Boolean(props.value.enableAutoTranslateInsights)}
-            disabled={!props.value.enableInsights}
-            label={t('settings.ai.switch.enableAutoTranslateInsights')}
-            onCheckedChange={(enableAutoTranslateInsights) =>
-              updateConfig({ enableAutoTranslateInsights })
-            }
+      <SettingsGroup
+        desc={ai('insightsDesc')}
+        extra={
+          <Switch
+            aria-label={t('settings.ai.switch.enableInsights')}
+            checked={Boolean(config.enableInsights)}
+            onChange={(enableInsights) => update({ enableInsights })}
           />
-          <AITextListField
-            disabled={!props.value.enableInsights}
-            label={t('settings.ai.switch.insightsTargetLanguages')}
-            onChange={(insightsTargetLanguages) =>
-              updateConfig({ insightsTargetLanguages })
-            }
-            value={props.value.insightsTargetLanguages ?? []}
+        }
+        title={ai('insightsTitle')}
+      >
+        {config.enableInsights ? (
+          <>
+            {modelRow({
+              desc: ai('insightsModelDesc'),
+              label: ai('insightsModelLabel'),
+              models: textModels,
+              onChange: (insightsModel) => update({ insightsModel }),
+              value: config.insightsModel,
+            })}
+            {toggleRow({
+              checked: Boolean(config.enableAutoTranslateInsights),
+              desc: ai('autoTranslateInsightsDesc'),
+              divider: true,
+              label: t('settings.ai.switch.enableAutoTranslateInsights'),
+              onChange: (enableAutoTranslateInsights) =>
+                update({ enableAutoTranslateInsights }),
+            })}
+            {config.enableAutoTranslateInsights ? (
+              <>
+                {languagesRow({
+                  desc: ai('insightsLanguagesDesc'),
+                  onChange: (insightsTargetLanguages) =>
+                    update({ insightsTargetLanguages }),
+                  value: config.insightsTargetLanguages,
+                })}
+                {modelRow({
+                  desc: ai('insightsTranslationDesc'),
+                  label: ai('insightsTranslationLabel'),
+                  models: textModels,
+                  onChange: (insightsTranslationModel) =>
+                    update({ insightsTranslationModel }),
+                  value: config.insightsTranslationModel,
+                })}
+              </>
+            ) : null}
+          </>
+        ) : null}
+      </SettingsGroup>
+
+      <SettingsGroup
+        desc={ai('imageEnableDesc')}
+        extra={
+          <Switch
+            aria-label={t('settings.ai.switch.enableImageGeneration')}
+            checked={Boolean(image?.enable)}
+            onChange={(enable) => updateImage({ enable })}
           />
-        </FeatureSection>
+        }
+        title={ai('imageTitle')}
+      >
+        {image?.enable ? (
+          <>
+            {modelRow({
+              capability: 'image',
+              desc: ai('imageModelDesc'),
+              label: ai('imageModelLabel'),
+              models: imageModels,
+              onChange: (model) => updateImage({ model }),
+              placeholder: t('settings.ai.assignment.mediaModelPlaceholder'),
+              value: image.model,
+            })}
+            {selectRow({
+              desc: ai('imageAspectDesc'),
+              label: t('settings.ai.field.defaultAspectRatio'),
+              onChange: (defaultAspectRatio) =>
+                updateImage({ defaultAspectRatio }),
+              options: ASPECT_RATIOS.map((value) => ({ label: value, value })),
+              value: image.defaultAspectRatio ?? '16:9',
+            })}
+            {selectRow<'high' | 'low' | 'standard'>({
+              desc: ai('imageQualityDesc'),
+              label: t('settings.ai.field.defaultQuality'),
+              onChange: (defaultQuality) => updateImage({ defaultQuality }),
+              options: [
+                { label: t('settings.ai.option.qualityLow'), value: 'low' },
+                {
+                  label: t('settings.ai.option.qualityStandard'),
+                  value: 'standard',
+                },
+                { label: t('settings.ai.option.qualityHigh'), value: 'high' },
+              ],
+              value: image.defaultQuality ?? 'standard',
+            })}
+            {selectRow<'jpeg' | 'png' | 'webp'>({
+              desc: ai('imageFormatDesc'),
+              label: t('settings.ai.field.defaultFormat'),
+              onChange: (defaultFormat) => updateImage({ defaultFormat }),
+              options: (['png', 'jpeg', 'webp'] as const).map((value) => ({
+                label: value.toUpperCase(),
+                value,
+              })),
+              value: image.defaultFormat ?? 'png',
+            })}
+          </>
+        ) : null}
+      </SettingsGroup>
 
-        <FeatureSection
-          assignment={
-            <>
-              <AIModelAssignmentField
-                label={t('settings.ai.assignment.translationLabel')}
-                models={providerModels}
-                onChange={(translationModel) =>
-                  updateConfig({ translationModel })
-                }
-                providers={providers}
-                value={props.value.translationModel}
-              />
-              <AIModelAssignmentField
-                label={t('settings.ai.assignment.translationReviewLabel')}
-                models={providerModels}
-                onChange={(translationReviewModel) =>
-                  updateConfig({ translationReviewModel })
-                }
-                providers={providers}
-                value={props.value.translationReviewModel}
-              />
-              <AIModelAssignmentField
-                label={t('settings.ai.assignment.fieldTranslationLabel')}
-                models={providerModels}
-                onChange={(fieldTranslationModel) =>
-                  updateConfig({ fieldTranslationModel })
-                }
-                providers={providers}
-                value={props.value.fieldTranslationModel}
-              />
-            </>
-          }
-          description={t('settings.ai.section.translationDescription')}
-          enabled={Boolean(props.value.enableTranslation)}
-          onEnabledChange={(enableTranslation) =>
-            updateConfig({ enableTranslation })
-          }
-          title={t('settings.ai.section.translation')}
-          toggleLabel={t('settings.ai.switch.enableTranslation')}
-        >
-          <FormSwitch
-            checked={Boolean(props.value.enableTranslationReview)}
-            disabled={!props.value.enableTranslation}
-            label={t('settings.ai.switch.enableTranslationReview')}
-            onCheckedChange={(enableTranslationReview) =>
-              updateConfig({ enableTranslationReview })
-            }
+      <SettingsGroup
+        desc={ai('ttsEnableDesc')}
+        extra={
+          <Switch
+            aria-label={t('settings.ai.switch.enableTts')}
+            checked={Boolean(tts?.enable)}
+            onChange={(enable) => updateTts({ enable })}
           />
-          <AITextListField
-            disabled={!props.value.enableTranslation}
-            label={t('settings.ai.switch.translationTargetLanguages')}
-            onChange={(translationTargetLanguages) =>
-              updateConfig({ translationTargetLanguages })
-            }
-            value={props.value.translationTargetLanguages ?? []}
-          />
-        </FeatureSection>
-
-        <FeatureSection
-          assignment={
-            <AIModelAssignmentField
-              capability="image"
-              label={t('settings.ai.assignment.imageGenerationLabel')}
-              modelPlaceholder={t(
-                'settings.ai.assignment.mediaModelPlaceholder',
-              )}
-              models={imageProviderModels}
-              onChange={(model) =>
-                updateConfig({
-                  imageGeneration: {
-                    ...props.value.imageGeneration,
-                    model,
-                  },
-                })
-              }
-              providers={providers}
-              value={props.value.imageGeneration?.model}
-            />
-          }
-          description={t('settings.ai.section.imageGenerationDescription')}
-          enabled={Boolean(props.value.imageGeneration?.enable)}
-          onEnabledChange={(enable) =>
-            updateConfig({
-              imageGeneration: {
-                ...props.value.imageGeneration,
-                enable,
-              },
-            })
-          }
-          title={t('settings.ai.section.imageGeneration')}
-          toggleLabel={t('settings.ai.switch.enableImageGeneration')}
-        >
-          <div className="grid gap-4 md:grid-cols-3">
-            <FieldShell label={t('settings.ai.field.defaultAspectRatio')}>
-              <SelectField<string>
-                onValueChange={(defaultAspectRatio) =>
-                  updateConfig({
-                    imageGeneration: {
-                      ...props.value.imageGeneration,
-                      defaultAspectRatio,
-                    },
-                  })
-                }
-                options={[
-                  '1:1',
-                  '3:2',
-                  '2:3',
-                  '4:3',
-                  '3:4',
-                  '16:9',
-                  '9:16',
-                ].map((value) => ({ label: value, value }))}
-                value={
-                  props.value.imageGeneration?.defaultAspectRatio ?? '16:9'
-                }
+        }
+        title={ai('ttsTitle')}
+      >
+        {tts?.enable ? (
+          <>
+            {modelRow({
+              capability: 'speech',
+              desc: ai('ttsModelDesc'),
+              label: ai('ttsModelLabel'),
+              models: speechModels,
+              onChange: (model) => updateTts({ model }),
+              placeholder: t('settings.ai.assignment.mediaModelPlaceholder'),
+              value: tts.model,
+            })}
+            <SettingRow
+              desc={ai('ttsVoiceDesc')}
+              divider
+              label={t('settings.ai.field.voice')}
+            >
+              <TtsVoiceField
+                model={tts.model?.model}
+                onChange={(voice) => updateTts({ voice })}
+                providerId={tts.model?.providerId}
+                value={tts.voice ?? ''}
               />
-            </FieldShell>
-            <FieldShell label={t('settings.ai.field.defaultQuality')}>
-              <SelectField<'high' | 'low' | 'standard'>
-                onValueChange={(defaultQuality) =>
-                  updateConfig({
-                    imageGeneration: {
-                      ...props.value.imageGeneration,
-                      defaultQuality,
-                    },
-                  })
-                }
-                options={[
-                  { label: t('settings.ai.option.qualityLow'), value: 'low' },
-                  {
-                    label: t('settings.ai.option.qualityStandard'),
-                    value: 'standard',
-                  },
-                  { label: t('settings.ai.option.qualityHigh'), value: 'high' },
-                ]}
-                value={
-                  props.value.imageGeneration?.defaultQuality ?? 'standard'
-                }
-              />
-            </FieldShell>
-            <FieldShell label={t('settings.ai.field.defaultFormat')}>
-              <SelectField<'jpeg' | 'png' | 'webp'>
-                onValueChange={(defaultFormat) =>
-                  updateConfig({
-                    imageGeneration: {
-                      ...props.value.imageGeneration,
-                      defaultFormat,
-                    },
-                  })
-                }
-                options={['png', 'jpeg', 'webp'].map((value) => ({
-                  label: value.toUpperCase(),
-                  value: value as 'jpeg' | 'png' | 'webp',
-                }))}
-                value={props.value.imageGeneration?.defaultFormat ?? 'png'}
-              />
-            </FieldShell>
-          </div>
-        </FeatureSection>
+            </SettingRow>
+            {numberRow({
+              desc: ai('ttsSpeedDesc'),
+              fallback: 1,
+              label: t('settings.ai.field.speed'),
+              max: 4,
+              min: 0.25,
+              onChange: (speed) => updateTts({ speed }),
+              step: 0.25,
+              value: tts.speed ?? 1,
+            })}
+            {numberRow({
+              desc: ai('ttsChunkDesc'),
+              fallback: 1800,
+              label: t('settings.ai.field.maxCharsPerChunk'),
+              max: 4000,
+              min: 200,
+              onChange: (maxCharsPerChunk) => updateTts({ maxCharsPerChunk }),
+              value: tts.maxCharsPerChunk ?? 1800,
+            })}
+            {numberRow({
+              desc: ai('ttsConcurrencyDesc'),
+              fallback: 3,
+              label: t('settings.ai.field.concurrency'),
+              max: 8,
+              min: 1,
+              onChange: (concurrency) => updateTts({ concurrency }),
+              value: tts.concurrency ?? 3,
+            })}
+            {numberRow({
+              desc: ai('ttsRunDesc'),
+              fallback: 120_000,
+              label: t('settings.ai.field.maxCharsPerRun'),
+              max: 1_000_000,
+              min: 1000,
+              onChange: (maxCharsPerRun) => updateTts({ maxCharsPerRun }),
+              value: tts.maxCharsPerRun ?? 120_000,
+            })}
+          </>
+        ) : null}
+      </SettingsGroup>
 
-        <FeatureSection
-          assignment={
-            <AIModelAssignmentField
-              capability="speech"
-              label={t('settings.ai.assignment.ttsLabel')}
-              modelPlaceholder={t(
-                'settings.ai.assignment.mediaModelPlaceholder',
-              )}
-              models={speechProviderModels}
-              onChange={(model) =>
-                updateConfig({
-                  tts: {
-                    ...props.value.tts,
-                    model,
-                  },
-                })
-              }
-              providers={providers}
-              value={props.value.tts?.model}
-            />
-          }
-          description={t('settings.ai.section.ttsDescription')}
-          enabled={Boolean(props.value.tts?.enable)}
-          onEnabledChange={(enable) =>
-            updateConfig({ tts: { ...props.value.tts, enable } })
-          }
-          title={t('settings.ai.section.tts')}
-          toggleLabel={t('settings.ai.switch.enableTts')}
-        >
-          <div className="grid items-start gap-4 md:grid-cols-2">
-            <TtsVoiceField
-              model={props.value.tts?.model?.model}
-              onChange={(voice) =>
-                updateConfig({ tts: { ...props.value.tts, voice } })
-              }
-              providerId={props.value.tts?.model?.providerId}
-              value={props.value.tts?.voice ?? ''}
-            />
-            <TextInput
-              inputMode="decimal"
-              label={t('settings.ai.field.speed')}
-              onChange={(value) =>
-                updateConfig({
-                  tts: {
-                    ...props.value.tts,
-                    speed: value.trim() ? Number(value) : 1,
-                  },
-                })
-              }
-              type="number"
-              value={String(props.value.tts?.speed ?? 1)}
-            />
-            <TextInput
-              inputMode="numeric"
-              label={t('settings.ai.field.maxCharsPerChunk')}
-              onChange={(value) =>
-                updateConfig({
-                  tts: {
-                    ...props.value.tts,
-                    maxCharsPerChunk: value.trim() ? Number(value) : 1800,
-                  },
-                })
-              }
-              type="number"
-              value={String(props.value.tts?.maxCharsPerChunk ?? 1800)}
-            />
-            <TextInput
-              inputMode="numeric"
-              label={t('settings.ai.field.concurrency')}
-              onChange={(value) =>
-                updateConfig({
-                  tts: {
-                    ...props.value.tts,
-                    concurrency: value.trim() ? Number(value) : 3,
-                  },
-                })
-              }
-              type="number"
-              value={String(props.value.tts?.concurrency ?? 3)}
-            />
-            <TextInput
-              inputMode="numeric"
-              label={t('settings.ai.field.maxCharsPerRun')}
-              onChange={(value) =>
-                updateConfig({
-                  tts: {
-                    ...props.value.tts,
-                    maxCharsPerRun: value.trim() ? Number(value) : 120000,
-                  },
-                })
-              }
-              type="number"
-              value={String(props.value.tts?.maxCharsPerRun ?? 120000)}
-            />
-          </div>
-        </FeatureSection>
-
-        <SettingsSection
-          description={t('settings.ai.section.otherModelsDescription')}
-          title={t('settings.ai.section.otherModels')}
-        >
-          <div className="space-y-4">
-            <AIModelAssignmentField
-              label={t('settings.ai.assignment.writerLabel')}
-              models={providerModels}
-              onChange={(writerModel) => updateConfig({ writerModel })}
-              providers={providers}
-              value={props.value.writerModel}
-            />
-          </div>
-        </SettingsSection>
-      </div>
+      <SettingsGroup desc={ai('modelsDesc')} title={ai('modelsTitle')}>
+        {modelRow({
+          desc: ai('writerDesc'),
+          divider: false,
+          label: ai('writerLabel'),
+          models: textModels,
+          onChange: (writerModel) => update({ writerModel }),
+          value: config.writerModel,
+        })}
+        {modelRow({
+          capability: 'decision',
+          desc: ai('decisionDesc'),
+          label: ai('decisionLabel'),
+          models: decisionModels,
+          onChange: (decisionModel) => update({ decisionModel }),
+          value: config.decisionModel,
+        })}
+      </SettingsGroup>
 
       <AIProviderDrawer
         modelCacheKey={
@@ -608,87 +694,10 @@ export function AIConfigEditor(props: {
           editingProvider
             ? ((editingProvider.capabilities?.decision
                 ? decisionModels
-                : providerModels)[editingProvider.id] ?? [])
+                : textModels)[editingProvider.id] ?? [])
             : []
         }
       />
     </>
-  )
-}
-
-function ProviderRow(props: {
-  onDelete: () => void
-  onEdit: () => void
-  onToggle: (enabled: boolean) => void
-  provider: AIProviderConfig
-}) {
-  const { t } = useI18n()
-  const provider = props.provider
-  const capabilities = [
-    provider.capabilities?.decision
-      ? t('settings.ai.capability.decision')
-      : null,
-    (provider.capabilities?.text ?? true)
-      ? t('settings.ai.capability.text')
-      : null,
-    provider.capabilities?.image ? t('settings.ai.capability.image') : null,
-    provider.capabilities?.speech ? t('settings.ai.capability.speech') : null,
-  ].filter(Boolean)
-  return (
-    <div className="flex items-center gap-3 py-3">
-      <div className={cn('min-w-0 flex-1', !provider.enabled && 'opacity-60')}>
-        <div className="truncate text-sm font-medium">
-          {formatAIProviderLabel(provider)}
-        </div>
-        <div className="mt-1 truncate text-xs text-neutral-500">
-          {capabilities.join(' · ') || t('settings.ai.provider.row.empty')}
-        </div>
-      </div>
-      <Switch
-        aria-label={t('settings.oauth.switch.enabled')}
-        checked={provider.enabled}
-        onCheckedChange={props.onToggle}
-      />
-      <Button
-        aria-label={t('settings.ai.provider.editAction')}
-        onClick={props.onEdit}
-        type="button"
-        variant="subtle"
-      >
-        <Pencil aria-hidden="true" className="size-4" />
-      </Button>
-      <Button
-        aria-label={t('common.delete')}
-        onClick={props.onDelete}
-        type="button"
-        variant="subtle"
-      >
-        <Trash2 aria-hidden="true" className="size-4" />
-      </Button>
-    </div>
-  )
-}
-
-function FeatureSection(props: {
-  assignment: ReactNode
-  children: ReactNode
-  description?: string
-  enabled: boolean
-  onEnabledChange: (value: boolean) => void
-  title: string
-  toggleLabel: string
-}) {
-  return (
-    <SettingsSection description={props.description} title={props.title}>
-      <div className="space-y-4">
-        <FormSwitch
-          checked={props.enabled}
-          label={props.toggleLabel}
-          onCheckedChange={props.onEnabledChange}
-        />
-        {props.assignment}
-        {props.children}
-      </div>
-    </SettingsSection>
   )
 }

@@ -1,5 +1,6 @@
 import type { AgentStore, ToolCallGroupItem } from '@haklex/rich-agent-core'
 import { agentStoreSelectors } from '@haklex/rich-agent-core'
+import { createStaticStyles } from '@lobehub/ui'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useStore } from 'zustand'
@@ -10,6 +11,52 @@ import { Scroll } from '~/ui/primitives/scroll'
 import { getAgentBubbleKey } from './agent-operations'
 import { DynamicComponentCard } from './DynamicComponentCard'
 import { AgentMessageItem } from './messages'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u2b5fa9a9: css`
+    min-height: 0px;
+    flex: 1 1 0%;
+  `,
+  ueb6e8b88: css`
+    padding: 0.75rem;
+  `,
+  ue023fdc0: css`
+    display: flex;
+    height: 7rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uf9dfa057: css`
+    width: 0.875rem;
+    height: 0.875rem;
+    @keyframes byline-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    animation: byline-spin 1s linear infinite;
+  `,
+  u0f0df7aa: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.25rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u6ed543e2: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.75rem;
+    }
+  `,
+  u6f7e013d: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.5rem;
+    }
+  `,
+}))
 
 interface MessageListProps {
   store: AgentStore
@@ -59,20 +106,25 @@ export function MessageList(props: MessageListProps) {
   }, [bubbles])
 
   return (
-    <Scroll className="min-h-0 flex-1" innerClassName="p-3" ref={viewportRef}>
+    <Scroll
+      className={lobeStyles.u2b5fa9a9}
+      innerClassName={lobeStyles.ueb6e8b88}
+      ref={viewportRef}
+    >
       {props.isHydrating ? (
-        <div className="flex h-28 items-center justify-center gap-2 text-xs text-fg-muted">
-          <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+        <div className={lobeStyles.ue023fdc0}>
+          <Loader2 aria-hidden="true" className={lobeStyles.uf9dfa057} />
           {t('write.agent.hydrating')}
         </div>
       ) : bubbles.length === 0 ? (
-        <p className="text-xs leading-5 text-fg-muted">
-          {t('write.agent.empty')}
-        </p>
+        <p className={lobeStyles.u0f0df7aa}>{t('write.agent.empty')}</p>
       ) : (
-        <div className="space-y-3">
+        <div className={lobeStyles.u6ed543e2}>
           {orderedBubbles.map(({ bubble, index }) => (
-            <div key={getAgentBubbleKey(bubble, index)} className="space-y-2">
+            <div
+              key={getAgentBubbleKey(bubble, index)}
+              className={lobeStyles.u6f7e013d}
+            >
               <AgentMessageItem
                 actionsLocked={actionsLocked}
                 bubble={bubble}

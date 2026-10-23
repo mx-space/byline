@@ -1,4 +1,6 @@
+import { ConfigProvider } from '@lobehub/ui'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import * as motion from 'motion/react-m'
 import { act } from 'react'
 import type { Root } from 'react-dom/client'
 import { createRoot } from 'react-dom/client'
@@ -59,12 +61,14 @@ async function render() {
     root.render(
       <MemoryRouter initialEntries={['/setup']}>
         <QueryClientProvider client={queryClient}>
-          <I18nProvider>
-            <Routes>
-              <Route element={<OnboardingRouteViewContent />} path="/setup" />
-              <Route element={<p>dashboard page</p>} path="/dashboard" />
-            </Routes>
-          </I18nProvider>
+          <ConfigProvider motion={motion}>
+            <I18nProvider>
+              <Routes>
+                <Route element={<OnboardingRouteViewContent />} path="/setup" />
+                <Route element={<p>dashboard page</p>} path="/dashboard" />
+              </Routes>
+            </I18nProvider>
+          </ConfigProvider>
         </QueryClientProvider>
       </MemoryRouter>,
     )

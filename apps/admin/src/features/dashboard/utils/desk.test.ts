@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
+import type { AiOverviewListRow } from '~/api/ai-overview'
 import type { DraftModel } from '~/models/draft'
 import { DraftRefType } from '~/models/draft'
 
-import { buildWritingItems } from './desk'
+import {
+  aiGapRows,
+  aiOverviewArticlePath,
+  buildWritingItems,
+  displayDeskTime,
+  taskRecordPath,
+  versionLabel,
+} from './desk'
 
 function draft(over: {
   documentId: string
@@ -69,9 +77,35 @@ describe('buildWritingItems', () => {
       ['doc-b', 'unpublished', 1],
     ])
     expect(items[0].draftId).toBe('a1')
-    expect(items[1]).toMatchObject({
-      chars: 25,
-      excerpt: 'first line second line',
-    })
+  })
+})
+
+describe('aiGapRows', () => {
+  it('keeps only posts that miss at least one AI output', () => {
+    const row = (id: string, gapCount: number) =>
+      ({
+        article: { id, title: id, type: 'Post' },
+        gapCount,
+      }) as unknown as AiOverviewListRow
+    expect(
+      aiGapRows([row('a', 0), row('b', 2), row('c', 1)]).map(
+        (r) => r.article.id,
+      ),
+    ).toEqual(['b', 'c'])
+    expect(aiOverviewArticlePath('b 1')).toBe('/ai/overview/b%201')
+  })
+})
+
+describe('task records', () => {
+  it('keeps the task filter on the link', () => {
+    expect(taskRecordPath('42', 'failed')).toBe('/tasks/42?status=failed')
+    expect(taskRecordPath('42', 'active')).toBe('/tasks/42?status=active')
+  })
+
+  it('renders a missing time as an empty placeholder', () => {
+    expect(displayDeskTime('-')).toBe('--')
+    expect(displayDeskTime('3 分钟前')).toBe('3 分钟前')
+    expect(versionLabel('')).toBe('--')
+    expect(versionLabel('1.2.0')).toBe('v1.2.0')
   })
 })

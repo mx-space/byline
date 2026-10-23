@@ -1,4 +1,10 @@
-import { Badge } from '~/ui/primitives/badge'
+import { createStaticStyles, Tag } from '@lobehub/ui'
+
+const styles = createStaticStyles(({ css }) => ({
+  amount: css`
+    font-variant-numeric: tabular-nums;
+  `,
+}))
 
 export function TaskCostBadge(props: {
   className?: string
@@ -6,14 +12,12 @@ export function TaskCostBadge(props: {
 }) {
   if (props.cost == null || props.cost === 0) return null
   return (
-    <Badge
+    <Tag
       className={props.className}
-      size="sm"
+      size="small"
       title={`${props.cost.toFixed(6)} USD`}
-      tone="neutral"
-      variant="outline"
     >
-      <span className="tabular-nums">${props.cost.toFixed(4)} USD</span>
-    </Badge>
+      <span className={styles.amount}>${props.cost.toFixed(4)} USD</span>
+    </Tag>
   )
 }

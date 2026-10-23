@@ -1,10 +1,60 @@
+import { createStaticStyles, toast } from '@lobehub/ui'
 import type { ReactNode } from 'react'
 import { Fragment, useMemo } from 'react'
-import { toast } from 'sonner'
 
 import { ModalFooter, ModalHeader } from '~/ui/feedback/modal'
 import { present, useModal } from '~/ui/feedback/modal-imperative'
 import { Button } from '~/ui/primitives/button'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u00b605d7: css`
+    color: ${cssVar.colorInfo};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorInfo};
+    }
+  `,
+  ub09adbd2: css`
+    color: ${cssVar.colorSuccess};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorSuccess};
+    }
+  `,
+  u8654ece3: css`
+    color: ${cssVar.colorWarning};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorWarning};
+    }
+  `,
+  uc3e2ed85: css`
+    color: ${cssVar.colorInfo};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorInfo};
+    }
+  `,
+  u456314b9: css`
+    display: flex;
+    max-height: 80svh;
+    width: 100%;
+    flex-direction: column;
+  `,
+  u3e2463bc: css`
+    min-height: 0px;
+    flex: 1 1 0%;
+    overflow: auto;
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 1.5rem;
+    padding-block: 1rem;
+  `,
+  u42a08798: css`
+    margin: 0px;
+    white-space: pre;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.625;
+    color: ${cssVar.colorText};
+  `,
+}))
 
 interface EditorDebugDialogProps {
   editorStateJson: string
@@ -25,27 +75,27 @@ function highlightJson(json: string): ReactNode[] {
     if (str !== undefined) {
       if (colon !== undefined) {
         out.push(
-          <span className="text-sky-700 dark:text-sky-400" key={key++}>
+          <span className={lobeStyles.u00b605d7} key={key++}>
             {str}
           </span>,
           colon,
         )
       } else {
         out.push(
-          <span className="text-emerald-700 dark:text-emerald-400" key={key++}>
+          <span className={lobeStyles.ub09adbd2} key={key++}>
             {str}
           </span>,
         )
       }
     } else if (num !== undefined) {
       out.push(
-        <span className="text-amber-700 dark:text-amber-400" key={key++}>
+        <span className={lobeStyles.u8654ece3} key={key++}>
           {num}
         </span>,
       )
     } else if (lit !== undefined) {
       out.push(
-        <span className="text-purple-700 dark:text-purple-400" key={key++}>
+        <span className={lobeStyles.uc3e2ed85} key={key++}>
           {lit}
         </span>,
       )
@@ -88,10 +138,10 @@ function EditorDebugDialog({ editorStateJson }: EditorDebugDialogProps) {
   }
 
   return (
-    <div className="flex max-h-[80svh] w-full flex-col">
+    <div className={lobeStyles.u456314b9}>
       <ModalHeader title="调试 · Editor State" />
-      <div className="min-h-0 flex-1 overflow-auto bg-surface-inset px-6 py-4">
-        <pre className="m-0 whitespace-pre font-mono text-xs leading-relaxed text-fg">
+      <div className={lobeStyles.u3e2463bc}>
+        <pre className={lobeStyles.u42a08798}>
           {highlighted.map((node, i) => (
             <Fragment key={i}>{node}</Fragment>
           ))}

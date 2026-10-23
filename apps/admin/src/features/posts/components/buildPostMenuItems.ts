@@ -1,52 +1,55 @@
+import type { ContextMenuItem as LobeMenuItem } from '@lobehub/ui'
+import { toast } from '@lobehub/ui'
 import { Check, Copy } from 'lucide-react'
-import { toast } from 'sonner'
 
-import type { TranslationKey, TranslationValues } from '~/i18n/types'
 import type { PostModel } from '~/models/post'
 import type { ListAction } from '~/ui/list-actions'
 import type { ContextMenuItem } from '~/ui/overlay/context-menu'
+
+import type { PostCopy } from '../copy'
 
 export interface PostMenuCategoryOption {
   id: string
   name: string
 }
 
-type Translator = (key: TranslationKey, values?: TranslationValues) => string
-
 export interface BuildPostMenuItemsOptions {
   actions: ReadonlyArray<ListAction<PostModel>>
+  aiLabel: string
   aiMenuItems?: ContextMenuItem[]
   categories: PostMenuCategoryOption[]
+  categoryDisabled?: boolean
+  copy: PostCopy
   externalHref: string
+  pinDisabled?: boolean
+  publishDisabled?: boolean
   onCategoryChange: (categoryId: string) => void
   onPinToggle: (next: boolean) => void
   onPublishToggle: (next: boolean) => void
-  t: Translator
 }
 
 async function copyText(
   value: string | undefined,
   label: string,
-  t: Translator,
+  copy: PostCopy,
 ) {
   if (!value) {
-    toast.error(t('posts.toast.copyTargetMissing', { label }))
+    toast.error(copy('copyMissing', { label }))
     return
   }
   try {
     await navigator.clipboard.writeText(value)
-    toast.success(t('posts.toast.copySucceeded', { label }))
+    toast.success(copy('copySucceeded', { label }))
   } catch {
-    toast.error(t('posts.toast.copyFailed'))
+    toast.error(copy('copyFailed'))
   }
 }
 
-function actionToItem<T>(
-  action: ListAction<T> | undefined,
-  target: T,
-): ContextMenuItem | null {
+function actionToItem(
+  action: ListAction<PostModel> | undefined,
+  target: PostModel,
+): LobeMenuItem | null {
   if (!action) return null
-  if (action.available && !action.available([target])) return null
   return {
     danger: action.danger,
     extra: action.shortcutLabel,
@@ -57,16 +60,41 @@ function actionToItem<T>(
   }
 }
 
+function adaptAiItems(items: ContextMenuItem[]): LobeMenuItem[] {
+  const next: LobeMenuItem[] = []
+  for (const item of items) {
+    if (!item) continue
+    if (item.type === 'divider') {
+      next.push({ key: item.key ?? 'ai-divider', type: 'divider' })
+      continue
+    }
+    if (
+      item.type === 'checkbox' ||
+      item.type === 'group' ||
+      item.type === 'submenu' ||
+      'children' in item
+    ) {
+      continue
+    }
+    const click = item.onClick
+    next.push({
+      icon: item.icon,
+      key: item.key ?? 'ai-item',
+      label: item.label,
+      onClick: click ? () => click(undefined as never) : undefined,
+    })
+  }
+  return next
+}
+
 export function buildPostMenuItems(
   post: PostModel,
   options: BuildPostMenuItemsOptions,
-): ContextMenuItem[] {
+): LobeMenuItem[] {
   const find = (key: string) =>
     options.actions.find((action) => action.key === key)
-
-  const t = options.t
-
-  const items: ContextMenuItem[] = []
+  const copy = options.copy
+  const items: LobeMenuItem[] = []
 
   const edit = actionToItem(find('edit'), post)
   if (edit) items.push(edit)
@@ -74,18 +102,20 @@ export function buildPostMenuItems(
   if (openExternal) items.push(openExternal)
 
   items.push(
-    { key: 'sep-1', type: 'divider' },
+    { key: 'sep-status', type: 'divider' },
     {
       checked: post.isPublished ?? false,
+      disabled: options.publishDisabled,
       key: 'publish',
-      label: t('posts.menu.publish'),
+      label: copy('publishToggle'),
       onCheckedChange: options.onPublishToggle,
       type: 'checkbox',
     },
     {
       checked: Boolean(post.pinAt),
+      disabled: options.pinDisabled,
       key: 'pin',
-      label: t('posts.menu.pin'),
+      label: copy('pinToggle'),
       onCheckedChange: options.onPinToggle,
       type: 'checkbox',
     },
@@ -93,55 +123,60 @@ export function buildPostMenuItems(
 
   if (options.categories.length > 0) {
     items.push({
-      children: options.categories.map<ContextMenuItem>((category) => ({
+      children: options.categories.map((category) => ({
+        disabled: options.categoryDisabled,
         icon: category.id === post.categoryId ? Check : undefined,
         key: `category-${category.id}`,
         label: category.name,
-        onClick: () => options.onCategoryChange(category.id),
+        onClick: () => {
+          if (category.id !== post.categoryId)
+            options.onCategoryChange(category.id)
+        },
       })),
-      key: 'category-submenu',
-      label: t('posts.menu.category.change'),
+      key: 'category',
+      label: copy('changeCategory'),
       type: 'submenu',
     })
   }
 
-  if (options.aiMenuItems?.length) {
+  const aiItems = options.aiMenuItems?.length
+    ? adaptAiItems(options.aiMenuItems)
+    : []
+  if (aiItems.length > 0) {
     items.push(
       { key: 'sep-ai', type: 'divider' },
       {
-        children: options.aiMenuItems,
-        key: 'ai-submenu',
-        label: t('ai.menu.label'),
+        children: aiItems,
+        key: 'ai',
+        label: options.aiLabel,
         type: 'submenu',
       },
     )
   }
 
   items.push(
-    { key: 'sep-2', type: 'divider' },
+    { key: 'sep-copy', type: 'divider' },
     {
       icon: Copy,
       key: 'copy-link',
-      label: t('posts.menu.copy.link'),
+      label: copy('copyLink'),
       onClick: () =>
-        void copyText(options.externalHref, t('posts.copy.label.link'), t),
+        void copyText(options.externalHref, copy('copyLabelLink'), copy),
     },
     {
       key: 'copy-id',
-      label: t('posts.menu.copy.id'),
-      onClick: () => void copyText(post.id, t('posts.copy.label.id'), t),
+      label: copy('copyId'),
+      onClick: () => void copyText(post.id, copy('copyLabelId'), copy),
     },
     {
       key: 'copy-slug',
-      label: t('posts.menu.copy.slug'),
-      onClick: () => void copyText(post.slug, t('posts.copy.label.slug'), t),
+      label: copy('copySlug'),
+      onClick: () => void copyText(post.slug, copy('copyLabelSlug'), copy),
     },
   )
 
   const remove = actionToItem(find('delete'), post)
-  if (remove) {
-    items.push({ key: 'sep-3', type: 'divider' }, remove)
-  }
+  if (remove) items.push({ key: 'sep-delete', type: 'divider' }, remove)
 
   return items
 }

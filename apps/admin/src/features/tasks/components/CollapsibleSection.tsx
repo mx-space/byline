@@ -1,42 +1,67 @@
+import { Collapsible, createStaticStyles, Icon } from '@lobehub/ui'
 import { ChevronRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 
-import { cn } from '~/utils/cn'
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  section: css`
+    border-block-start: 1px solid ${cssVar.colorBorderSecondary};
+    padding-block-start: 8px;
+  `,
+  trigger: css`
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: ${cssVar.colorText};
+    cursor: pointer;
+    display: flex;
+    font-size: ${cssVar.fontSize};
+    font-weight: 500;
+    gap: 6px;
+    padding-block: 8px;
+    padding-inline: 0;
+    text-align: start;
+    width: 100%;
+  `,
+  hint: css`
+    color: ${cssVar.colorTextSecondary};
+    font-size: ${cssVar.fontSizeSM};
+    font-weight: 400;
+    margin-inline-start: auto;
+  `,
+  open: css`
+    display: inline-flex;
+    transform: rotate(90deg);
+  `,
+  body: css`
+    padding-block-end: 8px;
+  `,
+}))
 
-interface CollapsibleSectionProps {
+export function CollapsibleSection(props: {
+  children: ReactNode
   defaultOpen?: boolean
   hint?: ReactNode
-  title: ReactNode
-  children: ReactNode
-}
-
-export function CollapsibleSection(props: CollapsibleSectionProps) {
+  title: string
+}) {
   const [open, setOpen] = useState(props.defaultOpen ?? false)
-
   return (
-    <section className="mt-5 border-t border-border pt-4">
+    <section className={styles.section}>
       <button
         aria-expanded={open}
-        className="flex w-full items-center gap-2 text-left text-xs font-medium uppercase tracking-wide text-fg-muted hover:text-fg"
-        onClick={() => setOpen((v) => !v)}
+        className={styles.trigger}
+        onClick={() => setOpen((current) => !current)}
         type="button"
       >
-        <ChevronRight
-          aria-hidden="true"
-          className={cn(
-            'size-3 shrink-0 transition-transform',
-            open && 'rotate-90',
-          )}
-        />
-        <span className="flex-1">{props.title}</span>
-        {props.hint ? (
-          <span className="text-xs font-normal normal-case text-fg-subtle">
-            {props.hint}
-          </span>
-        ) : null}
+        <span className={open ? styles.open : undefined}>
+          <Icon icon={ChevronRight} size="small" />
+        </span>
+        {props.title}
+        {props.hint ? <span className={styles.hint}>{props.hint}</span> : null}
       </button>
-      {open ? <div className="mt-3">{props.children}</div> : null}
+      <Collapsible open={open}>
+        <div className={styles.body}>{props.children}</div>
+      </Collapsible>
     </section>
   )
 }

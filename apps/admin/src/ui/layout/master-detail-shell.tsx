@@ -1,3 +1,4 @@
+import { createStaticStyles, DraggablePanel } from '@lobehub/ui'
 import type { PanInfo } from 'motion/react'
 import { animate, motion, useMotionValue, useTransform } from 'motion/react'
 import type { ReactNode } from 'react'
@@ -12,16 +13,118 @@ import {
   useRef,
   useState,
 } from 'react'
-import {
-  Group as PanelGroup,
-  Panel as ResizablePanel,
-} from 'react-resizable-panels'
 import { useNavigate, useOutlet } from 'react-router'
 
 import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import { FocusScope } from '~/ui/focus-scope'
-import { ResizeHandle } from '~/ui/layout/resize-handle'
 import { cn } from '~/utils/cn'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u5a7d75b2: css`
+    position: relative;
+    height: 100%;
+    min-height: 0px;
+    overflow: hidden;
+  `,
+  u757e6714: css`
+    display: flex;
+    height: 100%;
+    min-height: 0px;
+  `,
+  u97a1973f: css`
+    flex: 1 1 auto;
+    min-height: 0px;
+    min-width: 0px;
+    overflow: hidden;
+    background-color: ${cssVar.colorBgContainer};
+  `,
+  panel: css`
+    flex: none;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+
+    & > * {
+      min-width: 0;
+    }
+  `,
+  panelContent: css`
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  `,
+  u1098decd: css`
+    position: relative;
+    height: 100%;
+  `,
+  u52e5207a: css`
+    height: 100%;
+    min-height: 0px;
+  `,
+  u566840c9: css`
+    position: absolute;
+    inset: 0px;
+    min-height: 0px;
+    overflow: hidden;
+  `,
+  ua4326536: css`
+    pointer-events: none;
+  `,
+  ub9b35245: css`
+    box-shadow: ${cssVar.boxShadow};
+    position: absolute;
+    inset: 0px;
+    z-index: 30;
+    min-height: 0px;
+    min-width: 0px;
+    overflow: hidden;
+    background-color: ${cssVar.colorBgContainer};
+  `,
+  u7aae7876: css`
+    display: flex;
+    height: 100%;
+    min-height: 0px;
+    flex-direction: column;
+    background-color: ${cssVar.colorBgContainer};
+  `,
+  u6d617320: css`
+    height: 3rem;
+    flex-shrink: 0;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding-inline: 1rem;
+  `,
+  ueb0b04ac: css`
+    flex: 1 1 0%;
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.75rem;
+    }
+    padding: 1rem;
+  `,
+  u1e49e42b: css`
+    height: 1rem;
+    width: 75%;
+    animation: byline-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    border-radius: 8px;
+    background-color: ${cssVar.colorFillSecondary};
+  `,
+  ucc400fbc: css`
+    height: 1rem;
+    width: 50%;
+    animation: byline-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    border-radius: 8px;
+    background-color: ${cssVar.colorFillSecondary};
+  `,
+  ueee75aa2: css`
+    height: 1rem;
+    width: 66.66666666666666%;
+    animation: byline-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    border-radius: 8px;
+    background-color: ${cssVar.colorFillSecondary};
+  `,
+}))
 
 /** List 之默认宽度（像素）。group 改尺寸时保 pixel-size 不变。 */
 const DEFAULT_LIST_PIXELS = 320
@@ -162,49 +265,44 @@ function DesktopShell(props: DesktopShellProps) {
   return (
     <div
       className={cn(
-        'relative h-full min-h-0 overflow-hidden bg-background',
+        lobeStyles.u5a7d75b2,
+        lobeStyles.u757e6714,
         props.className,
       )}
     >
-      <PanelGroup className="flex h-full min-h-0" orientation="horizontal">
-        <ResizablePanel
-          className={cn(
-            'min-h-0 overflow-hidden bg-background',
-            props.listClassName,
-          )}
-          defaultSize={defaultSize}
-          groupResizeBehavior="preserve-pixel-size"
-          maxSize={maxSize}
-          minSize={minSize}
-        >
-          {props.list}
-        </ResizablePanel>
-        <ResizeHandle />
-        <ResizablePanel
-          className={cn(
-            'min-h-0 min-w-0 overflow-hidden bg-surface-card',
-            props.detailClassName,
-          )}
-        >
-          <div className="relative h-full" ref={props.asideRef}>
-            {props.hasDetail ? (
-              props.detailScopeId ? (
-                <FocusScope className="h-full min-h-0" id={props.detailScopeId}>
-                  <Suspense fallback={<DetailSkeleton />}>
-                    {props.outlet}
-                  </Suspense>
-                </FocusScope>
-              ) : (
+      <DraggablePanel
+        className={cn(lobeStyles.panel, props.listClassName)}
+        classNames={{ content: lobeStyles.panelContent }}
+        collapseThreshold={Math.min(minSize, 160)}
+        defaultSize={{ width: defaultSize }}
+        maxWidth={maxSize}
+        minWidth={minSize}
+        mode="fixed"
+        placement="left"
+        showHandleWhenCollapsed
+      >
+        {props.list}
+      </DraggablePanel>
+      <div className={cn(lobeStyles.u97a1973f, props.detailClassName)}>
+        <div className={lobeStyles.u1098decd} ref={props.asideRef}>
+          {props.hasDetail ? (
+            props.detailScopeId ? (
+              <FocusScope
+                className={lobeStyles.u52e5207a}
+                id={props.detailScopeId}
+              >
                 <Suspense fallback={<DetailSkeleton />}>
                   {props.outlet}
                 </Suspense>
-              )
+              </FocusScope>
             ) : (
-              props.emptyDetail
-            )}
-          </div>
-        </ResizablePanel>
-      </PanelGroup>
+              <Suspense fallback={<DetailSkeleton />}>{props.outlet}</Suspense>
+            )
+          ) : (
+            props.emptyDetail
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -343,17 +441,14 @@ function MobileShell(props: MobileShellProps) {
 
   return (
     <div
-      className={cn(
-        'relative h-full min-h-0 overflow-hidden bg-background',
-        props.className,
-      )}
+      className={cn(lobeStyles.u5a7d75b2, props.className)}
       ref={containerRef}
     >
       <motion.div
         aria-hidden={renderOverlay ? 'true' : undefined}
         className={cn(
-          'absolute inset-0 min-h-0 overflow-hidden bg-background',
-          renderOverlay && 'pointer-events-none',
+          lobeStyles.u566840c9,
+          renderOverlay && lobeStyles.ua4326536,
           props.listClassName,
         )}
         style={{ x: listX }}
@@ -363,10 +458,7 @@ function MobileShell(props: MobileShellProps) {
 
       {renderOverlay ? (
         <motion.div
-          className={cn(
-            'shadow-lg absolute inset-0 z-30 min-h-0 min-w-0 overflow-hidden bg-surface-card',
-            props.detailClassName,
-          )}
+          className={cn(lobeStyles.ub9b35245, props.detailClassName)}
           drag={edgeDrag ? 'x' : false}
           dragConstraints={{ left: 0, right: width }}
           dragElastic={{ left: 0, right: 0 }}
@@ -376,7 +468,10 @@ function MobileShell(props: MobileShellProps) {
           style={{ x }}
         >
           {props.detailScopeId ? (
-            <FocusScope className="h-full min-h-0" id={props.detailScopeId}>
+            <FocusScope
+              className={lobeStyles.u52e5207a}
+              id={props.detailScopeId}
+            >
               <Suspense fallback={<DetailSkeleton />}>
                 {lastOutletRef.current}
               </Suspense>
@@ -410,12 +505,12 @@ export function useMasterDetailContext() {
  */
 function DetailSkeleton() {
   return (
-    <div className="flex h-full min-h-0 flex-col bg-surface-card">
-      <div className="h-12 shrink-0 border-b border-border px-4" />
-      <div className="flex-1 space-y-3 p-4">
-        <div className="h-4 w-3/4 animate-pulse rounded-sm bg-surface-inset" />
-        <div className="h-4 w-1/2 animate-pulse rounded-sm bg-surface-inset" />
-        <div className="h-4 w-2/3 animate-pulse rounded-sm bg-surface-inset" />
+    <div className={lobeStyles.u7aae7876}>
+      <div className={lobeStyles.u6d617320} />
+      <div className={lobeStyles.ueb0b04ac}>
+        <div className={lobeStyles.u1e49e42b} />
+        <div className={lobeStyles.ucc400fbc} />
+        <div className={lobeStyles.ueee75aa2} />
       </div>
     </div>
   )

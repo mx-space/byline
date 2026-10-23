@@ -1,9 +1,9 @@
+import { toast } from '@lobehub/ui'
 import type { WsClient, WsClientState } from '@mx-space/ws-client'
 import { createWsClient } from '@mx-space/ws-client'
 import type { QueryClient } from '@tanstack/react-query'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { toast } from 'sonner'
 
 import type { AITask } from '~/api/tasks'
 import { AITaskStatus } from '~/api/tasks'

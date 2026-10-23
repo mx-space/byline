@@ -1,16 +1,28 @@
-import { useI18n } from '~/i18n'
-import { Button } from '~/ui/primitives/button'
+import { Button, Empty } from '@lobehub/ui'
+import { FileText } from 'lucide-react'
 
-export function PostsError(props: { onRetry: () => void }) {
-  const { t } = useI18n()
+import { usePostCopy } from '../copy'
+import { styles } from './styles'
+
+export function PostsError(props: {
+  kind: 'failed' | 'slow'
+  onRetry: () => void
+}) {
+  const copy = usePostCopy()
+  const slow = props.kind === 'slow'
+
   return (
-    <div className="flex min-h-[24rem] flex-col items-center justify-center px-4 text-center">
-      <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
-        {t('posts.error.loadFailed')}
-      </p>
-      <Button className="mt-3" onClick={props.onRetry} type="button">
-        {t('common.retry')}
-      </Button>
+    <div className={styles.state}>
+      <Empty
+        action={
+          <Button htmlType="button" onClick={props.onRetry}>
+            {copy('retry')}
+          </Button>
+        }
+        description={slow ? copy('slowDescription') : copy('errorDescription')}
+        icon={FileText}
+        title={slow ? copy('slowTitle') : copy('errorTitle')}
+      />
     </div>
   )
 }

@@ -1,18 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import type { FileRowItem } from '../utils/adapters'
-
-interface UseFileSearchResult<T> {
-  items: FileRowItem<T>[]
-  query: string
-  setQuery: (value: string) => void
-  deferredQuery: string
-}
-
 export function useFileSearch<T>(
-  source: FileRowItem<T>[],
+  source: T[],
+  getName: (item: T) => string,
   delayMs = 100,
-): UseFileSearchResult<T> {
+) {
   const [query, setQuery] = useState('')
   const [deferredQuery, setDeferredQuery] = useState('')
 
@@ -26,14 +18,8 @@ export function useFileSearch<T>(
   const items = useMemo(() => {
     if (!deferredQuery) return source
     const needle = deferredQuery.toLowerCase()
-    return source.filter((item) => {
-      const fields = [item.primary, item.secondary, item.tertiary]
-      return fields.some(
-        (field) =>
-          typeof field === 'string' && field.toLowerCase().includes(needle),
-      )
-    })
-  }, [source, deferredQuery])
+    return source.filter((item) => getName(item).toLowerCase().includes(needle))
+  }, [source, deferredQuery, getName])
 
-  return { items, query, setQuery, deferredQuery }
+  return { items, query, setQuery }
 }

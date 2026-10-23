@@ -43,12 +43,6 @@ function stubReducedMotion() {
   )
 }
 
-function thumbOf(container: HTMLElement) {
-  return container.querySelector(
-    '[role="switch"] span',
-  ) as HTMLSpanElement | null
-}
-
 let harness: Harness
 
 beforeEach(() => {
@@ -62,82 +56,6 @@ afterEach(() => {
 })
 
 describe('Switch', () => {
-  it('places the thumb at rest when unchecked', () => {
-    act(() => {
-      harness.root.render(
-        createElement(Switch, {
-          checked: false,
-          onCheckedChange: () => {},
-        }),
-      )
-    })
-    expect(
-      thumbOf(harness.container)?.style.getPropertyValue('--switch-x'),
-    ).toBe('0px')
-  })
-
-  it('places the thumb at the checked offset', () => {
-    act(() => {
-      harness.root.render(
-        createElement(Switch, {
-          checked: true,
-          onCheckedChange: () => {},
-        }),
-      )
-    })
-    expect(
-      thumbOf(harness.container)?.style.getPropertyValue('--switch-x'),
-    ).toBe('14px')
-  })
-
-  it('stretches the thumb on pointer down', async () => {
-    act(() => {
-      harness.root.render(
-        createElement(Switch, {
-          checked: false,
-          onCheckedChange: () => {},
-        }),
-      )
-    })
-
-    const root = harness.container.querySelector('[role="switch"]')
-    expect(root).toBeTruthy()
-    act(() => {
-      root!.dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
-      )
-    })
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    expect(thumbOf(harness.container)?.style.width).toBe('22px')
-  })
-
-  it('does not stretch when disabled', async () => {
-    act(() => {
-      harness.root.render(
-        createElement(Switch, {
-          checked: false,
-          disabled: true,
-          onCheckedChange: () => {},
-        }),
-      )
-    })
-
-    const root = harness.container.querySelector('[role="switch"]')
-    act(() => {
-      root!.dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, cancelable: true }),
-      )
-    })
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    expect(thumbOf(harness.container)?.style.width).toBe('18px')
-  })
-
   it('notifies on click', () => {
     const onCheckedChange = vi.fn()
     act(() => {

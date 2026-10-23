@@ -1,59 +1,108 @@
+import {
+  ActionIcon,
+  Button,
+  createStaticStyles,
+  Flexbox,
+  Input,
+  Switch,
+  TextArea,
+  toast,
+} from '@lobehub/ui'
 import { Copy } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 
 import { API_URL } from '~/constants/env'
 import { useI18n } from '~/i18n'
-import { Button } from '~/ui/primitives/button'
-import { FormSwitch } from '~/ui/primitives/switch'
-import { TextArea, TextInput } from '~/ui/primitives/text-field'
 import { authClient } from '~/utils/authjs/auth'
 
+import { settingsAccountCopy } from '../../copy'
 import type {
   FlatOauthProvider,
   OauthProviderField,
-  OauthProviderPayload,
   OauthProviderType,
 } from '../../types/settings'
+import { SecretInput, SettingRow, SettingsGroup } from '../SettingsPrimitives'
 import { AppleIcon, GitHubIcon, GoogleIcon } from './OauthIcons'
+
+export interface OauthDraft {
+  enabled: boolean
+  values: Record<string, string>
+}
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  callback: css`
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: ${cssVar.fontSizeSM};
+    color: ${cssVar.colorTextSecondary};
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  callbackBox: css`
+    padding-block: 4px;
+    padding-inline: 12px 4px;
+    border-radius: ${cssVar.borderRadius};
+    background: ${cssVar.colorFillTertiary};
+  `,
+}))
 
 const providerIcons = {
   apple: AppleIcon,
   github: GitHubIcon,
   google: GoogleIcon,
-} satisfies Record<OauthProviderType, unknown>
+} satisfies Record<OauthProviderType, typeof GitHubIcon>
 
-function initialValues(
+export function createOauthDraft(
   fields: OauthProviderField[],
   data: FlatOauthProvider,
-): Record<string, string> {
-  return Object.fromEntries(
-    fields.map((field) => [
-      field.key,
-      field.secret ? '' : (data.public[field.key] ?? ''),
-    ]),
-  )
+): OauthDraft {
+  return {
+    enabled: data.enabled,
+    values: Object.fromEntries(
+      fields.map((field) => [
+        field.key,
+        field.secret ? '' : (data.public[field.key] ?? ''),
+      ]),
+    ),
+  }
+}
+
+export function countOauthChanges(
+  fields: OauthProviderField[],
+  data: FlatOauthProvider,
+  draft: OauthDraft,
+) {
+  let count = draft.enabled === data.enabled ? 0 : 1
+  for (const field of fields) {
+    const value = draft.values[field.key]?.trim() ?? ''
+    if (
+      field.secret ? value.length > 0 : value !== (data.public[field.key] ?? '')
+    )
+      count += 1
+  }
+  return count
 }
 
 export function OauthProviderSection(props: {
   data: FlatOauthProvider
+  draft: OauthDraft
+  errors: Record<string, string>
   fields: OauthProviderField[]
   label: string
-  onSave: (payload: OauthProviderPayload) => void
-  saving: boolean
+  onChange: (draft: OauthDraft) => void
   type: OauthProviderType
 }) {
-  const { t } = useI18n()
-  const [enabled, setEnabled] = useState(props.data.enabled)
-  const [values, setValues] = useState(() =>
-    initialValues(props.fields, props.data),
-  )
+  const { locale, t } = useI18n()
   const callbackUrl = `${API_URL}/auth/callback/${props.type}`
+  const ProviderIcon = providerIcons[props.type]
 
-  useEffect(() => {
-    setEnabled(props.data.enabled)
-    setValues(initialValues(props.fields, props.data))
-  }, [props.data, props.fields])
+  const setValue = (key: string, value: string) =>
+    props.onChange({
+      ...props.draft,
+      values: { ...props.draft.values, [key]: value },
+    })
 
   const validate = () => {
     const callback = new URL(location.href)
@@ -64,132 +113,102 @@ export function OauthProviderSection(props: {
     })
   }
 
-  const isMissing = (field: OauthProviderField) => {
-    if (field.optional) return false
-    // A stored secret is never read back, so leaving it blank keeps the
-    // existing value instead of clearing it.
-    if (field.secret && props.data.configured) return false
-    return !values[field.key]?.trim()
-  }
-
-  const save = () => {
-    const payload: OauthProviderPayload = {
-      enabled,
-      public: {},
-      secrets: {},
-      type: props.type,
-    }
-    for (const field of props.fields) {
-      const value = values[field.key]?.trim() ?? ''
-      if (field.secret) {
-        if (value) payload.secrets[field.key] = value
-      } else {
-        payload.public[field.key] = value
-      }
-    }
-    props.onSave(payload)
-  }
-
-  const Icon = providerIcons[props.type]
-
   return (
-    <section className="py-4">
-      <div className="mb-4 flex items-center gap-3">
-        <span className="flex size-8 items-center justify-center rounded bg-neutral-100 text-neutral-500 dark:bg-neutral-900 dark:text-neutral-400">
-          <Icon aria-hidden="true" className="size-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-            {props.label}
-          </h3>
-        </div>
-        <FormSwitch
-          checked={enabled}
-          label={t('settings.oauth.switch.enabled')}
-          onCheckedChange={setEnabled}
-        />
-      </div>
-
-      <div className="grid gap-3">
-        {props.fields.map((field) => {
-          const placeholder =
-            field.secret && props.data.configured
-              ? t('settings.oauth.secretKeptPlaceholder')
-              : field.placeholderKey
-                ? t(field.placeholderKey)
-                : field.placeholder
-          const onChange = (value: string) =>
-            setValues((prev) => ({ ...prev, [field.key]: value }))
-
-          return (
-            <div className="grid gap-1.5" key={field.key}>
-              {field.multiline ? (
-                <TextArea
-                  label={field.label}
-                  onChange={onChange}
-                  placeholder={placeholder}
-                  spellCheck={false}
-                  value={values[field.key] ?? ''}
-                />
-              ) : (
-                <TextInput
-                  label={field.label}
-                  onChange={onChange}
-                  placeholder={placeholder}
-                  type={field.secret ? 'password' : 'text'}
-                  value={values[field.key] ?? ''}
-                />
-              )}
-              {field.descriptionKey ? (
-                <p className="text-xs leading-5 text-fg-muted">
-                  {t(field.descriptionKey)}
-                </p>
-              ) : null}
-            </div>
-          )
-        })}
-
-        <div className="grid gap-1.5 text-sm">
-          <span className="text-neutral-600 dark:text-neutral-300">
-            {t('settings.oauth.callbackLabel')}
-          </span>
-          <div className="flex items-center gap-2 rounded bg-neutral-50 px-3 py-2 dark:bg-neutral-900">
-            <code className="min-w-0 flex-1 truncate text-xs text-neutral-600 dark:text-neutral-300">
-              {callbackUrl}
-            </code>
-            <Button
-              aria-label={t('settings.oauth.callbackCopyAria')}
-              className="h-7 px-2"
-              onClick={() => {
-                void navigator.clipboard.writeText(callbackUrl)
-                toast.success(t('settings.oauth.copySuccess'))
-              }}
-              type="button"
-              variant="subtle"
-            >
-              <Copy aria-hidden="true" className="size-3.5" />
-            </Button>
-          </div>
-          {props.type === 'apple' ? (
-            <p className="text-xs leading-5 text-fg-muted">
-              {t('settings.oauth.apple.callbackHelp')}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <Button onClick={validate} type="button" variant="subtle">
-            {t('settings.oauth.action.validate')}
+    <SettingsGroup
+      extra={
+        <Flexbox align="center" gap={12} horizontal>
+          <Button onClick={validate} size="small">
+            {settingsAccountCopy(locale, 'verify')}
           </Button>
-          <Button
-            disabled={props.saving || props.fields.some(isMissing)}
-            onClick={save}
-            type="button"
+          <Switch
+            aria-label={settingsAccountCopy(locale, 'enableProvider', {
+              name: props.label,
+            })}
+            checked={props.draft.enabled}
+            onChange={(enabled) => props.onChange({ ...props.draft, enabled })}
+          />
+        </Flexbox>
+      }
+      title={
+        <Flexbox align="center" as="span" gap={8} horizontal>
+          <ProviderIcon aria-hidden="true" height={16} width={16} />
+          {props.label}
+        </Flexbox>
+      }
+    >
+      {props.fields.map((field, index) => {
+        const value = props.draft.values[field.key] ?? ''
+        const placeholder = field.placeholderKey
+          ? t(field.placeholderKey)
+          : field.placeholder
+        return (
+          <SettingRow
+            desc={field.descriptionKey ? t(field.descriptionKey) : undefined}
+            divider={index > 0}
+            error={props.errors[field.key]}
+            key={field.key}
+            label={field.label}
+            required={!field.optional}
+            wide={field.multiline}
           >
-            {t('settings.oauth.action.save')}
-          </Button>
-        </div>
-      </div>
-    </section>
+            {field.secret ? (
+              <SecretInput
+                aria-label={field.label}
+                multiline={field.multiline}
+                onChange={(next) => setValue(field.key, next)}
+                placeholder={placeholder}
+                stored={props.data.configured}
+                value={value}
+              />
+            ) : field.multiline ? (
+              <TextArea
+                aria-label={field.label}
+                onChange={(event) => setValue(field.key, event.target.value)}
+                placeholder={placeholder}
+                spellCheck={false}
+                value={value}
+              />
+            ) : (
+              <Input
+                aria-label={field.label}
+                onChange={(event) => setValue(field.key, event.target.value)}
+                placeholder={placeholder}
+                value={value}
+              />
+            )}
+          </SettingRow>
+        )
+      })}
+      <SettingRow
+        desc={
+          props.type === 'apple'
+            ? t('settings.oauth.apple.callbackHelp')
+            : undefined
+        }
+        divider
+        label={t('settings.oauth.callbackLabel')}
+        wide
+      >
+        <Flexbox
+          align="center"
+          className={styles.callbackBox}
+          gap={8}
+          horizontal
+        >
+          <code className={styles.callback} title={callbackUrl}>
+            {callbackUrl}
+          </code>
+          <ActionIcon
+            icon={Copy}
+            onClick={() => {
+              void navigator.clipboard.writeText(callbackUrl)
+              toast.success(t('settings.oauth.copySuccess'))
+            }}
+            size="small"
+            title={t('settings.oauth.callbackCopyAria')}
+          />
+        </Flexbox>
+      </SettingRow>
+    </SettingsGroup>
   )
 }

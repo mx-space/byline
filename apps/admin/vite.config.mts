@@ -2,7 +2,6 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import babel from '@rolldown/plugin-babel'
-import tailwindcss from '@tailwindcss/vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { codeInspectorPlugin } from 'code-inspector-plugin'
 import type { PluginOption } from 'vite'
@@ -27,7 +26,6 @@ export default ({ mode }) => {
       esToolkitCompatShim(),
       codeInspectorPlugin({ bundler: 'vite' }),
       adminRoutes({ viewsDir: resolve(__dirname, 'src/views') }),
-      tailwindcss(),
       react(),
       babel({ presets: [reactCompilerPreset()] }),
 

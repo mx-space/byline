@@ -304,6 +304,7 @@ export const zhCN = {
 
   'app.loading.auth': '检查登录状态...',
 
+  'auth.login.asideLine': '邀请制的多作者内容台',
   'auth.login.apple': '使用 Apple 登录',
   'auth.login.failed': '登录失败',
   'auth.login.github': '使用 GitHub 登录',
@@ -365,7 +366,9 @@ export const zhCN = {
   'common.loading': '加载中',
   'common.noData': '暂无数据',
   'common.openMainSite': '前往主站',
+  'common.closeNavigation': '关闭导航',
   'common.openNavigation': '打开导航',
+  'common.skipToContent': '跳到主要内容',
   'common.pagination.nextPage': '下一页',
   'common.pagination.pageSize': '{count} / 页',
   'common.pagination.previousPage': '上一页',
@@ -623,7 +626,7 @@ export const zhCN = {
   'routes.dashboard.title': '仪表盘',
   'routes.drafts.description': '自动保存草稿、版本与内容恢复。',
   'routes.drafts.title': '草稿',
-  'routes.files.description': '上传文件、孤立文件与评论图片审计。',
+  'routes.files.description': '博文用到的图片、音视频和附件。',
   'routes.files.title': '文件',
   'routes.orphanImages.description':
     '已上传但未被任何持久化内容或配置引用的文件。',
@@ -632,7 +635,8 @@ export const zhCN = {
   'routes.posts.title': '博文',
   'routes.settings.description': '个人资料、账户安全与系统选项。',
   'routes.settings.title': '设置',
-  'routes.webhooks.description': '出站 Webhook 端点与派发历史。',
+  'routes.webhooks.description':
+    '内容变化时通知你的其他服务，并查看每次投递的结果。',
   'routes.webhooks.title': 'Webhooks',
   'routes.writePost.description': '在 React markdown 写作界面创建与编辑博文。',
   'routes.writePost.title': '写博文',
@@ -815,7 +819,7 @@ export const zhCN = {
   'settings.group.notification.title': '通知',
   'settings.group.site.description': '站点地址、SEO',
   'settings.group.site.title': '站点',
-  'settings.group.storage.description': '备份、图床、评论图片上传',
+  'settings.group.storage.description': '图床与文件存储',
   'settings.group.storage.title': '存储',
   'settings.group.system.description': '管理端设置、功能开关',
   'settings.group.system.title': '系统',
@@ -1139,12 +1143,15 @@ export const zhCN = {
   'setup.onboarding.ai.features.asideSource': '原文',
   'setup.api.urlLabel': 'API 地址',
 
+  'shell.debug.api': 'API 调试',
+  'shell.debug.local': '本地开发',
+  'shell.locale.en': 'English',
   'shell.locale.label': '界面语言',
+  'shell.locale.zh': '中文',
   'shell.logout': '登出',
   'shell.nav.assets': '资源',
   'shell.nav.content': '内容',
   'shell.nav.intelligence': '智能',
-  'shell.nav.integrations': '集成',
   'shell.nav.system': '系统',
   'shell.owner.fallback': '用户',
   'shell.theme.dark': '深色',
@@ -1804,5 +1811,6 @@ export const zhCN = {
   'ai.translation.regenerateLockedDescription':
     '人工翻译将被新的 AI 翻译替换。',
   'settings.schema.site.title': '内容',
+  'settings.schema.site.defaultSourceLang.title': '默认原文语言',
   'settings.schema.site.description': '新文章的默认设置。',
 } as const

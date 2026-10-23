@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { Check, ChevronDown, Search, Sparkles } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 
@@ -13,6 +14,133 @@ import {
   writeRecentModels,
 } from './model-recents'
 import type { SelectedAgentModel } from './types'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u3c0e9874: css`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    &:disabled {
+      opacity: 0.5;
+    }
+  `,
+  u6c752655: css`
+    width: 0.75rem;
+    height: 0.75rem;
+    flex-shrink: 0;
+  `,
+  ueed8aad8: css`
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  ud21bcf04: css`
+    display: flex;
+    max-height: 20rem;
+    width: 18rem;
+    flex-direction: column;
+  `,
+  ub95c9673: css`
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding-inline: 0.625rem;
+    padding-block: 0.5rem;
+  `,
+  u5174ce5e: css`
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  uee6bd472: css`
+    outline: none;
+    min-width: 0px;
+    flex: 1 1 0%;
+    background-color: transparent;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorText};
+    &::placeholder {
+      color: ${cssVar.colorTextTertiary};
+    }
+  `,
+  ua9dc758b: css`
+    min-height: 0px;
+    flex: 1 1 0%;
+    overflow-y: auto;
+    padding-block: 0.25rem;
+  `,
+  u2b60679d: css`
+    padding-inline: 0.5rem;
+    padding-block: 0.25rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u8748abb9: css`
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    padding-inline: 0.5rem;
+    padding-block: 0.375rem;
+    text-align: left;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+  `,
+  ucfc6e672: css`
+    color: ${cssVar.colorText};
+  `,
+  u67bab313: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  u44c3b3cd: css`
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+    color: ${cssVar.colorPrimary};
+  `,
+  ub948486c: css`
+    padding-inline: 0.5rem;
+    padding-block: 1.5rem;
+    text-align: center;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+}))
 
 interface ModelSelectorProps {
   providerGroups: ProviderModelsResponse[]
@@ -142,43 +270,38 @@ export function ModelSelector({
   return (
     <Popover onOpenChange={handleOpenChange} open={open}>
       <Popover.Trigger
-        className="inline-flex items-center gap-1 text-xs text-fg-muted transition-colors hover:text-fg disabled:opacity-50"
+        className={lobeStyles.u3c0e9874}
         disabled={isEmpty}
         type="button"
       >
-        <Sparkles aria-hidden="true" className="size-3 shrink-0" />
-        <span className="max-w-[150px] truncate">
+        <Sparkles aria-hidden="true" className={lobeStyles.u6c752655} />
+        <span className={lobeStyles.ueed8aad8}>
           {isEmpty ? t('write.agent.modelNoConfig') : triggerLabel}
         </span>
-        <ChevronDown aria-hidden="true" className="size-3 shrink-0" />
+        <ChevronDown aria-hidden="true" className={lobeStyles.u6c752655} />
       </Popover.Trigger>
       <Popover.Content
         align="start"
-        className="flex max-h-80 w-72 flex-col"
+        className={lobeStyles.ud21bcf04}
         initialFocus={inputRef}
         side="top"
         sideOffset={6}
       >
-        <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
-          <Search
-            aria-hidden="true"
-            className="size-3.5 shrink-0 text-fg-subtle"
-          />
+        <div className={lobeStyles.ub95c9673}>
+          <Search aria-hidden="true" className={lobeStyles.u5174ce5e} />
           <input
-            className="outline-hidden min-w-0 flex-1 bg-transparent text-xs text-fg placeholder:text-fg-subtle"
+            className={lobeStyles.uee6bd472}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t('write.agent.model.search')}
             ref={inputRef}
             value={query}
           />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto py-1">
+        <div className={lobeStyles.ua9dc758b}>
           {hasResults ? (
             groups.map((group) => (
               <div key={group.key}>
-                <div className="px-2 py-1 text-xs uppercase tracking-wide text-fg-subtle">
-                  {group.label}
-                </div>
+                <div className={lobeStyles.u2b60679d}>{group.label}</div>
                 {group.rows.map((row) => {
                   const active =
                     selectedModel?.providerId === row.providerId &&
@@ -186,20 +309,18 @@ export function ModelSelector({
                   return (
                     <button
                       className={cn(
-                        'flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-fg-muted transition-colors hover:bg-surface-inset hover:text-fg',
-                        active && 'text-fg',
+                        lobeStyles.u8748abb9,
+                        active && lobeStyles.ucfc6e672,
                       )}
                       key={`${group.key}:${row.providerId}::${row.modelId}`}
                       onClick={() => handleSelect(row)}
                       type="button"
                     >
-                      <span className="min-w-0 flex-1 truncate">
-                        {row.name}
-                      </span>
+                      <span className={lobeStyles.u67bab313}>{row.name}</span>
                       {active ? (
                         <Check
                           aria-hidden="true"
-                          className="size-3.5 shrink-0 text-accent"
+                          className={lobeStyles.u44c3b3cd}
                         />
                       ) : null}
                     </button>
@@ -208,7 +329,7 @@ export function ModelSelector({
               </div>
             ))
           ) : (
-            <div className="px-2 py-6 text-center text-xs text-fg-subtle">
+            <div className={lobeStyles.ub948486c}>
               {t('write.agent.model.empty')}
             </div>
           )}

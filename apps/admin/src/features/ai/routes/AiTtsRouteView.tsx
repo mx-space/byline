@@ -1,4 +1,4 @@
-import { Play, Plus, RefreshCw } from 'lucide-react'
+import { Play, RefreshCw } from 'lucide-react'
 import { useMemo } from 'react'
 
 import type { AITtsRow } from '~/api/ai'
@@ -10,11 +10,11 @@ import {
 } from '~/api/ai'
 
 import { ArticleGroupedRouteView } from '../components/article-grouped/ArticleGroupedRouteView'
-import { TtsPlaybackBody } from '../components/article-grouped/TtsPlaybackBody'
 import type {
   ArticleGroupedConfig,
   ItemAction,
 } from '../components/article-grouped/types'
+import { useAiCopy } from '../copy'
 import {
   buildTtsRegeneratePayload,
   buildTtsResumePayload,
@@ -22,25 +22,40 @@ import {
 } from '../utils/ai'
 
 export function AiTtsRouteView() {
+  const copy = useAiCopy()
+
   const config = useMemo<ArticleGroupedConfig<AITtsRow>>(
     () => ({
-      scopeIdPrefix: 'ai-tts',
-      pageTitleKey: 'routes.aiTts.title',
-      totalCountKey: 'ai.articleGrouped.totalCount',
-      itemCountKey: 'ai.articleGrouped.itemCount',
-      searchPlaceholderKey: 'ai.tts.searchPlaceholder',
-      emptyTitleKey: 'ai.articleGrouped.emptyTitle',
-      emptyDescriptionKey: 'ai.articleGrouped.emptyDescription',
-      detailEmptyTitleKey: 'ai.tts.emptyTitle',
-      detailEmptyDescriptionKey: 'ai.tts.emptyDescription',
-      detailSectionTitleKey: 'ai.tts.detailSectionTitle',
-      inlineEmptyKey: 'ai.articleGrouped.inlineEmpty',
-      itemDeleteConfirmKey: 'ai.articleGrouped.confirmDelete',
-      editTitleKey: 'ai.tts.playbackTitle',
-      itemOpenLabelKey: 'ai.tts.openLabel',
-      kindKey: 'ai.tts.kind',
-
-      groupedQueryKey: 'tts',
+      deleteItem: deleteTts,
+      extraItemActions: (item) => [
+        ...(isTtsNarrationIncomplete(item)
+          ? [
+              {
+                icon: Play,
+                id: 'resume',
+                label: copy('resumeTts'),
+                run: (row) => createTtsTask(buildTtsResumePayload(row)),
+              } satisfies ItemAction<AITtsRow>,
+            ]
+          : []),
+        {
+          icon: RefreshCw,
+          id: 'regenerate',
+          label: copy('retryTts'),
+          run: () => createTtsTask(buildTtsRegeneratePayload(item)),
+        },
+      ],
+      generate: {
+        promptForLang: true,
+        runTask: ({ refId, langs, force }) =>
+          createTtsTask({
+            force,
+            langs: langs?.length ? langs : undefined,
+            refId,
+          }),
+        taskTypeForQueue: 'Tts',
+      },
+      getCreatedAt: (item) => item.updatedAt ?? '',
       getGroupedPage: async (params) => {
         const response = await getTtsGrouped(params)
         return {
@@ -51,55 +66,27 @@ export function AiTtsRouteView() {
           pagination: response.pagination,
         }
       },
+      getId: (item) => item.id,
       getItemsByRef: async (refId) => {
         const response = await getTtsByRefId(refId)
         return { article: response.article, items: response.rows }
       },
-      deleteItem: deleteTts,
-      // Narrations are read-only; the playback body never submits, so this
-      // is never called.
-      updateItem: () => Promise.resolve(),
-
-      generate: {
-        labelKey: 'ai.tts.generateLabel',
-        icon: Plus,
-        promptForLang: true,
-        runTask: ({ refId, langs, force }) =>
-          createTtsTask({
-            force,
-            langs: langs?.length ? langs : undefined,
-            refId,
-          }),
-        taskTypeForQueue: 'Tts',
-      },
-
-      extraItemActions: (item) => [
-        ...(isTtsNarrationIncomplete(item)
-          ? [
-              {
-                id: 'resume',
-                labelKey: 'ai.action.resumeTts',
-                icon: Play,
-                run: (row) => createTtsTask(buildTtsResumePayload(row)),
-              } satisfies ItemAction<AITtsRow>,
-            ]
-          : []),
-        {
-          id: 'regenerate',
-          labelKey: 'ai.action.regenerate',
-          icon: RefreshCw,
-          run: () => createTtsTask(buildTtsRegeneratePayload(item)),
-        },
-      ],
-
-      getPreview: (item) => item.segments[0]?.text ?? '',
       getLang: (item) => item.lang,
-      getCreatedAt: (item) => item.updatedAt ?? '',
-      getId: (item) => item.id,
-
-      EditDrawerBody: TtsPlaybackBody,
+      getPreview: (item) =>
+        copy('voiceMeta', {
+          model: item.model,
+          speed: item.speed,
+          voice: item.voice,
+        }),
+      getStatus: (item) =>
+        isTtsNarrationIncomplete(item)
+          ? { color: 'warning', label: copy('incomplete') }
+          : null,
+      groupedQueryKey: 'tts',
+      product: 'tts',
+      updateItem: () => Promise.resolve(),
     }),
-    [],
+    [copy],
   )
 
   return <ArticleGroupedRouteView<AITtsRow> config={config} />

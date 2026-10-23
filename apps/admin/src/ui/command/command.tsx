@@ -1,4 +1,4 @@
-import { Dialog } from '@base-ui/react/dialog'
+import { ModalBackdrop, ModalPopup, ModalPortal, ModalRoot } from '@lobehub/ui'
 import * as React from 'react'
 
 import { commandScore } from './command-score'
@@ -853,20 +853,16 @@ const CommandDialog = React.forwardRef<HTMLDivElement, DialogProps>(
       ...etc
     } = props
     return (
-      <Dialog.Root open={open} onOpenChange={onOpenChange}>
-        <Dialog.Portal container={container}>
-          <Dialog.Backdrop cmdk-overlay="" className={overlayClassName} />
-          <Dialog.Popup
-            aria-label={props.label}
-            cmdk-dialog=""
-            className={contentClassName}
-          >
+      <ModalRoot onOpenChange={(open) => onOpenChange?.(open)} open={open}>
+        <ModalPortal container={container}>
+          <ModalBackdrop className={overlayClassName} />
+          <ModalPopup aria-label={props.label} className={contentClassName}>
             <CommandRoot ref={forwardedRef} {...etc}>
               {children}
             </CommandRoot>
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
+          </ModalPopup>
+        </ModalPortal>
+      </ModalRoot>
     )
   },
 )

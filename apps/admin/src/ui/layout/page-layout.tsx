@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
@@ -9,14 +10,177 @@ import { MobileHamburger } from '~/ui/layout/mobile-hamburger'
 import { useShellNav } from '~/ui/layout/shell-nav-context'
 import { cn } from '~/utils/cn'
 
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ud435703e: css`
+    display: flex;
+    height: 100%;
+    min-height: 0px;
+    flex-direction: column;
+  `,
+  ubbcd58b2: css`
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-bottom-width: 1px;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding-inline: 0;
+  `,
+  u85dd57df: css`
+    display: flex;
+    min-width: 0px;
+    align-items: center;
+    gap: 0.625rem;
+  `,
+  u9d380b5c: css`
+    display: inline-flex;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uef93af5f: css`
+    display: flex;
+    min-width: 0px;
+    flex-direction: column;
+  `,
+  ue1939db5: css`
+    display: flex;
+    min-width: 0px;
+    align-items: baseline;
+    gap: 0.5rem;
+  `,
+  u31144146: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    font-weight: 600;
+    color: ${cssVar.colorText};
+  `,
+  ub2ddbe74: css`
+    flex-shrink: 0;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  ubdf0a62f: css`
+    margin-top: 0.125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uf65d5356: css`
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  `,
+  u4a756ca0: css`
+    display: contents;
+  `,
+  u1f5f0b3e: css`
+    display: none;
+    @media (min-width: 1024px) {
+      display: contents;
+    }
+  `,
+  u2bdda2c0: css`
+    display: contents;
+    @media (min-width: 1024px) {
+      display: none;
+    }
+  `,
+  ubcbc48bc: css`
+    &:focus-visible {
+      outline: none;
+    }
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:focus-visible {
+      box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, ${cssVar.colorPrimary} 15%, transparent);
+    }
+    &:disabled {
+      cursor: not-allowed;
+    }
+    &:disabled {
+      opacity: 0.5;
+    }
+  `,
+  u11f8fd1f: css`
+    box-shadow: ${cssVar.boxShadowTertiary};
+    background-color: ${cssVar.colorPrimary};
+    color: ${cssVar.colorTextLightSolid};
+    &:hover {
+      background-color: ${cssVar.colorPrimaryHover};
+    }
+  `,
+  u2b3db831: css`
+    box-shadow: ${cssVar.boxShadowTertiary};
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorBgContainer};
+    color: ${cssVar.colorText};
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  ud8f5213f: css`
+    width: 2rem;
+    height: 2rem;
+  `,
+  u783b0d9d: css`
+    width: 0.875rem;
+    height: 0.875rem;
+  `,
+  ud3ade0e3: css`
+    width: 2rem;
+    height: 2rem;
+    @media (min-width: 1024px) {
+      display: none;
+    }
+  `,
+  ub1ae9e5b: css`
+    display: none;
+    height: 2rem;
+    gap: 0.375rem;
+    padding-inline: 0.625rem;
+    @media (min-width: 1024px) {
+      display: inline-flex;
+    }
+  `,
+}))
+
 export function AppPage(props: { children: ReactNode; className?: string }) {
   return (
-    <section
-      className={cn(
-        'flex h-full min-h-0 flex-col bg-background',
-        props.className,
-      )}
-    >
+    <section className={cn(lobeStyles.ud435703e, props.className)}>
       {props.children}
     </section>
   )
@@ -82,40 +246,32 @@ export function PageHeader(props: PageHeaderProps) {
   return (
     <header
       className={cn(
-        'flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface-page px-4',
+        lobeStyles.ubbcd58b2,
         APP_SHELL_HEADER_HEIGHT_CLASS,
         props.className,
       )}
     >
-      <div className="flex min-w-0 items-center gap-2.5">
+      <div className={lobeStyles.u85dd57df}>
         <MobileHamburger />
         <DesktopSidebarHamburger />
         {props.back ? <HeaderBackButton {...props.back} /> : null}
         {props.icon ? (
-          <span className="inline-flex size-6 shrink-0 items-center justify-center border border-border bg-surface-inset text-fg-muted">
-            {props.icon}
-          </span>
+          <span className={lobeStyles.u9d380b5c}>{props.icon}</span>
         ) : null}
-        <div className="flex min-w-0 flex-col">
-          <div className="flex min-w-0 items-baseline gap-2">
-            <h1 className="truncate text-base font-semibold text-fg">
-              {props.title}
-            </h1>
+        <div className={lobeStyles.uef93af5f}>
+          <div className={lobeStyles.ue1939db5}>
+            <h1 className={lobeStyles.u31144146}>{props.title}</h1>
             {props.count != null ? (
-              <span className="shrink-0 text-xs tabular-nums text-fg-muted">
-                {props.count}
-              </span>
+              <span className={lobeStyles.ub2ddbe74}>{props.count}</span>
             ) : null}
           </div>
           {props.description ? (
-            <p className="mt-0.5 truncate text-xs text-fg-muted">
-              {props.description}
-            </p>
+            <p className={lobeStyles.ubdf0a62f}>{props.description}</p>
           ) : null}
         </div>
       </div>
       {hasActions ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className={lobeStyles.uf65d5356}>
           {typedActions
             ? typedActions.map((action, index) =>
                 renderHeaderAction(action, index),
@@ -133,12 +289,7 @@ export function HeaderActions(props: {
 }) {
   if (!props.actions.length) return null
   return (
-    <div
-      className={cn(
-        'flex shrink-0 flex-wrap items-center gap-2',
-        props.className,
-      )}
-    >
+    <div className={cn(lobeStyles.uf65d5356, props.className)}>
       {props.actions.map((action, index) => renderHeaderAction(action, index))}
     </div>
   )
@@ -147,9 +298,9 @@ export function HeaderActions(props: {
 function renderHeaderAction(action: HeaderAction, index: number) {
   if (action.kind === 'custom') {
     return (
-      <span key={index} className="contents">
-        <span className="hidden lg:contents">{action.node}</span>
-        <span className="contents lg:hidden">
+      <span key={index} className={lobeStyles.u4a756ca0}>
+        <span className={lobeStyles.u1f5f0b3e}>{action.node}</span>
+        <span className={lobeStyles.u2bdda2c0}>
           {action.mobileNode ?? action.node}
         </span>
       </span>
@@ -157,54 +308,48 @@ function renderHeaderAction(action: HeaderAction, index: number) {
   }
 
   const Icon = action.icon
-  const baseClasses =
-    'focus-visible:outline-hidden inline-flex items-center justify-center rounded-sm text-xs font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-50'
-  const primaryClasses = 'shadow-xs bg-accent text-white hover:bg-accent-hover'
-  const secondaryClasses =
-    'shadow-xs border border-border bg-surface-card text-fg hover:bg-surface-inset'
+  const baseClasses = lobeStyles.ubcbc48bc
+  const primaryClasses = lobeStyles.u11f8fd1f
+  const secondaryClasses = lobeStyles.u2b3db831
   const variantClasses = action.primary ? primaryClasses : secondaryClasses
 
   if (action.iconOnly) {
     return (
-      <span key={index} className="contents">
+      <span key={index} className={lobeStyles.u4a756ca0}>
         <button
           aria-label={action.label}
-          className={cn(baseClasses, variantClasses, 'size-8')}
+          className={cn(baseClasses, variantClasses, lobeStyles.ud8f5213f)}
           disabled={action.disabled}
           onClick={action.onClick}
           title={action.label}
           type="button"
         >
-          <Icon aria-hidden="true" className="size-3.5" />
+          <Icon aria-hidden="true" className={lobeStyles.u783b0d9d} />
         </button>
       </span>
     )
   }
 
   return (
-    <span key={index} className="contents">
+    <span key={index} className={lobeStyles.u4a756ca0}>
       <button
         aria-label={action.label}
-        className={cn(baseClasses, variantClasses, 'size-8 lg:hidden')}
+        className={cn(baseClasses, variantClasses, lobeStyles.ud3ade0e3)}
         disabled={action.disabled}
         onClick={action.onClick}
         title={action.label}
         type="button"
       >
-        <Icon aria-hidden="true" className="size-3.5" />
+        <Icon aria-hidden="true" className={lobeStyles.u783b0d9d} />
       </button>
       <button
         aria-label={action.label}
-        className={cn(
-          baseClasses,
-          variantClasses,
-          'hidden h-8 gap-1.5 px-2.5 lg:inline-flex',
-        )}
+        className={cn(baseClasses, variantClasses, lobeStyles.ub1ae9e5b)}
         disabled={action.disabled}
         onClick={action.onClick}
         type="button"
       >
-        <Icon aria-hidden="true" className="size-3.5" />
+        <Icon aria-hidden="true" className={lobeStyles.u783b0d9d} />
         <span>{action.label}</span>
       </button>
     </span>

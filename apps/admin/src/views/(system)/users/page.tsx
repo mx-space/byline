@@ -6,7 +6,7 @@ export const metadata = defineMetadata({
   titleKey: 'routes.users.title',
   descriptionKey: 'routes.users.description',
   icon: Users,
-  order: 2,
+  order: 1,
 })
 
 export { UsersRouteView as default } from '~/features/users/routes/UsersRouteView'

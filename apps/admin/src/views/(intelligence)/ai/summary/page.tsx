@@ -6,7 +6,8 @@ export const metadata = defineMetadata({
   titleKey: 'routes.aiSummary.title',
   descriptionKey: 'routes.aiSummary.description',
   icon: FileText,
-  order: 1,
+  order: 3,
+  hidden: true,
 })
 
 export { AiSummaryRouteView as default } from '~/features/ai/routes/AiSummaryRouteView'

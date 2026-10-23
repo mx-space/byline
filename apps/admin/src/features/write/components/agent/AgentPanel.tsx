@@ -1,5 +1,5 @@
+import { createStaticStyles, toast } from '@lobehub/ui'
 import { useCallback, useState } from 'react'
-import { toast } from 'sonner'
 
 import { useI18n } from '~/i18n'
 
@@ -7,6 +7,15 @@ import { ChatComposer } from './ChatComposer'
 import { MessageList } from './MessageList'
 import { SessionHeader } from './SessionHeader'
 import type { WriteAgentController } from './use-write-agent'
+
+const lobeStyles = createStaticStyles(({ css }) => ({
+  ud435703e: css`
+    display: flex;
+    height: 100%;
+    min-height: 0px;
+    flex-direction: column;
+  `,
+}))
 
 interface AgentPanelProps {
   agent: WriteAgentController
@@ -33,7 +42,7 @@ export function AgentPanel({ agent }: AgentPanelProps) {
   const handleExport = useCallback(() => {
     const state = agent.store.getState()
     if (!state.bubbles.length && !state.reviewState?.batches.length) {
-      toast.message(t('write.agent.toast.exportEmpty'))
+      toast.info(t('write.agent.toast.exportEmpty'))
       return
     }
 
@@ -62,7 +71,7 @@ export function AgentPanel({ agent }: AgentPanelProps) {
   }, [agent, t])
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
+    <div className={lobeStyles.ud435703e}>
       <SessionHeader
         activeSessionId={agent.activeSessionId}
         isLoading={agent.isLoadingSessions}

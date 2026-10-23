@@ -138,7 +138,15 @@ function buildSectionTree(entries: RouteEntry[]): TreeNode[] {
     for (let n = segs.length - 1; n > 0; n--) {
       const prefix = `/${segs.slice(0, n).join('/')}`
       if (byUrl.has(prefix) && prefix !== entry.page.url) {
-        parent = byUrl.get(prefix)!
+        // A static path is its own destination. URL prefix is not a nav
+        // parent: /posts/edit is not a child of /posts. Only detail routes
+        // (dynamic tails) nest, and those are hidden from the sidebar.
+        const tailSegments = segs.slice(n)
+        const allDynamic = tailSegments.every(
+          (s) => s.startsWith(':') || s === '*',
+        )
+        const optedIn = entry.page.metadata.nested === true
+        if (allDynamic || optedIn) parent = byUrl.get(prefix)!
         break
       }
     }
@@ -166,10 +174,7 @@ function renderSidebarNode(node: TreeNode): string {
   const sortedChildren = sortByOrder(
     node.children
       .map((child) => child.entry.page)
-      .filter(
-        (p) =>
-          !p.metadata.hidden && !p.url.includes(':') && !p.url.includes('*'),
-      ),
+      .filter((p) => !p.url.includes(':') && !p.url.includes('*')),
   )
   const childMap = new Map(node.children.map((c) => [c.entry.page.url, c]))
   const children = sortedChildren
@@ -313,10 +318,7 @@ export function generateModule(
     const topLevelPages = sortByOrder(
       tree
         .map((node) => node.entry.page)
-        .filter(
-          (p) =>
-            !p.metadata.hidden && !p.url.includes(':') && !p.url.includes('*'),
-        ),
+        .filter((p) => !p.url.includes(':') && !p.url.includes('*')),
     )
     const topMap = new Map(tree.map((n) => [n.entry.page.url, n]))
     const items = topLevelPages

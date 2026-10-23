@@ -15,14 +15,16 @@ import {
 
 import type { ConfigFormField } from '~/api/options'
 import { translate as t } from '~/i18n/translate'
-import type { TranslationKey, TranslationValues } from '~/i18n/types'
+import type { Locale, TranslationKey, TranslationValues } from '~/i18n/types'
 
 import { aiProviderTypeOptions } from '../constants'
+import { settingsGroupCopy } from '../copy'
 import type {
   AIConfig,
   AIProviderConfig,
   AIProviderModel,
   AIProviderType,
+  SettingsGroupSummary,
 } from '../types/settings'
 
 type Translator = (key: TranslationKey, values?: TranslationValues) => string
@@ -44,6 +46,24 @@ const groupIconMap: Record<string, typeof User> = {
 
 export function getGroupIcon(icon: string) {
   return groupIconMap[icon] ?? Settings
+}
+
+export function getGroupTitle(
+  locale: Locale,
+  group: Pick<SettingsGroupSummary, 'key' | 'title'>,
+) {
+  return (
+    settingsGroupCopy(locale, `${group.key}.title`) ?? group.title ?? group.key
+  )
+}
+
+export function getGroupDescription(
+  locale: Locale,
+  group: Pick<SettingsGroupSummary, 'description' | 'key'>,
+) {
+  return (
+    settingsGroupCopy(locale, `${group.key}.description`) ?? group.description
+  )
 }
 
 export function shouldShowField(

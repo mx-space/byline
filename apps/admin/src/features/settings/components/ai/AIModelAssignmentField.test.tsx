@@ -97,20 +97,21 @@ describe('AIModelAssignmentField', () => {
       )
     })
 
-    const trigger = document.querySelector<HTMLButtonElement>(
-      'button[aria-label="打开模型列表"]',
+    const input = document.querySelector<HTMLInputElement>(
+      'input[placeholder="使用 Provider 默认模型"]',
     )
-    expect(trigger).not.toBeNull()
-    await act(async () => trigger?.click())
+    expect(input).not.toBeNull()
+    await act(async () => {
+      input?.focus()
+      input?.dispatchEvent(
+        new KeyboardEvent('keydown', { bubbles: true, key: 'ArrowDown' }),
+      )
+    })
 
     expect(document.body.textContent).toContain('Fish Audio: S1')
     expect(document.body.textContent).toContain('Microsoft: MAI-Voice-2-Flash')
     expect(document.body.textContent).toContain('$15 / 100 万字符')
 
-    const input = document.querySelector<HTMLInputElement>(
-      'input[aria-label="语音生成模型模型"]',
-    )
-    expect(input).not.toBeNull()
     await act(async () => setInputValue(input!, 'GPT-4o Mini TTS'))
 
     expect(document.body.textContent).not.toContain('Fish Audio: S1')

@@ -1,36 +1,30 @@
+import { confirmModal, toast } from '@lobehub/ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { toast } from 'sonner'
 
+import type { CategoryEntity } from '~/data/resources/category'
 import { removeCategory } from '~/data/resources/category.mutations'
-import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 
 import { categoriesQueryKey } from '../constants'
-import { getErrorMessage } from '../utils/errors'
+import { useCategoryCopy } from '../copy'
+import { isCategoryHasPostsError } from '../utils/errors'
 
-interface UseCategoryMutationsOptions {
-  onAfterDeleteSuccess?: () => void
-}
-
-export function useCategoryMutations(
-  options: UseCategoryMutationsOptions = {},
-) {
-  const { t } = useI18n()
+export function useInvalidateCategories() {
   const queryClient = useQueryClient()
 
-  const invalidateCategories = useCallback(async () => {
+  return useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: categoriesQueryKey })
     await queryClient.invalidateQueries({ queryKey: adminQueryKeys.posts.root })
   }, [queryClient])
+}
+
+export function useCategoryMutations() {
+  const invalidateCategories = useInvalidateCategories()
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => removeCategory(id),
-    onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('categories.toast.deleteFailed'))),
     onSuccess: async () => {
-      toast.success(t('categories.toast.deleted'))
-      options.onAfterDeleteSuccess?.()
       await invalidateCategories()
     },
   })
@@ -38,5 +32,45 @@ export function useCategoryMutations(
   return {
     deleteMutation,
     invalidateCategories,
+  }
+}
+
+export function useConfirmDeleteCategory() {
+  const { text } = useCategoryCopy()
+  const { deleteMutation } = useCategoryMutations()
+
+  return (
+    category: Pick<CategoryEntity, 'count' | 'id' | 'name'>,
+    options: { isLast: boolean; onDeleted?: () => void },
+  ) => {
+    const count = category.count ?? 0
+    if (count > 0) {
+      toast.error(text('deleteBlocked', { count }))
+      return
+    }
+    confirmModal({
+      cancelText: text('cancel'),
+      content: options.isLast
+        ? `${text('deleteBody')} ${text('deleteLast')}`
+        : text('deleteBody'),
+      okButtonProps: { danger: true },
+      okText: text('delete'),
+      onOk: async () => {
+        try {
+          await deleteMutation.mutateAsync(category.id)
+          toast.success(
+            options.isLast ? text('deletedWithDefault') : text('deleted'),
+          )
+          options.onDeleted?.()
+        } catch (error) {
+          toast.error(
+            isCategoryHasPostsError(error)
+              ? text('deleteHasPosts', { name: category.name })
+              : text('deleteFailed', { name: category.name }),
+          )
+        }
+      },
+      title: text('deleteTitle', { name: category.name }),
+    })
   }
 }

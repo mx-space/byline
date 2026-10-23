@@ -1,4 +1,6 @@
+import { ConfigProvider } from '@lobehub/ui'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import * as motion from 'motion/react-m'
 import { act } from 'react'
 import type { Root } from 'react-dom/client'
 import { createRoot } from 'react-dom/client'
@@ -44,9 +46,11 @@ async function render() {
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={queryClient}>
-          <I18nProvider>
-            <OnboardingResumeBanner />
-          </I18nProvider>
+          <ConfigProvider motion={motion}>
+            <I18nProvider>
+              <OnboardingResumeBanner />
+            </I18nProvider>
+          </ConfigProvider>
         </QueryClientProvider>
       </MemoryRouter>,
     )
@@ -61,7 +65,7 @@ async function render() {
 describe('OnboardingResumeBanner', () => {
   it('renders nothing when onboarding was never started', async () => {
     await render()
-    expect(container.innerHTML).toBe('')
+    expect(container.querySelector('a[href="/setup"]')).toBeNull()
   })
 
   it('links back to setup while onboarding is still active', async () => {
@@ -78,7 +82,7 @@ describe('OnboardingResumeBanner', () => {
         .querySelector<HTMLButtonElement>('[data-testid="onboarding-dismiss"]')!
         .click()
     })
-    expect(container.innerHTML).toBe('')
+    expect(container.querySelector('a[href="/setup"]')).toBeNull()
     expect(readOnboardingProgress('owner-1')).toEqual({
       status: 'dismissed',
       step: 'site',

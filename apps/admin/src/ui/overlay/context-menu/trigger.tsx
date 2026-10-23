@@ -1,4 +1,3 @@
-import { mergeProps } from '@base-ui/react/merge-props'
 import type {
   HTMLAttributes,
   MouseEvent as ReactMouseEvent,
@@ -10,13 +9,36 @@ import {
   isValidElement,
   memo,
   useCallback,
-  useId,
 } from 'react'
 
 import { cn } from '~/utils/cn'
 
-import { showContextMenu, useContextMenuStore } from './store'
+import { showContextMenu } from './store'
 import type { ContextMenuItem } from './types'
+
+function mergeProps(
+  base: Record<string, unknown>,
+  next: Record<string, unknown>,
+) {
+  const merged: Record<string, unknown> = { ...base, ...next }
+  const className = [base.className, next.className].filter(Boolean).join(' ')
+  if (className) merged.className = className
+  for (const key of Object.keys(next)) {
+    if (
+      key.startsWith('on') &&
+      typeof base[key] === 'function' &&
+      typeof next[key] === 'function'
+    ) {
+      const previous = base[key] as (...args: unknown[]) => void
+      const incoming = next[key] as (...args: unknown[]) => void
+      merged[key] = (...args: unknown[]) => {
+        previous(...args)
+        incoming(...args)
+      }
+    }
+  }
+  return merged
+}
 
 export type ContextMenuTriggerProps = {
   children: ReactNode
@@ -46,9 +68,6 @@ const wrapperStyle = { display: 'contents' as const }
  */
 export const ContextMenuTrigger = memo<ContextMenuTriggerProps>(
   function ContextMenuTrigger({ children, items, onContextMenu, ...rest }) {
-    const triggerId = useId()
-    const open = useContextMenuStore((s) => s.open && s.triggerId === triggerId)
-
     const handleContextMenu = useCallback(
       (event: ReactMouseEvent<HTMLElement>) => {
         if (items) {
@@ -63,11 +82,7 @@ export const ContextMenuTrigger = memo<ContextMenuTriggerProps>(
 
     const triggerProps = {
       ...rest,
-      'aria-expanded': open || undefined,
       className: cn(rest.className),
-      'data-contextmenu-trigger': triggerId,
-      'data-popup-open': open ? '' : undefined,
-      'data-state': open ? 'open' : undefined,
       onContextMenu: handleContextMenu,
     }
 

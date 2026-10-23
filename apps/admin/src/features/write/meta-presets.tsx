@@ -1,7 +1,7 @@
+import { createStaticStyles, toast } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, Plus, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
 
 import { getMetaPresets } from '~/api/meta-presets'
 import { useI18n } from '~/i18n'
@@ -21,6 +21,392 @@ import { SelectField } from '~/ui/primitives/select'
 import { FormSwitch } from '~/ui/primitives/switch'
 import { TextArea, TextInput } from '~/ui/primitives/text-field'
 import { cn } from '~/utils/cn'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  uab547bd4: css`
+    display: grid;
+    gap: 0.75rem;
+  `,
+  u1b728c04: css`
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    padding-right: 0.5rem;
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+  `,
+  ue5746cdf: css`
+    display: flex;
+    flex: 1 1 0%;
+    align-items: center;
+    justify-content: space-between;
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+    padding-inline: 0.75rem;
+    padding-block: 0.5rem;
+    text-align: left;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorText};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: ${cssVar.colorText};
+    }
+  `,
+  u34fbabce: css`
+    margin-left: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  ua005bc18: css`
+    width: 1rem;
+    height: 1rem;
+    color: ${cssVar.colorTextSecondary};
+    transition: transform 0.15s ease;
+  `,
+  u3350916b: css`
+    rotate: 180deg;
+  `,
+  u6ecb3128: css`
+    height: 1.75rem;
+    flex-shrink: 0;
+    padding-inline: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+  u2ad29a22: css`
+    border-radius: 0.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    padding: 0.75rem;
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+  `,
+  u048ab586: css`
+    margin-bottom: 0.75rem;
+    display: inline-flex;
+    gap: 0.25rem;
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+    padding: 0.125rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorText} 60%,
+        transparent
+      );
+    }
+  `,
+  u084b1e36: css`
+    border-radius: 6px;
+    padding-inline: 0.75rem;
+    padding-block: 0.25rem;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  `,
+  ua94dd009: css`
+    box-shadow: ${cssVar.boxShadowTertiary};
+    background-color: ${cssVar.colorBgContainer};
+    color: ${cssVar.colorText};
+    :where(.dark, .dark *) & {
+      background-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  ub7819fc6: css`
+    color: ${cssVar.colorTextSecondary};
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorTextSecondary};
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u659766e6: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.5rem;
+    }
+    padding-block: 0.25rem;
+  `,
+  u59e73608: css`
+    height: 2rem;
+    animation: byline-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    border-radius: 0.25rem;
+    background-color: ${cssVar.colorFillSecondary};
+    :where(.dark, .dark *) & {
+      background-color: ${cssVar.colorText};
+    }
+  `,
+  u2e70e559: css`
+    padding-block: 0.75rem;
+    text-align: center;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u3c4c1a59: css`
+    display: grid;
+    gap: 1rem;
+  `,
+  uf59d50f5: css`
+    display: grid;
+    gap: 0.375rem;
+  `,
+  u78942561: css`
+    display: grid;
+    gap: 0.125rem;
+  `,
+  u3a98e768: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    color: ${cssVar.colorTextSecondary};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  ud43cf347: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u6a9369f3: css`
+    height: 2.25rem;
+    &:focus {
+      border-color: ${cssVar.colorTextSecondary};
+    }
+  `,
+  uaf92a141: css`
+    min-height: 5rem;
+    &:focus {
+      border-color: ${cssVar.colorTextSecondary};
+    }
+  `,
+  u27846a89: css`
+    display: grid;
+    gap: 0.5rem;
+  `,
+  uf4c3da60: css`
+    margin-left: 0.75rem;
+    display: grid;
+    gap: 0.75rem;
+    border-left-width: 2px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    padding-left: 0.75rem;
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+  `,
+  u3238b1a9: css`
+    min-height: 4rem;
+    &:focus {
+      border-color: ${cssVar.colorTextSecondary};
+    }
+  `,
+  u4b23e247: css`
+    display: grid;
+    gap: 0.25rem;
+  `,
+  u0425c249: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorTextSecondary};
+    }
+  `,
+  u629154da: css`
+    display: grid;
+    gap: 0.375rem;
+    @media (min-width: 640px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  `,
+  u6978b7c6: css`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  `,
+  ubd8f1a40: css`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 0.25rem;
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 0.375rem;
+    padding-block: 0.125rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorText};
+    :where(.dark, .dark *) & {
+      background-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u66316002: css`
+    border-radius: 0.25rem;
+    padding: 0.125rem;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: ${cssVar.colorText};
+    }
+  `,
+  uef2d6f74: css`
+    width: 0.75rem;
+    height: 0.75rem;
+  `,
+  u152c1189: css`
+    display: flex;
+    gap: 0.5rem;
+  `,
+  ub8a627aa: css`
+    height: 2rem;
+    &:focus {
+      border-color: ${cssVar.colorTextSecondary};
+    }
+  `,
+  u9756bfd7: css`
+    height: 2rem;
+    padding-inline: 0.5rem;
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+  u327cfeab: css`
+    padding-block: 0.5rem;
+    text-align: center;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u6cfc7e6a: css`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  `,
+  ub7192aed: css`
+    display: inline-flex;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:hover {
+      color: ${cssVar.colorTextSecondary};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u5a1fe526: css`
+    border-radius: 0.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+  `,
+  u780c0472: css`
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 0.75rem;
+    padding-block: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: ${cssVar.colorText};
+    }
+  `,
+  u558f6434: css`
+    max-height: 12rem;
+  `,
+  u7744a19b: css`
+    overflow: auto;
+    padding-inline: 0.75rem;
+    padding-bottom: 0.75rem;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.25rem;
+    color: ${cssVar.colorText};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u2b5fa9a9: css`
+    min-height: 0px;
+    flex: 1 1 0%;
+  `,
+}))
 
 type MetaRecord = Record<string, unknown>
 
@@ -207,18 +593,18 @@ export function MetaPresetSection(props: MetaPresetSectionProps) {
   }
 
   return (
-    <div className="grid gap-3">
-      <div className="flex w-full items-center gap-2 rounded border border-neutral-200 pr-2 dark:border-neutral-800">
+    <div className={lobeStyles.uab547bd4}>
+      <div className={lobeStyles.u1b728c04}>
         <button
           aria-expanded={expanded}
-          className="flex flex-1 items-center justify-between rounded-l px-3 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-50 dark:text-neutral-200 dark:hover:bg-neutral-900"
+          className={lobeStyles.ue5746cdf}
           onClick={() => setExpanded((v) => !v)}
           type="button"
         >
           <span>
             {t('write.meta.section.title')}
             {itemCount > 0 ? (
-              <span className="ml-2 text-xs text-neutral-400">
+              <span className={lobeStyles.u34fbabce}>
                 {t('write.meta.section.itemCount', { count: itemCount })}
               </span>
             ) : null}
@@ -226,13 +612,13 @@ export function MetaPresetSection(props: MetaPresetSectionProps) {
           <ChevronDown
             aria-hidden="true"
             className={cn(
-              'size-4 text-neutral-400 transition-transform',
-              expanded && 'rotate-180',
+              lobeStyles.ua005bc18,
+              expanded && lobeStyles.u3350916b,
             )}
           />
         </button>
         <Button
-          className="h-7 shrink-0 px-2 text-xs"
+          className={lobeStyles.u6ecb3128}
           onClick={() => setShowJsonModal(true)}
           type="button"
           variant="ghost"
@@ -242,8 +628,8 @@ export function MetaPresetSection(props: MetaPresetSectionProps) {
       </div>
 
       {expanded ? (
-        <div className="rounded border border-neutral-200 p-3 dark:border-neutral-800">
-          <div className="mb-3 inline-flex gap-1 rounded-sm border border-neutral-200 bg-neutral-50 p-0.5 text-xs dark:border-neutral-800 dark:bg-neutral-900/60">
+        <div className={lobeStyles.u2ad29a22}>
+          <div className={lobeStyles.u048ab586}>
             {(
               [
                 ['preset', t('write.meta.tab.preset')],
@@ -252,10 +638,10 @@ export function MetaPresetSection(props: MetaPresetSectionProps) {
             ).map(([key, label]) => (
               <button
                 className={cn(
-                  'rounded-xs px-3 py-1 transition-colors',
+                  lobeStyles.u084b1e36,
                   activeTab === key
-                    ? 'shadow-xs bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100'
-                    : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
+                    ? lobeStyles.ua94dd009
+                    : lobeStyles.ub7819fc6,
                 )}
                 key={key}
                 onClick={() => setActiveTab(key)}
@@ -306,25 +692,20 @@ function PresetFieldList(props: {
   const { t } = useI18n()
   if (props.loading) {
     return (
-      <div className="space-y-2 py-1">
+      <div className={lobeStyles.u659766e6}>
         {Array.from({ length: 3 }).map((_, i) => (
-          <div
-            className="h-8 animate-pulse rounded bg-neutral-100 dark:bg-neutral-900"
-            key={i}
-          />
+          <div className={lobeStyles.u59e73608} key={i} />
         ))}
       </div>
     )
   }
   if (props.presets.length === 0) {
     return (
-      <p className="py-3 text-center text-xs text-neutral-400">
-        {t('write.meta.preset.empty')}
-      </p>
+      <p className={lobeStyles.u2e70e559}>{t('write.meta.preset.empty')}</p>
     )
   }
   return (
-    <div className="grid gap-4">
+    <div className={lobeStyles.u3c4c1a59}>
       {props.presets.map((field) => {
         const localizedField = localizeBuiltinPreset(field, t)
         return (
@@ -352,7 +733,7 @@ function PresetFieldRenderer(props: {
     )
   }
   return (
-    <div className="grid gap-1.5">
+    <div className={lobeStyles.uf59d50f5}>
       <FieldLabel description={field.description} label={field.label} />
       <FieldControl field={field} onChange={onChange} value={value} />
     </div>
@@ -361,12 +742,10 @@ function PresetFieldRenderer(props: {
 
 function FieldLabel(props: { description?: string; label: string }) {
   return (
-    <div className="grid gap-0.5">
-      <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-        {props.label}
-      </span>
+    <div className={lobeStyles.u78942561}>
+      <span className={lobeStyles.u3a98e768}>{props.label}</span>
       {props.description ? (
-        <span className="text-xs text-neutral-400">{props.description}</span>
+        <span className={lobeStyles.ud43cf347}>{props.description}</span>
       ) : null}
     </div>
   )
@@ -383,7 +762,7 @@ function FieldControl(props: {
     case 'url': {
       return (
         <TextInput
-          controlClassName="h-9 focus:border-neutral-400"
+          controlClassName={lobeStyles.u6a9369f3}
           onChange={onChange}
           placeholder={
             field.placeholder || (field.type === 'url' ? 'https://...' : '')
@@ -395,7 +774,7 @@ function FieldControl(props: {
     case 'textarea': {
       return (
         <TextArea
-          controlClassName="min-h-20 focus:border-neutral-400"
+          controlClassName={lobeStyles.uaf92a141}
           onChange={onChange}
           placeholder={field.placeholder}
           value={typeof value === 'string' ? value : ''}
@@ -405,7 +784,7 @@ function FieldControl(props: {
     case 'number': {
       return (
         <TextInput
-          controlClassName="h-9 focus:border-neutral-400"
+          controlClassName={lobeStyles.u6a9369f3}
           inputMode="decimal"
           onChange={(v) => onChange(v === '' ? undefined : Number(v))}
           placeholder={field.placeholder}
@@ -466,7 +845,7 @@ function FieldControl(props: {
     default: {
       return (
         <TextInput
-          controlClassName="h-9 focus:border-neutral-400"
+          controlClassName={lobeStyles.u6a9369f3}
           onChange={onChange}
           placeholder={field.placeholder}
           value={typeof value === 'string' ? value : ''}
@@ -502,7 +881,7 @@ function ObjectFieldRenderer(props: {
   }
 
   return (
-    <div className="grid gap-2">
+    <div className={lobeStyles.u27846a89}>
       <FormSwitch
         checked={isEnabled}
         description={props.field.description}
@@ -510,7 +889,7 @@ function ObjectFieldRenderer(props: {
         onCheckedChange={toggle}
       />
       {isEnabled && props.field.children ? (
-        <div className="ml-3 grid gap-3 border-l-2 border-neutral-200 pl-3 dark:border-neutral-800">
+        <div className={lobeStyles.uf4c3da60}>
           {props.field.children.map((child) => (
             <ChildFieldRenderer
               child={child}
@@ -536,7 +915,7 @@ function ChildFieldRenderer(props: {
       case 'textarea': {
         return (
           <TextArea
-            controlClassName="min-h-16 focus:border-neutral-400"
+            controlClassName={lobeStyles.u3238b1a9}
             onChange={onChange}
             placeholder={child.placeholder}
             value={typeof value === 'string' ? value : ''}
@@ -546,7 +925,7 @@ function ChildFieldRenderer(props: {
       case 'number': {
         return (
           <TextInput
-            controlClassName="h-9 focus:border-neutral-400"
+            controlClassName={lobeStyles.u6a9369f3}
             inputMode="decimal"
             onChange={(v) => onChange(v === '' ? undefined : Number(v))}
             placeholder={child.placeholder}
@@ -575,7 +954,7 @@ function ChildFieldRenderer(props: {
       default: {
         return (
           <TextInput
-            controlClassName="h-9 focus:border-neutral-400"
+            controlClassName={lobeStyles.u6a9369f3}
             onChange={onChange}
             placeholder={child.placeholder}
             value={typeof value === 'string' ? value : ''}
@@ -586,10 +965,8 @@ function ChildFieldRenderer(props: {
   }
 
   return (
-    <div className="grid gap-1">
-      <span className="text-xs text-neutral-500 dark:text-neutral-400">
-        {child.label}
-      </span>
+    <div className={lobeStyles.u4b23e247}>
+      <span className={lobeStyles.u0425c249}>{child.label}</span>
       {control()}
     </div>
   )
@@ -651,8 +1028,8 @@ function MultiSelectField(props: {
   }
 
   return (
-    <div className="grid gap-2">
-      <div className="grid gap-1.5 sm:grid-cols-2">
+    <div className={lobeStyles.u27846a89}>
+      <div className={lobeStyles.u629154da}>
         {options.map((option) => (
           <Checkbox
             checked={isChecked(option)}
@@ -663,31 +1040,28 @@ function MultiSelectField(props: {
         ))}
       </div>
       {customs.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
+        <div className={lobeStyles.u6978b7c6}>
           {customs.map((val) => (
-            <span
-              className="inline-flex items-center gap-1 rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-              key={val}
-            >
+            <span className={lobeStyles.ubd8f1a40} key={val}>
               {val}
               <button
                 aria-label={t('write.meta.multiSelect.removeAria', {
                   value: val,
                 })}
-                className="rounded p-0.5 transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                className={lobeStyles.u66316002}
                 onClick={() => removeCustom(val)}
                 type="button"
               >
-                <X aria-hidden="true" className="size-3" />
+                <X aria-hidden="true" className={lobeStyles.uef2d6f74} />
               </button>
             </span>
           ))}
         </div>
       ) : null}
       {props.allowCustom ? (
-        <div className="flex gap-2">
+        <div className={lobeStyles.u152c1189}>
           <TextInput
-            controlClassName="h-8 focus:border-neutral-400"
+            controlClassName={lobeStyles.ub8a627aa}
             onChange={setCustomInput}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -699,13 +1073,13 @@ function MultiSelectField(props: {
             value={customInput}
           />
           <Button
-            className="h-8 px-2"
+            className={lobeStyles.u9756bfd7}
             disabled={!customInput.trim()}
             onClick={addCustom}
             type="button"
             variant="subtle"
           >
-            <Plus aria-hidden="true" className="size-4" />
+            <Plus aria-hidden="true" className={lobeStyles.uf7b5fa97} />
           </Button>
         </div>
       ) : null}
@@ -737,32 +1111,29 @@ function TagsInput(props: {
   }
 
   return (
-    <div className="grid gap-2">
+    <div className={lobeStyles.u27846a89}>
       {tags.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
+        <div className={lobeStyles.u6978b7c6}>
           {tags.map((tag) => (
-            <span
-              className="inline-flex items-center gap-1 rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-              key={tag}
-            >
+            <span className={lobeStyles.ubd8f1a40} key={tag}>
               {tag}
               <button
                 aria-label={t('write.meta.multiSelect.removeAria', {
                   value: tag,
                 })}
-                className="rounded p-0.5 transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                className={lobeStyles.u66316002}
                 onClick={() => remove(tag)}
                 type="button"
               >
-                <X aria-hidden="true" className="size-3" />
+                <X aria-hidden="true" className={lobeStyles.uef2d6f74} />
               </button>
             </span>
           ))}
         </div>
       ) : null}
-      <div className="flex gap-2">
+      <div className={lobeStyles.u152c1189}>
         <TextInput
-          controlClassName="h-8 focus:border-neutral-400"
+          controlClassName={lobeStyles.ub8a627aa}
           onChange={setInput}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
@@ -774,13 +1145,13 @@ function TagsInput(props: {
           value={input}
         />
         <Button
-          className="h-8 px-2"
+          className={lobeStyles.u9756bfd7}
           disabled={!input.trim()}
           onClick={add}
           type="button"
           variant="subtle"
         >
-          <Plus aria-hidden="true" className="size-4" />
+          <Plus aria-hidden="true" className={lobeStyles.uf7b5fa97} />
         </Button>
       </div>
     </div>
@@ -822,49 +1193,47 @@ function KeyValuePairList(props: {
   const hasMeta = Object.keys(props.meta).length > 0
 
   return (
-    <div className="grid gap-3">
-      <div className="grid gap-2">
+    <div className={lobeStyles.uab547bd4}>
+      <div className={lobeStyles.u27846a89}>
         {pairs.length === 0 ? (
-          <p className="py-2 text-center text-xs text-neutral-400">
-            {t('write.meta.kvList.empty')}
-          </p>
+          <p className={lobeStyles.u327cfeab}>{t('write.meta.kvList.empty')}</p>
         ) : (
           pairs.map((pair) => (
-            <div className="flex items-center gap-2" key={pair.id}>
+            <div className={lobeStyles.u6cfc7e6a} key={pair.id}>
               <TextInput
-                controlClassName="h-8 focus:border-neutral-400"
+                controlClassName={lobeStyles.ub8a627aa}
                 onChange={(value) => updatePair(pair.id, { key: value })}
                 placeholder={t('write.meta.kvList.keyPlaceholder')}
                 value={pair.key}
               />
               <TextInput
-                controlClassName="h-8 focus:border-neutral-400"
+                controlClassName={lobeStyles.ub8a627aa}
                 onChange={(value) => updatePair(pair.id, { value })}
                 placeholder={t('write.meta.kvList.valuePlaceholder')}
                 value={pair.value}
               />
               <button
                 aria-label={t('write.meta.kvList.deleteFieldAria')}
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-900 dark:hover:text-neutral-200"
+                className={lobeStyles.ub7192aed}
                 onClick={() => removePair(pair.id)}
                 type="button"
               >
-                <X aria-hidden="true" className="size-4" />
+                <X aria-hidden="true" className={lobeStyles.uf7b5fa97} />
               </button>
             </div>
           ))
         )}
         <Button onClick={addPair} type="button" variant="subtle">
-          <Plus aria-hidden="true" className="size-4" />
+          <Plus aria-hidden="true" className={lobeStyles.uf7b5fa97} />
           {t('write.meta.kvList.addField')}
         </Button>
       </div>
 
       {hasMeta ? (
-        <div className="rounded border border-neutral-200 dark:border-neutral-800">
+        <div className={lobeStyles.u5a1fe526}>
           <button
             aria-expanded={props.previewOpen}
-            className="flex w-full items-center justify-between px-3 py-2 text-xs text-neutral-600 transition-colors hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-900"
+            className={lobeStyles.u780c0472}
             onClick={props.onTogglePreview}
             type="button"
           >
@@ -872,14 +1241,17 @@ function KeyValuePairList(props: {
             <ChevronDown
               aria-hidden="true"
               className={cn(
-                'size-4 text-neutral-400 transition-transform',
-                props.previewOpen && 'rotate-180',
+                lobeStyles.ua005bc18,
+                props.previewOpen && lobeStyles.u3350916b,
               )}
             />
           </button>
           {props.previewOpen ? (
-            <Scroll className="max-h-48" viewportClassName="max-h-48">
-              <pre className="overflow-auto px-3 pb-3 font-mono text-xs leading-5 text-neutral-700 dark:text-neutral-300">
+            <Scroll
+              className={lobeStyles.u558f6434}
+              viewportClassName={lobeStyles.u558f6434}
+            >
+              <pre className={lobeStyles.u7744a19b}>
                 {JSON.stringify(props.meta, null, 2)}
               </pre>
             </Scroll>
@@ -939,7 +1311,7 @@ function JsonEditorDialog(props: {
       popupStyle={{ height: 'min(80svh, 40rem)', width: 'min(92vw, 56rem)' }}
     >
       <ModalHeader title={t('write.meta.json.dialogTitle')} />
-      <div className="min-h-0 flex-1">
+      <div className={lobeStyles.u2b5fa9a9}>
         <CodeEditor
           language="json"
           onChange={setValue}

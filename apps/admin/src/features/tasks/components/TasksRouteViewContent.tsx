@@ -1,105 +1,145 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { RefreshCw, Trash2 } from 'lucide-react'
-import { useCallback, useMemo } from 'react'
-import { useNavigate, useParams } from 'react-router'
-import { toast } from 'sonner'
-
-import { createTtsTask } from '~/api/ai'
-import type { AITask, TaskScope } from '~/api/tasks'
 import {
-  AITaskStatus,
-  cancelTask,
-  deleteTask,
-  deleteTasks,
-  getTasks,
-  retryTask,
-} from '~/api/tasks'
+  Alert,
+  Button,
+  createStaticStyles,
+  cx,
+  Empty,
+  Segmented,
+  Select,
+  Tag,
+} from '@lobehub/ui'
+import { TableSkeleton } from '@lobehub/ui/dashboard'
+import { type ProColumns, ProTable } from '@lobehub/ui/pro-table'
+import { useQuery } from '@tanstack/react-query'
+import { ListTodo, Trash2 } from 'lucide-react'
+import { type HTMLAttributes, type ReactNode, useMemo } from 'react'
+import { Outlet, useNavigate, useParams } from 'react-router'
+
+import type { AITask } from '~/api/tasks'
+import { getTasks } from '~/api/tasks'
 import { useUrlListState } from '~/features/_shared/hooks/use-url-list-state'
+import {
+  activeTasksQuery,
+  failedTasksQuery,
+} from '~/features/dashboard/queries'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { MasterDetailShell } from '~/ui/layout/master-detail-shell'
-import type { HeaderAction } from '~/ui/layout/page-layout'
-import { AppPage, PageHeader } from '~/ui/layout/page-layout'
+import { Page } from '~/ui/page'
 
 import type { TaskStatusCategory } from '../constants'
 import {
   fallbackPollingIntervalMs,
+  filterableTaskTypes,
   liveSubscribeIntervalMs,
   pageSize,
-  scopeOptionKeys,
   statusCategoryStatuses,
-  tasksQueryKey,
-  typeOptionKeys,
+  statusSegmentValues,
 } from '../constants'
+import { useTaskCopy } from '../copy'
+import { useTaskActions } from '../hooks/use-task-actions'
+import { useTaskLabels } from '../hooks/use-task-labels'
+import { useTaskSubjects } from '../hooks/use-task-subjects'
 import { useTaskListSubscription } from '../hooks/useTaskSubscription'
+import { formatElapsed, taskElapsedMs } from '../utils/task-time'
 import {
-  getErrorMessage,
   readPositivePage,
   readTaskStatusFilter,
   readTaskTypeFilter,
 } from '../utils/tasks'
-import type { TaskTypeOption } from './TaskListPane'
-import { TaskListPane } from './TaskListPane'
-import { TasksRouteContext } from './tasks-route-context'
-import { TaskDetailEmpty } from './TaskStates'
+import {
+  cellStyles,
+  TaskResultCell,
+  TaskRowActions,
+  TaskStatusTag,
+  TaskSubjectCell,
+  TaskTimeCell,
+} from './TaskCells'
 
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  count: css`
+    margin-inline-start: 6px;
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  countDanger: css`
+    margin-inline-start: 6px;
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorError};
+  `,
+  selected: css`
+    > td {
+      background: ${cssVar.colorFillTertiary};
+    }
+  `,
+  filters: css`
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+
+    min-width: 0;
+  `,
+  type: css`
+    flex: none;
+    width: auto;
+    min-width: 9rem;
+  `,
+}))
+
+const ALL_TYPES = '__all__'
+const ALL_STATUS = '__all__'
 const TASKS_BASE_PATH = '/tasks'
 
 interface TasksUrlState {
   page: number
-  scope: TaskScope | ''
   status: TaskStatusCategory | ''
   type: string
-}
-
-function readScopeFilter(value: null | string): TaskScope | '' {
-  return scopeOptionKeys.some((option) => option.value === value)
-    ? (value as TaskScope | '')
-    : ''
 }
 
 function writeTasksUrlState(state: TasksUrlState) {
   const params = new URLSearchParams()
   if (state.page > 1) params.set('page', String(state.page))
-  if (state.scope) params.set('scope', state.scope)
   if (state.status) params.set('status', state.status)
   if (state.type) params.set('type', state.type)
   return params
 }
 
+const urlStateOptions = {
+  read: (searchParams: URLSearchParams): TasksUrlState => ({
+    page: readPositivePage(searchParams.get('page')),
+    status: readTaskStatusFilter(searchParams.get('status')),
+    type: readTaskTypeFilter(searchParams.get('type')),
+  }),
+  write: writeTasksUrlState,
+}
+
+function isInteractiveTarget(target: EventTarget) {
+  return (
+    target instanceof Element &&
+    Boolean(
+      target.closest(
+        'a,button,input,label,[role="menuitem"],[data-row-actions]',
+      ),
+    )
+  )
+}
+
 export function TasksRouteView() {
-  const { t } = useI18n()
-  const queryClient = useQueryClient()
+  const { format, t } = useI18n()
+  const copy = useTaskCopy()
   const navigate = useNavigate()
   const params = useParams<{ id?: string }>()
-  const detailId = params.id ?? null
-  const urlStateOptions = useMemo(
-    () => ({
-      read: (searchParams: URLSearchParams): TasksUrlState => ({
-        page: readPositivePage(searchParams.get('page')),
-        scope: readScopeFilter(searchParams.get('scope')),
-        status: readTaskStatusFilter(searchParams.get('status')),
-        type: readTaskTypeFilter(searchParams.get('type')),
-      }),
-      write: writeTasksUrlState,
-    }),
-    [],
-  )
+  const labels = useTaskLabels()
+  const actions = useTaskActions()
   const [listState, setListState] = useUrlListState(urlStateOptions)
-
-  const {
-    page,
-    scope: scopeFilter,
-    status: statusFilter,
-    type: typeFilter,
-  } = listState
+  const { page, status, type } = listState
 
   const queryParams = {
     page,
-    scope: scopeFilter || undefined,
     size: pageSize,
-    status: statusFilter ? statusCategoryStatuses[statusFilter] : undefined,
-    type: typeFilter || undefined,
+    status: status ? statusCategoryStatuses[status] : undefined,
+    type: type || undefined,
   }
 
   const { socketConnected } = useTaskListSubscription()
@@ -110,243 +150,288 @@ export function TasksRouteView() {
     refetchInterval: () =>
       socketConnected ? liveSubscribeIntervalMs : fallbackPollingIntervalMs,
   })
+  const failedQuery = useQuery(failedTasksQuery)
+  const activeQuery = useQuery(activeTasksQuery)
 
-  const tasks = tasksQuery.data?.data ?? []
+  const tasks = useMemo(() => tasksQuery.data?.data ?? [], [tasksQuery.data])
   const total = tasksQuery.data?.total ?? 0
-  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  const subjectOf = useTaskSubjects(tasks)
+  const failedTotal = failedQuery.data?.total ?? 0
+  const activeTotal = activeQuery.data?.total ?? 0
 
-  const invalidateTasks = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: tasksQueryKey })
-  }, [queryClient])
+  const listSearch = writeTasksUrlState(listState).toString()
+  const openTask = (id: string) =>
+    navigate({
+      pathname: `${TASKS_BASE_PATH}/${id}`,
+      search: listSearch ? `?${listSearch}` : '',
+    })
 
-  const buildListSearch = useCallback(
-    (state: TasksUrlState = listState) => {
-      const next = writeTasksUrlState(state)
-      const qs = next.toString()
-      return qs ? `?${qs}` : ''
-    },
-    [listState],
-  )
+  const segmentLabel = (value: (typeof statusSegmentValues)[number]) => {
+    if (value === '') return copy('statusAll')
+    if (value === 'completed') return copy('statusCompleted')
+    const count = type ? null : value === 'failed' ? failedTotal : activeTotal
+    return (
+      <span>
+        {value === 'failed' ? copy('statusFailed') : copy('statusActive')}
+        {count ? (
+          <span
+            className={value === 'failed' ? styles.countDanger : styles.count}
+          >
+            {format.number(count)}
+          </span>
+        ) : null}
+      </span>
+    )
+  }
 
-  const closeDetail = useCallback(() => {
-    navigate(`${TASKS_BASE_PATH}${buildListSearch()}`)
-  }, [buildListSearch, navigate])
+  const typeOptions = [
+    { label: copy('typeAll'), value: ALL_TYPES },
+    ...filterableTaskTypes.map((value) => ({
+      label: labels.type(value),
+      value,
+    })),
+  ]
 
-  const openTask = useCallback(
-    (id: string) => {
-      navigate(`${TASKS_BASE_PATH}/${id}${buildListSearch()}`)
-    },
-    [buildListSearch, navigate],
-  )
-
-  const setPage = useCallback(
-    (nextPage: number) => {
-      setListState({ page: nextPage })
-    },
-    [setListState],
-  )
-
-  const handleScopeChange = useCallback(
-    (next: TaskScope | '') => {
-      setListState((current) => ({
-        ...current,
-        page: 1,
-        scope: next,
-        type: '',
-      }))
-    },
-    [setListState],
-  )
-
-  const handleStatusChange = useCallback(
-    (next: TaskStatusCategory | '') => {
-      setListState((current) => ({ ...current, page: 1, status: next }))
-    },
-    [setListState],
-  )
-
-  const handleTypeChange = useCallback(
-    (next: string) => {
-      setListState((current) => ({ ...current, page: 1, type: next }))
-    },
-    [setListState],
-  )
-
-  const retryMutation = useMutation({
-    mutationFn: retryTask,
-    onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('tasks.toast.retryFailed'))),
-    onSuccess: async (result) => {
-      toast.success(
-        result.created
-          ? t('tasks.toast.retryCreated')
-          : t('tasks.toast.taskExists'),
-      )
-      await invalidateTasks()
-    },
-  })
-
-  const continueTtsMutation = useMutation({
-    mutationFn: (task: AITask) => {
-      const refId = task.payload.refId as string | undefined
-      if (!refId) throw new Error(t('tasks.toast.continueFailed'))
-      return createTtsTask({
-        force: false,
-        langs: task.payload.langs as string[] | undefined,
-        refId,
-      })
-    },
-    onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('tasks.toast.continueFailed'))),
-    onSuccess: async (result) => {
-      toast.success(
-        result.created
-          ? t('tasks.toast.continueCreated')
-          : t('tasks.toast.taskExists'),
-      )
-      await invalidateTasks()
-    },
-  })
-
-  const cancelMutation = useMutation({
-    mutationFn: cancelTask,
-    onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('tasks.toast.cancelFailed'))),
-    onSuccess: invalidateTasks,
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteTask,
-    onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('tasks.toast.deleteFailed'))),
-    onSuccess: async () => {
-      toast.success(t('tasks.toast.deleted'))
-      closeDetail()
-      await invalidateTasks()
-    },
-  })
-
-  const clearCompletedMutation = useMutation({
-    mutationFn: () =>
-      deleteTasks({
-        before: Date.now(),
-        scope: scopeFilter || undefined,
-        status: AITaskStatus.Completed,
-      }),
-    onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('tasks.toast.clearFailed'))),
-    onSuccess: async (result) => {
-      toast.success(t('tasks.toast.cleared', { count: result.deleted }))
-      await invalidateTasks()
-    },
-  })
-
-  const typeOptions = useMemo<TaskTypeOption[] | null>(() => {
-    if (scopeFilter === 'ai') {
-      return typeOptionKeys.map((option) => ({
-        label: t(option.labelKey),
-        value: option.value,
-      }))
-    }
-    return null
-  }, [scopeFilter, t])
-
-  const headerActions: HeaderAction[] = [
+  const columns: ProColumns<AITask>[] = [
     {
-      kind: 'button',
-      iconOnly: true,
-      icon: RefreshCw,
-      label: t('tasks.action.refresh'),
-      onClick: () => void tasksQuery.refetch(),
-      disabled: tasksQuery.isFetching,
+      dataIndex: 'payload',
+      render: (_dom, task) => <TaskSubjectCell subject={subjectOf(task)} />,
+      title: copy('columnSubject'),
     },
     {
-      kind: 'button',
-      iconOnly: true,
-      icon: Trash2,
-      label: t('tasks.action.clearCompleted'),
-      onClick: () => {
-        if (window.confirm(t('tasks.confirm.clearCompleted'))) {
-          clearCompletedMutation.mutate()
-        }
-      },
-      disabled: clearCompletedMutation.isPending,
+      dataIndex: 'type',
+      render: (_dom, task) => <Tag>{labels.type(task.type)}</Tag>,
+      responsive: ['md'],
+      title: copy('columnType'),
+      width: 128,
+    },
+    {
+      dataIndex: 'status',
+      render: (_dom, task) => <TaskStatusTag task={task} />,
+      title: copy('columnStatus'),
+      width: 104,
+    },
+    {
+      dataIndex: 'progress',
+      render: (_dom, task) => <TaskResultCell task={task} />,
+      responsive: ['lg'],
+      title: copy('columnResult'),
+      width: 160,
+    },
+    {
+      dataIndex: 'createdAt',
+      render: (_dom, task) => <TaskTimeCell timestamp={task.createdAt} />,
+      responsive: ['md'],
+      title: copy('columnCreated'),
+      width: 120,
+    },
+    {
+      dataIndex: 'completedAt',
+      render: (_dom, task) => (
+        <span className={cellStyles.time}>
+          {formatElapsed(taskElapsedMs(task, Date.now()))}
+        </span>
+      ),
+      responsive: ['lg'],
+      title: copy('columnElapsed'),
+      width: 104,
+    },
+    {
+      align: 'right',
+      key: 'actions',
+      render: (_dom, task) => (
+        <TaskRowActions
+          onCancel={actions.cancel}
+          onDelete={actions.remove}
+          onRetry={actions.retry}
+          retrying={actions.retryingId === task.id}
+          task={task}
+        />
+      ),
+      title: '',
+      width: 140,
     },
   ]
 
-  const routeContextValue = useMemo(
-    () => ({
-      canceling: cancelMutation.isPending,
-      continuing: continueTtsMutation.isPending,
-      deleting: deleteMutation.isPending,
-      onBack: closeDetail,
-      onCancel: (task: AITask) => {
-        if (window.confirm(t('tasks.confirm.cancelTask', { id: task.id }))) {
-          cancelMutation.mutate(task.id)
+  const filtered = Boolean(status || type)
+  const initialLoading = tasksQuery.isLoading && tasks.length === 0
+  const showStale = tasksQuery.isError && tasks.length > 0
+
+  let emptyNode: ReactNode
+  if (tasksQuery.isError) {
+    emptyNode = (
+      <Empty
+        action={
+          <Button onClick={() => void tasksQuery.refetch()}>
+            {copy('reload')}
+          </Button>
         }
-      },
-      onContinueTts: (task: AITask) => continueTtsMutation.mutate(task),
-      onDelete: (task: AITask) => {
-        if (window.confirm(t('tasks.confirm.deleteTask', { id: task.id }))) {
-          deleteMutation.mutate(task.id)
+        description={copy('listLoadBody')}
+        icon={ListTodo}
+        title={copy('listLoadTitle')}
+      />
+    )
+  } else if (status === 'failed' && !type) {
+    emptyNode = <Empty icon={ListTodo} title={copy('emptyFailedTitle')} />
+  } else if (filtered) {
+    emptyNode = (
+      <Empty
+        action={
+          <Button
+            onClick={() => setListState({ page: 1, status: '', type: '' })}
+          >
+            {copy('clearFilters')}
+          </Button>
         }
-      },
-      onRetry: (task: AITask) => retryMutation.mutate(task.id),
-      polling: !tasksQuery.isPaused,
-      retrying: retryMutation.isPending,
-    }),
-    [
-      cancelMutation,
-      closeDetail,
-      continueTtsMutation,
-      deleteMutation,
-      retryMutation,
-      t,
-      tasksQuery.isPaused,
-    ],
-  )
+        icon={ListTodo}
+        title={copy('filteredTitle')}
+      />
+    )
+  } else {
+    emptyNode = (
+      <Empty
+        description={copy('emptyBody')}
+        icon={ListTodo}
+        title={copy('emptyTitle')}
+      />
+    )
+  }
 
   return (
-    <AppPage>
-      <PageHeader
-        actions={headerActions}
-        description={t('routes.tasks.description')}
-        title={t('routes.tasks.title')}
-      />
-
-      <TasksRouteContext.Provider value={routeContextValue}>
-        <MasterDetailShell
-          emptyDetail={
-            <section className="h-full min-h-0">
-              <TaskDetailEmpty />
-            </section>
+    <Page
+      actions={
+        <Button
+          icon={Trash2}
+          loading={actions.clearing}
+          onClick={() =>
+            actions.clearCompleted(
+              type || undefined,
+              type ? labels.type(type) : undefined,
+            )
           }
-          list={
-            <TaskListPane
-              isError={tasksQuery.isError}
-              isLoading={tasksQuery.isLoading}
-              livePaused={!socketConnected}
-              onPageChange={setPage}
-              onRefetch={() => void tasksQuery.refetch()}
-              onScopeChange={handleScopeChange}
-              onSelectTask={openTask}
-              onStatusChange={handleStatusChange}
-              onTypeChange={handleTypeChange}
-              page={page}
-              pageCount={pageCount}
-              pageSize={pageSize}
-              scope={scopeFilter}
-              selectedTaskId={detailId}
-              status={statusFilter}
-              tasks={tasks}
-              total={total}
-              type={typeFilter}
-              typeOptions={typeOptions}
-            />
+          type="text"
+        >
+          {copy('clearCompleted')}
+        </Button>
+      }
+      count={tasksQuery.data ? format.number(total) : undefined}
+      description={copy('pageDescription')}
+      title={t('routes.tasks.title')}
+      width="wide"
+    >
+      {failedTotal > 0 && status !== 'failed' ? (
+        <Alert
+          action={
+            <Button
+              onClick={() =>
+                setListState({ page: 1, status: 'failed', type: '' })
+              }
+              size="small"
+            >
+              {copy('viewFailed')}
+            </Button>
           }
+          showIcon
+          title={copy('failedBanner', { count: failedTotal })}
+          type="error"
         />
-      </TasksRouteContext.Provider>
-    </AppPage>
+      ) : null}
+      {showStale ? (
+        <Alert
+          action={
+            <Button onClick={() => void tasksQuery.refetch()} size="small">
+              {copy('reload')}
+            </Button>
+          }
+          showIcon
+          title={copy('listStale')}
+          type="warning"
+        />
+      ) : null}
+      <ProTable<AITask>
+        columnEmptyText="--"
+        columns={columns}
+        dataSource={tasks}
+        loading={
+          tasksQuery.isFetching &&
+          !initialLoading &&
+          tasksQuery.isPlaceholderData
+        }
+        locale={{ emptyText: emptyNode }}
+        onRow={(task) =>
+          ({
+            'data-id': task.id,
+            'data-scope-item': 'row',
+            onClick: (event) => {
+              if (isInteractiveTarget(event.target)) return
+              openTask(task.id)
+            },
+          }) as HTMLAttributes<HTMLElement>
+        }
+        options={{
+          density: false,
+          fullScreen: false,
+          reload: () => void tasksQuery.refetch(),
+          search: false,
+          setting: false,
+        }}
+        pagination={{
+          current: page,
+          hideOnSinglePage: true,
+          onChange: (nextPage) => setListState({ page: nextPage }),
+          pageSize,
+          showSizeChanger: false,
+          total,
+        }}
+        rowClassName={(task) =>
+          cx(cellStyles.row, task.id === params.id && styles.selected)
+        }
+        rowKey="id"
+        search={false}
+        tableLayout="fixed"
+        tableRender={(_props, dom) =>
+          initialLoading ? <TableSkeleton rows={8} /> : dom
+        }
+        toolBarRender={() => [
+          <div className={styles.filters} key="filters">
+            <Segmented
+              aria-label={copy('statusFilter')}
+              onChange={(value) =>
+                setListState((current) => ({
+                  ...current,
+                  page: 1,
+                  status:
+                    value === ALL_STATUS ? '' : (value as TaskStatusCategory),
+                }))
+              }
+              options={statusSegmentValues.map((value) => ({
+                label: segmentLabel(value),
+                value: value || ALL_STATUS,
+              }))}
+              value={status || ALL_STATUS}
+            />
+            <Select
+              aria-label={copy('typeFilter')}
+              className={styles.type}
+              onChange={(value) => {
+                if (typeof value !== 'string') return
+                setListState((current) => ({
+                  ...current,
+                  page: 1,
+                  type: value === ALL_TYPES ? '' : value,
+                }))
+              }}
+              options={typeOptions}
+              popupMatchSelectWidth={false}
+              value={type || ALL_TYPES}
+            />
+            {socketConnected ? null : <Tag>{copy('livePaused')}</Tag>}
+          </div>,
+        ]}
+        variant="outlined"
+      />
+      <Outlet />
+    </Page>
   )
 }
 

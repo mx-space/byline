@@ -1,9 +1,53 @@
+import { createStaticStyles } from '@lobehub/ui'
 import type { CSSProperties } from 'react'
 
 import { bgUrl } from '~/constants/env'
 
-export const authBackdropClassName =
-  'auth-light relative min-h-dvh overflow-hidden bg-white p-4 text-fg'
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ud65dd912: css`
+    position: relative;
+    min-height: 100dvh;
+    overflow: hidden;
+    background-color: ${cssVar.colorBgContainer};
+    padding: 1rem;
+    color: ${cssVar.colorText};
+  `,
+  u871deadf: css`
+    width: 100%;
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorBgContainer};
+    padding: 1.5rem;
+    box-shadow: ${cssVar.boxShadowTertiary};
+  `,
+  u1f6009b1: css`
+    display: flex;
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 12px;
+    background-color: ${cssVar.colorPrimaryBg};
+    color: ${cssVar.colorPrimary};
+  `,
+  u76a54174: css`
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    color: ${cssVar.colorText};
+  `,
+  u383496c9: css`
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+}))
+
+export const authBackdropClassName = lobeStyles.ud65dd912
 
 export const authBackdropStyle: CSSProperties = {
   backgroundImage: bgUrl
@@ -13,12 +57,10 @@ export const authBackdropStyle: CSSProperties = {
   backgroundSize: 'cover',
 }
 
-export const authCardClassName =
-  'w-full rounded-lg border border-border bg-surface-card p-6 shadow-sm'
+export const authCardClassName = lobeStyles.u871deadf
 
-export const authIconTileClassName =
-  'flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-accent-soft text-accent'
+export const authIconTileClassName = lobeStyles.u1f6009b1
 
-export const authTitleClassName = 'text-2xl font-semibold text-fg'
+export const authTitleClassName = lobeStyles.u76a54174
 
-export const authDescriptionClassName = 'text-base text-fg-muted'
+export const authDescriptionClassName = lobeStyles.u383496c9

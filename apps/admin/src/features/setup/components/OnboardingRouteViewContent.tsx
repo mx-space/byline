@@ -1,11 +1,8 @@
-import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { checkLogged, getMe } from '~/api/users'
 import { checkIsInit } from '~/features/auth/utils/check-init'
-import { authBackdropClassName, authBackdropStyle } from '~/lib/auth-backdrop'
-import { cn } from '~/utils/cn'
 
 import type { OnboardingStep } from '../utils/onboarding'
 import {
@@ -18,6 +15,7 @@ import { AccountStep } from './AccountStep'
 import { AiFeaturesStep } from './AiFeaturesStep'
 import { AiModelsStep } from './AiModelsStep'
 import { AiProvidersStep } from './AiProvidersStep'
+import { SetupBoot } from './OnboardingShell'
 import { ReadyStep } from './ReadyStep'
 import { SiteStep } from './SiteStep'
 import { WelcomeStep } from './WelcomeStep'
@@ -92,20 +90,7 @@ export function OnboardingRouteViewContent() {
 
   switch (step) {
     case null: {
-      return (
-        <main
-          className={cn(
-            authBackdropClassName,
-            'flex items-center justify-center',
-          )}
-          style={authBackdropStyle}
-        >
-          <Loader2
-            aria-hidden="true"
-            className="size-5 animate-spin text-fg-subtle"
-          />
-        </main>
-      )
+      return <SetupBoot />
     }
     case 'welcome': {
       return <WelcomeStep connected={connected} onFresh={() => go('account')} />

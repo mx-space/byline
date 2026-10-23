@@ -4,6 +4,7 @@ import type {
   ToolCallGroupItem,
 } from '@haklex/rich-agent-core'
 import { Streamdown } from '@lobehub/streamdown'
+import { createStaticStyles } from '@lobehub/ui'
 import { Check, X } from 'lucide-react'
 import remarkGfm from 'remark-gfm'
 
@@ -13,6 +14,124 @@ import { Button } from '~/ui/primitives/button'
 import { ThinkingBlock } from './ThinkingBlock'
 import { ToolCallGroupView } from './ToolCallView'
 import type { UserChatBubble } from './types'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ub75f6e07: css`
+    display: flex;
+    justify-content: flex-end;
+  `,
+  u384b6fda: css`
+    max-width: 82%;
+    border-radius: 10px;
+    background-color: ${cssVar.colorPrimaryBg};
+    padding-inline: 0.625rem;
+    padding-block: 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    line-height: 1.625;
+    color: ${cssVar.colorText};
+  `,
+  u7f668516: css`
+    margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-left-width: 2px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding-left: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uf72c99b1: css`
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  `,
+  u823a1374: css`
+    max-width: none;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    line-height: 1.625;
+    color: ${cssVar.colorText};
+  `,
+  u59d40084: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u7a31703b: css`
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u54c45895: css`
+    width: 0.75rem;
+    height: 0.75rem;
+    color: ${cssVar.colorSuccess};
+  `,
+  uc5577458: css`
+    width: 0.75rem;
+    height: 0.75rem;
+    color: ${cssVar.colorError};
+  `,
+  u2cd2ff7a: css`
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+    padding: 0.5rem;
+  `,
+  u15bc8269: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  u846e6b39: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  ud483f0e3: css`
+    margin-top: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  `,
+  uee129b1d: css`
+    height: 1.75rem;
+    padding-inline: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+  ud2fca7f2: css`
+    margin-top: 0.375rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u73859681: css`
+    border-left-width: 2px;
+    border-style: solid;
+    border-color: ${cssVar.colorError};
+    padding-left: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.625;
+    color: ${cssVar.colorError};
+    :where(.dark, .dark *) & {
+      border-color: color-mix(in srgb, ${cssVar.colorError} 60%, transparent);
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorError};
+    }
+  `,
+}))
 
 const remarkPlugins = [remarkGfm]
 
@@ -34,10 +153,10 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
     case 'user': {
       const selection = (bubble as UserChatBubble).selection
       return (
-        <div className="flex justify-end">
-          <div className="max-w-[82%] rounded-md bg-accent-soft px-2.5 py-1.5 text-sm leading-relaxed text-fg">
+        <div className={lobeStyles.ub75f6e07}>
+          <div className={lobeStyles.u384b6fda}>
             {selection && (
-              <div className="mb-1 truncate border-l-2 border-border pl-2 text-xs text-fg-muted">
+              <div className={lobeStyles.u7f668516}>
                 {selection.type === 'text'
                   ? `"${selection.text}"`
                   : t('write.agent.selection.blocks', {
@@ -45,9 +164,7 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
                     })}
               </div>
             )}
-            <div className="whitespace-pre-wrap break-words">
-              {bubble.content}
-            </div>
+            <div className={lobeStyles.uf72c99b1}>{bubble.content}</div>
           </div>
         </div>
       )
@@ -55,7 +172,7 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
 
     case 'assistant': {
       return (
-        <div className="prose prose-sm max-w-none text-sm leading-relaxed text-fg dark:prose-invert">
+        <div className={lobeStyles.u823a1374}>
           <Streamdown
             content={bubble.content}
             granularity="char"
@@ -71,7 +188,7 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
 
     case 'tool_call': {
       return (
-        <div className="text-xs text-fg-subtle">
+        <div className={lobeStyles.u59d40084}>
           {t('write.agent.bubble.callingTool', { toolName: bubble.toolName })}
         </div>
       )
@@ -79,11 +196,11 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
 
     case 'tool_result': {
       return (
-        <div className="flex items-center gap-1 text-xs text-fg-subtle">
+        <div className={lobeStyles.u7a31703b}>
           {bubble.success ? (
-            <Check aria-hidden="true" className="size-3 text-green-600" />
+            <Check aria-hidden="true" className={lobeStyles.u54c45895} />
           ) : (
-            <X aria-hidden="true" className="size-3 text-red-500" />
+            <X aria-hidden="true" className={lobeStyles.uc5577458} />
           )}
           {bubble.summary}
         </div>
@@ -115,16 +232,16 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
       ).length
 
       return (
-        <div className="rounded-md border border-border bg-surface-inset p-2">
-          <div className="text-xs font-medium text-fg">
+        <div className={lobeStyles.u2cd2ff7a}>
+          <div className={lobeStyles.u15bc8269}>
             {t('write.agent.review.title')}
           </div>
-          <div className="text-xs text-fg-muted">
+          <div className={lobeStyles.u846e6b39}>
             {t('write.agent.review.summary', { pending, accepted, rejected })}
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className={lobeStyles.ud483f0e3}>
             <Button
-              className="h-7 px-2 text-xs"
+              className={lobeStyles.uee129b1d}
               disabled={pending === 0 || props.actionsLocked}
               onClick={() => props.onAcceptBatch(batch.id)}
               type="button"
@@ -132,7 +249,7 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
               {t('write.agent.button.accept')}
             </Button>
             <Button
-              className="h-7 px-2 text-xs"
+              className={lobeStyles.uee129b1d}
               disabled={pending === 0 || props.actionsLocked}
               onClick={() => props.onRejectBatch(batch.id)}
               type="button"
@@ -141,7 +258,7 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
               {t('write.agent.button.reject')}
             </Button>
             <Button
-              className="h-7 px-2 text-xs"
+              className={lobeStyles.uee129b1d}
               disabled={props.actionsLocked}
               onClick={() => props.onReapplyBatch(batch.id)}
               type="button"
@@ -151,7 +268,7 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
             </Button>
           </div>
           {props.actionsLocked ? (
-            <div className="mt-1.5 text-xs text-fg-subtle">
+            <div className={lobeStyles.ud2fca7f2}>
               {t('write.agent.review.lockedHint')}
             </div>
           ) : null}
@@ -161,7 +278,7 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
 
     case 'diff_summary': {
       return (
-        <div className="text-xs text-fg-subtle">
+        <div className={lobeStyles.u59d40084}>
           {t('write.agent.bubble.diffSummary', {
             accepted: bubble.accepted,
             rejected: bubble.rejected,
@@ -172,11 +289,7 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
     }
 
     case 'error': {
-      return (
-        <div className="border-l-2 border-red-300 pl-2 text-xs leading-relaxed text-red-600 dark:border-red-900/60 dark:text-red-400">
-          {bubble.message}
-        </div>
-      )
+      return <div className={lobeStyles.u73859681}>{bubble.message}</div>
     }
 
     default: {

@@ -1,7 +1,5 @@
-@reference 'tailwindcss';
-
 .cm-editor {
-  @apply bg-transparent;
+  background-color: transparent;
 
   /* Fix widget buffer img causing line height issues */
   & .cm-widgetBuffer {
@@ -17,34 +15,34 @@
   }
 
   & .cm-gutters {
-    @apply bg-transparent;
+    background-color: transparent;
   }
 
   & {
-    @apply h-full;
+    height: 100%;
   }
 
   .cm-editor {
     .cm-gutters,
     .cm-activeLineGutter,
     .cm-activeLine {
-      @apply transition-colors duration-500;
+      transition: color 0.5s ease, background-color 0.5s ease, border-color 0.5s ease;
     }
   }
 
   &.cm-focused {
-    @apply !outline-none;
+    outline: none;
   }
 
   & .cm-gutters,
   & .cm-gutter {
-    @apply !min-w-[3rem];
+    min-width: 3rem;
   }
 
   @media (max-width: 768px) {
     & .cm-gutters,
     & .cm-gutter {
-      @apply !min-w-[1.75rem];
+      min-width: 1.75rem;
     }
   }
 
@@ -93,7 +91,11 @@
 
     /* Remove active line highlight in WYSIWYG mode for cleaner look */
     & > .cm-scroller > .cm-content .cm-activeLine {
-      @apply rounded-sm bg-neutral-100 dark:bg-neutral-800;
+      border-radius: 8px;
+      background-color: #f5f5f5;
+    }
+    :where(.dark, .dark *) & > .cm-scroller > .cm-content .cm-activeLine {
+      background-color: #262626;
     }
 
     & > .cm-gutters .cm-activeLineGutter {

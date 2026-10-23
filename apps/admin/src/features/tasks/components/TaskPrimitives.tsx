@@ -1,71 +1,118 @@
+import { createStaticStyles, ScrollArea, Tag } from '@lobehub/ui'
 import type { ReactNode } from 'react'
 
-import type { AITaskStatus as AITaskStatusType } from '~/api/tasks'
-import { AITaskStatus } from '~/api/tasks'
-import type { BadgeTone } from '~/ui/primitives/badge'
-import { Badge } from '~/ui/primitives/badge'
-import { Scroll } from '~/ui/primitives/scroll'
+import type { AITaskStatus } from '~/api/tasks'
 
-const statusToneMap: Record<AITaskStatusType, BadgeTone> = {
-  [AITaskStatus.Pending]: 'neutral',
-  [AITaskStatus.Running]: 'info',
-  [AITaskStatus.Completed]: 'success',
-  [AITaskStatus.PartialFailed]: 'warning',
-  [AITaskStatus.Failed]: 'danger',
-  [AITaskStatus.Cancelled]: 'neutral',
-}
+import { taskStatusColor } from '../hooks/use-task-labels'
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  field: css`
+    min-width: 0;
+  `,
+  fieldLabel: css`
+    color: ${cssVar.colorTextSecondary};
+    font-size: ${cssVar.fontSizeSM};
+  `,
+  fieldValue: css`
+    color: ${cssVar.colorText};
+    margin-block-start: 2px;
+  `,
+  code: css`
+    background: ${cssVar.colorFillSecondary};
+    border-radius: ${cssVar.borderRadius};
+    color: ${cssVar.colorText};
+    display: inline-block;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: ${cssVar.fontSizeSM};
+    max-width: 100%;
+    overflow: hidden;
+    padding-block: 1px;
+    padding-inline: 6px;
+    text-overflow: ellipsis;
+    vertical-align: baseline;
+    white-space: nowrap;
+  `,
+  json: css`
+    background: ${cssVar.colorFillSecondary};
+    border-radius: ${cssVar.borderRadius};
+    max-height: 18rem;
+  `,
+  jsonBody: css`
+    color: ${cssVar.colorText};
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: ${cssVar.fontSizeSM};
+    line-height: 1.5;
+    margin: 0;
+    padding: 12px;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  `,
+}))
 
 export function StatusBadge(props: {
   children: ReactNode
-  status: AITaskStatusType
+  status: AITaskStatus
 }) {
   return (
-    <Badge size="sm" tone={statusToneMap[props.status]}>
+    <Tag color={taskStatusColor[props.status]} size="small">
       {props.children}
-    </Badge>
+    </Tag>
   )
 }
 
-export { Badge as SmallBadge } from '~/ui/primitives/badge'
+const toneColor = {
+  accent: 'blue',
+  danger: 'error',
+  info: 'blue',
+  neutral: undefined,
+  success: 'success',
+  warning: 'warning',
+} as const
+
+export function SmallBadge(props: {
+  children: ReactNode
+  className?: string
+  'data-testid'?: string
+  pill?: boolean
+  size?: 'md' | 'sm'
+  title?: string
+  tone?: keyof typeof toneColor
+  variant?: 'bordered' | 'outline' | 'soft'
+}) {
+  return (
+    <Tag
+      className={props.className}
+      color={toneColor[props.tone ?? 'neutral']}
+      data-testid={props['data-testid']}
+      shape={props.pill ? 'round' : 'normal'}
+      size={props.size === 'sm' ? 'small' : 'middle'}
+      title={props.title}
+      variant={props.variant === 'outline' ? 'outlined' : 'filled'}
+    >
+      {props.children}
+    </Tag>
+  )
+}
 
 export function Field(props: { children: ReactNode; label: string }) {
   return (
-    <div className="min-w-0 space-y-1">
-      <div className="text-xs text-fg-muted">{props.label}</div>
-      <div className="min-w-0 text-fg">{props.children}</div>
+    <div className={styles.field}>
+      <div className={styles.fieldLabel}>{props.label}</div>
+      <div className={styles.fieldValue}>{props.children}</div>
     </div>
   )
 }
 
 export function Code(props: { children: ReactNode }) {
-  return (
-    <code className="block truncate rounded bg-surface-inset px-1.5 py-0.5 font-mono text-xs text-fg">
-      {props.children}
-    </code>
-  )
-}
-
-export function DetailBlock(props: { children: ReactNode; title: string }) {
-  return (
-    <section className="mt-6">
-      <h3 className="mb-2 text-xs font-medium uppercase text-fg-muted">
-        {props.title}
-      </h3>
-      {props.children}
-    </section>
-  )
+  return <code className={styles.code}>{props.children}</code>
 }
 
 export function JsonBlock(props: { value: unknown }) {
   return (
-    <Scroll
-      className="rounded border border-border bg-surface-inset"
-      orientation="both"
-      viewportClassName="max-h-72"
-    >
-      <pre className="p-3 text-xs leading-5 text-fg">
+    <ScrollArea className={styles.json} scrollFade="vertical">
+      <pre className={styles.jsonBody}>
         {JSON.stringify(props.value, null, 2)}
       </pre>
-    </Scroll>
+    </ScrollArea>
   )
 }

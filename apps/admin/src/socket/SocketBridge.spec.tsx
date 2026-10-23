@@ -83,21 +83,25 @@ vi.mock('@mx-space/ws-client', () => ({
   },
 }))
 
-vi.mock('sonner', () => ({
-  toast: {
-    dismiss: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    success: vi.fn(),
-    warning: vi.fn(),
-  },
-}))
+vi.mock('@lobehub/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@lobehub/ui')>()
+  return {
+    ...actual,
+    toast: {
+      dismiss: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      success: vi.fn(),
+      warning: vi.fn(),
+    },
+  }
+})
 
 const { SocketBridge, getAdminSocket, handleTaskUpdate } =
   await import('./SocketBridge')
 const { subscribeDraftUpdate } = await import('./draft-update-signal')
 const { EventTypes } = await import('./types')
-const { toast } = await import('sonner')
+const { toast } = await import('@lobehub/ui')
 
 function makeTask(overrides: Partial<AITask> = {}): AITask {
   return {

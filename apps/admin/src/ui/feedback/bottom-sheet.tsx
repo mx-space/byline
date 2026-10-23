@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import type { LucideIcon } from 'lucide-react'
 import { motion, useMotionValue, useTransform } from 'motion/react'
 import type { ReactNode } from 'react'
@@ -14,6 +15,114 @@ import { createPortal } from 'react-dom'
 import { useI18n } from '~/i18n'
 import { PortalLayerScope, useFloatingZ } from '~/ui/feedback/portal-layer'
 import { cn } from '~/utils/cn'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u99d72c7f: css`
+    display: none;
+  `,
+  ub49312df: css`
+    position: fixed;
+    inset: 0px;
+  `,
+  u44ea555a: css`
+    position: absolute;
+    inset: 0px;
+    background-color: ${cssVar.colorBgMask};
+  `,
+  u1eda740d: css`
+    outline: none;
+    position: absolute;
+    inset-inline: 0px;
+    bottom: 0px;
+  `,
+  u116fb498: css`
+    box-shadow: ${cssVar.boxShadow};
+    display: flex;
+    height: 100%;
+    width: 100%;
+    flex-direction: column;
+    background-color: ${cssVar.colorBgContainer};
+    will-change: transform;
+  `,
+  u5e5a4e2d: css`
+    display: flex;
+    height: 2.25rem;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: none;
+    align-items: center;
+    justify-content: center;
+    &:active {
+      cursor: grabbing;
+    }
+  `,
+  u615f067c: css`
+    height: 0.375rem;
+    width: 2.5rem;
+    border-radius: 999px;
+    background-color: ${cssVar.colorBorder};
+  `,
+  u2093353d: css`
+    display: flex;
+    height: 3rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorBgContainer};
+    padding-inline: 1rem;
+  `,
+  u2e014667: css`
+    display: inline-flex;
+    min-width: 0px;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  uc39c8d01: css`
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  `,
+  uf283ea9b: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  u0a935cc3: css`
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.375rem;
+  `,
+  u61629050: css`
+    display: flex;
+    min-height: 0px;
+    flex: 1 1 0%;
+    flex-direction: column;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  `,
+  u61cebfd1: css`
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    border-top-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding-inline: 1rem;
+    padding-block: 0.75rem;
+  `,
+}))
 
 export type BottomSheetSnap = 'half' | 'full'
 type SheetState = BottomSheetSnap | 'closed'
@@ -390,10 +499,14 @@ export function BottomSheet(props: BottomSheetProps) {
 
   return createPortal(
     <PortalLayerScope depth={depth}>
-      <div aria-hidden={false} className="fixed inset-0" style={{ zIndex: z }}>
+      <div
+        aria-hidden={false}
+        className={lobeStyles.ub49312df}
+        style={{ zIndex: z }}
+      >
         <motion.div
           aria-hidden="true"
-          className="absolute inset-0 bg-black"
+          className={lobeStyles.u44ea555a}
           data-testid="bottom-sheet-scrim"
           onClick={props.onClose}
           style={{ opacity: engine.scrimOpacity }}
@@ -401,16 +514,13 @@ export function BottomSheet(props: BottomSheetProps) {
         <div
           aria-labelledby={props.title ? titleId : undefined}
           aria-modal="true"
-          className="outline-hidden absolute inset-x-0 bottom-0"
+          className={lobeStyles.u1eda740d}
           data-snap={activeSnap}
           role="dialog"
           style={{ height: SNAP_HEIGHT.full }}
         >
           <motion.div
-            className={cn(
-              'shadow-lg flex h-full w-full flex-col bg-surface-card will-change-transform',
-              props.className,
-            )}
+            className={cn(lobeStyles.u116fb498, props.className)}
             style={{
               paddingBottom: engine.offscreenPad,
               y: engine.visualY,
@@ -424,7 +534,7 @@ export function BottomSheet(props: BottomSheetProps) {
                   ? t('ui.bottomSheet.expand')
                   : t('ui.bottomSheet.collapse')
               }
-              className="flex h-9 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
+              className={lobeStyles.u5e5a4e2d}
               onClick={toggleSnap}
               onPointerCancel={engine.endDrag}
               onPointerDown={engine.onGrabberPointerDown}
@@ -432,31 +542,25 @@ export function BottomSheet(props: BottomSheetProps) {
               onPointerUp={engine.endDrag}
               type="button"
             >
-              <div className="h-1.5 w-10 rounded-full bg-border-strong" />
+              <div className={lobeStyles.u615f067c} />
             </button>
             {props.title != null || props.headerActions != null ? (
-              <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-surface-card px-4">
-                <h2
-                  className="inline-flex min-w-0 items-center gap-2 text-sm font-medium text-fg"
-                  id={titleId}
-                >
+              <div className={lobeStyles.u2093353d}>
+                <h2 className={lobeStyles.u2e014667} id={titleId}>
                   {Icon ? (
-                    <Icon aria-hidden="true" className="size-4 shrink-0" />
+                    <Icon aria-hidden="true" className={lobeStyles.uc39c8d01} />
                   ) : null}
                   {props.title ? (
-                    <span className="truncate">{props.title}</span>
+                    <span className={lobeStyles.uf283ea9b}>{props.title}</span>
                   ) : null}
                 </h2>
-                <div className="flex shrink-0 items-center gap-1.5">
+                <div className={lobeStyles.u0a935cc3}>
                   {props.headerActions}
                 </div>
               </div>
             ) : null}
             <motion.div
-              className={cn(
-                'flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain [touch-action:pan-y]',
-                props.bodyClassName,
-              )}
+              className={cn(lobeStyles.u61629050, props.bodyClassName)}
               onPointerCancel={engine.endDrag}
               onPointerDown={engine.onBodyPointerDown}
               onPointerMove={engine.onPointerMove}
@@ -466,9 +570,7 @@ export function BottomSheet(props: BottomSheetProps) {
               {props.children}
             </motion.div>
             {props.footer ? (
-              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-3">
-                {props.footer}
-              </div>
+              <div className={lobeStyles.u61cebfd1}>{props.footer}</div>
             ) : null}
           </motion.div>
         </div>

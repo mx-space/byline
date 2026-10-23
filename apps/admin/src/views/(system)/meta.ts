@@ -2,5 +2,5 @@ import type { SectionMeta } from '~/lib/route-meta'
 
 export default {
   titleKey: 'shell.nav.system',
-  order: 7,
+  order: 4,
 } satisfies SectionMeta

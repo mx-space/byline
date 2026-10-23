@@ -1,11 +1,9 @@
-@reference 'tailwindcss';
-
 .editor-wrapper {
+  position: relative;
   height: calc(100dvh - 18.8rem);
-  @apply relative;
 
   > div {
-    @apply h-full;
+    height: 100%;
   }
 
   textarea,

@@ -146,10 +146,10 @@ export function usePostsList() {
       })),
     sortKey: state.sortKey,
     sortOrder: state.sortOrder,
-    submitSearch: () =>
+    submitSearch: (nextKeyword = keywordInput) =>
       setState((current) => ({
         ...current,
-        keyword: keywordInput.trim(),
+        keyword: nextKeyword.trim(),
         page: 1,
       })),
   }

@@ -1,5 +1,12 @@
 import type { PropsWithChildren } from 'react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { useNavigate } from 'react-router'
 import { tinykeys } from 'tinykeys'
 import { appRoutes } from 'virtual:admin-routes'
@@ -9,12 +16,19 @@ import { useI18n } from '~/i18n'
 import type { CommandPaletteItem } from './CommandPalette'
 import { CommandPalette } from './CommandPalette'
 
+const CommandPaletteContext = createContext<{ open: () => void } | null>(null)
+
+export function useCommandPalette() {
+  return useContext(CommandPaletteContext)
+}
+
 export function CommandPaletteProvider({ children }: PropsWithChildren) {
   const navigate = useNavigate()
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
 
   const close = useCallback(() => setOpen(false), [])
+  const ctx = useMemo(() => ({ open: () => setOpen(true) }), [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -31,7 +45,6 @@ export function CommandPaletteProvider({ children }: PropsWithChildren) {
       .filter(
         (route) =>
           !!route.titleKey &&
-          !route.hidden &&
           !route.path.includes(':') &&
           !route.path.includes('*'),
       )
@@ -46,9 +59,9 @@ export function CommandPaletteProvider({ children }: PropsWithChildren) {
   }, [navigate, t])
 
   return (
-    <>
+    <CommandPaletteContext.Provider value={ctx}>
       {children}
       <CommandPalette items={items} onClose={close} open={open} />
-    </>
+    </CommandPaletteContext.Provider>
   )
 }

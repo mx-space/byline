@@ -1,23 +1,25 @@
+import type { AiOverviewListRow } from '~/api/ai-overview'
 import { getEditPathForDraft } from '~/features/drafts/utils/draft-edit-path'
 import type { DraftModel } from '~/models/draft'
 
-import { deskWritingItemLimit } from '../constants'
+export const newPostPath = '/posts/edit'
+export const draftsPath = '/drafts'
+export const postsPath = '/posts'
+export const aiOverviewPath = '/ai/overview'
+export const failedTasksPath = '/tasks?status=failed'
+export const activeTasksPath = '/tasks?status=active'
 
 export type DeskWritingStatus = 'modified' | 'unpublished'
 
 export interface DeskWritingItem {
   branchCount: number
-  chars: number
   draftId: string
-  excerpt: string
   id: string
   status: DeskWritingStatus
   time: string
   title: string
   to: string
 }
-
-const EXCERPT_LENGTH = 160
 
 export function buildWritingItems(drafts: DraftModel[]): DeskWritingItem[] {
   const byDocument = new Map<string, DeskWritingItem>()
@@ -29,12 +31,9 @@ export function buildWritingItems(drafts: DraftModel[]): DeskWritingItem[] {
       existing.branchCount += 1
       continue
     }
-    const text = draft.headRevision.text ?? ''
     byDocument.set(draft.documentId, {
       branchCount: 1,
-      chars: text.length,
       draftId: draft.id,
-      excerpt: text.replaceAll(/\s+/g, ' ').trim().slice(0, EXCERPT_LENGTH),
       id: draft.documentId,
       status: draft.document.refId ? 'modified' : 'unpublished',
       time: draft.updatedAt ?? draft.createdAt,
@@ -43,17 +42,31 @@ export function buildWritingItems(drafts: DraftModel[]): DeskWritingItem[] {
     })
   }
 
-  return [...byDocument.values()]
-    .sort((a, b) => b.time.localeCompare(a.time))
-    .slice(0, deskWritingItemLimit)
+  return [...byDocument.values()].sort((a, b) => b.time.localeCompare(a.time))
 }
 
-export function resolveGreetingKey(hour: number) {
-  if (hour < 12) return 'dashboard.desk.greeting.morning' as const
-  if (hour < 18) return 'dashboard.desk.greeting.afternoon' as const
-  return 'dashboard.desk.greeting.evening' as const
+export function aiGapRows(rows: AiOverviewListRow[]) {
+  return rows.filter((row) => row.gapCount > 0)
+}
+
+export function aiOverviewArticlePath(id: string) {
+  return `${aiOverviewPath}/${encodeURIComponent(id)}`
 }
 
 export function formatVersionLabel(version: string) {
   return /^\d/.test(version) ? `v${version}` : version
+}
+
+export function versionLabel(version: string | null | undefined) {
+  if (!version || version === 'N/A') return '--'
+  return formatVersionLabel(version)
+}
+
+export function displayDeskTime(formatted: string | null | undefined) {
+  if (!formatted || formatted === '-' || formatted === 'N/A') return '--'
+  return formatted
+}
+
+export function taskRecordPath(id: string, category: 'failed' | 'active') {
+  return `/tasks/${encodeURIComponent(id)}?status=${category}`
 }

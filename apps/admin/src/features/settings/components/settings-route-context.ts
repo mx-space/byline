@@ -6,8 +6,9 @@ import type { SettingsGroupSummary } from '../types/settings'
 
 export interface SettingsRouteContextValue {
   groups: SettingsGroupSummary[]
-  schema: ConfigFormSchema | undefined
   onBack: () => void
+  registerLeaveGuard: (guard: (() => boolean) | null) => void
+  schema: ConfigFormSchema | undefined
 }
 
 export const SettingsRouteContext =

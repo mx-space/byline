@@ -1,4 +1,5 @@
-import { AlertCircle, Bot, Clock, Loader2, Lock } from 'lucide-react'
+import { Button as LobeButton, createStaticStyles } from '@lobehub/ui'
+import { AlertCircle, Bot, Clock, Lock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import type {
@@ -25,10 +26,223 @@ import {
   toPublishAiRequests,
 } from './publish-ai-choices'
 
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  uaaebda38: css`
+    height: min(88svh, 42rem);
+    width: min(calc(100vw-2rem), 38rem);
+    @media (max-width: 639px) {
+      height: 100svh;
+    }
+    @media (max-width: 639px) {
+      width: 100vw;
+    }
+    @media (max-width: 639px) {
+      border-radius: 0;
+    }
+  `,
+  ubc16ba49: css`
+    min-height: 0px;
+    flex: 1 1 0%;
+    overflow-y: auto;
+    padding: 1rem;
+    @media (min-width: 640px) {
+      padding: 1.25rem;
+    }
+  `,
+  ue25ab85b: css`
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: color-mix(in srgb, ${cssVar.colorError} 25%, transparent);
+    background-color: color-mix(in srgb, ${cssVar.colorError} 8%, transparent);
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorError};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorError};
+    }
+  `,
+  ufd7f88e1: css`
+    margin-top: 0.125rem;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  `,
+  u0772a9f6: css`
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: color-mix(in srgb, ${cssVar.colorWarning} 30%, transparent);
+    background-color: color-mix(
+      in srgb,
+      ${cssVar.colorWarning} 10%,
+      transparent
+    );
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorWarning};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorWarningBg};
+    }
+  `,
+  u2dd4fdfa: css`
+    margin-bottom: 1rem;
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  ua7dc705b: css`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 0.75rem;
+    padding-block: 0.625rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uc39c8d01: css`
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  `,
+  ufb77735e: css`
+    margin-top: 1.25rem;
+  `,
+  ufa2251b6: css`
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  u628e6665: css`
+    margin-top: 0.25rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.25rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uf97905a9: css`
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    & > :not([hidden]) ~ :not([hidden]) {
+      border-top-width: 1px;
+      border-top-style: solid;
+    }
+    border-color: ${cssVar.colorBorderSecondary};
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+  `,
+  ube21437a: css`
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 0.75rem;
+    row-gap: 0.5rem;
+    padding-inline: 0.75rem;
+    padding-block: 0.625rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+  `,
+  ud3f853dd: css`
+    pointer-events: none;
+    opacity: 0.55;
+  `,
+  u3b4c716c: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+  `,
+  ud36a4cfd: css`
+    display: block;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  ueeb1d557: css`
+    margin-top: 0.125rem;
+    display: block;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  ucb0b7b94: css`
+    margin-top: 0.75rem;
+    display: grid;
+    gap: 0.5rem;
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: color-mix(in srgb, ${cssVar.colorWarning} 30%, transparent);
+    background-color: color-mix(
+      in srgb,
+      ${cssVar.colorWarning} 8%,
+      transparent
+    );
+    padding-inline: 0.75rem;
+    padding-block: 0.625rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+  u7a2110d1: css`
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    color: ${cssVar.colorText};
+  `,
+  uaa6562af: css`
+    margin-top: 0.125rem;
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+  `,
+  u39950462: css`
+    margin-top: 0.75rem;
+    display: grid;
+    grid-template-columns: auto_1fr;
+    column-gap: 0.75rem;
+    row-gap: 0.25rem;
+    border-radius: 12px;
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 0.75rem;
+    padding-block: 0.625rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+  ud40b0a80: css`
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uc55d4b8a: css`
+    min-width: 0px;
+    color: ${cssVar.colorText};
+  `,
+}))
+
 export function PublishConfirmationDialog(props: {
   aiConfig?: AIConfig
   diverged: boolean
   lockedTranslationLangs?: string[]
+  failureMessage?: string | null
   onClose: () => void
   onConfirm: (
     resources: PublishAiResourceRequest[],
@@ -93,32 +307,33 @@ export function PublishConfirmationDialog(props: {
 
   return (
     <Modal
-      className="h-[min(88svh,42rem)] w-[min(calc(100vw-2rem),38rem)] max-sm:h-svh max-sm:w-screen max-sm:rounded-none"
+      className={lobeStyles.uaaebda38}
       onClose={props.onClose}
       open={props.open}
     >
       <ModalHeader
         icon={Bot}
+        showClose={!props.pending}
         subtitle={t(descriptionKey)}
         title={t(actionKey)}
       />
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+      <div className={lobeStyles.ubc16ba49}>
+        {props.failureMessage ? (
+          <div className={lobeStyles.ue25ab85b} role="alert">
+            <AlertCircle aria-hidden="true" className={lobeStyles.ufd7f88e1} />
+            <span>{props.failureMessage}</span>
+          </div>
+        ) : null}
         {props.validationError ? (
-          <div className="mb-4 flex gap-2 rounded-lg border border-red-500/25 bg-red-500/8 p-3 text-sm text-red-700 dark:text-red-300">
-            <AlertCircle
-              aria-hidden="true"
-              className="mt-0.5 size-4 shrink-0"
-            />
+          <div className={lobeStyles.ue25ab85b}>
+            <AlertCircle aria-hidden="true" className={lobeStyles.ufd7f88e1} />
             <span>{props.validationError}</span>
           </div>
         ) : null}
 
         {props.diverged ? (
-          <div className="mb-4 flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
-            <AlertCircle
-              aria-hidden="true"
-              className="mt-0.5 size-4 shrink-0"
-            />
+          <div className={lobeStyles.u0772a9f6}>
+            <AlertCircle aria-hidden="true" className={lobeStyles.ufd7f88e1} />
             <span>
               {t('write.publishConfirm.diverged', {
                 count: props.otherBranchCount,
@@ -126,15 +341,15 @@ export function PublishConfirmationDialog(props: {
             </span>
           </div>
         ) : props.otherBranchCount > 0 ? (
-          <div className="mb-4 rounded-lg border border-border bg-surface-inset p-3 text-sm text-fg-muted">
+          <div className={lobeStyles.u2dd4fdfa}>
             {t('write.publishConfirm.otherBranchesPreserved', {
               count: props.otherBranchCount,
             })}
           </div>
         ) : null}
 
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-inset px-3 py-2.5 text-sm text-fg-muted">
-          <Clock aria-hidden="true" className="size-4 shrink-0" />
+        <div className={lobeStyles.ua7dc705b}>
+          <Clock aria-hidden="true" className={lobeStyles.uc39c8d01} />
           <span>
             {props.savedAt
               ? t('write.publishConfirm.savedAt', { time: props.savedAt })
@@ -142,30 +357,30 @@ export function PublishConfirmationDialog(props: {
           </span>
         </div>
 
-        <section className="mt-5">
-          <h3 className="text-sm font-medium text-fg">
+        <section className={lobeStyles.ufb77735e}>
+          <h3 className={lobeStyles.ufa2251b6}>
             {t('write.publishConfirm.aiTitle')}
           </h3>
-          <p className="mt-1 text-xs leading-5 text-fg-muted">
+          <p className={lobeStyles.u628e6665}>
             {t('write.publishConfirm.aiDescription')}
           </p>
-          <div className="mt-3 flex flex-col divide-y divide-border rounded-lg border border-border">
+          <div className={lobeStyles.uf97905a9}>
             {publishAiResourceOrder.map((resource) => {
               const unavailable = getUnavailableKey(resource, props.aiConfig)
               return (
                 <div
                   className={cn(
-                    'flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 text-sm',
-                    unavailable && 'pointer-events-none opacity-55',
+                    lobeStyles.ube21437a,
+                    unavailable && lobeStyles.ud3f853dd,
                   )}
                   key={resource}
                 >
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium text-fg">
+                  <span className={lobeStyles.u3b4c716c}>
+                    <span className={lobeStyles.ud36a4cfd}>
                       {t(publishAiResourceLabels[resource])}
                     </span>
                     {unavailable ? (
-                      <span className="mt-0.5 block text-xs text-fg-muted">
+                      <span className={lobeStyles.ueeb1d557}>
                         {t(unavailable)}
                       </span>
                     ) : null}
@@ -186,9 +401,9 @@ export function PublishConfirmationDialog(props: {
             })}
           </div>
           {translationSelected && lockedLangs.length > 0 ? (
-            <div className="mt-3 grid gap-2 rounded-lg border border-amber-500/30 bg-amber-500/8 px-3 py-2.5 text-xs">
-              <p className="flex items-start gap-2 text-fg">
-                <Lock aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+            <div className={lobeStyles.ucb0b7b94}>
+              <p className={lobeStyles.u7a2110d1}>
+                <Lock aria-hidden="true" className={lobeStyles.uaa6562af} />
                 <span>
                   {t('write.publishAi.lockedTranslations', {
                     langs: lockedLangs.join(', '),
@@ -202,18 +417,18 @@ export function PublishConfirmationDialog(props: {
               />
             </div>
           ) : null}
-          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-lg bg-surface-inset px-3 py-2.5 text-xs">
-            <dt className="text-fg-muted">
+          <dl className={lobeStyles.u39950462}>
+            <dt className={lobeStyles.ud40b0a80}>
               {t('write.publishAi.summaryWait')}
             </dt>
-            <dd className="min-w-0 text-fg">
+            <dd className={lobeStyles.uc55d4b8a}>
               {namesFor('sync').join('、') ||
                 t('write.publishAi.summaryWaitNone')}
             </dd>
-            <dt className="text-fg-muted">
+            <dt className={lobeStyles.ud40b0a80}>
               {t('write.publishAi.summaryLater')}
             </dt>
-            <dd className="min-w-0 text-fg">
+            <dd className={lobeStyles.uc55d4b8a}>
               {namesFor('async').join('、') ||
                 t('write.publishAi.summaryLaterNone')}
             </dd>
@@ -230,19 +445,23 @@ export function PublishConfirmationDialog(props: {
             {t('write.recovery.compareAction')}
           </Button>
         ) : null}
-        <Button onClick={props.onClose} type="button" variant="ghost">
+        <Button
+          disabled={props.pending}
+          onClick={props.onClose}
+          type="button"
+          variant="ghost"
+        >
           {t('common.cancel')}
         </Button>
-        <Button
+        <LobeButton
           disabled={Boolean(props.validationError) || props.pending}
+          htmlType="button"
+          loading={props.pending}
           onClick={confirm}
-          type="button"
+          type="primary"
         >
-          {props.pending ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : null}
           {t(actionKey)}
-        </Button>
+        </LobeButton>
       </ModalFooter>
     </Modal>
   )

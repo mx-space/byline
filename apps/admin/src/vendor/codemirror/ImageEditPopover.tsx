@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -5,6 +6,50 @@ import { Button } from '~/ui/primitives/button'
 import { TextInput } from '~/ui/primitives/text-field'
 
 import { hideImagePopover, useImagePopoverState } from './image-popover-state'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u99d72c7f: css`
+    display: none;
+  `,
+  u6ed543e2: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.75rem;
+    }
+  `,
+  uda7c36cd: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.25rem;
+    }
+  `,
+  u3090c200: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  ud27e9536: css`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  `,
+  uff7dcd57: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    color: ${cssVar.colorError};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      color: ${cssVar.colorError};
+    }
+  `,
+  u6cfc7e6a: css`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  `,
+}))
 
 interface PopoverData {
   alt: string
@@ -142,9 +187,9 @@ export function ImageEditPopover() {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <label className="text-xs text-neutral-500">Alt 文本</label>
+        <div className={lobeStyles.u6ed543e2}>
+          <div className={lobeStyles.uda7c36cd}>
+            <label className={lobeStyles.u3090c200}>Alt 文本</label>
             <TextInput
               ref={altInputRef}
               onChange={setAlt}
@@ -152,19 +197,19 @@ export function ImageEditPopover() {
               value={alt}
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs text-neutral-500">URL</label>
+          <div className={lobeStyles.uda7c36cd}>
+            <label className={lobeStyles.u3090c200}>URL</label>
             <TextInput onChange={setUrl} placeholder="图片地址" value={url} />
           </div>
-          <div className="flex items-center justify-between">
+          <div className={lobeStyles.ud27e9536}>
             <button
               type="button"
-              className="text-xs font-medium text-red-500 transition-colors hover:text-red-600"
+              className={lobeStyles.uff7dcd57}
               onClick={handleDelete}
             >
               删除
             </button>
-            <div className="flex items-center gap-2">
+            <div className={lobeStyles.u6cfc7e6a}>
               <Button variant="subtle" onClick={handleCancel}>
                 取消
               </Button>

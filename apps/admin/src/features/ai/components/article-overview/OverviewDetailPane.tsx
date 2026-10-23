@@ -1,248 +1,598 @@
-import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router'
+import {
+  ActionIcon,
+  Alert,
+  Button,
+  confirmModal,
+  createStaticStyles,
+  Empty,
+  Flexbox,
+  Icon,
+  Input,
+  SkeletonText,
+  Tag,
+  Text,
+  toast,
+  Tooltip,
+} from '@lobehub/ui'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  ArrowUpRight,
+  Pencil,
+  RefreshCw,
+  Trash2,
+  WandSparkles,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
 
-import type { ActiveGeneration, AiOverviewCapability } from '~/api/ai-overview'
+import { getTranslationsByRef } from '~/api/ai'
+import type {
+  ActiveGeneration,
+  AiOverviewCapability,
+  AiOverviewDetail,
+} from '~/api/ai-overview'
 import { getArticleOverview } from '~/api/ai-overview'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { confirmDialog } from '~/ui/feedback/confirm'
-import { EmptyState } from '~/ui/patterns/EmptyState'
-import { Button } from '~/ui/primitives/button'
-import { Scroll } from '~/ui/primitives/scroll'
+import { DetailPane } from '~/ui/page'
 
+import { useAiCopy } from '../../copy'
+import { DetailDrawer } from '../../hub/DetailDrawer'
+import {
+  CAPABILITY_LABEL,
+  CAPABILITY_PATH,
+} from '../../overview/capability-label'
+import { MATRIX_CAPABILITIES } from '../../overview/coverage'
+import { confirmTranslationRewrite } from '../../product/confirm-rewrite'
 import { getRefTypeMeta } from '../article-grouped/refTypeMeta'
-import { ActiveTaskList } from './ActiveTaskList'
-import { AddLanguageControl } from './AddLanguageControl'
-import type { AssetRow } from './asset-rows'
-import { buildAssetRows, firstAnchorIds } from './asset-rows'
-import { AssetSection } from './AssetSection'
-import { CostSummarySection } from './CostSummarySection'
-import type { CellState } from './coverage-cells'
-import { isTaskLive } from './coverage-cells'
-import { CoverageMatrix } from './CoverageMatrix'
-import { OverviewSection } from './OverviewSection'
+import { type AssetRow, buildAssetRows } from './asset-rows'
+import { CAPABILITY_META } from './capability-meta'
+import {
+  coverageColumns,
+  findGenerationFailure,
+  isTaskLive,
+  normaliseLangInput,
+  resolveCell,
+} from './coverage-cells'
+import { buildGenerateTask } from './overview-generate-task'
 import { useOverviewActions } from './useOverviewActions'
 
-const HIGHLIGHT_MS = 1200
 const ACTIVE_POLL_MS = 2000
-/**
- * A dispatched task takes a beat to appear in the queue's indexes, so polling
- * has to outlive the dispatch itself — otherwise the one poll that fires finds
- * nothing running, stops, and the board never learns how the task ended.
- */
 const DISPATCH_GRACE_MS = 20_000
 
-function shouldPoll(
-  activeTasks: ActiveGeneration[] | undefined,
-  pollUntil: number,
-): boolean {
-  return Boolean(activeTasks?.some(isTaskLive)) || Date.now() < pollUntil
+const KIND = {
+  insights: 'kindInsights',
+  summary: 'kindSummary',
+  translation: 'kindTranslation',
+  tts: 'kindTts',
+} as const
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  assetMain: css`
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  `,
+  assetRow: css`
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    padding-block: 12px;
+    border-block-start: 1px solid ${cssVar.colorBorderSecondary};
+  `,
+  body: css`
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  `,
+  langLine: css`
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  `,
+  preview: css`
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+
+    margin: 0;
+
+    font-size: ${cssVar.fontSizeSM};
+    line-height: 1.6;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  section: css`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  `,
+  sectionHead: css`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+  `,
+  sectionTitle: css`
+    flex: 1;
+
+    margin: 0;
+
+    font-size: ${cssVar.fontSize};
+    font-weight: 600;
+    color: ${cssVar.colorText};
+  `,
+  stateLine: css`
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+
+    padding-block: 12px;
+    border-block-start: 1px solid ${cssVar.colorBorderSecondary};
+  `,
+  time: css`
+    font-size: ${cssVar.fontSizeSM};
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextTertiary};
+  `,
+}))
+
+function shouldPoll(tasks: ActiveGeneration[] | undefined, pollUntil: number) {
+  return Boolean(tasks?.some(isTaskLive)) || Date.now() < pollUntil
+}
+
+interface SectionModel {
+  assets: AssetRow[]
+  failed: Array<{ error: string | null; lang: string }>
+  fillable: string[]
+  missing: string[]
+  pending: string[]
+}
+
+function buildSection(
+  detail: AiOverviewDetail,
+  capability: AiOverviewCapability,
+  assets: AssetRow[],
+  extraLangs: string[],
+): SectionModel {
+  const model: SectionModel = {
+    assets: assets.filter((row) => row.capability === capability),
+    failed: [],
+    fillable: [],
+    missing: [],
+    pending: [],
+  }
+  for (const lang of coverageColumns(detail.coverage, extraLangs)) {
+    const state = resolveCell(
+      detail.coverage,
+      capability,
+      lang,
+      detail.activeTasks,
+    )
+    if (state === 'pending') model.pending.push(lang)
+    else if (state === 'failed') {
+      model.failed.push({
+        error:
+          findGenerationFailure(detail.activeTasks, capability, lang)?.error ??
+          null,
+        lang,
+      })
+    } else if (
+      state === 'gap' ||
+      (state === 'addable' && extraLangs.includes(lang))
+    ) {
+      model.missing.push(lang)
+    }
+  }
+  model.fillable = [...model.missing, ...model.failed.map((item) => item.lang)]
+  return model
 }
 
 export function OverviewDetailPane(props: {
+  onClose: () => void
   refId: string
-  onBack: () => void
 }) {
-  const { t } = useI18n()
+  const { format, locale } = useI18n()
+  const copy = useAiCopy()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const actions = useOverviewActions(props.refId)
-  const [highlightId, setHighlightId] = useState<string | null>(null)
-  const [activeCell, setActiveCell] = useState<string | null>(null)
-  const [extraColumns, setExtraColumns] = useState<string[]>([])
+  const [extraLangs, setExtraLangs] = useState<string[]>([])
+  const [langDraft, setLangDraft] = useState('')
   const [pollUntil, setPollUntil] = useState(0)
-  const rowNodes = useRef(new Map<string, HTMLLIElement>())
 
   const query = useQuery({
     queryFn: () => getArticleOverview(props.refId),
     queryKey: adminQueryKeys.ai.overviewArticle(props.refId),
-    refetchInterval: (q) =>
-      shouldPoll(q.state.data?.activeTasks, pollUntil) ? ACTIVE_POLL_MS : false,
-    // Without this the interval is suspended whenever the window loses focus,
-    // so switching away mid-generation freezes the board on whatever state it
-    // last saw — a spinner that never resolves.
+    refetchInterval: (current) =>
+      shouldPoll(current.state.data?.activeTasks, pollUntil)
+        ? ACTIVE_POLL_MS
+        : false,
     refetchIntervalInBackground: true,
   })
-
-  const detail = query.data
-  const rows = useMemo(() => (detail ? buildAssetRows(detail) : []), [detail])
-  const anchors = useMemo(() => firstAnchorIds(rows), [rows])
-  // The server is the single source of truth for what is running: it reports
-  // live tasks and recent failures alike. An earlier optimistic entry tried to
-  // bridge the gap before the queue registers a task and could outlive every
-  // condition meant to retire it, leaving a spinner that never stopped.
-  const activeTasks = detail?.activeTasks ?? []
+  const lockedQuery = useQuery({
+    queryFn: () => getTranslationsByRef(props.refId),
+    queryKey: adminQueryKeys.ai.lockedTranslations(props.refId),
+  })
 
   useEffect(() => {
+    setExtraLangs([])
+    setLangDraft('')
     setPollUntil(0)
-    setHighlightId(null)
-    setActiveCell(null)
-    setExtraColumns([])
-    rowNodes.current.clear()
   }, [props.refId])
 
-  useEffect(() => {
-    if (!highlightId) return
-    const timer = window.setTimeout(() => setHighlightId(null), HIGHLIGHT_MS)
-    return () => window.clearTimeout(timer)
-  }, [highlightId])
+  const detail = query.data
+  const lockedLangs = (lockedQuery.data?.translations ?? [])
+    .filter((item) => item.isLocked)
+    .map((item) => item.lang)
+  const assets = useMemo(() => (detail ? buildAssetRows(detail) : []), [detail])
+  const sections = useMemo(
+    () =>
+      detail
+        ? MATRIX_CAPABILITIES.map((capability) => ({
+            capability,
+            model: buildSection(detail, capability, assets, extraLangs),
+          }))
+        : [],
+    [assets, detail, extraLangs],
+  )
+  const fillableCount = sections.reduce(
+    (total, item) => total + item.model.fillable.length,
+    0,
+  )
+  const live = detail?.activeTasks.filter(isTaskLive) ?? []
 
-  const handleCellClick = (
-    capability: AiOverviewCapability,
-    lang: string,
-    state: CellState,
-  ) => {
-    if (!detail) return
-    const key = `${capability}:${lang}`
-    setActiveCell(key)
-    if (state === 'gap' || state === 'addable' || state === 'failed') {
-      dispatchGeneration(capability, [lang], state === 'failed')
-      return
-    }
-    const targetId = anchors.get(key)
-    if (!targetId) return
-    setHighlightId(targetId)
-    rowNodes.current.get(targetId)?.scrollIntoView({ block: 'nearest' })
-  }
+  const fillAllMutation = useMutation({
+    mutationFn: async (current: AiOverviewDetail) => {
+      const results = await Promise.allSettled(
+        sections
+          .filter((item) => item.model.fillable.length)
+          .map((item) =>
+            buildGenerateTask(
+              item.capability,
+              item.model.fillable,
+              props.refId,
+              current,
+              false,
+            ),
+          ),
+      )
+      return results.filter((result) => result.status === 'rejected').length
+    },
+    onSuccess: async (failed) => {
+      if (failed) toast.warning(copy('fillSomeFailed', { count: failed }))
+      else toast.success(copy('taskCreated'))
+      setPollUntil(Date.now() + DISPATCH_GRACE_MS)
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: adminQueryKeys.ai.overviewRoot,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: adminQueryKeys.tasks.tasksRoot,
+        }),
+      ])
+    },
+  })
 
-  const dispatchGeneration = (
+  const dispatch = async (
     capability: AiOverviewCapability,
     langs: string[] | undefined,
     force: boolean,
   ) => {
     if (!detail) return
+    let nextLangs = langs
+    let regenerateLocked = false
+    if (capability === 'translation' && force) {
+      const confirmed = await confirmTranslationRewrite({
+        locale,
+        lockedLangs,
+        targetLangs: langs,
+      })
+      if (confirmed.cancelled) {
+        if (confirmed.skippedLocked) toast.info(copy('skippedLocked'))
+        return
+      }
+      nextLangs = confirmed.langs
+      regenerateLocked = confirmed.regenerateLocked
+    }
     setPollUntil(Date.now() + DISPATCH_GRACE_MS)
-    actions.generate(capability, langs, detail, force)
+    actions.generate(capability, nextLangs, detail, force, regenerateLocked)
   }
 
-  const addColumn = (lang: string) =>
-    setExtraColumns((prev) => (prev.includes(lang) ? prev : [...prev, lang]))
-
-  const handleRegenerate = (row: AssetRow) => {
-    dispatchGeneration(row.capability, [row.lang], true)
-  }
-
-  const handleDelete = async (row: AssetRow) => {
-    const ok = await confirmDialog({
-      destructive: true,
-      title: t('ai.overview.confirmDelete'),
+  const removeAsset = (row: AssetRow) => {
+    const kind = copy(KIND[row.capability])
+    confirmModal({
+      cancelText: copy('cancel'),
+      content: copy('deleteAssetBody', { kind }),
+      okButtonProps: { danger: true },
+      okText: copy('deleteAsset', { kind }),
+      onOk: () => actions.remove(row.capability, row.id),
+      title: copy('deleteAssetTitle', { kind }),
     })
-    if (!ok) return
-    actions.remove(row.capability, row.id)
   }
 
-  const meta = getRefTypeMeta(detail?.article.type)
-  const TypeIcon = meta.icon
-  const editPath = detail ? meta.editPath?.(detail.article.id) : null
+  const addLang = () => {
+    const lang = normaliseLangInput(langDraft)
+    if (!lang) {
+      toast.error(copy('addLangInvalid'))
+      return
+    }
+    setExtraLangs((current) =>
+      current.includes(lang) ? current : [...current, lang],
+    )
+    setLangDraft('')
+  }
 
-  return (
-    <div className="outline-hidden flex h-full min-h-0 flex-col bg-surface-card">
-      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4">
-        <button
-          aria-label={t('common.back')}
-          className="inline-flex size-8 items-center justify-center rounded text-fg-muted transition-colors hover:bg-surface-inset hover:text-fg lg:hidden"
-          onClick={props.onBack}
-          type="button"
-        >
-          <ArrowLeft aria-hidden="true" className="size-4" />
-        </button>
-        <h2 className="truncate text-sm font-medium text-fg">
-          {t('ai.overview.detailTitle')}
-        </h2>
-      </div>
+  if (query.isLoading) {
+    return (
+      <DetailDrawer onClose={props.onClose} title={copy('loadingPost')}>
+        <DetailPane hideHeader>
+          <Flexbox aria-busy gap={24}>
+            <SkeletonText rows={3} />
+            <SkeletonText rows={3} />
+          </Flexbox>
+        </DetailPane>
+      </DetailDrawer>
+    )
+  }
 
-      {query.isLoading ? (
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2
-            aria-hidden="true"
-            className="size-5 animate-spin text-fg-subtle"
-          />
-        </div>
-      ) : query.isError || !detail ? (
-        <div className="flex flex-1 items-center justify-center p-6">
-          <EmptyState
+  if (query.isError || !detail) {
+    return (
+      <DetailDrawer onClose={props.onClose} title={copy('post')}>
+        <DetailPane hideHeader>
+          <Empty
             action={
-              <Button onClick={() => void query.refetch()} variant="subtle">
-                {t('common.retry')}
+              <Button onClick={() => void query.refetch()}>
+                {copy('retryLoad')}
               </Button>
             }
-            description={t('ai.overview.loadFailedDescription')}
-            icon={AlertTriangle}
-            title={t('ai.overview.loadFailedTitle')}
+            description={copy('detailFailedBody')}
+            title={copy('detailFailedTitle')}
           />
-        </div>
-      ) : (
-        <Scroll className="flex-1" innerClassName="flex flex-col gap-4 p-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <TypeIcon
-              aria-hidden="true"
-              className="size-5 shrink-0 text-fg-subtle"
-            />
-            {editPath ? (
-              <Link
-                className="truncate text-base font-semibold text-fg transition-colors hover:text-accent"
-                to={editPath}
-              >
-                {detail.article.title}
-              </Link>
-            ) : (
-              <span className="truncate text-base font-semibold text-fg">
-                {detail.article.title}
-              </span>
-            )}
-          </div>
+        </DetailPane>
+      </DetailDrawer>
+    )
+  }
 
-          <OverviewSection
-            action={<AddLanguageControl labelled onAdd={addColumn} />}
-            title={t('ai.overview.matrixTitle')}
-          >
-            <CoverageMatrix
-              activeKey={activeCell}
-              activeTasks={activeTasks}
-              coverage={detail.coverage}
-              extraColumns={extraColumns}
-              onAddColumn={addColumn}
-              onCellClick={handleCellClick}
-            />
-            <ActiveTaskList
-              // An empty `langs` is the task saying "use the configured
-              // targets", not "no language" — forwarding it as undefined
-              // reruns the whole set instead of one guessed language.
-              onRetry={(task) =>
-                dispatchGeneration(
-                  task.capability,
-                  task.langs.length ? task.langs : undefined,
-                  true,
-                )
-              }
-              tasks={activeTasks}
-            />
-          </OverviewSection>
+  const editPath = getRefTypeMeta(detail.article.type).editPath
+  const cost = detail.cost.total
 
-          {detail.cost.total.generationCount ? (
-            <OverviewSection title={t('ai.overview.costTitle')}>
-              <CostSummarySection cost={detail.cost} />
-            </OverviewSection>
+  return (
+    <DetailDrawer
+      footer={
+        <Flexbox align="center" gap={8} horizontal style={{ width: '100%' }}>
+          <Input
+            aria-label={copy('addLang')}
+            onChange={(event) =>
+              setLangDraft(
+                typeof event === 'string' ? event : event.target.value,
+              )
+            }
+            onPressEnter={addLang}
+            placeholder={copy('addLangPlaceholder')}
+            style={{ maxWidth: 200 }}
+            value={langDraft}
+          />
+          <Button onClick={addLang}>{copy('addLangAction')}</Button>
+          <Flexbox flex={1} />
+          {fillableCount ? (
+            <Button
+              icon={WandSparkles}
+              loading={fillAllMutation.isPending}
+              onClick={() => fillAllMutation.mutate(detail)}
+              type="primary"
+            >
+              {copy('fillAll')}
+            </Button>
           ) : null}
+          {editPath ? (
+            <Button
+              icon={Pencil}
+              onClick={() => navigate(editPath(props.refId))}
+            >
+              {copy('editPost')}
+            </Button>
+          ) : null}
+        </Flexbox>
+      }
+      onClose={props.onClose}
+      title={
+        <Flexbox align="center" gap={8} horizontal style={{ minWidth: 0 }}>
+          <Text ellipsis>{detail.article.title || copy('untitled')}</Text>
+          {fillableCount ? (
+            <Tag color="warning">
+              {copy('gapCount', { count: fillableCount })}
+            </Tag>
+          ) : (
+            <Tag color="success">{copy('complete')}</Tag>
+          )}
+        </Flexbox>
+      }
+    >
+      <DetailPane hideHeader>
+        <div className={styles.body}>
+          <Text type="secondary">
+            {detail.coverage.sourceLang
+              ? copy('sourceLang', { lang: detail.coverage.sourceLang })
+              : copy('sourceUnknown')}
+            {cost.generationCount
+              ? ` · ${copy('costLine', {
+                  count: cost.generationCount,
+                  usd: cost.costTotalUsd.toFixed(4),
+                })}`
+              : null}
+          </Text>
+          {live.length ? (
+            <Flexbox gap={8}>
+              {live.map((task) => (
+                <Alert
+                  description={task.progressMessage || undefined}
+                  key={task.taskId}
+                  title={copy('generatingLine', {
+                    kind: copy(KIND[task.capability]),
+                    langs: task.langs.length
+                      ? ` · ${task.langs.join('、')}`
+                      : '',
+                  })}
+                  type="info"
+                />
+              ))}
+            </Flexbox>
+          ) : null}
+          {sections.map(({ capability, model }) => (
+            <section className={styles.section} key={capability}>
+              <div className={styles.sectionHead}>
+                <Icon icon={CAPABILITY_META[capability].icon} size="small" />
+                <h3 className={styles.sectionTitle}>
+                  {copy(CAPABILITY_LABEL[capability])}
+                </h3>
+                {model.fillable.length ? (
+                  <Button
+                    loading={actions.isMutating}
+                    onClick={() =>
+                      void dispatch(capability, model.fillable, false)
+                    }
+                    size="small"
+                  >
+                    {copy('fillOne', { kind: copy(KIND[capability]) })}
+                  </Button>
+                ) : null}
+                {model.assets.length ? (
+                  <Button
+                    icon={ArrowUpRight}
+                    onClick={() =>
+                      navigate(`${CAPABILITY_PATH[capability]}/${props.refId}`)
+                    }
+                    size="small"
+                    type="text"
+                  >
+                    {copy('openKind', { kind: copy(KIND[capability]) })}
+                  </Button>
+                ) : null}
+              </div>
+              {model.pending.length ? (
+                <div className={styles.stateLine}>
+                  <Tag color="processing">{copy('generating')}</Tag>
+                  <LangTags langs={model.pending} />
+                </div>
+              ) : null}
+              {model.missing.length ? (
+                <div className={styles.stateLine}>
+                  <Tag color="warning">{copy('missing')}</Tag>
+                  <LangTags langs={model.missing} />
+                </div>
+              ) : null}
+              {model.failed.map((item) => (
+                <div className={styles.assetRow} key={`failed:${item.lang}`}>
+                  <Tag>{item.lang}</Tag>
+                  <div className={styles.assetMain}>
+                    <Tag color="error" style={{ alignSelf: 'flex-start' }}>
+                      {copy('failed')}
+                    </Tag>
+                    {item.error ? (
+                      <p className={styles.preview}>{item.error}</p>
+                    ) : null}
+                  </div>
+                  <Button
+                    loading={actions.isMutating}
+                    onClick={() => void dispatch(capability, [item.lang], true)}
+                    size="small"
+                  >
+                    {copy('retry')}
+                  </Button>
+                </div>
+              ))}
+              {model.assets.map((row) => {
+                const locked =
+                  capability === 'translation' && lockedLangs.includes(row.lang)
+                return (
+                  <div className={styles.assetRow} key={row.id}>
+                    <Tag>{row.lang}</Tag>
+                    <div className={styles.assetMain}>
+                      <div className={styles.langLine}>
+                        {row.stale ? (
+                          <Tag color="warning">{copy('stale')}</Tag>
+                        ) : null}
+                        {locked ? (
+                          <Tag color="gold">{copy('locked')}</Tag>
+                        ) : null}
+                        <Tooltip title={format.dateTime(row.createdAt)}>
+                          <span className={styles.time}>
+                            {format.relativeTime(row.createdAt)}
+                          </span>
+                        </Tooltip>
+                      </div>
+                      <p className={styles.preview}>
+                        {row.preview || copy('emptyValue')}
+                      </p>
+                    </div>
+                    <Flexbox gap={2} horizontal>
+                      <ActionIcon
+                        aria-label={copy('view')}
+                        icon={ArrowUpRight}
+                        onClick={() =>
+                          navigate(
+                            `${CAPABILITY_PATH[capability]}/${props.refId}?item=${row.id}`,
+                          )
+                        }
+                        size="small"
+                        title={copy('view')}
+                      />
+                      <ActionIcon
+                        aria-label={copy('regenerate')}
+                        icon={RefreshCw}
+                        onClick={() =>
+                          void dispatch(capability, [row.lang], true)
+                        }
+                        size="small"
+                        title={copy('regenerate')}
+                      />
+                      <ActionIcon
+                        aria-label={copy('delete')}
+                        icon={Trash2}
+                        onClick={() => removeAsset(row)}
+                        size="small"
+                        title={copy('delete')}
+                      />
+                    </Flexbox>
+                  </div>
+                )
+              })}
+              {!model.assets.length &&
+              !model.fillable.length &&
+              !model.pending.length ? (
+                <div className={styles.stateLine}>
+                  <Text type="secondary">{copy('sectionEmpty')}</Text>
+                  <Button
+                    loading={actions.isMutating}
+                    onClick={() => void dispatch(capability, undefined, false)}
+                    size="small"
+                  >
+                    {copy('generateKind', { kind: copy(KIND[capability]) })}
+                  </Button>
+                </div>
+              ) : null}
+            </section>
+          ))}
+        </div>
+      </DetailPane>
+    </DetailDrawer>
+  )
+}
 
-          <OverviewSection
-            bodyClassName="p-0"
-            title={t('ai.overview.assetsTitle', { count: rows.length })}
-          >
-            <AssetSection
-              highlightId={highlightId}
-              onDelete={(row) => void handleDelete(row)}
-              onRegenerate={handleRegenerate}
-              refId={props.refId}
-              registerRow={(id, node) => {
-                if (node) rowNodes.current.set(id, node)
-                else rowNodes.current.delete(id)
-              }}
-              rows={rows}
-            />
-          </OverviewSection>
-        </Scroll>
-      )}
-    </div>
+function LangTags(props: { langs: string[] }) {
+  return (
+    <>
+      {props.langs.map((lang) => (
+        <Tag key={lang} size="small">
+          {lang}
+        </Tag>
+      ))}
+    </>
   )
 }

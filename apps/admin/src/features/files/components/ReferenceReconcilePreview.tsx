@@ -1,5 +1,27 @@
+import { createStaticStyles, Flexbox, Text } from '@lobehub/ui'
+
 import type { FileReferenceReconciliationResult } from '~/api/files'
-import { useI18n } from '~/i18n'
+
+import { useFileCopy } from '../copy'
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  metrics: css`
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  `,
+  value: css`
+    font-variant-numeric: tabular-nums;
+  `,
+  row: css`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-block: 8px;
+    border-block-end: 1px solid ${cssVar.colorBorderSecondary};
+  `,
+}))
 
 export function hasReferenceReconcileChanges(
   result: FileReferenceReconciliationResult,
@@ -31,80 +53,46 @@ export async function runReferenceReconcileFlow(input: {
 export function ReferenceReconcilePreview(props: {
   result: FileReferenceReconciliationResult
 }) {
-  const { t } = useI18n()
+  const copy = useFileCopy()
   const metrics = [
-    {
-      label: t('files.orphans.reconcileMetric.scanned'),
-      value: props.result.scannedFiles,
-    },
-    {
-      label: t('files.orphans.reconcileMetric.referenced'),
-      value: props.result.referencedFiles,
-    },
-    {
-      label: t('files.orphans.reconcileMetric.isolated'),
-      value: props.result.isolatedFiles,
-    },
-    {
-      label: t('files.orphans.reconcileMetric.usages'),
-      value: props.result.usages,
-    },
+    { label: copy('metricScanned'), value: props.result.scannedFiles },
+    { label: copy('metricReferenced'), value: props.result.referencedFiles },
+    { label: copy('metricIsolated'), value: props.result.isolatedFiles },
+    { label: copy('metricUsages'), value: props.result.usages },
   ]
   const changes = [
-    {
-      label: t('files.orphans.reconcileChange.discovered'),
-      value: props.result.missingReferences,
-    },
-    {
-      label: t('files.orphans.reconcileChange.active'),
-      value: props.result.statusToActive,
-    },
-    {
-      label: t('files.orphans.reconcileChange.pending'),
-      value: props.result.statusToPending,
-    },
-    {
-      label: t('files.orphans.reconcileChange.usages'),
-      value: props.result.usageChanges,
-    },
-  ]
+    { label: copy('changeDiscovered'), value: props.result.missingReferences },
+    { label: copy('changeActive'), value: props.result.statusToActive },
+    { label: copy('changePending'), value: props.result.statusToPending },
+    { label: copy('changeUsages'), value: props.result.usageChanges },
+  ].filter((change) => change.value > 0)
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2">
+    <Flexbox direction="vertical" gap={16}>
+      <div className={styles.metrics}>
         {metrics.map((metric) => (
-          <div
-            className="rounded-lg bg-surface-inset px-3 py-2.5"
-            key={metric.label}
-          >
-            <div className="text-xs text-fg-subtle">{metric.label}</div>
-            <div className="mt-1 text-lg font-semibold tabular-nums text-fg">
+          <Flexbox direction="vertical" gap={4} key={metric.label}>
+            <Text type="secondary">{metric.label}</Text>
+            <Text className={styles.value} weight="bold">
               {metric.value}
-            </div>
-          </div>
+            </Text>
+          </Flexbox>
         ))}
       </div>
-      <div className="space-y-2">
-        <div className="text-xs font-medium tracking-wide text-fg-muted uppercase">
-          {t('files.orphans.reconcileChanges')}
-        </div>
-        <div className="overflow-hidden rounded-lg bg-surface-inset">
-          {changes.map((change) => (
-            <div
-              className="flex min-h-9 items-center justify-between gap-4 border-b border-border/60 px-3 text-sm last:border-b-0"
-              key={change.label}
-            >
-              <span className="text-fg-muted">{change.label}</span>
-              <span className="font-medium tabular-nums text-fg">
-                {change.value}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <p className="text-pretty text-xs leading-relaxed text-fg-subtle">
-        {t('files.orphans.reconcileSafetyNote')}
-      </p>
-    </div>
+      {changes.length > 0 ? (
+        <Flexbox direction="vertical" gap={8}>
+          <Text type="secondary">{copy('reconcileChanges')}</Text>
+          <div>
+            {changes.map((change) => (
+              <div className={styles.row} key={change.label}>
+                <Text>{change.label}</Text>
+                <Text className={styles.value}>{change.value}</Text>
+              </div>
+            ))}
+          </div>
+        </Flexbox>
+      ) : null}
+      <Text type="secondary">{copy('reconcileSafety')}</Text>
+    </Flexbox>
   )
 }

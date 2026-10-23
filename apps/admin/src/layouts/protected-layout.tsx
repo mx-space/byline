@@ -1,3 +1,5 @@
+import { createStaticStyles } from '@lobehub/ui'
+import { PageLoading } from '@lobehub/ui/dashboard'
 import { useQuery } from '@tanstack/react-query'
 import { Suspense } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
@@ -6,10 +8,23 @@ import { checkLogged } from '~/api/users'
 import { loggedStatusQueryKey } from '~/features/auth/constants'
 import { PublishProcessDock } from '~/features/write/components/PublishProcessDock'
 import { useI18n } from '~/i18n'
-import { AdminShell } from '~/shell'
+import { AdminShell, LayoutLoading } from '~/shell'
 import { SocketBridge } from '~/socket/SocketBridge'
 import { CommandPaletteProvider } from '~/ui/command-palette'
 import { KeyboardShortcutsProvider } from '~/ui/keyboard-shortcut-overlay'
+
+const styles = createStaticStyles(({ css, responsive }) => ({
+  loader: css`
+    height: 100%;
+    padding-block: 28px 40px;
+    padding-inline: 32px;
+
+    ${responsive.md} {
+      padding-block: 16px 24px;
+      padding-inline: 16px;
+    }
+  `,
+}))
 
 export function ProtectedLayout() {
   const location = useLocation()
@@ -23,11 +38,7 @@ export function ProtectedLayout() {
   const from = `${location.pathname}${location.search}`
 
   if (loggedQuery.isLoading) {
-    return (
-      <main className="flex h-dvh items-center justify-center bg-white text-sm text-neutral-500 dark:bg-neutral-950 dark:text-neutral-400">
-        {t('app.loading.auth')}
-      </main>
-    )
+    return <LayoutLoading label={t('app.loading.auth')} />
   }
 
   if (!loggedQuery.data?.ok) {
@@ -55,9 +66,10 @@ export function ProtectedLayout() {
 }
 
 function ShellContentLoader() {
+  const { t } = useI18n()
   return (
-    <div className="flex h-full min-h-0 items-center justify-center bg-white text-sm text-neutral-500 dark:bg-neutral-950 dark:text-neutral-400">
-      Loading...
+    <div className={styles.loader}>
+      <PageLoading label={t('common.loading')} />
     </div>
   )
 }

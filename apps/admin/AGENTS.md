@@ -222,7 +222,7 @@ shells live in `apps/admin/src/ui/layout/`:
 
 - `content-layout.tsx` — list+detail pages (drafts, files, tasks)
 - `page-layout.tsx` — page shell with header
-- companion pieces in the same dir (`header-back-button.tsx`, `sidebar-*`, `resize-handle.tsx`)
+- companion pieces in the same dir (`header-back-button.tsx`, `sidebar-*`)
 
 ## Configuration Files
 

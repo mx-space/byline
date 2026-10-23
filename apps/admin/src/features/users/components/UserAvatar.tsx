@@ -1,28 +1,20 @@
-import { cn } from '~/utils/cn'
+import { Avatar } from '@lobehub/ui'
 
 export function UserAvatar(props: {
   avatar?: string | null
   className?: string
   name?: string | null
+  size?: number
 }) {
-  const initial = (props.name?.trim() || '?').slice(0, 1).toUpperCase()
+  const name = props.name?.trim()
   return (
-    <span
-      className={cn(
-        'inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-inset text-xs font-medium text-fg-muted',
-        props.className,
-      )}
-    >
-      {props.avatar ? (
-        <img
-          alt=""
-          className="size-full object-cover"
-          decoding="async"
-          src={props.avatar}
-        />
-      ) : (
-        initial
-      )}
-    </span>
+    <Avatar
+      alt=""
+      avatar={props.avatar?.trim() || undefined}
+      className={props.className}
+      shape="circle"
+      size={props.size ?? 24}
+      title={name || undefined}
+    />
   )
 }

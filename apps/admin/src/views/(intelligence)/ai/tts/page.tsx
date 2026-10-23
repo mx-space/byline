@@ -7,6 +7,7 @@ export const metadata = defineMetadata({
   descriptionKey: 'routes.aiTts.description',
   icon: AudioLines,
   order: 5,
+  hidden: true,
 })
 
 export { AiTtsRouteView as default } from '~/features/ai/routes/AiTtsRouteView'

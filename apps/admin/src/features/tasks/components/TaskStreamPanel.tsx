@@ -1,10 +1,128 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { useEffect, useRef, useState } from 'react'
 
 import type { AITask } from '~/api/tasks'
 import { AITaskStatus, AITaskType } from '~/api/tasks'
-import { useI18n } from '~/i18n'
 import type { TaskUpdateStreamFrame } from '~/socket/types'
-import { Scroll } from '~/ui/primitives/scroll'
+
+import { useTaskCopy } from '../copy'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ub6777c6d: css`
+    margin-bottom: 1.5rem;
+  `,
+  u5dc4f024: css`
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  `,
+  u8aaf185e: css`
+    color: ${cssVar.colorText};
+    font-size: ${cssVar.fontSize};
+    font-weight: 500;
+    margin: 0;
+  `,
+  u5129356e: css`
+    margin-bottom: 0.75rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uf8abe825: css`
+    border-radius: 0.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-style: dashed;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding-inline: 0.75rem;
+    padding-block: 1rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u6ed543e2: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.75rem;
+    }
+  `,
+  u6c029e81: css`
+    border-radius: 0.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+  `,
+  uc17e784d: css`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding-inline: 0.75rem;
+    padding-block: 0.375rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  u3fe0b3fb: css`
+    color: ${cssVar.colorSuccess};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorSuccess};
+    }
+  `,
+  u265c43f4: css`
+    color: ${cssVar.colorInfo};
+  `,
+  uff4d2db0: css`
+    max-height: 18rem;
+    overflow: auto;
+  `,
+  ue28bbfc6: css`
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    padding: 0.75rem;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.25rem;
+    color: ${cssVar.colorText};
+  `,
+  uedeca61f: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      border-top-width: 1px;
+      border-top-style: solid;
+    }
+    border-color: ${cssVar.colorBorderSecondary};
+  `,
+  u7e341e62: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.25rem;
+    }
+    padding: 0.75rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorText};
+    transition: opacity 0.15s ease;
+    transition-duration: 200ms;
+  `,
+  ucd6c15f2: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uc0492334: css`
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.25rem;
+  `,
+}))
 
 interface LexicalSegment {
   partial: unknown
@@ -45,7 +163,7 @@ export function shouldMountTaskStreamPanel(task: AITask): boolean {
 }
 
 export function TaskStreamPanel(props: { taskId: string }) {
-  const { t } = useI18n()
+  const copy = useTaskCopy()
   const { taskId } = props
   const [streams, setStreams] = useState<StreamsState>(() => new Map())
 
@@ -71,22 +189,16 @@ export function TaskStreamPanel(props: { taskId: string }) {
   const entries = Array.from(streams.entries())
 
   return (
-    <section className="mb-6">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-          {t('tasks.task.stream.title')}
-        </h3>
+    <section className={lobeStyles.ub6777c6d}>
+      <div className={lobeStyles.u5dc4f024}>
+        <h3 className={lobeStyles.u8aaf185e}>{copy('streamTitle')}</h3>
       </div>
-      <p className="mb-3 text-xs text-fg-muted">
-        {t('tasks.task.stream.lateHint')}
-      </p>
+      <p className={lobeStyles.u5129356e}>{copy('streamHint')}</p>
 
       {entries.length === 0 ? (
-        <div className="rounded border border-dashed border-border px-3 py-4 text-xs text-fg-muted">
-          {t('tasks.task.stream.waiting')}
-        </div>
+        <div className={lobeStyles.uf8abe825}>{copy('streamWaiting')}</div>
       ) : (
-        <div className="space-y-3">
+        <div className={lobeStyles.u6ed543e2}>
           {entries.map(([lang, state]) => (
             <LangCard key={lang} lang={lang} state={state} />
           ))}
@@ -97,23 +209,23 @@ export function TaskStreamPanel(props: { taskId: string }) {
 }
 
 function LangCard(props: { lang: string; state: LangStreamState }) {
-  const { t } = useI18n()
+  const copy = useTaskCopy()
   const { lang, state } = props
   const segments = Array.from(state.segments.entries())
   const isLexical = segments.length > 0
   const langLabel =
     lang === DEFAULT_LANG_KEY
-      ? t('tasks.task.stream.title')
-      : t('tasks.task.stream.lang', { lang })
+      ? copy('streamTitle')
+      : copy('streamLang', { lang })
 
   return (
-    <div className="rounded border border-border bg-surface-inset">
-      <div className="flex items-center justify-between border-b border-border px-3 py-1.5 text-xs font-medium text-fg">
+    <div className={lobeStyles.u6c029e81}>
+      <div className={lobeStyles.uc17e784d}>
         <span>{langLabel}</span>
         {state.done ? (
-          <span className="text-emerald-600 dark:text-emerald-400">●</span>
+          <span className={lobeStyles.u3fe0b3fb}>{copy('streamDone')}</span>
         ) : (
-          <span className="animate-pulse text-blue-500">●</span>
+          <span className={lobeStyles.u265c43f4}>{copy('streamLive')}</span>
         )}
       </div>
       {isLexical ? (
@@ -153,43 +265,29 @@ function MarkdownStream(props: { chunks: string[] }) {
   }, [text])
 
   return (
-    <Scroll
-      className="max-h-72"
-      orientation="vertical"
-      ref={scrollViewportRef}
-      viewportClassName="max-h-72"
-    >
-      <pre className="whitespace-pre-wrap break-words p-3 font-mono text-xs leading-5 text-fg">
-        {text}
-      </pre>
-    </Scroll>
+    <div className={lobeStyles.uff4d2db0} ref={scrollViewportRef}>
+      <pre className={lobeStyles.ue28bbfc6}>{text}</pre>
+    </div>
   )
 }
 
 function LexicalSegments(props: { segments: Array<[string, LexicalSegment]> }) {
-  const { t } = useI18n()
+  const copy = useTaskCopy()
   return (
-    <Scroll
-      className="max-h-72"
-      orientation="vertical"
-      viewportClassName="max-h-72"
-    >
-      <ul className="divide-y divide-border">
+    <div className={lobeStyles.uff4d2db0}>
+      <ul className={lobeStyles.uedeca61f}>
         {props.segments.map(([segmentId, segment]) => (
-          <li
-            key={segmentId}
-            className="space-y-1 p-3 text-xs text-fg transition-opacity duration-200"
-          >
-            <div className="text-xs font-medium text-fg-muted">
-              {t('tasks.task.stream.segment', { segmentId })}
+          <li key={segmentId} className={lobeStyles.u7e341e62}>
+            <div className={lobeStyles.ucd6c15f2}>
+              {copy('streamSegment', { segmentId })}
             </div>
-            <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-5">
+            <pre className={lobeStyles.uc0492334}>
               {safeStringify(segment.partial)}
             </pre>
           </li>
         ))}
       </ul>
-    </Scroll>
+    </div>
   )
 }
 

@@ -1,19 +1,23 @@
-import { GitCompare } from 'lucide-react'
-
-import { useI18n } from '~/i18n'
 import type { RevisionSnapshot } from '~/models/draft'
 
+import { useDraftCopy } from '../copy'
 import type { DraftDiffStats } from '../types/drafts'
 import { getDraftTextForDiff } from '../utils/draft-diff'
 import { MarkdownDraftDiffPanel } from './MarkdownDraftDiffPanel'
 import { RichDraftDiffPanel } from './RichDraftDiffPanel'
 
 export function DraftDiffPreview(props: {
+  comparisonLabel?: string
   currentDraft: RevisionSnapshot
+  currentLabel?: string
   diffStats: DraftDiffStats | null
+  hideTitle?: boolean
   selectedDraft: RevisionSnapshot
+  selectedLabel?: string
 }) {
-  const { t } = useI18n()
+  const { copy } = useDraftCopy()
+  if (props.diffStats?.isSame) return null
+
   if (
     props.selectedDraft.contentFormat === 'lexical' &&
     props.currentDraft.contentFormat === 'lexical' &&
@@ -22,34 +26,24 @@ export function DraftDiffPreview(props: {
   ) {
     return (
       <RichDraftDiffPanel
-        comparisonLabel={t('drafts.history.direction')}
+        comparisonLabel={
+          props.comparisonLabel ?? copy('diffDirectionPublished')
+        }
         currentContent={props.currentDraft.content}
+        hideTitle={props.hideTitle}
         selectedContent={props.selectedDraft.content}
       />
     )
   }
 
-  const selectedText = getDraftTextForDiff(props.selectedDraft)
-  const currentText = getDraftTextForDiff(props.currentDraft)
-
-  if (props.diffStats?.isSame) {
-    return (
-      <div className="flex min-h-[20rem] flex-col items-center justify-center text-center">
-        <GitCompare aria-hidden="true" className="size-8 text-neutral-300" />
-        <p className="mt-3 text-sm font-medium text-neutral-700 dark:text-neutral-300">
-          {t('drafts.diff.sameContent')}
-        </p>
-      </div>
-    )
-  }
-
   return (
     <MarkdownDraftDiffPanel
-      comparisonLabel={t('drafts.history.direction')}
-      currentLabel={t('drafts.history.currentFile')}
-      currentText={currentText}
-      selectedLabel={t('drafts.history.historyFile')}
-      selectedText={selectedText}
+      comparisonLabel={props.comparisonLabel ?? copy('diffDirectionPublished')}
+      currentLabel={props.currentLabel ?? copy('diffDraftFile')}
+      currentText={getDraftTextForDiff(props.currentDraft)}
+      hideTitle={props.hideTitle}
+      selectedLabel={props.selectedLabel ?? copy('diffPublishedFile')}
+      selectedText={getDraftTextForDiff(props.selectedDraft)}
     />
   )
 }

@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import type { LucideIcon } from 'lucide-react'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -6,6 +7,109 @@ import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
 import { useI18n } from '~/i18n'
 import { HeaderBackButton } from '~/ui/layout/header-back-button'
 import { cn } from '~/utils/cn'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  uebfd35ab: css`
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorBgContainer};
+    padding-inline: 1rem;
+  `,
+  u6a00a25d: css`
+    display: flex;
+    min-width: 0px;
+    align-items: center;
+    gap: 0.5rem;
+  `,
+  u2bdda2c0: css`
+    display: contents;
+    @media (min-width: 1024px) {
+      display: none;
+    }
+  `,
+  uc39c8d01: css`
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  `,
+  u3b4c716c: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+  `,
+  ua46c7513: css`
+    display: flex;
+    min-width: 0px;
+    align-items: center;
+    gap: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  ubdf0a62f: css`
+    margin-top: 0.125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u0b1f52d8: css`
+    display: inline-flex;
+    min-width: 0px;
+    align-items: center;
+    gap: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  u0a935cc3: css`
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.375rem;
+  `,
+  ud8539e83: css`
+    display: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: ${cssVar.colorTextTertiary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    @media (min-width: 1024px) {
+      display: inline-flex;
+    }
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+}))
 
 export interface DetailHeaderProps {
   title?: ReactNode
@@ -48,46 +152,40 @@ export function DetailHeader(props: DetailHeaderProps) {
   return (
     <div
       className={cn(
-        'flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface-card px-4',
+        lobeStyles.uebfd35ab,
         APP_SHELL_HEADER_HEIGHT_CLASS,
         props.className,
       )}
     >
-      <div className="flex min-w-0 items-center gap-2">
-        <span className="contents lg:hidden">
+      <div className={lobeStyles.u6a00a25d}>
+        <span className={lobeStyles.u2bdda2c0}>
           <HeaderBackButton onClick={props.onBack} />
         </span>
         {Icon ? (
           <Icon
             aria-hidden="true"
-            className={cn('size-4 shrink-0', props.iconClassName)}
+            className={cn(lobeStyles.uc39c8d01, props.iconClassName)}
           />
         ) : null}
         {hasSubtitle ? (
-          <div className="min-w-0 flex-1">
-            <h2 className="flex min-w-0 items-center gap-2 truncate text-sm font-medium text-fg">
-              {props.title}
-            </h2>
-            <p className="mt-0.5 truncate text-xs text-fg-muted">
-              {props.subtitle}
-            </p>
+          <div className={lobeStyles.u3b4c716c}>
+            <h2 className={lobeStyles.ua46c7513}>{props.title}</h2>
+            <p className={lobeStyles.ubdf0a62f}>{props.subtitle}</p>
           </div>
         ) : props.title ? (
-          <h2 className="inline-flex min-w-0 items-center gap-2 truncate text-sm font-medium text-fg">
-            {props.title}
-          </h2>
+          <h2 className={lobeStyles.u0b1f52d8}>{props.title}</h2>
         ) : null}
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className={lobeStyles.u0a935cc3}>
         {props.actions}
         {props.onClose ? (
           <button
             aria-label={t('ui.modal.closeAria')}
-            className="hidden size-9 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:bg-surface-inset hover:text-fg lg:inline-flex"
+            className={lobeStyles.ud8539e83}
             onClick={props.onClose}
             type="button"
           >
-            <X aria-hidden="true" className="size-4" />
+            <X aria-hidden="true" className={lobeStyles.uf7b5fa97} />
           </button>
         ) : null}
       </div>

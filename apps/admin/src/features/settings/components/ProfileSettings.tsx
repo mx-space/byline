@@ -1,5 +1,5 @@
+import { Alert, Button, Flexbox, SkeletonText, Text, toast } from '@lobehub/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { getMe, updateMe } from '~/api/users'
 import { UserProfileForm } from '~/features/users/components/UserProfileForm'
@@ -7,33 +7,49 @@ import { getUserErrorMessage } from '~/features/users/utils/users'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 
-import { formatDateTime } from '../utils/settings'
-import { SettingsSection, SettingsSkeleton } from './SettingsPrimitives'
+import { settingsCopy } from '../copy'
+import { formatDateTime, getErrorMessage } from '../utils/settings'
 
 export function ProfileSettings() {
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const queryClient = useQueryClient()
   const meQuery = useQuery({
     queryFn: getMe,
     queryKey: adminQueryKeys.users.me(),
   })
 
-  if (meQuery.isLoading || !meQuery.data)
-    return <SettingsSkeleton title={t('settings.owner.section.title')} />
+  if (meQuery.isLoading) return <SkeletonText rows={6} />
+
+  if (!meQuery.data) {
+    return (
+      <Alert
+        action={
+          <Button onClick={() => meQuery.refetch()} size="small">
+            {settingsCopy(locale, 'retry')}
+          </Button>
+        }
+        description={getErrorMessage(
+          meQuery.error,
+          settingsCopy(locale, 'loadFailedDetail'),
+        )}
+        showIcon
+        title={settingsCopy(locale, 'loadFailed')}
+        type="error"
+      />
+    )
+  }
 
   const me = meQuery.data
 
   return (
-    <SettingsSection
-      description={
-        me.lastLoginAt
-          ? t('settings.owner.lastLoginAt', {
-              time: formatDateTime(me.lastLoginAt),
-            })
-          : t('settings.owner.description')
-      }
-      title={t('settings.owner.section.title')}
-    >
+    <Flexbox gap={16}>
+      {me.lastLoginAt ? (
+        <Text type="secondary">
+          {t('settings.owner.lastLoginAt', {
+            time: formatDateTime(me.lastLoginAt),
+          })}
+        </Text>
+      ) : null}
       <UserProfileForm
         key={me.updatedAt ?? me.id}
         onSubmit={async (input) => {
@@ -52,6 +68,6 @@ export function ProfileSettings() {
         }}
         user={me}
       />
-    </SettingsSection>
+    </Flexbox>
   )
 }

@@ -1,19 +1,51 @@
+import { createStaticStyles, Empty, ScrollArea, Text } from '@lobehub/ui'
+import { FileWarning } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
 
-import { useI18n } from '~/i18n'
-import { Scroll } from '~/ui/primitives/scroll'
-
+import { useDraftCopy } from '../copy'
 import {
   getCurrentColorScheme,
   parseSerializedDraftContent,
 } from '../utils/rich-diff'
 
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  frame: css`
+    min-height: 240px;
+    border: 1px solid ${cssVar.colorFillSecondary};
+    border-radius: ${cssVar.borderRadius};
+    background: ${cssVar.colorBgContainer};
+  `,
+  head: css`
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-block-end: 8px;
+  `,
+  label: css`
+    font-size: ${cssVar.fontSizeSM};
+    color: ${cssVar.colorTextSecondary};
+  `,
+  root: css`
+    min-width: 0;
+  `,
+  title: css`
+    margin: 0;
+    font-size: ${cssVar.fontSize};
+    font-weight: 600;
+  `,
+  viewport: css`
+    min-height: 240px;
+  `,
+}))
+
 export function RichDraftDiffPanel(props: {
   comparisonLabel?: string
+  hideTitle?: boolean
   currentContent: string
   selectedContent: string
 }) {
-  const { t } = useI18n()
+  const { copy } = useDraftCopy()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const selectedValue = useMemo(
     () => parseSerializedDraftContent(props.selectedContent),
@@ -51,29 +83,34 @@ export function RichDraftDiffPanel(props: {
 
   if (!selectedValue || !currentValue) {
     return (
-      <div className="flex min-h-[20rem] items-center justify-center border border-dashed border-neutral-200 bg-white text-sm text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
-        {t('drafts.diff.richFailed')}
-      </div>
+      <Empty
+        description={copy('diffRichFailed')}
+        icon={FileWarning}
+        title={copy('diffRichTitle')}
+      />
     )
   }
 
   return (
-    <section className="min-h-full min-w-0">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h3 className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
-          {t('drafts.diff.rich.title')}
-        </h3>
-        <span className="shrink-0 text-xs text-neutral-500">
-          {props.comparisonLabel ?? t('drafts.history.direction')}
-        </span>
+    <section className={styles.root}>
+      <div className={styles.head}>
+        {props.hideTitle ? null : (
+          <Text as="h3" className={styles.title}>
+            {copy('diffRichTitle')}
+          </Text>
+        )}
+        <Text as="span" className={styles.label}>
+          {props.comparisonLabel ?? copy('diffHistoryDirection')}
+        </Text>
       </div>
-      <Scroll
-        className="min-h-[20rem] border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"
-        orientation="both"
-        viewportClassName="min-h-[20rem]"
+      <ScrollArea
+        className={styles.frame}
+        corner
+        scrollFade="both"
+        viewportProps={{ className: styles.viewport }}
       >
-        <div className="min-h-[20rem]" ref={containerRef} />
-      </Scroll>
+        <div className={styles.viewport} ref={containerRef} />
+      </ScrollArea>
     </section>
   )
 }

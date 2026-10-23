@@ -1,6 +1,6 @@
+import { toast } from '@lobehub/ui'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 
 import {
   draftImagePrompt,

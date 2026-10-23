@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import type { HTMLAttributes, Ref } from 'react'
 import { useEffect, useId, useRef } from 'react'
 
@@ -8,6 +9,23 @@ import {
   setActiveScope,
   useFocusScopeActive,
 } from './hooks'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ud89972fe: css`
+    position: relative;
+  `,
+  ub67b513a: css`
+    &[data-scope-active] {
+      outline-width: 2px;
+    }
+    &[data-scope-active] {
+      outline-offset: -2px;
+    }
+    &[data-scope-active] {
+      outline-color: color-mix(in srgb, ${cssVar.colorInfo} 60%, transparent);
+    }
+  `,
+}))
 
 export interface FocusScopeProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
@@ -81,12 +99,12 @@ export function FocusScope({
       tabIndex={-1}
       {...rest}
       className={cn(
-        'relative',
+        lobeStyles.ud89972fe,
         // Dev-only debug ring around the active scope. Uses `outline` so it
         // never affects layout. `-outline-offset-2` pulls the ring inside
         // the element so it doesn't bleed past adjacent surfaces.
         showOutline &&
-          'data-[scope-active]:outline-dashed data-[scope-active]:outline-2 data-[scope-active]:-outline-offset-2 data-[scope-active]:outline-blue-400/60',
+          `${lobeStyles.ub67b513a} data-[scope-active]:outline-dashed`,
         className,
       )}
       onKeyDown={(event) => {

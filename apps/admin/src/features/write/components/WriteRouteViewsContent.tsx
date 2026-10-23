@@ -1,32 +1,9 @@
 import { projectAgentDiffNodesToFactualState } from '@haklex/rich-ext-ai-agent/static'
+import { Button, Drawer, Skeleton, toast } from '@lobehub/ui'
 import { createMxLitexmlRegistry, mxLexicalToMarkdown } from '@mx-space/editor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SerializedEditorState } from 'lexical'
-import type { LucideIcon } from 'lucide-react'
-import {
-  Bot,
-  Braces,
-  Clock,
-  FileText,
-  GitBranch,
-  History,
-  Image as ImageIcon,
-  Loader2,
-  Pencil,
-  Search,
-  Send,
-  SlidersHorizontal,
-  Users,
-  WandSparkles,
-} from 'lucide-react'
-import type {
-  ComponentProps,
-  CSSProperties,
-  Dispatch,
-  FormEvent,
-  ReactNode,
-  SetStateAction,
-} from 'react'
+import type { CSSProperties, Dispatch, SetStateAction } from 'react'
 import {
   lazy,
   Suspense,
@@ -42,7 +19,6 @@ import {
   useNavigate,
   useSearchParams,
 } from 'react-router'
-import { toast } from 'sonner'
 
 import { AiQueryType, getTranslationsByRef, writerGenerate } from '~/api/ai'
 import { getCategories, getTags } from '~/api/categories'
@@ -67,10 +43,6 @@ import { AITaskStatus, getTask } from '~/api/tasks'
 import { getMe, getUsers } from '~/api/users'
 import { API_URL, WEB_URL } from '~/constants/env'
 import {
-  APP_SHELL_HEADER_HEIGHT_CLASS,
-  APP_SHELL_HEADER_HEIGHT_VALUE,
-} from '~/constants/layout'
-import {
   useCollectionDetailQuery,
   useCollectionListQuery,
   useEntity,
@@ -81,11 +53,9 @@ import type { CategoryEntity } from '~/data/resources/category'
 import { categories as categoriesCollection } from '~/data/resources/category'
 import { posts as postsCollection } from '~/data/resources/post'
 import { publishPost } from '~/data/resources/post.mutations'
-import { DraftStatusTag } from '~/features/drafts/components/draft-status-tag'
 import type { AIConfig } from '~/features/settings/types/settings'
 import { useTaskDetailSubscription } from '~/features/tasks/hooks/useTaskSubscription'
 import { AgentPanel, useWriteAgent } from '~/features/write/components/agent'
-import { CoverGenerationEntry } from '~/features/write/components/cover-generation/CoverGenerationEntry'
 import { DraftConflictBanner } from '~/features/write/components/DraftConflictBanner'
 import { DraftConflictDialog } from '~/features/write/components/DraftConflictDialog'
 import { DraftHintBanner } from '~/features/write/components/DraftHintBanner'
@@ -94,19 +64,12 @@ import {
   type DraftRecoveryReviewData,
 } from '~/features/write/components/DraftRecoveryReview'
 import {
-  AuthorsPicker,
-  SeoFields,
-  SourceLangField,
-} from '~/features/write/components/PostBylineFields'
-import {
   normalizeTaskAiResources,
   publishAiResourceLabels,
 } from '~/features/write/components/publish-ai-choices'
 import { PublishConfirmationDialog } from '~/features/write/components/PublishConfirmationDialog'
 import { openPublishProcessDock } from '~/features/write/components/PublishProcessDock'
-import { TtsGenerationEntry } from '~/features/write/components/tts/TtsGenerationEntry'
 import { VersionTreePanel } from '~/features/write/components/VersionTreePanel'
-import { MetaPresetSection } from '~/features/write/meta-presets'
 import { draftFingerprint } from '~/features/write/utils/draft-fingerprint'
 import type { DraftMergeConflict } from '~/features/write/utils/merge-draft-conflict'
 import { mergeDraftConflict } from '~/features/write/utils/merge-draft-conflict'
@@ -118,7 +81,6 @@ import {
   postBylineToSpecific,
 } from '~/features/write/utils/post-byline-state'
 import { useDocumentTitle } from '~/hooks/use-document-title'
-import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import { useI18n } from '~/i18n'
 import { translate } from '~/i18n/translate'
 import type { TranslationKey } from '~/i18n/types'
@@ -134,19 +96,6 @@ import { adminQueryKeys } from '~/query/keys'
 import { subscribeDraftUpdate } from '~/socket/draft-update-signal'
 import type { DraftUpdatePayload } from '~/socket/types'
 import { confirmDialog } from '~/ui/feedback/confirm'
-import {
-  AsidePanel,
-  ContentLayout,
-  ContentLayoutSlot,
-} from '~/ui/layout/content-layout'
-import { HeaderBackButton } from '~/ui/layout/header-back-button'
-import { Popover } from '~/ui/overlay/popover'
-import { Button } from '~/ui/primitives/button'
-import { Scroll } from '~/ui/primitives/scroll'
-import { SelectField } from '~/ui/primitives/select'
-import { FormSwitch } from '~/ui/primitives/switch'
-import { TextArea, TextInput } from '~/ui/primitives/text-field'
-import { cn } from '~/utils/cn'
 import type {
   RichEditorWithAgentProps,
   RichEditorWithAgentRef,
@@ -159,6 +108,11 @@ import {
   buildMetaSystemMessages,
   buildMetaTools,
 } from '~/vendor/rich-editor/utils/meta-tools'
+
+import { writeCopy } from '../copy'
+import { writeChromeStyles as editorStyles } from './chrome/styles'
+import type { WriteDockTone } from './chrome/WriteChrome'
+import { WriteChrome } from './chrome/WriteChrome'
 
 type WriteKind = 'post'
 
@@ -725,8 +679,7 @@ function useDraftSession(options: {
 }
 
 function WritePage(props: { kind: WriteKind }) {
-  const { t } = useI18n()
-  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
+  const { locale, t } = useI18n()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -737,22 +690,18 @@ function WritePage(props: { kind: WriteKind }) {
   const [state, setState] = useState<WriteFormState>(emptyState)
   const [publishTaskId, setPublishTaskId] = useState<string | null>(null)
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false)
+  const [publishError, setPublishError] = useState<string | null>(null)
   useDocumentTitle(state.title)
-  const [asidePanel, setAsidePanel] = useState<
-    'agent' | 'meta' | 'drafts' | null
-  >(null)
-  const agentVisible = asidePanel === 'agent'
-  const metaPanelOpen = asidePanel === 'meta'
-  const draftsPanelOpen = asidePanel === 'drafts'
-  const toggleAsidePanel = (panel: 'agent' | 'meta' | 'drafts') =>
-    setAsidePanel((current) => (current === panel ? null : panel))
+  const [agentOpen, setAgentOpen] = useState(false)
+  const [revisionsOpen, setRevisionsOpen] = useState(false)
+  const [metaOpen, setMetaOpen] = useState(false)
   const [draftListHintDismissed, setDraftListHintDismissed] = useState(false)
   const [reviewingDraft, setReviewingDraft] = useState<DraftModel | null>(null)
   const appliedRouteDraftIdRef = useRef<string | null>(null)
   const formSeededKeyRef = useRef<string | null>(null)
   const draftRefType = draftRefTypeByKind[props.kind]
 
-  useCollectionListQuery(categoriesCollection, {
+  const categoriesQuery = useCollectionListQuery(categoriesCollection, {
     queryFn: () => getCategories({ type: 'Category' }),
     queryKey: adminQueryKeys.categories.list(),
     toPage: (result) => ({ items: result }),
@@ -949,24 +898,27 @@ function WritePage(props: { kind: WriteKind }) {
         .filter((item) => item.mode === 'async')
         .map((item) => t(publishAiResourceLabels[item.resource]))
       const articleId = task.result.articleId
-      toast.success(
-        task.payload.operation === 'online-update'
-          ? t('write.publishProcess.onlineUpdated')
-          : task.payload.operation === 'republish'
-            ? t('write.publishProcess.republished')
-            : t('write.publishProcess.firstPublished'),
-        background.length
-          ? {
-              action: {
+      toast.success({
+        actions: background.length
+          ? [
+              {
                 label: t('write.publishProcess.viewBackground'),
                 onClick: () => navigate(`/ai/overview/${articleId}`),
               },
-              description: t('write.publishProcess.backgroundGenerating', {
-                resources: background.join('、'),
-              }),
-            }
+            ]
           : undefined,
-      )
+        description: background.length
+          ? t('write.publishProcess.backgroundGenerating', {
+              resources: background.join('、'),
+            })
+          : undefined,
+        title:
+          task.payload.operation === 'online-update'
+            ? t('write.publishProcess.onlineUpdated')
+            : task.payload.operation === 'republish'
+              ? t('write.publishProcess.republished')
+              : t('write.publishProcess.firstPublished'),
+      })
       syncCommittedResult()
     } else if (task.result?.articleCommitted) {
       toast.error(t('write.publishProcess.onlineUpdatedWithAiFailure'))
@@ -1015,14 +967,6 @@ function WritePage(props: { kind: WriteKind }) {
   const activeCategory =
     categories.find((category) => category.id === state.categoryId) ??
     categories[0]
-  const availableDraft = useMemo(() => {
-    const candidates = isEditing ? activeDocumentBranches : activeNewDrafts
-    return [...candidates].sort(
-      (a, b) =>
-        Date.parse(b.updatedAt ?? b.createdAt) -
-        Date.parse(a.updatedAt ?? a.createdAt),
-    )[0]
-  }, [activeDocumentBranches, activeNewDrafts, isEditing])
   const postPublicPath = buildPostPublicPath(state, activeCategory)
   const publishedFingerprint = useMemo(
     () =>
@@ -1042,12 +986,6 @@ function WritePage(props: { kind: WriteKind }) {
     : isPublished
       ? 'online-update'
       : 'republish'
-  const publishActionKey: TranslationKey =
-    publishOperation === 'online-update'
-      ? 'write.publishProcess.updateOnline'
-      : publishOperation === 'republish'
-        ? 'write.publishProcess.republish'
-        : 'write.header.publish'
   useBeforeUnload(
     (event) => {
       if (!draftSession.hasUnsavedChanges()) return
@@ -1260,14 +1198,16 @@ function WritePage(props: { kind: WriteKind }) {
         error.code === 'PUBLISHED_REVISION_CHANGED'
       ) {
         void versionContextQuery.refetch()
-        toast.error(t('write.publishConfirm.onlineChanged'))
+        setPublishError(t('write.publishConfirm.onlineChanged'))
         return
       }
-      toast.error(
+      setPublishError(
         getErrorMessage(error, t('write.publishProcess.acceptFailed')),
       )
     },
     onSuccess: async (result) => {
+      setPublishConfirmOpen(false)
+      setPublishError(null)
       draftSession.accept(result.draft, result.fingerprint, {
         dirty: draftSession.latestFingerprint() !== result.fingerprint,
         draftId: result.draft.id,
@@ -1324,15 +1264,6 @@ function WritePage(props: { kind: WriteKind }) {
     [categories, state],
   )
 
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (draftConflictResolving) return
-    if (draftConflict) {
-      setDraftConflictDialogOpen(true)
-      return
-    }
-    setPublishConfirmOpen(true)
-  }
   const updateField = <TKey extends keyof WriteFormState>(
     key: TKey,
     value: WriteFormState[TKey],
@@ -1385,13 +1316,14 @@ function WritePage(props: { kind: WriteKind }) {
   const continueDraft = async (draft: DraftModel) => {
     if (!(await confirmSourceSwitch(draft.id))) return
     applyDraft(draft)
-    if (!isDesktop) setAsidePanel(null)
+    setRevisionsOpen(false)
   }
 
   const publishDraftFromTree = async (draft: DraftModel) => {
     if (!(await confirmSourceSwitch(draft.id))) return
     applyDraft(draft)
-    setAsidePanel(null)
+    setRevisionsOpen(false)
+    setPublishError(null)
     setPublishConfirmOpen(true)
   }
 
@@ -1407,11 +1339,11 @@ function WritePage(props: { kind: WriteKind }) {
     nextParams.delete('baseRevisionId')
     nextParams.delete('draftId')
     setSearchParams(nextParams, { replace: true })
-    if (!isDesktop) setAsidePanel(null)
+    setRevisionsOpen(false)
   }
 
   const closeDraftsPanel = () => {
-    setAsidePanel(null)
+    setRevisionsOpen(false)
   }
 
   const deleteDraftMutation = useMutation({
@@ -1487,13 +1419,6 @@ function WritePage(props: { kind: WriteKind }) {
   const versionBranchCount = isEditing
     ? activeDocumentBranches.length
     : activeNewDrafts.length
-  const editorBranchCount = isEditing ? activeDocumentBranches.length : 0
-  const versionTreeTriggerTitle =
-    versionBranchCount > 0
-      ? t('write.versionTree.triggerWithCount', {
-          count: versionBranchCount,
-        })
-      : t('write.versionTree.title')
   const publishIsDiverged = selectedBranch
     ? selectedBranch.relationToPublished === 'descendant' ||
       selectedBranch.relationToPublished === 'diverged'
@@ -1501,306 +1426,217 @@ function WritePage(props: { kind: WriteKind }) {
       baseRelationQuery.data?.relation === 'diverged'
   const draftKindText = t('write.kind.post')
   const isDirty = draftSession.hasUnsavedChanges()
-  const metaStatus = computeMetaStatus({
-    hasConflict: Boolean(draftConflict),
-    isDirty,
-    isEditing,
-    isPublished,
-    isPendingDraftSave: draftMutation.isPending || draftConflictResolving,
-    latestDraft,
-    publishedUpdatedAt: detailModel
-      ? getPublishedContent(detailModel).updatedAt
-      : undefined,
-  })
-
   const slugPathPrefix = `/posts/${activeCategory?.slug ?? ''}/`
-  const slugDisplayPath = state.slug.trim()
-    ? `${slugPathPrefix}${state.slug.trim()}`
-    : ''
-  const aiButtonVisible =
-    state.text.trim().length > 0 && (!state.title.trim() || !state.slug.trim())
+  const publishLabel =
+    publishOperation === 'online-update'
+      ? writeCopy(locale, 'updateOnline')
+      : publishOperation === 'republish'
+        ? writeCopy(locale, 'republish')
+        : writeCopy(locale, 'publish')
+  const dockTone: WriteDockTone = draftConflict
+    ? 'conflict'
+    : saveMutation.isPending
+      ? 'publishing'
+      : !hasDraftAutosaveContent
+        ? 'needContent'
+        : draftMutation.isPending || draftConflictResolving
+          ? 'saving'
+          : isDirty
+            ? 'unsaved'
+            : publishTaskId
+              ? 'submitted'
+              : isPublished && !canSubmitPublication
+                ? 'matchesLive'
+                : latestDraft
+                  ? 'saved'
+                  : isEditing && !isPublished
+                    ? 'offline'
+                    : 'fresh'
+  const requestPublish = () => {
+    if (draftConflictResolving || saveMutation.isPending) return
+    if (draftConflict) {
+      setDraftConflictDialogOpen(true)
+      return
+    }
+    setPublishError(null)
+    setPublishConfirmOpen(true)
+  }
+  const phase = detailLoading
+    ? 'loading'
+    : isEditing && postDetailQuery.isError && !detailModel
+      ? 'error'
+      : 'ready'
+  const publicPath = postPublicPath ? `${WEB_URL}${postPublicPath}` : ''
 
   return (
-    <form className="flex h-full min-h-0 flex-col" onSubmit={onSubmit}>
-      <section
-        className="flex h-full min-h-0 flex-col bg-background"
-        style={
-          {
-            '--app-shell-header-height': APP_SHELL_HEADER_HEIGHT_VALUE,
-          } as CSSProperties
+    <>
+      <WriteChrome
+        aiOpen={agentOpen}
+        authorCandidates={authorCandidates}
+        categories={categories}
+        categoriesFailed={categoriesQuery.isError}
+        coverImages={buildWriteImages(state)}
+        draft={latestDraft}
+        draftId={draftId || routeDraftId || undefined}
+        editor={
+          <RichWriteSurface
+            agentVisible={agentOpen}
+            autoFocus={isEditing}
+            content={state.content}
+            getMetaFields={getAgentMetaFields}
+            key={`${props.kind}:${id || 'new'}`}
+            kind={props.kind}
+            metaFieldsSchema={POST_META_SCHEMA}
+            onAgentClose={() => setAgentOpen(false)}
+            onContentChange={(content) => updateField('content', content)}
+            onMetaFieldsUpdate={applyAgentMetaUpdates}
+            onPinSelection={() => setAgentOpen(true)}
+            onTextChange={(text) => updateField('text', text)}
+            refId={isEditing ? id : routeDraftId || undefined}
+          />
         }
-      >
-        <div
-          className={cn(
-            'flex shrink-0 items-center justify-between gap-3 border-b border-neutral-200 px-4 dark:border-neutral-800',
-            APP_SHELL_HEADER_HEIGHT_CLASS,
-          )}
-        >
-          <div className="flex min-w-0 items-center gap-2">
-            <HeaderBackButton
-              label={t('write.header.backToList')}
-              to={POST_LIST_PATH}
-            />
-            <h2 className="inline-flex min-w-0 items-center gap-2 text-lg font-semibold text-neutral-950 dark:text-neutral-50">
-              <FileText aria-hidden="true" className="size-4 shrink-0" />
-              <span className="truncate">{t('write.header.titlePost')}</span>
-            </h2>
-            <DraftStatusTag
-              className="hidden md:inline-flex"
-              draft={latestDraft}
-              isSaving={draftMutation.isPending || draftConflictResolving}
-            />
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <WriteHeaderIconButton
-              badge={versionBranchCount}
-              onClick={() => toggleAsidePanel('drafts')}
-              title={versionTreeTriggerTitle}
-              type="button"
-              variant={draftsPanelOpen ? 'active' : 'default'}
-            >
-              <GitBranch aria-hidden="true" className="size-4" />
-            </WriteHeaderIconButton>
-            <WriteHeaderIconButton
-              onClick={() => toggleAsidePanel('agent')}
-              title={
-                agentVisible ? t('write.pill.hideAi') : t('write.pill.showAi')
-              }
-              type="button"
-              variant={agentVisible ? 'active' : 'default'}
-            >
-              <Bot aria-hidden="true" className="size-4" />
-            </WriteHeaderIconButton>
-            <WriteHeaderIconButton
-              onClick={() => toggleAsidePanel('meta')}
-              title={
-                metaPanelOpen
-                  ? t('write.pill.hidePostSettings')
-                  : t('write.pill.postSettings')
-              }
-              type="button"
-              variant={metaPanelOpen ? 'active' : 'default'}
-            >
-              <SlidersHorizontal aria-hidden="true" className="size-4" />
-            </WriteHeaderIconButton>
-            <WriteHeaderIconButton
-              disabled={
-                saveMutation.isPending ||
-                draftMutation.isPending ||
-                detailLoading ||
-                draftConflictResolving ||
-                !canSubmitPublication
-              }
-              title={t(publishActionKey)}
-              type="submit"
-              variant="primary"
-            >
-              {saveMutation.isPending ? (
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                <Send aria-hidden="true" className="size-4" />
-              )}
-            </WriteHeaderIconButton>
-          </div>
-        </div>
-
-        <ContentLayout
-          asideMobileSnap={draftsPanelOpen ? 'full' : 'half'}
-          className="min-h-0 flex-1"
-          mainClassName="flex flex-col"
-          onCloseAside={() => {
-            setAsidePanel(null)
-          }}
-          open={asidePanel !== null && !detailLoading}
-        >
-          {detailLoading ? (
-            <div className="min-h-0 flex-1">
-              <WriteSkeleton />
-            </div>
-          ) : (
-            <Scroll
-              className="min-h-0 flex-1"
-              innerClassName="min-h-full bg-background"
-            >
-              <main className="flex min-h-full min-w-0 flex-col bg-background">
-                <div className="mx-auto w-full max-w-5xl shrink-0 px-3 pt-8">
-                  {draftConflict ? (
-                    <div className="mb-3 -mt-4">
-                      <DraftConflictBanner
-                        conflictCount={draftConflict.conflicts.length}
-                        onKeepLocal={keepLocalConflictDraft}
-                        onUseRemote={useRemoteConflictDraft}
-                      />
-                    </div>
-                  ) : null}
-                  {showRemoteUpdateHint ? (
-                    <div className={cn('mb-3', !draftConflict && '-mt-4')}>
-                      <DraftHintBanner
-                        actionLabel={t('write.remoteUpdate.useNew')}
-                        message={t('write.remoteUpdate.message')}
-                        onAction={useRemoteUpdate}
-                        onDismiss={dismissRemoteUpdate}
-                        onSecondaryAction={mergeRemoteUpdate}
-                        secondaryActionLabel={t('write.remoteUpdate.merge')}
-                        variant="remote-update"
-                      />
-                    </div>
-                  ) : null}
-                  {showDraftListHint ? (
-                    <div
-                      className={cn(
-                        'mb-3',
-                        !draftConflict && !showRemoteUpdateHint && '-mt-4',
-                      )}
-                    >
-                      <DraftHintBanner
-                        actionLabel={t('write.draftList.hintAction')}
-                        message={t('write.draftList.hintMessage', {
-                          count: draftListHintCount,
-                          label: draftKindText,
-                        })}
-                        onAction={() => setAsidePanel('drafts')}
-                        onDismiss={() => setDraftListHintDismissed(true)}
-                        variant="list"
-                      />
-                    </div>
-                  ) : null}
-                  <EditorMetaStrip
-                    aiButtonPending={writerGenerateMutation.isPending}
-                    aiButtonVisible={aiButtonVisible}
-                    branchCount={editorBranchCount}
-                    onAiGenerate={generateTitleOrSlug}
-                    onOpenVersionTree={() => setAsidePanel('drafts')}
-                    status={metaStatus.status}
-                    statusText={metaStatus.text}
-                  />
-                  <EditorTitleArea
-                    autoFocus={!isEditing}
-                    displayPath={slugDisplayPath}
-                    onSlugChange={(value) => updateField('slug', value)}
-                    onTitleChange={(value) => updateField('title', value)}
-                    placeholder={t('write.editor.titlePlaceholder')}
-                    slug={state.slug}
-                    slugPlaceholder="slug-of-this-post"
-                    slugPrefix={slugPathPrefix}
-                    title={state.title}
-                  />
-                  <hr className="my-4 border-0 border-t border-neutral-100 dark:border-neutral-900" />
-                </div>
-
-                <div className="flex min-h-0 flex-1 flex-col">
-                  <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-3">
-                    <RichWriteSurface
-                      agentVisible={agentVisible}
-                      autoFocus={isEditing}
-                      content={state.content}
-                      contentClassName="!min-h-[60dvh] flex-1 px-0 pt-3 pb-[200px]"
-                      kind={props.kind}
-                      key={`${props.kind}:${id || 'new'}`}
-                      getMetaFields={getAgentMetaFields}
-                      metaFieldsSchema={POST_META_SCHEMA}
-                      onContentChange={(content) =>
-                        updateField('content', content)
-                      }
-                      onMetaFieldsUpdate={applyAgentMetaUpdates}
-                      onPinSelection={() => setAsidePanel('agent')}
-                      onTextChange={(text) => updateField('text', text)}
-                      refId={isEditing ? id : routeDraftId || undefined}
-                      surfaceClassName="flex min-h-[70dvh] flex-1 flex-col rounded-none border-0 bg-transparent dark:bg-transparent"
-                      surfaceStyle={
-                        {
-                          '--rc-max-width': 'none',
-                        } as CSSProperties
-                      }
-                    />
-                  </div>
-                </div>
-              </main>
-            </Scroll>
-          )}
-          <ContentLayoutSlot active={draftsPanelOpen} id="drafts">
-            <VersionTreePanel
-              currentDraftId={draftId || routeDraftId}
-              currentPublishedRevisionId={
-                versionContextQuery.data?.document.publishedRevisionId ?? null
-              }
-              deletingDraftId={
-                deleteDraftMutation.isPending
-                  ? (deleteDraftMutation.variables ?? null)
-                  : null
-              }
-              documentId={
-                versionContextQuery.data?.document.id ??
-                (isEditing ? activeDocumentBranches : activeNewDrafts).find(
-                  (draft) => draft.id === (draftId || routeDraftId),
-                )?.documentId ??
-                null
-              }
-              drafts={isEditing ? activeDocumentBranches : activeNewDrafts}
-              nodes={
-                isEditing
-                  ? (versionContextQuery.data?.versionTree ?? [])
-                  : standaloneDraftTree
-              }
-              onClose={closeDraftsPanel}
-              onCompare={setReviewingDraft}
-              onDelete={confirmAndDeleteDraft}
-              onContinue={(draft) => void continueDraft(draft)}
-              onHistory={(draft) => navigate(`/drafts/${draft.id}`)}
-              onPublish={(draft) => void publishDraftFromTree(draft)}
-              onViewOnline={() => void viewCurrentArticle()}
-            />
-          </ContentLayoutSlot>
-          <ContentLayoutSlot active={metaPanelOpen} id="meta">
-            <ContentSettingsPanel
-              availableDraft={availableDraft}
-              draftId={draftId || routeDraftId || undefined}
-              draftMutationData={draftMutation.data}
-              draftMutationPending={draftMutation.isPending}
-              onApplyDraft={applyDraft}
-              onGenerateTitleOrSlug={generateTitleOrSlug}
-              onPublishedChange={(published) => {
-                if (published) {
-                  publicationMutation.mutate(true)
-                  return
-                }
-                void confirmDialog({
-                  confirmText: t('write.publication.unpublishAction'),
-                  description: t('write.publication.unpublishDescription'),
-                  destructive: true,
-                  title: t('write.publication.unpublishTitle'),
-                }).then((confirmed) => {
-                  if (confirmed) publicationMutation.mutate(false)
-                })
-              }}
-              onSaveDraft={saveDraftNow}
-              postFields={
-                <PostFields
-                  authorCandidates={authorCandidates}
-                  categories={categories}
-                  siteDefaultLang={siteDefaultLang}
-                  state={state}
-                  tags={tags}
-                  updateField={updateField}
+        generatePending={writerGenerateMutation.isPending}
+        hasArticle={isEditing}
+        metaOpen={metaOpen}
+        notices={
+          <>
+            {draftConflict ? (
+              <>
+                <DraftConflictBanner
+                  conflictCount={draftConflict.conflicts.length}
+                  onKeepLocal={keepLocalConflictDraft}
+                  onUseRemote={useRemoteConflictDraft}
                 />
-              }
-              publicPath={
-                postPublicPath
-                  ? `${WEB_URL}${postPublicPath}`
-                  : t('write.postPublicPath.fallback')
-              }
-              publicationPending={publicationMutation.isPending}
-              published={isPublished}
-              hasArticle={isEditing}
-              refId={isEditing ? id : undefined}
-              state={state}
-              updateField={updateField}
-              writerGeneratePending={writerGenerateMutation.isPending}
-            />
-          </ContentLayoutSlot>
-        </ContentLayout>
-      </section>
-
+                <Button
+                  htmlType="button"
+                  onClick={() => setRevisionsOpen(true)}
+                  type="text"
+                >
+                  {writeCopy(locale, 'openRevisions')}
+                </Button>
+              </>
+            ) : null}
+            {showRemoteUpdateHint ? (
+              <DraftHintBanner
+                actionLabel={t('write.remoteUpdate.useNew')}
+                message={t('write.remoteUpdate.message')}
+                onAction={useRemoteUpdate}
+                onDismiss={dismissRemoteUpdate}
+                onSecondaryAction={mergeRemoteUpdate}
+                secondaryActionLabel={t('write.remoteUpdate.merge')}
+                variant="remote-update"
+              />
+            ) : null}
+            {showDraftListHint ? (
+              <DraftHintBanner
+                actionLabel={t('write.draftList.hintAction')}
+                message={t('write.draftList.hintMessage', {
+                  count: draftListHintCount,
+                  label: draftKindText,
+                })}
+                onAction={() => setRevisionsOpen(true)}
+                onDismiss={() => setDraftListHintDismissed(true)}
+                variant="list"
+              />
+            ) : null}
+          </>
+        }
+        onBack={() => navigate(POST_LIST_PATH)}
+        onCloseAi={() => setAgentOpen(false)}
+        onCloseMeta={() => setMetaOpen(false)}
+        onCloseRevisions={closeDraftsPanel}
+        onGenerate={generateTitleOrSlug}
+        onOpenAi={() => setAgentOpen(true)}
+        onOpenMeta={() => setMetaOpen(true)}
+        onOpenRevisions={() => setRevisionsOpen(true)}
+        onPublish={requestPublish}
+        onRetryCategories={() => {
+          void categoriesQuery.refetch()
+        }}
+        onRetryLoad={() => {
+          void postDetailQuery.refetch()
+        }}
+        onSave={saveDraftNow}
+        onUnpublish={() => {
+          void confirmDialog({
+            confirmText: t('write.publication.unpublishAction'),
+            description: t('write.publication.unpublishDescription'),
+            destructive: true,
+            title: t('write.publication.unpublishTitle'),
+          }).then((confirmed) => {
+            if (confirmed) publicationMutation.mutate(false)
+          })
+        }}
+        onViewTask={() => {
+          if (publishTaskId) navigate(`/tasks/${publishTaskId}`)
+          else navigate('/tasks')
+        }}
+        phase={phase}
+        publicPath={publicPath}
+        publishDisabled={
+          saveMutation.isPending ||
+          detailLoading ||
+          draftConflictResolving ||
+          !canSubmitPublication
+        }
+        publishLabel={publishLabel}
+        published={isPublished}
+        publishing={saveMutation.isPending}
+        refId={isEditing ? id : undefined}
+        revisionCount={versionBranchCount}
+        revisions={
+          <VersionTreePanel
+            currentDraftId={draftId || routeDraftId}
+            currentPublishedRevisionId={
+              versionContextQuery.data?.document.publishedRevisionId ?? null
+            }
+            deletingDraftId={
+              deleteDraftMutation.isPending
+                ? (deleteDraftMutation.variables ?? null)
+                : null
+            }
+            documentId={
+              versionContextQuery.data?.document.id ??
+              (isEditing ? activeDocumentBranches : activeNewDrafts).find(
+                (draft) => draft.id === (draftId || routeDraftId),
+              )?.documentId ??
+              null
+            }
+            drafts={isEditing ? activeDocumentBranches : activeNewDrafts}
+            nodes={
+              isEditing
+                ? (versionContextQuery.data?.versionTree ?? [])
+                : standaloneDraftTree
+            }
+            onCompare={setReviewingDraft}
+            onContinue={(draft) => void continueDraft(draft)}
+            onDelete={confirmAndDeleteDraft}
+            onHistory={(draft) => navigate(`/drafts/${draft.id}`)}
+            onPublish={(draft) => void publishDraftFromTree(draft)}
+            onViewOnline={() => void viewCurrentArticle()}
+          />
+        }
+        revisionsOpen={revisionsOpen}
+        saveDisabled={
+          detailLoading ||
+          draftMutation.isPending ||
+          draftConflictResolving ||
+          saveMutation.isPending ||
+          Boolean(draftConflict) ||
+          !hasDraftAutosaveContent
+        }
+        saving={draftMutation.isPending}
+        savingDraft={draftMutation.isPending || draftConflictResolving}
+        showViewTask={Boolean(publishTaskId)}
+        siteDefaultLang={siteDefaultLang}
+        slugPrefix={slugPathPrefix}
+        tags={tags}
+        title={state.title}
+        tone={dockTone}
+        unpublishPending={publicationMutation.isPending}
+        updateField={updateField}
+        values={state}
+      />
       <DraftRecoveryReview
         data={recoveryReviewData}
         onClose={() => setReviewingDraft(null)}
@@ -1815,14 +1651,15 @@ function WritePage(props: { kind: WriteKind }) {
       <PublishConfirmationDialog
         aiConfig={aiPublishOptionsQuery.data}
         diverged={publishIsDiverged}
-        otherBranchCount={Math.max(
-          0,
-          activeDocumentBranches.length - (selectedBranch ? 1 : 0),
-        )}
-        onClose={() => setPublishConfirmOpen(false)}
+        failureMessage={publishError}
         lockedTranslationLangs={lockedTranslationLangs}
-        onConfirm={(resources, options) => {
+        onClose={() => {
+          if (saveMutation.isPending) return
           setPublishConfirmOpen(false)
+          setPublishError(null)
+        }}
+        onConfirm={(resources, options) => {
+          setPublishError(null)
           saveMutation.mutate({
             aiResources: resources,
             confirmDiverged: publishIsDiverged,
@@ -1832,17 +1669,22 @@ function WritePage(props: { kind: WriteKind }) {
         onReviewDiff={
           publishIsDiverged && selectedBranch
             ? () => {
+                if (saveMutation.isPending) return
                 setPublishConfirmOpen(false)
                 setReviewingDraft(selectedBranch)
               }
             : undefined
         }
         open={publishConfirmOpen}
+        operation={publishOperation}
+        otherBranchCount={Math.max(
+          0,
+          activeDocumentBranches.length - (selectedBranch ? 1 : 0),
+        )}
+        pending={saveMutation.isPending}
         rememberedResources={
           versionContextQuery.data?.document.publishAiResources
         }
-        operation={publishOperation}
-        pending={saveMutation.isPending}
         savedAt={
           latestDraftCandidate
             ? formatRelativeTime(latestDraftCandidate.updatedAt)
@@ -1859,163 +1701,8 @@ function WritePage(props: { kind: WriteKind }) {
           open={draftConflictDialogOpen}
         />
       ) : null}
-    </form>
+    </>
   )
-}
-
-function ContentSettingsPanel(props: {
-  availableDraft?: DraftModel
-  draftId?: string
-  draftMutationData?: DraftModel
-  draftMutationPending: boolean
-  hasArticle: boolean
-  onApplyDraft: (draft: DraftModel) => void
-  onGenerateTitleOrSlug: () => void
-  onPublishedChange: (published: boolean) => void
-  onSaveDraft: () => void
-  postFields: ReactNode
-  publicationPending: boolean
-  published: boolean
-  publicPath: string
-  refId?: string
-  state: WriteFormState
-  updateField: <TKey extends keyof WriteFormState>(
-    key: TKey,
-    value: WriteFormState[TKey],
-  ) => void
-  writerGeneratePending: boolean
-}) {
-  const { t } = useI18n()
-
-  return (
-    <AsidePanel>
-      <Scroll
-        className="min-h-0 flex-1"
-        innerClassName="grid grid-cols-[minmax(0,1fr)] gap-4 p-4"
-      >
-        <PanelBlock title={t('write.section.publish.title')}>
-          <FormSwitch
-            checked={props.published}
-            disabled={!props.refId || props.publicationPending}
-            label={t(
-              props.published
-                ? 'write.publication.published'
-                : props.hasArticle
-                  ? 'write.publication.offline'
-                  : 'write.publication.unpublished',
-            )}
-            onCheckedChange={props.onPublishedChange}
-          />
-        </PanelBlock>
-
-        <PanelBlock title={t('write.section.draft.title')}>
-          <div className="space-y-3 text-sm">
-            {props.availableDraft ? (
-              <div className="border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-950">
-                <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-                  <History aria-hidden="true" className="size-4" />
-                  <span>
-                    {t('write.section.draft.versionLine', {
-                      time: formatDateTime(
-                        props.availableDraft.updatedAt ??
-                          props.availableDraft.createdAt,
-                      ),
-                    })}
-                  </span>
-                </div>
-                <p className="mt-2 line-clamp-2 text-neutral-800 dark:text-neutral-200">
-                  {props.availableDraft.headRevision.title ||
-                    t('write.section.draft.untitled')}
-                </p>
-                <Button
-                  className="mt-3 w-full"
-                  onClick={() => props.onApplyDraft(props.availableDraft!)}
-                  type="button"
-                  variant="subtle"
-                >
-                  {t('write.section.draft.applyDraft')}
-                </Button>
-              </div>
-            ) : (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t('write.section.draft.empty')}
-              </p>
-            )}
-
-            <Button
-              className="w-full"
-              disabled={props.draftMutationPending}
-              onClick={props.onSaveDraft}
-              type="button"
-              variant="subtle"
-            >
-              {props.draftMutationPending ? (
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                <Clock aria-hidden="true" className="size-4" />
-              )}
-              {t(
-                props.published
-                  ? 'write.section.draft.save'
-                  : 'write.section.draft.saveUnpublished',
-              )}
-            </Button>
-            {props.draftMutationData ? (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t('write.section.draft.lastSaved', {
-                  time: formatDateTime(props.draftMutationData.updatedAt),
-                })}
-              </p>
-            ) : null}
-          </div>
-        </PanelBlock>
-
-        <PanelBlock title={t('write.section.path.title')}>
-          <TextInput
-            controlClassName="h-9 font-mono focus:border-neutral-400"
-            label="Slug"
-            onChange={(value) => props.updateField('slug', value)}
-            required
-            value={props.state.slug}
-          />
-          <Button
-            className="w-full"
-            disabled={props.writerGeneratePending}
-            onClick={props.onGenerateTitleOrSlug}
-            type="button"
-            variant="subtle"
-          >
-            {props.writerGeneratePending ? (
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-            ) : (
-              <WandSparkles aria-hidden="true" className="size-4" />
-            )}
-            {props.state.title.trim()
-              ? t('write.slugGenerate.haveTitle')
-              : t('write.slugGenerate.noTitle')}
-          </Button>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {props.publicPath}
-          </p>
-        </PanelBlock>
-
-        {props.postFields}
-        <MediaAndMetaFields
-          draftId={props.draftId}
-          refId={props.refId}
-          state={props.state}
-          updateField={props.updateField}
-        />
-      </Scroll>
-    </AsidePanel>
-  )
-}
-
-interface PublishedWriteContent {
-  content?: string
-  text: string
-  title: string
-  updatedAt: string
 }
 
 function buildStandaloneDraftTree(drafts: DraftModel[]): VersionTreeNode[] {
@@ -2047,121 +1734,6 @@ function buildStandaloneDraftTree(drafts: DraftModel[]): VersionTreeNode[] {
   return [...nodes.values()]
 }
 
-function WriteHeaderIconButton(props: {
-  badge?: number
-  children: ReactNode
-  disabled?: boolean
-  onClick?: () => void
-  title: string
-  type: 'button' | 'submit'
-  variant?: 'default' | 'primary' | 'active'
-}) {
-  const variant = props.variant ?? 'default'
-  return (
-    <button
-      aria-label={props.title}
-      aria-pressed={variant === 'active' ? true : undefined}
-      className={cn(
-        'focus-visible:outline-hidden relative inline-flex size-9 items-center justify-center rounded-sm transition-colors focus-visible:ring-[3px] focus-visible:ring-accent/15 disabled:pointer-events-none disabled:opacity-40',
-        variant === 'primary' && 'bg-accent text-white hover:bg-accent-hover',
-        variant === 'active' &&
-          'bg-accent-soft text-accent ring-1 ring-inset ring-accent/25 hover:bg-accent-soft/80',
-        variant === 'default' &&
-          'bg-surface-inset text-fg-muted hover:bg-black/[0.06] hover:text-fg dark:hover:bg-white/[0.08]',
-      )}
-      disabled={props.disabled}
-      onClick={props.onClick}
-      title={props.title}
-      type={props.type}
-    >
-      {props.children}
-      {props.badge && props.badge > 0 ? (
-        <span
-          aria-hidden="true"
-          className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-semibold leading-none text-white ring-2 ring-background"
-        >
-          {props.badge > 99 ? '99+' : props.badge}
-        </span>
-      ) : null}
-    </button>
-  )
-}
-
-type MetaStatus = 'new' | 'dirty' | 'conflict' | 'saved' | 'published'
-
-function computeMetaStatus(input: {
-  hasConflict: boolean
-  isDirty: boolean
-  isEditing: boolean
-  isPublished: boolean
-  isPendingDraftSave: boolean
-  latestDraft?: DraftModel
-  publishedUpdatedAt?: string
-}): { status: MetaStatus; text: string } {
-  if (input.hasConflict) {
-    return {
-      status: 'conflict',
-      text: translate('write.metaStatus.conflict'),
-    }
-  }
-  if (input.isPendingDraftSave) {
-    return {
-      status: 'dirty',
-      text: translate(
-        input.isPublished
-          ? 'write.metaStatus.publishedSavingDraft'
-          : input.isEditing
-            ? 'write.metaStatus.offlineSavingDraft'
-            : 'write.metaStatus.dirtySaving',
-      ),
-    }
-  }
-  if (input.isDirty) {
-    return {
-      status: 'dirty',
-      text: translate(
-        input.isPublished
-          ? 'write.metaStatus.publishedDirty'
-          : input.isEditing
-            ? 'write.metaStatus.offlineDirty'
-            : 'write.metaStatus.dirty',
-      ),
-    }
-  }
-  if (input.latestDraft) {
-    const savedAt =
-      input.latestDraft.updatedAt ?? input.latestDraft.createdAt ?? ''
-    const suffix = savedAt
-      ? translate('write.metaStatus.savedAt', {
-          time: formatRelativeTime(savedAt),
-        })
-      : ''
-    return {
-      status: 'saved',
-      text: translate(
-        input.isPublished
-          ? 'write.metaStatus.publishedWithDraft'
-          : input.isEditing
-            ? 'write.metaStatus.offlineWithDraft'
-            : 'write.metaStatus.draft',
-        { suffix },
-      ),
-    }
-  }
-  if (input.isEditing && input.isPublished && input.publishedUpdatedAt) {
-    return {
-      status: 'published',
-      text: translate('write.metaStatus.published', {
-        time: formatRelativeTime(input.publishedUpdatedAt),
-      }),
-    }
-  }
-  if (input.isEditing && !input.isPublished) {
-    return { status: 'new', text: translate('write.metaStatus.offline') }
-  }
-  return { status: 'new', text: translate('write.metaStatus.new') }
-}
-
 function formatRelativeTime(value: string | null | undefined) {
   if (value == null || value === '') return '-'
   const ts = Date.parse(value)
@@ -2178,394 +1750,6 @@ function formatRelativeTime(value: string | null | undefined) {
   const day = Math.round(hr / 24)
   if (day < 7) return translate('write.relativeTime.daysAgo', { count: day })
   return formatDateTime(value)
-}
-
-function EditorMetaStrip(props: {
-  aiButtonPending: boolean
-  aiButtonVisible: boolean
-  branchCount: number
-  onAiGenerate: () => void
-  onOpenVersionTree: () => void
-  status: MetaStatus
-  statusText: string
-}) {
-  const { t } = useI18n()
-  const dotClass =
-    props.status === 'conflict'
-      ? 'bg-red-500'
-      : props.status === 'dirty'
-        ? 'bg-amber-500'
-        : props.status === 'saved' || props.status === 'published'
-          ? 'bg-emerald-500'
-          : 'bg-neutral-300 dark:bg-neutral-600'
-  return (
-    <div className="group mb-3 flex min-h-7 items-center justify-between opacity-60 transition-opacity duration-200 hover:opacity-100">
-      <div className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-neutral-500 dark:text-neutral-400">
-        <span
-          aria-hidden="true"
-          className={cn(
-            'inline-block size-1.5 shrink-0 rounded-full',
-            dotClass,
-          )}
-        />
-        <span className="min-w-0 truncate">{props.statusText}</span>
-        {props.branchCount > 0 ? (
-          <button
-            aria-label={t('write.versionTree.triggerWithCount', {
-              count: props.branchCount,
-            })}
-            className="focus-visible:outline-hidden inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap border-l border-neutral-200 pl-2 text-neutral-500 transition-colors hover:text-neutral-800 focus-visible:ring-1 focus-visible:ring-neutral-400 dark:border-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100"
-            onClick={props.onOpenVersionTree}
-            title={t('write.versionTree.triggerWithCount', {
-              count: props.branchCount,
-            })}
-            type="button"
-          >
-            <GitBranch aria-hidden="true" className="size-3.5" />
-            <span>
-              {t('write.versionTree.branchCount', {
-                count: props.branchCount,
-              })}
-            </span>
-          </button>
-        ) : null}
-      </div>
-      <div className="flex shrink-0 items-center gap-0.5">
-        {props.aiButtonVisible ? (
-          <button
-            aria-label={t('write.pill.aiGenerate')}
-            className="focus-visible:outline-hidden inline-flex size-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:ring-1 focus-visible:ring-neutral-400 disabled:pointer-events-none disabled:opacity-50 dark:text-neutral-500 dark:hover:bg-neutral-900 dark:hover:text-neutral-200"
-            disabled={props.aiButtonPending}
-            onClick={props.onAiGenerate}
-            title={t('write.pill.aiGenerate')}
-            type="button"
-          >
-            {props.aiButtonPending ? (
-              <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
-            ) : (
-              <WandSparkles aria-hidden="true" className="size-3.5" />
-            )}
-          </button>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
-function EditorTitleArea(props: {
-  autoFocus: boolean
-  displayPath: string
-  onSlugChange: (value: string) => void
-  onTitleChange: (value: string) => void
-  placeholder: string
-  slug: string
-  slugPlaceholder: string
-  slugPrefix: string
-  title: string
-}) {
-  return (
-    <div className="group">
-      <input
-        autoFocus={props.autoFocus}
-        className="outline-hidden w-full border-0 bg-transparent px-0 py-0 text-3xl font-semibold tracking-tight text-neutral-950 placeholder:font-medium placeholder:text-neutral-300 dark:text-neutral-50 dark:placeholder:text-neutral-700"
-        onChange={(event) => props.onTitleChange(event.target.value)}
-        placeholder={props.placeholder}
-        required
-        value={props.title}
-      />
-      <SlugPill
-        displayPath={props.displayPath}
-        onSlugChange={props.onSlugChange}
-        slug={props.slug}
-        slugPlaceholder={props.slugPlaceholder}
-        slugPrefix={props.slugPrefix}
-      />
-    </div>
-  )
-}
-
-function SlugPill(props: {
-  displayPath: string
-  onSlugChange: (value: string) => void
-  slug: string
-  slugPlaceholder: string
-  slugPrefix: string
-}) {
-  const { t } = useI18n()
-  const [open, setOpen] = useState(false)
-  const hasSlug = Boolean(props.slug.trim())
-  const triggerLabel = hasSlug
-    ? props.displayPath
-    : t('write.editor.titleArea.addSlug')
-
-  return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <Popover.Trigger
-        aria-label={
-          hasSlug
-            ? t('write.editor.titleArea.editSlugAria')
-            : t('write.editor.titleArea.addSlugAria')
-        }
-        className={cn(
-          '-ml-1 mt-1 inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-mono text-xs text-fg-muted transition-opacity duration-150 hover:bg-surface-inset focus-visible:ring-[3px] focus-visible:ring-accent/15',
-        )}
-        type="button"
-      >
-        <span className="truncate">{triggerLabel}</span>
-        <Pencil aria-hidden="true" className="size-3 shrink-0" />
-      </Popover.Trigger>
-      <Popover.Content className="p-3" width="md">
-        <div className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
-          Slug
-        </div>
-        <div className="mt-2 flex items-center gap-1 rounded-sm border border-border bg-surface-inset px-2 py-1.5 font-mono text-xs">
-          {props.slugPrefix ? (
-            <span className="select-none text-fg-subtle">
-              {props.slugPrefix}
-            </span>
-          ) : null}
-          <input
-            autoFocus
-            className="outline-hidden min-w-0 flex-1 bg-transparent text-fg placeholder:text-fg-subtle"
-            onChange={(event) => props.onSlugChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                setOpen(false)
-              }
-            }}
-            placeholder={props.slugPlaceholder}
-            value={props.slug}
-          />
-        </div>
-      </Popover.Content>
-    </Popover>
-  )
-}
-
-function PostFields(props: {
-  authorCandidates: ComponentProps<typeof AuthorsPicker>['candidates']
-  categories: CategoryEntity[]
-  siteDefaultLang: string
-  state: WriteFormState
-  tags: Array<{ count: number; name: string }>
-  updateField: <TKey extends keyof WriteFormState>(
-    key: TKey,
-    value: WriteFormState[TKey],
-  ) => void
-}) {
-  const { t } = useI18n()
-  const selectedTags = splitCommaList(props.state.tags)
-  const toggleTag = (tag: string) => {
-    props.updateField('tags', toggleListValue(selectedTags, tag).join(', '))
-  }
-
-  return (
-    <>
-      <PanelBlock
-        description={t('write.authors.description')}
-        icon={Users}
-        title={t('write.authors.title')}
-      >
-        <AuthorsPicker
-          candidates={props.authorCandidates}
-          onChange={(authors) => props.updateField('authors', authors)}
-          value={props.state.authors}
-        />
-        <SourceLangField
-          onChange={(value) => props.updateField('sourceLang', value)}
-          siteDefault={props.siteDefaultLang}
-          value={props.state.sourceLang}
-        />
-      </PanelBlock>
-
-      <PanelBlock title={t('write.postFields.section.category')}>
-        <Field label={t('write.postFields.category')} required>
-          <SelectField
-            aria-label={t('write.postFields.category')}
-            onValueChange={(categoryId) =>
-              props.updateField('categoryId', categoryId)
-            }
-            options={props.categories.map((category) => ({
-              label: category.name,
-              value: category.id,
-            }))}
-            value={props.state.categoryId}
-          />
-        </Field>
-      </PanelBlock>
-
-      <PanelBlock title={t('write.postFields.section.meta')}>
-        <TextInput
-          controlClassName="h-9 focus:border-neutral-400"
-          list="write-post-tags"
-          label={t('write.postFields.allTags')}
-          onChange={(value) => props.updateField('tags', value)}
-          placeholder={t('write.postFields.allTagsPlaceholder')}
-          value={props.state.tags}
-        />
-        <datalist id="write-post-tags">
-          {props.tags.map((tag) => (
-            <option key={tag.name} label={`${tag.name} (${tag.count})`}>
-              {tag.name}
-            </option>
-          ))}
-        </datalist>
-        {props.tags.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {props.tags.slice(0, 24).map((tag) => {
-              const selected = selectedTags.includes(tag.name)
-
-              return (
-                <button
-                  className={cn(
-                    'rounded border px-2 py-1 text-xs transition-colors',
-                    selected
-                      ? 'border-neutral-950 bg-neutral-950 text-white dark:border-neutral-50 dark:bg-neutral-50 dark:text-neutral-950'
-                      : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-900',
-                  )}
-                  key={tag.name}
-                  onClick={() => toggleTag(tag.name)}
-                  type="button"
-                >
-                  {tag.name}
-                  <span className="text-current/60 ml-1">{tag.count}</span>
-                </button>
-              )
-            })}
-          </div>
-        ) : null}
-        <TextArea
-          controlClassName="min-h-24 focus:border-neutral-400"
-          label={t('write.postFields.summary')}
-          onChange={(value) => props.updateField('summary', value)}
-          value={props.state.summary}
-        />
-        <FormSwitch
-          checked={props.state.pin}
-          label={t('write.postFields.pin')}
-          onCheckedChange={(checked) => props.updateField('pin', checked)}
-        />
-        {props.state.pin ? (
-          <TextInput
-            controlClassName="h-9 focus:border-neutral-400"
-            inputMode="numeric"
-            label={t('write.postFields.pinOrder')}
-            onChange={(value) => props.updateField('pinOrder', value)}
-            value={props.state.pinOrder}
-          />
-        ) : null}
-      </PanelBlock>
-
-      <PanelBlock
-        description={t('write.seo.sectionDescription')}
-        icon={Search}
-        title={t('write.seo.sectionTitle')}
-      >
-        <SeoFields
-          onChange={(key, value) => props.updateField(key, value)}
-          titlePlaceholder={props.state.title}
-          value={props.state}
-        />
-      </PanelBlock>
-    </>
-  )
-}
-
-function MediaAndMetaFields(props: {
-  draftId?: string
-  refId?: string
-  state: WriteFormState
-  updateField: <TKey extends keyof WriteFormState>(
-    key: TKey,
-    value: WriteFormState[TKey],
-  ) => void
-}) {
-  const { t } = useI18n()
-  const images = buildWriteImages(props.state)
-  const cover = props.state.image
-
-  return (
-    <>
-      <PanelBlock
-        description={t('write.section.image.description')}
-        icon={ImageIcon}
-        title={t('write.section.image.title')}
-      >
-        <TextInput
-          controlClassName="h-9 focus:border-neutral-400"
-          label={t('write.section.image.coverLabel')}
-          list="page-cover-image-options"
-          onChange={(value) => props.updateField('image', value)}
-          placeholder={t('write.section.image.coverPlaceholder')}
-          value={cover}
-        />
-        {images.length > 0 ? (
-          <datalist id="page-cover-image-options">
-            {images.map((image) => (
-              <option key={image.src} value={image.src} />
-            ))}
-          </datalist>
-        ) : null}
-        {cover ? (
-          <div className="overflow-hidden border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/60">
-            <img
-              alt={t('write.section.image.coverAlt')}
-              className="max-h-48 w-full object-contain"
-              src={cover}
-            />
-          </div>
-        ) : null}
-        <CoverGenerationEntry
-          currentCover={cover}
-          draftId={props.draftId}
-          onSelectCover={(url) => props.updateField('image', url)}
-          refId={props.refId}
-          summary={props.state.summary}
-          text={props.state.text}
-          title={props.state.title}
-        />
-        <TtsGenerationEntry refId={props.refId} />
-        {images.length > 0 ? (
-          <div className="space-y-2">
-            <div className="text-xs text-neutral-500 dark:text-neutral-400">
-              {t('write.section.image.imageCount', { count: images.length })}
-            </div>
-            <div className="grid gap-1.5">
-              {images.slice(0, 6).map((image) => (
-                <div
-                  className="truncate border border-neutral-200 bg-neutral-50 px-2 py-1.5 text-xs text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-300"
-                  key={image.src}
-                  title={image.src}
-                >
-                  {image.src}
-                </div>
-              ))}
-              {images.length > 6 ? (
-                <div className="text-xs text-neutral-400 dark:text-neutral-500">
-                  {t('write.section.image.moreCount', {
-                    count: images.length - 6,
-                  })}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {t('write.section.image.candidateHint')}
-          </p>
-        )}
-      </PanelBlock>
-
-      <PanelBlock icon={Braces} title={t('write.section.image.metaTitle')}>
-        <MetaPresetSection
-          meta={props.state.meta}
-          onUpdateMeta={(meta) => props.updateField('meta', meta)}
-          scope="post"
-        />
-      </PanelBlock>
-    </>
-  )
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -2619,80 +1803,10 @@ function getFileExtension(src: string) {
   return pathname.split('.').pop() || ''
 }
 
-function PanelBlock(props: {
-  children: ReactNode
-  description?: string
-  icon?: LucideIcon
-  title: string
-}) {
-  const Icon = props.icon
-
-  return (
-    <section className="border-b border-neutral-200 pb-5 last:border-b-0 dark:border-neutral-800">
-      <div className="mb-3 grid gap-1">
-        <h3 className="inline-flex items-center gap-2 text-xs font-medium uppercase text-neutral-500 dark:text-neutral-400">
-          {Icon ? <Icon aria-hidden="true" className="size-3.5" /> : null}
-          <span>{props.title}</span>
-        </h3>
-        {props.description ? (
-          <p className="text-xs leading-5 text-neutral-500 dark:text-neutral-400">
-            {props.description}
-          </p>
-        ) : null}
-      </div>
-      <div className="space-y-3">{props.children}</div>
-    </section>
-  )
-}
-
-function Field(props: {
-  children: ReactNode
-  label: string
-  required?: boolean
-}) {
-  return (
-    <label className="grid gap-1.5">
-      <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-        {props.label}
-        {props.required ? <span className="ml-0.5 text-red-500">*</span> : null}
-      </span>
-      {props.children}
-    </label>
-  )
-}
-
-function WriteSkeleton() {
-  return (
-    <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="space-y-4">
-        <div className="h-11 animate-pulse rounded bg-neutral-100 dark:bg-neutral-900" />
-        <div className="h-[34rem] animate-pulse rounded bg-neutral-100 dark:bg-neutral-900" />
-      </div>
-      <div className="space-y-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            className="h-28 animate-pulse rounded bg-neutral-100 dark:bg-neutral-900"
-            key={index}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
 type WriteModel = PostModel
 
 const draftRefTypeByKind: Record<WriteKind, DraftRefType> = {
   post: DraftRefType.Post,
-}
-
-function getPublishedContent(model: WriteModel): PublishedWriteContent {
-  return {
-    content: model.content ?? undefined,
-    text: model.text ?? '',
-    title: model.title,
-    updatedAt: model.modifiedAt || model.createdAt,
-  }
 }
 
 function fromModel(_kind: WriteKind, post: WriteModel): WriteFormState {
@@ -2971,9 +2085,9 @@ function projectWriteState(state: WriteFormState): WriteFormState {
 
 function RichWriteSurface(props: {
   agentVisible?: boolean
+  onAgentClose?: () => void
   autoFocus?: boolean
   content: string
-  contentClassName?: string
   kind: WriteKind
   onContentChange: (content: string) => void
   onTextChange: (text: string) => void
@@ -2984,10 +2098,9 @@ function RichWriteSurface(props: {
   ) => Promise<void> | void
   onPinSelection?: () => void
   refId?: string
-  surfaceClassName?: string
   surfaceStyle?: CSSProperties
 }) {
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const editorRef = useRef<RichEditorWithAgentRef | null>(null)
   const dynamicCatalogMessages = useDynamicCatalogSystemMessages()
   const imageGenerationOptionsQuery = useQuery({
@@ -3014,14 +2127,13 @@ function RichWriteSurface(props: {
   }
 
   const editorStyle = {
-    maxWidth: '100%',
     ...props.surfaceStyle,
   } satisfies Record<string, string | number>
   const editorOptions: RichEditorWithAgentProps = {
     apiUrl: API_URL,
     autoFocus: props.autoFocus ?? false,
-    className: cn('min-h-136 bg-background', props.surfaceClassName),
-    contentClassName: cn('min-h-120 px-4 py-3', props.contentClassName),
+    className: editorStyles.editorSurface,
+    contentClassName: editorStyles.editorContent,
     debounceMs: 250,
     editorStyle,
     imageUpload: async (file) => {
@@ -3089,27 +2201,27 @@ function RichWriteSurface(props: {
 
   return (
     <>
-      <Suspense
-        fallback={<RichEditorFallback className={editorOptions.className} />}
-      >
+      <Suspense fallback={<RichEditorFallback />}>
         <RichEditorWithAgent ref={editorRef} {...editorOptions} />
       </Suspense>
-      <ContentLayoutSlot active={Boolean(props.agentVisible)} id="agent">
-        <AgentPanel agent={agent} />
-      </ContentLayoutSlot>
+      <Drawer
+        classNames={{ bodyContent: editorStyles.drawerBody }}
+        onClose={props.onAgentClose}
+        open={Boolean(props.agentVisible)}
+        placement="right"
+        title={writeCopy(locale, 'aiTitle')}
+        width="min(400px, 100vw)"
+      >
+        {props.agentVisible ? <AgentPanel agent={agent} /> : null}
+      </Drawer>
     </>
   )
 }
 
-function RichEditorFallback(props: { className?: string }) {
+function RichEditorFallback() {
   return (
-    <div
-      className={cn(
-        'min-h-136 bg-white px-4 py-3 dark:bg-neutral-950',
-        props.className,
-      )}
-    >
-      <div className="h-32 animate-pulse bg-neutral-100 dark:bg-neutral-900" />
+    <div className={editorStyles.editorFallback}>
+      <Skeleton.Text rows={4} />
     </div>
   )
 }
@@ -3224,12 +2336,6 @@ function splitCommaList(value: string) {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
-}
-
-function toggleListValue(values: string[], value: string) {
-  return values.includes(value)
-    ? values.filter((item) => item !== value)
-    : [...values, value]
 }
 
 function buildPostPublicPath(

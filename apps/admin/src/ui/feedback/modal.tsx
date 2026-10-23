@@ -1,42 +1,157 @@
-import { Dialog } from '@base-ui/react/dialog'
+import {
+  createStaticStyles,
+  ModalBackdrop,
+  ModalClose as LobeModalClose,
+  ModalDescription as LobeModalDescription,
+  ModalPopup,
+  ModalPortal,
+  ModalRoot,
+  ModalTitle as LobeModalTitle,
+} from '@lobehub/ui'
 import type { LucideIcon } from 'lucide-react'
 import { X } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
-import type { CSSProperties, ReactNode } from 'react'
-import { useRef } from 'react'
+import type { ComponentProps, CSSProperties, ReactNode } from 'react'
 
 import { useI18n } from '~/i18n'
 import { PortalLayerScope, useFloatingZ } from '~/ui/feedback/portal-layer'
 import { cn } from '~/utils/cn'
 
-const POPUP_TRANSITION = {
-  duration: 0.22,
-  ease: [0.32, 0.72, 0, 1] as const,
-}
-const FADE_TRANSITION = { duration: 0.18, ease: 'easeOut' as const }
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u466e3f9f: css`
+    outline: none;
+    box-shadow: ${cssVar.boxShadow};
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    display: flex;
+    translate: -50%;
+    translate: 0 -50%;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 12px;
+    background-color: ${cssVar.colorBgContainer};
+  `,
+  u6db1278a: css`
+    display: grid;
+    flex-shrink: 0;
+    grid-template-columns: minmax(0, 1fr) _auto;
+    column-gap: 0.75rem;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding-inline: 1rem;
+  `,
+  u9a9c293b: css`
+    min-height: 4rem;
+    align-content: center;
+    padding-block: 0.625rem;
+  `,
+  u0a40d363: css`
+    height: 3rem;
+    align-items: center;
+  `,
+  uaf1e6cc0: css`
+    display: inline-flex;
+    min-width: 0px;
+    align-self: center;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    font-weight: 600;
+    color: ${cssVar.colorText};
+  `,
+  uc39c8d01: css`
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  `,
+  uf283ea9b: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  u2cb4700a: css`
+    grid-column-start: 2;
+    grid-row-start: 1;
+    display: flex;
+    flex-shrink: 0;
+    align-self: center;
+    align-items: center;
+    gap: 0.25rem;
+  `,
+  u4a825ed2: css`
+    margin-right: calc(0.375rem * -1);
+    display: inline-flex;
+    width: 1.75rem;
+    height: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: ${cssVar.colorTextTertiary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+  u2b1bb3c1: css`
+    grid-column-start: 1;
+    grid-row-start: 2;
+    margin-top: 0.125rem;
+    min-width: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u6da05ed2: css`
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    border-top-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding-inline: 1rem;
+    padding-block: 0.5rem;
+  `,
+  u4d3af606: css`
+    position: fixed;
+    inset: 0px;
+    background-color: color-mix(in srgb, ${cssVar.colorText} 35%, transparent);
+  `,
+}))
 
 export interface ModalProps {
   children: ReactNode
   className?: string
-  initialFocus?: Dialog.Popup.Props['initialFocus']
+  initialFocus?: ComponentProps<typeof ModalPopup>['initialFocus']
   onClose?: () => void
   onExitComplete?: () => void
-  onOpenChange?: Dialog.Root.Props['onOpenChange']
+  onOpenChange?: ComponentProps<typeof ModalRoot>['onOpenChange']
   open: boolean
   popupStyle?: CSSProperties
 }
 
-/**
- * base-ui Dialog 包以 motion 过渡。
- * 外置 AnimatePresence 控 exit；actionsRef.unmount 延 unmount 至 exit 毕。
- */
 export function Modal(props: ModalProps) {
-  const { z, depth } = useFloatingZ('dialog')
-  const actionsRef = useRef<Dialog.Root.Actions | null>(null)
+  const { depth } = useFloatingZ('dialog')
 
   return (
-    <Dialog.Root
-      actionsRef={actionsRef}
+    <ModalRoot
+      onExitComplete={props.onExitComplete}
       onOpenChange={(open, eventDetails) => {
         if (props.onOpenChange) {
           props.onOpenChange(open, eventDetails)
@@ -46,56 +161,23 @@ export function Modal(props: ModalProps) {
       }}
       open={props.open}
     >
-      <AnimatePresence
-        onExitComplete={() => {
-          actionsRef.current?.unmount()
-          props.onExitComplete?.()
-        }}
-      >
-        {props.open ? (
-          <Dialog.Portal keepMounted>
-            <Dialog.Backdrop
-              className="fixed inset-0 bg-black/35"
-              render={
-                <motion.div
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  initial={{ opacity: 0 }}
-                  transition={FADE_TRANSITION}
-                />
-              }
-              style={{ zIndex: z - 1 }}
-            />
-            <Dialog.Popup
-              className={cn(
-                'outline-hidden shadow-lg fixed left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg bg-surface-card',
-                props.className,
-              )}
-              initialFocus={props.initialFocus}
-              render={
-                <motion.div
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  transition={POPUP_TRANSITION}
-                />
-              }
-              style={{ ...props.popupStyle, zIndex: z }}
-            >
-              <PortalLayerScope depth={depth}>
-                {props.children}
-              </PortalLayerScope>
-            </Dialog.Popup>
-          </Dialog.Portal>
-        ) : null}
-      </AnimatePresence>
-    </Dialog.Root>
+      <ModalPortal>
+        <ModalBackdrop />
+        <ModalPopup
+          initialFocus={props.initialFocus}
+          panelClassName={props.className}
+          popupStyle={props.popupStyle}
+        >
+          <PortalLayerScope depth={depth}>{props.children}</PortalLayerScope>
+        </ModalPopup>
+      </ModalPortal>
+    </ModalRoot>
   )
 }
 
-export const ModalTitle = Dialog.Title
-export const ModalDescription = Dialog.Description
-export const ModalClose = Dialog.Close
+export const ModalTitle = LobeModalTitle
+export const ModalDescription = LobeModalDescription
+export const ModalClose = LobeModalClose
 
 export function ModalHeader(props: {
   actions?: ReactNode
@@ -112,30 +194,30 @@ export function ModalHeader(props: {
   return (
     <div
       className={cn(
-        'grid shrink-0 grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b border-border px-4',
-        props.subtitle ? 'min-h-16 content-center py-2.5' : 'h-12 items-center',
+        lobeStyles.u6db1278a,
+        props.subtitle ? lobeStyles.u9a9c293b : lobeStyles.u0a40d363,
         props.className,
       )}
     >
-      <ModalTitle className="inline-flex min-w-0 self-center items-center gap-2 text-base font-semibold text-fg">
-        {Icon ? <Icon aria-hidden="true" className="size-4 shrink-0" /> : null}
-        <span className="truncate">{props.title}</span>
+      <ModalTitle className={lobeStyles.uaf1e6cc0}>
+        {Icon ? (
+          <Icon aria-hidden="true" className={lobeStyles.uc39c8d01} />
+        ) : null}
+        <span className={lobeStyles.uf283ea9b}>{props.title}</span>
       </ModalTitle>
-      <div className="col-start-2 row-start-1 flex shrink-0 self-center items-center gap-1">
+      <div className={lobeStyles.u2cb4700a}>
         {props.actions}
         {showClose ? (
           <ModalClose
             aria-label={t('ui.modal.closeAria')}
-            className="-mr-1.5 inline-flex size-7 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:bg-surface-inset hover:text-fg"
+            className={lobeStyles.u4a825ed2}
           >
-            <X aria-hidden="true" className="size-4" />
+            <X aria-hidden="true" className={lobeStyles.uf7b5fa97} />
           </ModalClose>
         ) : null}
       </div>
       {props.subtitle ? (
-        <p className="col-start-1 row-start-2 mt-0.5 min-w-0 truncate text-xs text-fg-muted">
-          {props.subtitle}
-        </p>
+        <p className={lobeStyles.u2b1bb3c1}>{props.subtitle}</p>
       ) : null}
     </div>
   )
@@ -146,12 +228,7 @@ export function ModalFooter(props: {
   className?: string
 }) {
   return (
-    <div
-      className={cn(
-        'flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-2',
-        props.className,
-      )}
-    >
+    <div className={cn(lobeStyles.u6da05ed2, props.className)}>
       {props.children}
     </div>
   )

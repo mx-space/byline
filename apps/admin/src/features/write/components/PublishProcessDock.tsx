@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
@@ -48,6 +49,328 @@ import { Button } from '~/ui/primitives/button'
 import { cn } from '~/utils/cn'
 
 import { normalizeTaskAiResources } from './publish-ai-choices'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u88cee038: css`
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1090;
+    @media (max-width: 639px) {
+      left: 1rem;
+    }
+  `,
+  ufbf144d6: css`
+    display: flex;
+    height: 2.5rem;
+    max-width: min(24rem, calc(100vw-2rem));
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorBgElevated};
+    padding-inline: 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    box-shadow: ${cssVar.boxShadow};
+    &:hover {
+      background-color: ${cssVar.colorBgContainer};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, ${cssVar.colorPrimary} 20%, transparent);
+    }
+  `,
+  u37af38f0: css`
+    border-color: color-mix(in srgb, ${cssVar.colorError} 40%, transparent);
+  `,
+  u9c0b6bca: css`
+    border-color: color-mix(in srgb, ${cssVar.colorWarning} 40%, transparent);
+  `,
+  uc39c8d01: css`
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  `,
+  u87043da0: css`
+    @keyframes byline-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    animation: byline-spin 1s linear infinite;
+    color: ${cssVar.colorPrimary};
+  `,
+  uab398374: css`
+    color: ${cssVar.colorSuccess};
+  `,
+  ue3f51cc6: css`
+    color: ${cssVar.colorError};
+  `,
+  u1dd48761: css`
+    color: ${cssVar.colorWarning};
+  `,
+  u26f463c1: css`
+    min-width: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  uab0d95e4: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+    font-variant-numeric: tabular-nums;
+  `,
+  uccc0332d: css`
+    border-radius: 999px;
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 0.375rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+    font-variant-numeric: tabular-nums;
+  `,
+  ufe06b4ad: css`
+    max-height: min(72svh, 38rem);
+    overflow: hidden;
+  `,
+  u6b07d529: css`
+    height: 1.5rem;
+    padding-inline: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    text-transform: none;
+    letter-spacing: 0;
+  `,
+  u652c57ab: css`
+    max-height: min(64svh, 34rem);
+    overflow-y: auto;
+    padding: 0px;
+  `,
+  u4de95a9e: css`
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding: 0.75rem;
+    &:last-child {
+      border-bottom-width: 0px;
+      border-style: solid;
+    }
+  `,
+  u7f362f39: css`
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  `,
+  u7e0b7cdf: css`
+    min-width: 0px;
+  `,
+  ua989b332: css`
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+    &:hover {
+      color: ${cssVar.colorPrimary};
+    }
+    &:hover {
+      text-decoration: underline;
+    }
+  `,
+  u299f1ccb: css`
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+  `,
+  ubc7a44c0: css`
+    margin-top: 0.125rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uba2fb302: css`
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.25rem;
+  `,
+  u85decade: css`
+    height: 1.75rem;
+    padding-inline: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorError};
+    &:hover {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorError} 10%,
+        transparent
+      );
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorError};
+    }
+  `,
+  uee129b1d: css`
+    height: 1.75rem;
+    padding-inline: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+  ucc46d0fa: css`
+    width: 1.75rem;
+    height: 1.75rem;
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+  u4e79a06b: css`
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  `,
+  ub9e7a36d: css`
+    height: 0.25rem;
+    flex: 1 1 0%;
+    overflow: hidden;
+    border-radius: 999px;
+    background-color: ${cssVar.colorBorderSecondary};
+  `,
+  ua1b304df: css`
+    height: 100%;
+    border-radius: 999px;
+    background-color: ${cssVar.colorPrimary};
+    transition-property: width;
+    transition-duration: 300ms;
+  `,
+  u7aa79040: css`
+    background-color: ${cssVar.colorError};
+  `,
+  u931bc423: css`
+    background-color: ${cssVar.colorWarning};
+  `,
+  uf5cf4f7d: css`
+    width: 2.25rem;
+    text-align: right;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+    font-variant-numeric: tabular-nums;
+  `,
+  u67dcaedf: css`
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  `,
+  u7af16148: css`
+    margin-top: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.25rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  ub54dff1e: css`
+    margin-top: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    overflow-wrap: break-word;
+    color: ${cssVar.colorError};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorError};
+    }
+  `,
+  ucd74c6f0: css`
+    margin-top: 0.5rem;
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: color-mix(in srgb, ${cssVar.colorWarning} 25%, transparent);
+    background-color: color-mix(
+      in srgb,
+      ${cssVar.colorWarning} 8%,
+      transparent
+    );
+    padding-inline: 0.625rem;
+    padding-block: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.25rem;
+    color: ${cssVar.colorWarning};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorWarning};
+    }
+  `,
+  u7c244cbe: css`
+    margin-left: 0.25rem;
+    font-weight: 500;
+    text-decoration: underline;
+  `,
+  u10d812d3: css`
+    display: flex;
+    height: 2rem;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 8px;
+    padding-inline: 0.625rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u145dbbb5: css`
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u67bab313: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  ub18bd739: css`
+    flex-shrink: 0;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u99909601: css`
+    display: inline-flex;
+    width: 1.5rem;
+    height: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    color: ${cssVar.colorTextTertiary};
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+  `,
+  u783b0d9d: css`
+    width: 0.875rem;
+    height: 0.875rem;
+  `,
+  uc575e3ee: css`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: ${cssVar.colorTextSecondary};
+    font-variant-numeric: tabular-nums;
+  `,
+}))
 
 type PublishProcessPhase =
   | 'cancelled'
@@ -137,43 +460,39 @@ export function PublishProcessDock() {
   const CurrentIcon = getPhaseIcon(phase)
 
   return (
-    <div className="fixed right-4 bottom-4 z-[1090] max-sm:left-4">
+    <div className={lobeStyles.u88cee038}>
       <Popover onOpenChange={setOpen} open={open}>
         <Popover.Trigger
           aria-label={t('write.publishProcess.open')}
           className={cn(
-            'flex h-10 max-w-[min(24rem,calc(100vw-2rem))] items-center gap-2 rounded-lg border border-border bg-surface-overlay px-3 text-sm shadow-lg hover:bg-surface-card focus-visible:ring-[3px] focus-visible:ring-accent/20',
-            phase === 'failed' && 'border-red-500/40',
-            phase === 'partial' && 'border-amber-500/40',
+            lobeStyles.ufbf144d6,
+            phase === 'failed' && lobeStyles.u37af38f0,
+            phase === 'partial' && lobeStyles.u9c0b6bca,
           )}
         >
           <CurrentIcon
             aria-hidden="true"
             className={cn(
-              'size-4 shrink-0',
-              isActiveTask(current) && 'animate-spin text-accent',
-              phase === 'completed' && 'text-emerald-500',
-              phase === 'failed' && 'text-red-500',
-              phase === 'partial' && 'text-amber-500',
+              lobeStyles.uc39c8d01,
+              isActiveTask(current) && lobeStyles.u87043da0,
+              phase === 'completed' && lobeStyles.uab398374,
+              phase === 'failed' && lobeStyles.ue3f51cc6,
+              phase === 'partial' && lobeStyles.u1dd48761,
             )}
           />
-          <span aria-live="polite" className="min-w-0 truncate">
+          <span aria-live="polite" className={lobeStyles.u26f463c1}>
             {t(getPhaseLabelKey(current, phase))}
           </span>
           {isActiveTask(current) ? (
-            <span className="text-xs text-fg-muted tabular-nums">
-              {progress}%
-            </span>
+            <span className={lobeStyles.uab0d95e4}>{progress}%</span>
           ) : null}
           {tasks.length > 1 ? (
-            <span className="rounded-full bg-surface-inset px-1.5 text-xs text-fg-muted tabular-nums">
-              {tasks.length}
-            </span>
+            <span className={lobeStyles.uccc0332d}>{tasks.length}</span>
           ) : null}
         </Popover.Trigger>
         <Popover.Content
           align="end"
-          className="max-h-[min(72svh,38rem)] overflow-hidden"
+          className={lobeStyles.ufe06b4ad}
           side="top"
           sideOffset={8}
           width="lg"
@@ -182,7 +501,7 @@ export function PublishProcessDock() {
             <span>{t('write.publishProcess.title')}</span>
             {finishedIds.length ? (
               <Button
-                className="h-6 px-2 text-xs normal-case tracking-normal"
+                className={lobeStyles.u6b07d529}
                 onClick={dismissAll}
                 variant="ghost"
               >
@@ -190,7 +509,7 @@ export function PublishProcessDock() {
               </Button>
             ) : null}
           </Popover.Header>
-          <Popover.Body className="max-h-[min(64svh,34rem)] overflow-y-auto p-0">
+          <Popover.Body className={lobeStyles.u652c57ab}>
             {tasks.map((task) => (
               <ProcessDetail
                 key={task.id}
@@ -250,27 +569,24 @@ function ProcessDetail(props: { onDismiss: () => void; task: PublishTask }) {
   const title =
     task.payload.snapshot.title || t(`write.kind.${task.payload.refType}`)
   return (
-    <section className="border-b border-border p-3 last:border-b-0">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+    <section className={lobeStyles.u4de95a9e}>
+      <div className={lobeStyles.u7f362f39}>
+        <div className={lobeStyles.u7e0b7cdf}>
           {editPath ? (
-            <Link
-              className="block truncate font-medium hover:text-accent hover:underline"
-              to={editPath}
-            >
+            <Link className={lobeStyles.ua989b332} to={editPath}>
               {title}
             </Link>
           ) : (
-            <span className="block truncate font-medium">{title}</span>
+            <span className={lobeStyles.u299f1ccb}>{title}</span>
           )}
-          <p className="mt-0.5 text-xs text-fg-muted">
+          <p className={lobeStyles.ubc7a44c0}>
             {t(getPhaseLabelKey(task, phase))}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className={lobeStyles.uba2fb302}>
           {active && !task.result?.articleCommitted ? (
             <Button
-              className="h-7 px-2 text-xs text-red-600 hover:bg-red-500/10 dark:text-red-400"
+              className={lobeStyles.u85decade}
               onClick={() => void terminate()}
               variant="ghost"
             >
@@ -280,7 +596,7 @@ function ProcessDetail(props: { onDismiss: () => void; task: PublishTask }) {
             phase === 'cancelled' ||
             phase === 'partial' ? (
             <Button
-              className="h-7 px-2 text-xs"
+              className={lobeStyles.uee129b1d}
               onClick={() => void retry()}
               variant="ghost"
             >
@@ -290,35 +606,33 @@ function ProcessDetail(props: { onDismiss: () => void; task: PublishTask }) {
           {!active ? (
             <Button
               aria-label={t('common.close')}
-              className="size-7"
+              className={lobeStyles.ucc46d0fa}
               iconOnly
               onClick={props.onDismiss}
               variant="ghost"
             >
-              <X aria-hidden="true" className="size-4" />
+              <X aria-hidden="true" className={lobeStyles.uf7b5fa97} />
             </Button>
           ) : null}
         </div>
       </div>
 
-      <div className="mt-2 flex items-center gap-2">
-        <div className="h-1 flex-1 overflow-hidden rounded-full bg-border">
+      <div className={lobeStyles.u4e79a06b}>
+        <div className={lobeStyles.ub9e7a36d}>
           <div
             className={cn(
-              'h-full rounded-full bg-accent transition-[width] duration-300',
-              phase === 'failed' && 'bg-red-500',
-              phase === 'partial' && 'bg-amber-500',
+              lobeStyles.ua1b304df,
+              phase === 'failed' && lobeStyles.u7aa79040,
+              phase === 'partial' && lobeStyles.u931bc423,
             )}
             style={{ width: `${progress}%` }}
           />
         </div>
-        <span className="w-9 text-right text-xs text-fg-muted tabular-nums">
-          {progress}%
-        </span>
+        <span className={lobeStyles.uf5cf4f7d}>{progress}%</span>
       </div>
 
       {task.payload.aiResources.length ? (
-        <ul className="mt-2 flex flex-col gap-px">
+        <ul className={lobeStyles.u67dcaedf}>
           {normalizeTaskAiResources(task.payload.aiResources).map(
             ({ mode, resource }) => (
               <ResourceProgress
@@ -332,24 +646,20 @@ function ProcessDetail(props: { onDismiss: () => void; task: PublishTask }) {
         </ul>
       ) : null}
       {active ? (
-        <p className="mt-2 text-xs leading-5 text-fg-muted">
+        <p className={lobeStyles.u7af16148}>
           {t('write.publishProcess.snapshotNotice')}
         </p>
       ) : null}
-      {task.error ? (
-        <p className="mt-2 text-xs break-words text-red-600 dark:text-red-400">
-          {task.error}
-        </p>
-      ) : null}
+      {task.error ? <p className={lobeStyles.ub54dff1e}>{task.error}</p> : null}
       {task.result?.newerDraftChanges ? (
-        <div className="mt-2 rounded-md border border-amber-500/25 bg-amber-500/8 px-2.5 py-2 text-xs leading-5 text-amber-800 dark:text-amber-300">
+        <div className={lobeStyles.ucd74c6f0}>
           {t(
             phase === 'completed' || phase === 'partial'
               ? 'write.publishProcess.newerDraftRemains'
               : 'write.publishProcess.retryUsesOlderSnapshot',
           )}
           {editPath ? (
-            <Link className="ml-1 font-medium underline" to={editPath}>
+            <Link className={lobeStyles.u7c244cbe} to={editPath}>
               {t('write.publishProcess.openLatestDraft')}
             </Link>
           ) : null}
@@ -381,13 +691,10 @@ function ResourceProgress(props: {
   const progress = task ? Math.round(getProgress(task) ?? 0) : 0
 
   return (
-    <li className="group flex h-8 items-center gap-2 rounded-sm px-2.5 text-xs hover:bg-surface-inset">
-      <CapabilityIcon
-        aria-hidden="true"
-        className="size-4 shrink-0 text-fg-subtle"
-      />
-      <span className="min-w-0 flex-1 truncate">{t(meta.labelKey)}</span>
-      <span className="shrink-0 text-fg-subtle">
+    <li className={`${lobeStyles.u10d812d3} group`}>
+      <CapabilityIcon aria-hidden="true" className={lobeStyles.u145dbbb5} />
+      <span className={lobeStyles.u67bab313}>{t(meta.labelKey)}</span>
+      <span className={lobeStyles.ub18bd739}>
         {t(
           props.mode === 'sync'
             ? 'write.publishAi.modeSync'
@@ -397,16 +704,16 @@ function ResourceProgress(props: {
       {props.taskId ? (
         <Link
           aria-label={t('write.publishProcess.viewTask')}
-          className="inline-flex size-6 items-center justify-center text-fg-subtle hover:text-fg"
+          className={lobeStyles.u99909601}
           to={`/tasks/${encodeURIComponent(props.taskId)}`}
         >
-          <ExternalLink aria-hidden="true" className="size-3.5" />
+          <ExternalLink aria-hidden="true" className={lobeStyles.u783b0d9d} />
         </Link>
       ) : null}
-      <span className="inline-flex items-center gap-1.5 text-fg-muted tabular-nums">
+      <span className={lobeStyles.uc575e3ee}>
         <StatusIcon
           aria-hidden="true"
-          className={cn('size-3.5', statusIconClassName(status))}
+          className={cn(lobeStyles.u783b0d9d, statusIconClassName(status))}
         />
         {task
           ? (getTaskProgressLabel(task) ?? `${progress}%`)

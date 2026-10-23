@@ -1,4 +1,6 @@
+import { Button } from '@lobehub/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { FileQuestion, RefreshCw } from 'lucide-react'
 import { useParams } from 'react-router'
 
 import { getDraftById } from '~/api/drafts'
@@ -6,22 +8,25 @@ import { findInListCache } from '~/api/list-cache'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import type { DraftModel } from '~/models/draft'
 import { adminQueryKeys } from '~/query/keys'
+import { DetailPane, DetailPlaceholder } from '~/ui/page'
 
+import { useDraftCopy } from '../copy'
+import { draftTitle } from '../utils/draft-decision'
+import { describeDraftError } from '../utils/errors'
 import { DraftDetail } from './DraftDetail'
-import { DraftDetailEmpty } from './DraftDetailEmpty'
+import { DraftDetailSkeleton } from './DraftListSkeleton'
 import { useDraftsRouteContext } from './drafts-route-context'
 
 const LIST_PREFIX = adminQueryKeys.drafts.listRoot
 
 export function DraftDetailRoute() {
-  const { id } = useParams<{ id: string }>()
+  const { copy } = useDraftCopy()
+  const { id } = useParams<{ id?: string }>()
   const queryClient = useQueryClient()
   const ctx = useDraftsRouteContext()
-
   const initialDraft = id
     ? findInListCache<DraftModel>(queryClient, LIST_PREFIX, id)
     : undefined
-
   const draftQuery = useQuery({
     enabled: Boolean(id),
     initialData: initialDraft,
@@ -30,9 +35,53 @@ export function DraftDetailRoute() {
     staleTime: initialDraft ? 30_000 : 0,
   })
 
-  useDocumentTitle(draftQuery.data?.headRevision.title)
+  useDocumentTitle(
+    draftQuery.data ? draftTitle(draftQuery.data, copy('untitled')) : undefined,
+  )
 
-  if (!id || !draftQuery.data) return <DraftDetailEmpty />
+  if (!id) return null
+
+  if (draftQuery.isError && !draftQuery.data) {
+    return (
+      <DetailPane
+        backLabel={copy('title')}
+        onBack={ctx.onBack}
+        title={copy('title')}
+      >
+        <DetailPlaceholder
+          action={
+            <Button onClick={() => void draftQuery.refetch()}>
+              {copy('retry')}
+            </Button>
+          }
+          description={describeDraftError(
+            draftQuery.error,
+            copy('detailErrorBody'),
+          )}
+          icon={RefreshCw}
+          title={copy('detailErrorTitle')}
+        />
+      </DetailPane>
+    )
+  }
+
+  if (!draftQuery.data) {
+    if (draftQuery.isPending) return <DraftDetailSkeleton />
+    return (
+      <DetailPane
+        backLabel={copy('title')}
+        onBack={ctx.onBack}
+        title={copy('title')}
+      >
+        <DetailPlaceholder
+          action={<Button onClick={ctx.onBack}>{copy('backToList')}</Button>}
+          description={copy('detailMissingBody')}
+          icon={FileQuestion}
+          title={copy('detailMissingTitle')}
+        />
+      </DetailPane>
+    )
+  }
 
   return (
     <DraftDetail

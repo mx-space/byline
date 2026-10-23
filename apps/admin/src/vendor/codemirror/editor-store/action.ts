@@ -1,5 +1,5 @@
 import type { EditorView } from '@codemirror/view'
-import { toast } from 'sonner'
+import { toast } from '@lobehub/ui'
 
 import { uploadFile } from '~/api/files'
 import { prepareImageFileForUpload } from '~/lib/image-upload-privacy'

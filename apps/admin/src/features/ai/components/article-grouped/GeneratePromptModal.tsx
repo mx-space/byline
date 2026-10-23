@@ -1,41 +1,41 @@
+import { Button, Checkbox, Input, Tag, toast } from '@lobehub/ui'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 
-import { SmallBadge } from '~/features/tasks/components/TaskPrimitives'
-import { useI18n } from '~/i18n'
 import { ModalFooter, ModalHeader } from '~/ui/feedback/modal'
 import { present, useModal } from '~/ui/feedback/modal-imperative'
-import { Button } from '~/ui/primitives/button'
-import { Checkbox } from '~/ui/primitives/checkbox'
-import { TextInput } from '~/ui/primitives/text-field'
 
+import { useAiCopy } from '../../copy'
+import { aiStyles } from '../../shell/styles'
 import { parseLangInput } from '../../utils/ai'
 
 const MAX_LANGS = 8
 
 export interface GeneratePromptModalProps {
-  title: string
-  promptForLang: boolean
-  langLabel: string
-  inlineEmpty?: string
   defaultLangs?: string[]
+  lockedLangs?: string[]
+  promptForLang: boolean
+  replacesUnlocked?: boolean
+  title: string
 }
 
 export interface GeneratePromptResult {
-  langs: string[]
   force: boolean
+  langs: string[]
+  overwriteLocked: boolean
 }
 
 function GeneratePromptModal(props: GeneratePromptModalProps) {
-  const { t } = useI18n()
+  const copy = useAiCopy()
   const modal = useModal<GeneratePromptResult>()
   const [langInput, setLangInput] = useState(
     props.defaultLangs?.join(', ') ?? '',
   )
   const [force, setForce] = useState(false)
-
+  const [overwriteLocked, setOverwriteLocked] = useState(false)
   const langs = parseLangInput(langInput)
   const tooMany = props.promptForLang && langs.length > MAX_LANGS
+  const locked = props.lockedLangs ?? []
 
   const handleSubmit = (event?: FormEvent) => {
     event?.preventDefault()
@@ -43,61 +43,81 @@ function GeneratePromptModal(props: GeneratePromptModalProps) {
     modal.close({
       force,
       langs: props.promptForLang ? langs : [],
+      overwriteLocked: force && overwriteLocked,
     })
   }
 
+  const submitLabel =
+    force && props.replacesUnlocked ? copy('replaceConfirm') : props.title
+
   return (
-    <form className="flex w-full flex-col" onSubmit={handleSubmit}>
+    <form className={aiStyles.stack} onSubmit={handleSubmit}>
       <ModalHeader title={props.title} />
-      <div className="space-y-4 px-5 py-4">
-        {props.promptForLang ? (
-          <div className="grid gap-1.5 text-sm">
-            <TextInput
-              autoFocus
-              label={props.langLabel}
-              onChange={setLangInput}
-              placeholder="zh, en, ja"
-              value={langInput}
-            />
-            <p className="text-xs text-fg-muted">
-              {t('ai.generate.langsHint')}
-            </p>
-            {langs.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-1.5">
-                {langs.map((lang) => (
-                  <SmallBadge key={lang}>{lang}</SmallBadge>
-                ))}
-                <span className="text-xs text-fg-muted">
-                  {t('ai.generate.langsCount', { count: langs.length })}
-                </span>
-              </div>
-            ) : null}
-            {tooMany ? (
-              <span className="text-xs text-red-500">
-                {t('ai.generate.langsTooMany', { max: MAX_LANGS })}
-              </span>
-            ) : null}
+      <div className={aiStyles.stack}>
+        {locked.length ? (
+          <div className={aiStyles.lockedStrip}>
+            <span className={aiStyles.label}>{copy('lockedBefore')}</span>
+            {locked.map((lang) => (
+              <Tag color="gold" key={lang}>
+                {copy('locked')} {lang}
+              </Tag>
+            ))}
           </div>
         ) : (
-          <p className="text-sm text-fg-muted">
-            {props.inlineEmpty ?? props.title}
-          </p>
+          <p className={aiStyles.meta}>{copy('noLocked')}</p>
         )}
-        <div className="grid gap-1">
-          <Checkbox
-            checked={force}
-            label={t('ai.generate.forceLabel')}
-            onCheckedChange={setForce}
-          />
-          <p className="text-xs text-fg-muted">{t('ai.generate.forceHint')}</p>
-        </div>
+        {props.promptForLang ? (
+          <label className={aiStyles.field}>
+            <span className={aiStyles.label}>{copy('langsLabel')}</span>
+            <Input
+              onChange={(event) =>
+                setLangInput(
+                  typeof event === 'string' ? event : event.target.value,
+                )
+              }
+              placeholder="zh-CN, en, ja"
+              value={langInput}
+            />
+            <span className={aiStyles.meta}>{copy('langsHint')}</span>
+            {langs.length ? (
+              <span className={aiStyles.meta}>
+                {copy('langsCount', { count: langs.length })}
+              </span>
+            ) : null}
+            {tooMany ? (
+              <span className={aiStyles.meta}>
+                {copy('langsTooMany', { max: MAX_LANGS })}
+              </span>
+            ) : null}
+          </label>
+        ) : (
+          <p className={aiStyles.meta}>{props.title}</p>
+        )}
+        <Checkbox checked={force} onChange={setForce}>
+          {copy('forceLabel')}
+        </Checkbox>
+        <p className={aiStyles.meta}>
+          {props.replacesUnlocked
+            ? copy('forceHintTranslation')
+            : copy('forceHintOther')}
+        </p>
+        {force && props.replacesUnlocked && locked.length ? (
+          <Checkbox checked={overwriteLocked} onChange={setOverwriteLocked}>
+            {copy('overwriteLocked')}
+          </Checkbox>
+        ) : null}
       </div>
       <ModalFooter>
-        <Button onClick={() => modal.dismiss()} type="button" variant="subtle">
-          {t('common.cancel')}
+        <Button htmlType="button" onClick={() => modal.dismiss()}>
+          {copy('cancel')}
         </Button>
-        <Button disabled={tooMany} type="submit" variant="primary">
-          {props.title}
+        <Button
+          danger={force && props.replacesUnlocked}
+          disabled={tooMany}
+          htmlType="submit"
+          type="primary"
+        >
+          {submitLabel}
         </Button>
       </ModalFooter>
     </form>
@@ -113,4 +133,11 @@ export async function presentGeneratePrompt(
     { modalProps: { popupStyle: { width: 'min(92vw, 28rem)' } } },
   )
   return await handle
+}
+
+export function toastTaskResult(
+  result: { created: boolean },
+  copy: (key: 'taskCreated' | 'taskExists') => string,
+) {
+  toast.success(result.created ? copy('taskCreated') : copy('taskExists'))
 }

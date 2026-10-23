@@ -4,6 +4,7 @@ import './universal/index.css'
 
 import type { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
+import { createStaticStyles } from '@lobehub/ui'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { useEffect, useRef } from 'react'
 
@@ -21,6 +22,22 @@ import { useCodeMirrorConfigureFonts } from './use-auto-fonts'
 import { useCodeMirrorAutoToggleTheme } from './use-auto-theme'
 import { useCodeMirror } from './use-codemirror'
 import { wysiwygExtensions } from './wysiwyg'
+
+const lobeStyles = createStaticStyles(({ css }) => ({
+  ud89972fe: css`
+    position: relative;
+  `,
+  uef3ad19c: css`
+    position: relative;
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+  `,
+  ucda219e0: css`
+    flex: 1 1 0%;
+    overflow: auto;
+  `,
+}))
 
 export interface CodeMirrorEditorProps {
   text: string
@@ -139,13 +156,13 @@ export function CodeMirrorEditor({
 
   return (
     <div
-      className={embedded ? 'relative' : 'relative flex h-full flex-col'}
+      className={embedded ? lobeStyles.ud89972fe : lobeStyles.uef3ad19c}
       onPointerDown={handleContainerPointerDown}
       style={style}
     >
       <div
         className={`${styles.editor} ${className ?? ''} ${
-          embedded ? '' : 'flex-1 overflow-auto'
+          embedded ? '' : lobeStyles.ucda219e0
         }`}
         ref={containerRef}
       />

@@ -1,140 +1,299 @@
-import type { CSSProperties, PropsWithChildren } from 'react'
-import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
-
-import { Drawer } from '~/ui/feedback/drawer'
 import {
-  FOCUS_SCOPES,
-  FocusScope,
-  useScopeArrowNav,
-  useScopeSwitcher,
-} from '~/ui/focus-scope'
-import { ShellNavProvider } from '~/ui/layout/shell-nav-context'
-import { SidebarBody } from '~/ui/layout/sidebar-body'
-import { useSidebarExpandStore } from '~/ui/layout/sidebar-expand-store'
+  Button,
+  createStaticStyles,
+  css,
+  cssVar,
+  cx,
+  Flexbox,
+  Hotkey,
+} from '@lobehub/ui'
 import {
-  SidebarResizeHandle,
-  useSidebarLayout,
-} from '~/ui/layout/sidebar-layout'
-import { cn } from '~/utils/cn'
+  Breadcrumb,
+  ConsoleBrand,
+  ConsoleNav,
+  ConsoleShell,
+  PageLoading,
+  SurfaceLinkProvider,
+  type SurfaceRenderLink,
+} from '@lobehub/ui/dashboard'
+import { useQuery } from '@tanstack/react-query'
+import { Plus, Search } from 'lucide-react'
+import type { PropsWithChildren, ReactNode } from 'react'
+import { useMemo } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
+import type { SidebarNode, SidebarSection } from 'virtual:admin-routes'
+import { sidebarTree } from 'virtual:admin-routes'
 
-import { useI18n } from './i18n'
+import { getAppInfo } from '~/api/system'
+import { failedTasksQuery } from '~/features/dashboard/queries'
+import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
+import { useI18n } from '~/i18n'
+import { useCommandPalette } from '~/ui/command-palette'
+import { filterSidebarNode } from '~/ui/layout/filter-sidebar-node'
 
-export function AdminShell(props: PropsWithChildren) {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { t } = useI18n()
-  const [navOpen, setNavOpen] = useState(false)
-  const sidebar = useSidebarLayout()
-  // Defer enabling grid-template-columns transitions until after the first
-  // paint so a page refresh never animates the sidebar in from a stale value.
-  const [sidebarTransitionsEnabled, setSidebarTransitionsEnabled] =
-    useState(false)
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setSidebarTransitionsEnabled(true))
-    return () => cancelAnimationFrame(id)
-  }, [])
-  // Sidebar HJKL / arrow-key navigation. One binding is enough — the hook
-  // looks up the scope's DOM element at fire time, so whichever sidebar
-  // (desktop aside or mobile Drawer) is currently mounted handles the keys.
-  // Focus = router navigate (mirrors the list-pane "focus = open detail" model);
-  // parent items auto-expand on focus; Z / Space toggle fold on parent items.
-  useScopeArrowNav({
-    itemSelector: '[data-scope-item="nav"]',
-    scopeId: FOCUS_SCOPES.sidebar,
-    onItemFocus: (el) => {
-      const path = el.getAttribute('data-nav-path')
-      if (path) {
-        if (location.pathname !== path) navigate(path)
-        if (el.getAttribute('data-has-children') === 'true') {
-          useSidebarExpandStore.getState().expand(path)
-        }
-      }
-    },
-    extra: {
-      z: (event) => toggleFocusedNavItem(event),
-      Space: (event) => toggleFocusedNavItem(event),
-    },
-  })
+import faviconUrl from '../favicon.png'
+import { ConsoleFooter } from './layouts/console-footer'
+import { toBreadcrumbItems, toConsoleNavigation } from './layouts/console-nav'
 
-  // h/l/←/→ switch the active scope sibling. Mounted once globally; topology
-  // = visible `[data-focus-scope]` in DOM order.
-  useScopeSwitcher()
+const styles = createStaticStyles(({ css }) => ({
+  content: css`
+    display: flex;
+    flex-direction: column;
 
-  useEffect(() => {
-    setNavOpen(false)
-  }, [location.pathname])
+    height: 100%;
+    min-height: 0;
 
-  useEffect(() => {
-    const mql = window.matchMedia('(min-width: 1024px)')
-    const handle = (event: MediaQueryListEvent) => {
-      if (event.matches) {
-        setNavOpen(false)
-      }
+    overflow: hidden;
+  `,
+  loading: css`
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+  `,
+  logo: css`
+    display: block;
+    width: 20px;
+    height: 20px;
+    object-fit: cover;
+  `,
+  navigation: css`
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+
+    min-block-size: 0;
+  `,
+  search: css`
+    min-inline-size: 200px;
+    justify-content: space-between;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  shell: css`
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+
+    .lobe-dashboard-console-shell__main {
+      overflow: hidden;
+      padding: 0;
     }
-    mql.addEventListener('change', handle)
-    return () => mql.removeEventListener('change', handle)
-  }, [])
+  `,
+}))
 
-  const mainStyle: CSSProperties = {
-    '--sidebar-width': sidebar.collapsed ? '0px' : `${sidebar.widthPx}px`,
-  } as CSSProperties
+const WRITE_PATH = '/posts/edit'
+
+function ShellTools() {
+  const { t } = useI18n()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const palette = useCommandPalette()
+  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
+  const writing = location.pathname === WRITE_PATH
 
   return (
-    <ShellNavProvider open={navOpen} setOpen={setNavOpen}>
-      <main
-        className={cn(
-          'grid h-dvh min-h-0 grid-cols-[minmax(0,1fr)] overflow-hidden bg-surface-page text-fg lg:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]',
-          sidebarTransitionsEnabled &&
-            'transition-[grid-template-columns] duration-200 ease-out',
-        )}
-        data-sidebar-collapsed={sidebar.collapsed ? 'true' : 'false'}
-        style={mainStyle}
-      >
-        <aside className="relative hidden h-dvh min-h-0 flex-col overflow-hidden bg-surface-page lg:flex">
-          <FocusScope
-            className="flex min-h-0 flex-1 flex-col"
-            id={FOCUS_SCOPES.sidebar}
+    <Flexbox align="center" gap={8} horizontal>
+      {palette ? (
+        isDesktop ? (
+          <Button
+            className={styles.search}
+            icon={Search}
+            onClick={palette.open}
+            size="small"
+            type="default"
           >
-            <SidebarBody onCollapseSidebar={sidebar.toggle} />
-          </FocusScope>
-          <SidebarResizeHandle />
-        </aside>
-
-        <section className="relative flex h-dvh min-h-0 min-w-0 flex-col bg-background pb-[env(safe-area-inset-bottom)]">
-          <div className="relative min-h-0 flex-1 overflow-hidden">
-            {props.children}
-          </div>
-        </section>
-
-        <Drawer
-          onClose={() => setNavOpen(false)}
-          open={navOpen}
-          showHeader={false}
-          side="left"
-          title={t('common.primaryNavigation')}
-          widthClassName="w-[min(85vw,18rem)]"
+            <Flexbox
+              align="center"
+              flex={1}
+              gap={8}
+              horizontal
+              justify="space-between"
+            >
+              <span>{t('common.search')}</span>
+              <Hotkey keys="mod+k" />
+            </Flexbox>
+          </Button>
+        ) : (
+          <Button
+            aria-label={t('common.search')}
+            icon={Search}
+            onClick={palette.open}
+            size="small"
+            type="default"
+          />
+        )
+      ) : null}
+      {writing ? null : (
+        <Button
+          icon={Plus}
+          onClick={() => navigate(WRITE_PATH)}
+          size="small"
+          type="primary"
         >
-          <FocusScope
-            className="flex min-h-0 flex-1 flex-col"
-            id={FOCUS_SCOPES.sidebar}
-          >
-            <SidebarBody />
-          </FocusScope>
-        </Drawer>
-      </main>
-    </ShellNavProvider>
+          {t('routes.writePost.title')}
+        </Button>
+      )}
+    </Flexbox>
   )
 }
 
-function toggleFocusedNavItem(event: KeyboardEvent) {
-  const active = document.activeElement
-  if (!(active instanceof HTMLElement)) return
-  const item = active.closest<HTMLElement>('[data-nav-path]')
-  if (!item) return
-  if (item.getAttribute('data-has-children') !== 'true') return
-  const path = item.getAttribute('data-nav-path')
-  if (!path) return
-  event.preventDefault()
-  useSidebarExpandStore.getState().toggle(path)
+function navSectionDividerClass(childIndexes: number[]) {
+  if (childIndexes.length === 0) return undefined
+
+  return css`
+    ${childIndexes
+      .map(
+        (index) => `
+          & nav > :nth-child(${index})[data-level='0'][data-icon='true'] {
+            margin-block-start: 6px;
+            padding-block-start: 8px;
+            border-block-start: 1px solid ${cssVar.colorBorderSecondary};
+          }
+        `,
+      )
+      .join('')}
+  `
+}
+
+const SHELL_STORAGE_KEY = 'byline-console-shell'
+
+export function ShellBrand() {
+  return (
+    <ConsoleBrand
+      href="/dashboard"
+      label="Byline"
+      logo={<img alt="" className={styles.logo} src={faviconUrl} />}
+      renderLink={renderRouterLink}
+      title="Byline"
+    />
+  )
+}
+
+export function LayoutLoading(props: { label: string }) {
+  return (
+    <ConsoleShell
+      loading
+      brand={<ShellBrand />}
+      className={styles.loading}
+      storageKey={SHELL_STORAGE_KEY}
+      loadingContent={
+        <div className={styles.content}>
+          <PageLoading label={props.label} />
+        </div>
+      }
+    />
+  )
+}
+
+const renderSurfaceLink: SurfaceRenderLink = ({ children, href, ...rest }) => (
+  <Link to={href} {...rest}>
+    {children}
+  </Link>
+)
+
+function renderRouterLink({
+  children,
+  className,
+  href,
+  onClick,
+  ...rest
+}: {
+  children: ReactNode
+  className: string
+  href: string
+  onClick?: () => void
+}) {
+  return (
+    <Link className={className} onClick={onClick} to={href} {...rest}>
+      {children}
+    </Link>
+  )
+}
+
+function visibleSections(
+  sections: SidebarSection[],
+  includeDebug: boolean,
+): SidebarSection[] {
+  if (includeDebug) return sections
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.flatMap((node) => {
+        const visible: SidebarNode | null = filterSidebarNode(node)
+        return visible ? [visible] : []
+      }),
+    }))
+    .filter((section) => section.items.length > 0)
+}
+
+export function AdminShell(props: PropsWithChildren) {
+  const location = useLocation()
+  const { t } = useI18n()
+  const appInfoQuery = useQuery({
+    queryFn: getAppInfo,
+    queryKey: ['shell', 'app-info'],
+    retry: false,
+  })
+  const includeDebug =
+    window.injectData.PAGE_PROXY || appInfoQuery.data?.version === 'dev'
+  const sections = useMemo(
+    () => visibleSections(sidebarTree, includeDebug),
+    [includeDebug],
+  )
+  const failedTasks = useQuery(failedTasksQuery)
+  const failedCount = failedTasks.data?.total ?? 0
+  const navigation = useMemo(
+    () =>
+      toConsoleNavigation(
+        sections,
+        t,
+        failedCount ? { '/tasks': failedCount } : {},
+      ),
+    [failedCount, sections, t],
+  )
+  const breadcrumbItems = useMemo(
+    () => toBreadcrumbItems(sections, location.pathname, t),
+    [location.pathname, sections, t],
+  )
+  const sectionDividerClass = navSectionDividerClass(
+    navigation.dividerBefore.flatMap((key) => {
+      const index = navigation.groups.findIndex((group) => group.key === key)
+      if (index < 0) return []
+      return [index + 1 + (navigation.items.length > 0 ? 1 : 0)]
+    }),
+  )
+
+  return (
+    <ConsoleShell
+      className={styles.shell}
+      closeNavigationLabel={t('common.closeNavigation')}
+      collapseLabel={t('ui.layout.collapseSidebar')}
+      expandLabel={t('ui.layout.expandSidebar')}
+      footer={<ConsoleFooter />}
+      openNavigationLabel={t('common.openNavigation')}
+      skipToContentLabel={t('common.skipToContent')}
+      storageKey={SHELL_STORAGE_KEY}
+      tools={<ShellTools />}
+      brand={<ShellBrand />}
+      breadcrumb={
+        <Breadcrumb items={breadcrumbItems} renderLink={renderRouterLink} />
+      }
+      navigation={
+        <div className={cx(styles.navigation, sectionDividerClass)}>
+          <ConsoleNav
+            defaultExpanded="all"
+            groups={navigation.groups}
+            items={navigation.items}
+            label={t('common.primaryNavigation')}
+            pathname={location.pathname}
+            renderLink={renderRouterLink}
+            storageKey="byline-console-nav"
+          />
+        </div>
+      }
+    >
+      <SurfaceLinkProvider renderLink={renderSurfaceLink}>
+        <div className={styles.content}>{props.children}</div>
+      </SurfaceLinkProvider>
+    </ConsoleShell>
+  )
 }

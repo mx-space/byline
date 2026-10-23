@@ -3,9 +3,8 @@ import type { Root } from 'react-dom/client'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { I18nProvider } from '~/i18n'
-
 import { DraftRecoveryReview } from './DraftRecoveryReview'
+import { withUi } from './test-providers'
 
 vi.mock('~/features/drafts/components/MarkdownDraftDiffPanel', () => ({
   MarkdownDraftDiffPanel: (props: {
@@ -43,9 +42,7 @@ describe('DraftRecoveryReview', () => {
 
     act(() => {
       root.render(
-        createElement(
-          I18nProvider,
-          null,
+        withUi(
           createElement(DraftRecoveryReview, {
             data: {
               bodyChanged: true,
@@ -96,9 +93,7 @@ describe('DraftRecoveryReview', () => {
   it('shows separate ancestor-to-online and ancestor-to-draft diffs', () => {
     act(() => {
       root.render(
-        createElement(
-          I18nProvider,
-          null,
+        withUi(
           createElement(DraftRecoveryReview, {
             data: {
               ancestorText: 'shared ancestor',

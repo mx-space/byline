@@ -1,91 +1,150 @@
+import {
+  ActionIcon,
+  Alert,
+  Button,
+  Flexbox,
+  Modal,
+  Tag,
+  Text,
+  toast,
+} from '@lobehub/ui'
+import { Section } from '@lobehub/ui/dashboard'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Mail, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { Trash2 } from 'lucide-react'
+import { useState } from 'react'
 
+import type { UserInvite } from '~/api/users'
 import { getInvites, revokeInvite } from '~/api/users'
-import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { confirmDialog } from '~/ui/feedback/confirm'
 
-import { getUserErrorMessage } from '../utils/users'
+import { useUsersCopy } from '../copy'
+import {
+  EMPTY_VALUE,
+  formatAdminTime,
+  getUserErrorMessage,
+  showValue,
+} from '../utils/users'
 
 export function PendingInvites() {
-  const { t } = useI18n()
+  const copy = useUsersCopy()
   const queryClient = useQueryClient()
+  const [target, setTarget] = useState<UserInvite | null>(null)
+  const [error, setError] = useState('')
   const invitesQuery = useQuery({
     queryFn: getInvites,
     queryKey: adminQueryKeys.users.invites(),
   })
-  const revokeMutation = useMutation({
+  const revoke = useMutation({
     mutationFn: revokeInvite,
-    onError: (error: unknown) =>
-      toast.error(getUserErrorMessage(error, t('users.invite.revokeFailed'))),
+    onError: (revokeError: unknown) => {
+      setError(getUserErrorMessage(revokeError, copy('revokeFailed')))
+    },
     onSuccess: async () => {
-      toast.success(t('users.invite.revoked'))
+      setTarget(null)
+      setError('')
+      toast.success(copy('revoked'))
       await queryClient.invalidateQueries({
         queryKey: adminQueryKeys.users.invites(),
       })
     },
   })
 
+  if (invitesQuery.isLoading) return null
+
+  if (invitesQuery.isError) {
+    return (
+      <Alert
+        action={
+          <Button onClick={() => void invitesQuery.refetch()}>
+            {copy('retry')}
+          </Button>
+        }
+        title={copy('invitesError')}
+        type="error"
+      />
+    )
+  }
+
   const invites = invitesQuery.data ?? []
   if (invites.length === 0) return null
 
   return (
-    <section className="border-b border-border bg-surface-inset/60">
-      <h3 className="px-4 pb-1 pt-3 text-xs font-medium uppercase text-fg-subtle">
-        {t('users.invite.pendingTitle', { count: invites.length })}
-      </h3>
+    <Section
+      extra={invites.length}
+      gap={8}
+      title={copy('pendingTitle')}
+      variant="card"
+    >
       {invites.map((invite) => {
         const expired = Date.parse(invite.expiresAt) < Date.now()
+        const time = formatAdminTime(invite.expiresAt)
         return (
-          <div className="flex items-center gap-3 px-4 py-2" key={invite.id}>
-            <Mail
-              aria-hidden="true"
-              className="size-4 shrink-0 text-fg-subtle"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-center gap-1.5">
-                <span className="truncate text-sm text-fg">
-                  {invite.displayName || invite.email}
-                </span>
-                {invite.userId ? (
-                  <span className="shrink-0 rounded-full bg-surface-card px-1.5 py-0.5 text-xs text-fg-muted">
-                    {t('users.invite.linkedAuthor')}
-                  </span>
-                ) : null}
-              </div>
-              <div className="truncate text-xs text-fg-muted">
-                {expired
-                  ? t('users.invite.expired')
-                  : t('users.invite.expiresAt', {
-                      time: new Date(invite.expiresAt).toLocaleString(),
-                    })}
-                {invite.displayName ? ` · ${invite.email}` : ''}
-              </div>
-            </div>
-            <button
-              aria-label={t('users.invite.revoke')}
-              className="inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-400"
-              disabled={revokeMutation.isPending}
-              onClick={async () => {
-                const ok = await confirmDialog({
-                  confirmText: t('users.invite.revoke'),
-                  destructive: true,
-                  title: t('users.invite.revokeConfirm', {
-                    email: invite.email,
-                  }),
-                })
-                if (ok) revokeMutation.mutate(invite.id)
+          <Flexbox
+            align="center"
+            gap={8}
+            horizontal
+            justify="space-between"
+            key={invite.id}
+          >
+            <Flexbox allowShrink flex={1} gap={4}>
+              <Flexbox align="center" gap={8} horizontal>
+                <Text ellipsis={{ tooltipWhenOverflow: true }}>
+                  {showValue(invite.displayName || invite.email)}
+                </Text>
+                {invite.userId ? <Tag>{copy('linked')}</Tag> : null}
+                {expired ? <Tag color="warning">{copy('expired')}</Tag> : null}
+              </Flexbox>
+              <Text ellipsis={{ tooltipWhenOverflow: true }} type="secondary">
+                {invite.displayName ? showValue(invite.email) : null}
+                {invite.displayName && !expired && time !== EMPTY_VALUE
+                  ? ' · '
+                  : null}
+                {!expired && time !== EMPTY_VALUE
+                  ? copy('expiresAt', { time })
+                  : null}
+              </Text>
+            </Flexbox>
+            <ActionIcon
+              aria-label={copy('revoke')}
+              danger
+              disabled={revoke.isPending && revoke.variables === invite.id}
+              icon={Trash2}
+              onClick={() => {
+                setError('')
+                setTarget(invite)
               }}
-              title={t('users.invite.revoke')}
-              type="button"
-            >
-              <Trash2 aria-hidden="true" className="size-3.5" />
-            </button>
-          </div>
+              size="small"
+              title={copy('revoke')}
+            />
+          </Flexbox>
         )
       })}
-    </section>
+      <Modal
+        cancelText={copy('cancel')}
+        confirmLoading={revoke.isPending}
+        maskClosable={!revoke.isPending}
+        okButtonProps={{ danger: true }}
+        okText={copy('revoke')}
+        onCancel={() => {
+          if (!revoke.isPending) {
+            setTarget(null)
+            setError('')
+          }
+        }}
+        onOk={() => {
+          if (target) revoke.mutate(target.id)
+        }}
+        open={target !== null}
+        title={
+          target ? copy('revokeTitle', { email: target.email }) : copy('revoke')
+        }
+        width="min(400px, 100%)"
+      >
+        <Flexbox gap={12}>
+          <Text>{copy('revokeBody')}</Text>
+          {error ? <Alert title={error} type="error" /> : null}
+        </Flexbox>
+      </Modal>
+    </Section>
   )
 }

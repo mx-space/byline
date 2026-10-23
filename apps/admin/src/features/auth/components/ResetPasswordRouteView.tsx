@@ -1,169 +1,290 @@
-import { Loader2 } from 'lucide-react'
-import type { FormEvent } from 'react'
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { toast } from 'sonner'
+import { Button, Input, InputPassword, Text, toast } from '@lobehub/ui'
+import { Form, useForm } from '@lobehub/ui/form'
+import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router'
 
-import { useI18n } from '~/i18n'
-import { Button } from '~/ui/primitives/button'
-import { TextInput } from '~/ui/primitives/text-field'
 import { authClient } from '~/utils/authjs/auth'
-import { cn } from '~/utils/cn'
 
-import {
-  buildHashRouteUrl,
-  readErrorMessage,
-  readHashSearchParam,
-} from '../utils/login'
-import { authFormClassName, authLinkClassName, AuthScreen } from './AuthScreen'
+import { useAuthCopy } from '../use-auth-copy'
+import { confirmPasswordIssue, emailIssue } from '../utils/credentials'
+import { focusInvalid } from '../utils/focus-invalid'
+import { buildHashRouteUrl, readHashSearchParam } from '../utils/login'
+import { authStyles } from './auth-styles'
+import { AuthSubmitButton, AuthTextLink } from './AuthActions'
+import { AuthScreen } from './AuthScreen'
+import { StatusAlert } from './StatusAlert'
+
+type RequestValues = {
+  email: string
+}
+
+type ResetValues = {
+  confirm: string
+  password: string
+}
 
 export function ResetPasswordRouteView() {
-  const { t } = useI18n()
+  const messages = useAuthCopy()
   const [token] = useState(() => readHashSearchParam('token'))
   const [tokenError] = useState(() => readHashSearchParam('error'))
+  const [sent, setSent] = useState(false)
+  const [showRequest, setShowRequest] = useState(!token)
 
   return (
     <AuthScreen
+      title={messages('resetTitle')}
+      footer={<AuthTextLink to="/login">{messages('goLogin')}</AuthTextLink>}
       subtitle={
-        tokenError
-          ? t('auth.reset.invalidToken')
+        sent
+          ? undefined
           : token
-            ? t('auth.reset.chooseSubtitle')
-            : t('auth.reset.requestSubtitle')
+            ? messages('resetSetDescription')
+            : messages('resetRequestDescription')
       }
-      title={t('auth.reset.title')}
+      alert={
+        !token && tokenError ? (
+          <StatusAlert
+            description={messages('tokenInvalidDetail')}
+            title={messages('tokenInvalidTitle')}
+          />
+        ) : undefined
+      }
     >
-      {token ? <ResetForm token={token} /> : <RequestForm />}
-      <Link className={cn(authLinkClassName, 'mt-4')} to="/login">
-        {t('auth.invite.backToLogin')}
-      </Link>
+      {token ? (
+        <SetPasswordForm
+          onRequestLink={() => setShowRequest(true)}
+          requestVisible={showRequest}
+          token={token}
+        />
+      ) : null}
+      {showRequest ? (
+        <div className={token ? authStyles.afterForm : undefined} hidden={sent}>
+          <RequestResetForm onSent={() => setSent(true)} primary={!token} />
+        </div>
+      ) : null}
+      {sent ? <SentNotice onEdit={() => setSent(false)} /> : null}
     </AuthScreen>
   )
 }
 
-function RequestForm() {
-  const { t } = useI18n()
-  const [email, setEmail] = useState('')
+function RequestResetForm(props: { onSent: () => void; primary: boolean }) {
+  const messages = useAuthCopy()
+  const formRef = useRef<HTMLFormElement>(null)
+  const rejectEmail = useRef<(message: string) => void>(() => {})
   const [pending, setPending] = useState(false)
-  const [sent, setSent] = useState(false)
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!email.trim() || pending) return
-    setPending(true)
-    try {
-      const result = await authClient.requestPasswordReset({
-        email: email.trim(),
-        redirectTo: buildHashRouteUrl('/reset-password'),
-      })
-      if (result.error) {
-        toast.error(result.error.message || t('auth.reset.requestFailed'))
-        return
+  const form = useForm<RequestValues>({
+    initialValues: { email: '' },
+    onSubmit: async (values) => {
+      if (pending) return
+      setPending(true)
+      try {
+        const result = await authClient.requestPasswordReset({
+          email: values.email.trim(),
+          redirectTo: buildHashRouteUrl('/reset-password'),
+        })
+        if (result.error) {
+          rejectEmail.current(messages('sendFailed'))
+          return
+        }
+        props.onSent()
+      } catch {
+        rejectEmail.current(messages('sendFailed'))
+      } finally {
+        setPending(false)
       }
-      setSent(true)
-    } catch (error) {
-      toast.error(readErrorMessage(error, t('auth.reset.requestFailed')))
-    } finally {
-      setPending(false)
-    }
+    },
+  })
+  rejectEmail.current = (message) => {
+    form.setErrors({ email: message })
+    focusInvalid(formRef.current)
   }
 
-  if (sent) {
-    return (
-      <p className="text-center text-base text-fg-muted">
-        {t('auth.reset.sent')}
-      </p>
-    )
-  }
+  const submit = (
+    <AuthSubmitButton loading={pending}>
+      {messages('requestReset')}
+    </AuthSubmitButton>
+  )
 
   return (
-    <form className={authFormClassName} onSubmit={submit}>
-      <TextInput
-        aria-label={t('auth.reset.email')}
-        autoComplete="email"
-        autoFocus
-        onChange={setEmail}
-        placeholder={t('auth.reset.email')}
-        type="email"
-        value={email}
-      />
-      <Button className="w-full" disabled={pending} type="submit">
-        {pending ? (
-          <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-        ) : null}
-        {t('auth.reset.requestSubmit')}
-      </Button>
-    </form>
+    <Form
+      className={authStyles.form}
+      form={form}
+      layout="vertical"
+      ref={formRef}
+      variant="outlined"
+    >
+      <Form.Field
+        label={messages('emailLabel')}
+        name="email"
+        required={messages('emailRequired')}
+        validate={(value) => {
+          const issue = emailIssue(String(value ?? ''))
+          if (issue === 'invalid') return messages('emailInvalid')
+          if (issue === 'required' && String(value ?? '').length > 0) {
+            return messages('emailRequired')
+          }
+        }}
+      >
+        <Input
+          autoComplete="email"
+          autoFocus
+          name="email"
+          size="large"
+          type="email"
+        />
+      </Form.Field>
+      {props.primary ? (
+        submit
+      ) : (
+        <Button
+          block
+          className={authStyles.submit}
+          htmlType="submit"
+          loading={pending}
+          size="large"
+          type="default"
+        >
+          {messages('requestReset')}
+        </Button>
+      )}
+    </Form>
   )
 }
 
-function ResetForm(props: { token: string }) {
-  const { t } = useI18n()
+function SetPasswordForm(props: {
+  onRequestLink: () => void
+  requestVisible: boolean
+  token: string
+}) {
+  const messages = useAuthCopy()
   const navigate = useNavigate()
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
+  const formRef = useRef<HTMLFormElement>(null)
   const [pending, setPending] = useState(false)
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault()
-    if (pending) return
-    if (password.length < 8) {
-      toast.error(t('auth.invite.passwordTooShort'))
-      return
-    }
-    if (password !== confirm) {
-      toast.error(t('auth.invite.passwordMismatch'))
-      return
-    }
-    setPending(true)
-    try {
-      const result = await authClient.resetPassword({
-        newPassword: password,
-        token: props.token,
-      })
-      if (result.error) {
-        toast.error(result.error.message || t('auth.reset.failed'))
-        return
+  const [failed, setFailed] = useState(false)
+  const form = useForm<ResetValues>({
+    initialValues: { confirm: '', password: '' },
+    onSubmit: async (values) => {
+      if (pending) return
+      setPending(true)
+      setFailed(false)
+      try {
+        const result = await authClient.resetPassword({
+          newPassword: values.password,
+          token: props.token,
+        })
+        if (result.error) {
+          setFailed(true)
+          return
+        }
+        toast.success(messages('passwordSet'))
+        window.history.replaceState(
+          null,
+          '',
+          `${window.location.pathname}#/login`,
+        )
+        navigate('/login', { replace: true })
+      } catch {
+        setFailed(true)
+      } finally {
+        setPending(false)
       }
-      toast.success(t('auth.reset.done'))
-      window.history.replaceState(
-        null,
-        '',
-        `${window.location.pathname}#/login`,
-      )
-      navigate('/login', { replace: true })
-    } catch (error) {
-      toast.error(readErrorMessage(error, t('auth.reset.failed')))
-    } finally {
-      setPending(false)
-    }
-  }
+    },
+  })
 
   return (
-    <form className={authFormClassName} onSubmit={submit}>
-      <TextInput
-        aria-label={t('auth.invite.password')}
-        autoComplete="new-password"
-        autoFocus
-        onChange={setPassword}
-        placeholder={t('auth.invite.password')}
-        type="password"
-        value={password}
-      />
-      <TextInput
-        aria-label={t('auth.invite.confirmPassword')}
-        autoComplete="new-password"
-        onChange={setConfirm}
-        placeholder={t('auth.invite.confirmPassword')}
-        type="password"
-        value={confirm}
-      />
-      <Button className="w-full" disabled={pending} type="submit">
-        {pending ? (
-          <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-        ) : null}
-        {t('auth.reset.submit')}
+    <>
+      {failed ? (
+        <StatusAlert
+          action={
+            props.requestVisible ? undefined : (
+              <Button
+                className={authStyles.method}
+                htmlType="button"
+                onClick={props.onRequestLink}
+                size="large"
+                type="default"
+              >
+                {messages('requestReset')}
+              </Button>
+            )
+          }
+          description={messages('setFailedDetail')}
+          title={messages('setFailedTitle')}
+        />
+      ) : null}
+      <Form
+        className={authStyles.form}
+        form={form}
+        layout="vertical"
+        ref={formRef}
+        variant="outlined"
+      >
+        <Form.Field
+          desc={messages('passwordHint')}
+          label={messages('newPasswordLabel')}
+          name="password"
+          required={messages('passwordRequired')}
+          validate={(value) => {
+            if (
+              typeof value === 'string' &&
+              value.length > 0 &&
+              value.length < 8
+            ) {
+              return messages('passwordTooShort')
+            }
+          }}
+        >
+          <InputPassword
+            autoComplete="new-password"
+            autoFocus
+            name="password"
+            size="large"
+          />
+        </Form.Field>
+        <Form.Field
+          deps={['password']}
+          label={messages('confirmPasswordLabel')}
+          name="confirm"
+          required={messages('confirmRequired')}
+          validate={(value, values) => {
+            if (
+              confirmPasswordIssue(
+                String(values.password ?? ''),
+                String(value ?? ''),
+              ) === 'mismatch'
+            ) {
+              return messages('passwordMismatch')
+            }
+          }}
+        >
+          <InputPassword
+            autoComplete="new-password"
+            name="confirmPassword"
+            size="large"
+          />
+        </Form.Field>
+        <AuthSubmitButton loading={pending}>
+          {messages('setPassword')}
+        </AuthSubmitButton>
+      </Form>
+    </>
+  )
+}
+
+function SentNotice(props: { onEdit: () => void }) {
+  const messages = useAuthCopy()
+  return (
+    <div className={authStyles.afterForm}>
+      <Text className={authStyles.wrap}>{messages('sent')}</Text>
+      <Button
+        className={authStyles.afterFields}
+        htmlType="button"
+        onClick={props.onEdit}
+        size="large"
+        type="link"
+      >
+        {messages('editEmail')}
       </Button>
-    </form>
+    </div>
   )
 }

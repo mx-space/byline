@@ -1,8 +1,24 @@
+import { createStaticStyles } from '@lobehub/ui'
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
 
 import type { ContextMenuItem } from '~/ui/overlay/context-menu'
 import { ContextMenuTrigger } from '~/ui/overlay/context-menu'
 import { cn } from '~/utils/cn'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u14e35066: css`
+    outline: none;
+  `,
+  uff088699: css`
+    &[data-cursor] {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorPrimaryBg} 50%,
+        transparent
+      );
+    }
+  `,
+}))
 
 export type ListRowSelectMode = 'single' | 'toggle' | 'range'
 
@@ -107,11 +123,11 @@ export function ListRow(props: ListRowProps) {
       aria-current={ariaCurrent ? 'true' : undefined}
       aria-selected={selected ? true : undefined}
       className={cn(
-        'outline-hidden',
+        lobeStyles.u14e35066,
         // Cursor (implicit) tint. Explicit-checked rows get a stronger tint
         // from feature-row `data-selected:bg-*` styles + the checkbox tick,
         // so cursor only needs a soft accent wash to read as "current."
-        'data-cursor:bg-accent-soft/50',
+        lobeStyles.uff088699,
         className,
       )}
       data-cursor={cursor ? '' : undefined}

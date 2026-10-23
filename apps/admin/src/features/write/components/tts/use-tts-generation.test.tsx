@@ -30,9 +30,13 @@ vi.mock('~/features/tasks/hooks/useTaskSubscription', () => ({
   useTaskDetailSubscription: () => ({ socketConnected: false }),
 }))
 
-vi.mock('sonner', () => ({
-  toast: { error: toastErrorMock, success: vi.fn(), warning: vi.fn() },
-}))
+vi.mock('@lobehub/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@lobehub/ui')>()
+  return {
+    ...actual,
+    toast: { error: toastErrorMock, success: vi.fn(), warning: vi.fn() },
+  }
+})
 
 interface Harness {
   root: Root

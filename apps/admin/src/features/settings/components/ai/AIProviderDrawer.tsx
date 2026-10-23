@@ -1,16 +1,20 @@
+import {
+  AutoComplete,
+  Checkbox,
+  createStaticStyles,
+  Flexbox,
+  InputPassword,
+  toast,
+} from '@lobehub/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ExternalLink, Loader2, Settings } from 'lucide-react'
+import { ExternalLink, Loader2, Settings } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
-import { toast } from 'sonner'
 
 import { getModelList, getRegistryModels, testConfig } from '~/api/ai'
 import { useI18n } from '~/i18n'
 import { Drawer } from '~/ui/feedback/drawer'
 import { Button } from '~/ui/primitives/button'
-import { Combobox } from '~/ui/primitives/combobox'
-import { Scroll } from '~/ui/primitives/scroll'
 import { SelectField } from '~/ui/primitives/select'
-import { FormSwitch } from '~/ui/primitives/switch'
 import { TextInput } from '~/ui/primitives/text-field'
 
 import {
@@ -19,6 +23,7 @@ import {
   interpolatePresetTemplate,
 } from '../../config/aiProviderPresets'
 import { aiProviderTypeOptions } from '../../constants'
+import { settingsCopy } from '../../copy'
 import type {
   AIProviderConfig,
   AIProviderModel,
@@ -38,6 +43,130 @@ import {
 } from '../../utils/settings'
 import { FieldShell } from '../SettingsPrimitives'
 
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  draftNote: css`
+    color: ${cssVar.colorTextSecondary};
+    font-size: 14px;
+    line-height: 22px;
+  `,
+  u0bb529bd: css`
+    width: 1rem;
+    height: 1rem;
+    @keyframes byline-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    animation: byline-spin 1s linear infinite; /* lobe-design-ignore LOBE-MOTION-DURATION: a status spinner needs a full turn */
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  `,
+  ube28d39b: css`
+    width: min(90vw, 32rem);
+  `,
+  uec979b4f: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 1.25rem;
+    }
+    overflow-y: auto;
+    padding: 1rem;
+  `,
+  u8e0c3efc: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.75rem;
+    }
+    border-radius: 14px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    padding: 0.75rem;
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+  `,
+  u9b5df76b: css`
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorText};
+  `,
+  ufa2251b6: css`
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  u5c1f5c15: css`
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 0.75rem;
+    row-gap: 0.25rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+  u64721834: css`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: ${cssVar.colorPrimary};
+    &:hover {
+      text-decoration: underline;
+    }
+  `,
+  uef2d6f74: css`
+    width: 0.75rem;
+    height: 0.75rem;
+  `,
+  u343fbed5: css`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: ${cssVar.colorTextSecondary};
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    &:hover {
+      text-decoration: underline;
+    }
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+  uff4d2db0: css`
+    max-height: 18rem;
+  `,
+  ueb6a3cef: css`
+    padding: 0.25rem;
+  `,
+  ube1287d2: css`
+    display: flex;
+    min-width: 0px;
+    align-items: center;
+    gap: 0.75rem;
+  `,
+  u67bab313: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  u10c992af: css`
+    margin-left: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  ub2ddbe74: css`
+    flex-shrink: 0;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextSecondary};
+  `,
+}))
+
 const BUILD_HASH =
   (typeof window !== 'undefined' && (window as any).version) || 'dev'
 const REGISTRY_STALE_MS = 10 * 60 * 1000
@@ -49,7 +178,7 @@ export function AIProviderDrawer(props: {
   provider: AIProviderConfig | null
   providerModels: AIProviderModel[]
 }) {
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const queryClient = useQueryClient()
   const [fetching, setFetching] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -163,73 +292,63 @@ export function AIProviderDrawer(props: {
   return (
     <Drawer
       footer={
-        provider ? (
-          <>
-            {textEnabled || decisionEnabled ? (
-              <>
-                <Button
-                  disabled={fetching}
-                  onClick={() => void refreshModels()}
-                  type="button"
-                  variant="subtle"
-                >
-                  {fetching ? (
-                    <Loader2
-                      aria-hidden="true"
-                      className="size-4 animate-spin"
-                    />
-                  ) : null}
-                  {t('settings.ai.action.fetchModels')}
-                </Button>
-                <Button
-                  disabled={testing}
-                  onClick={() => void testProvider()}
-                  type="button"
-                  variant="subtle"
-                >
-                  {testing ? (
-                    <Loader2
-                      aria-hidden="true"
-                      className="size-4 animate-spin"
-                    />
-                  ) : null}
-                  {t('settings.ai.action.testConnection')}
-                </Button>
-              </>
-            ) : null}
-            <Button onClick={props.onClose} type="button">
-              {t('common.close')}
+        provider && (textEnabled || decisionEnabled) ? (
+          <Flexbox gap={8} horizontal justify="flex-end">
+            <Button
+              disabled={fetching}
+              onClick={() => void refreshModels()}
+              type="button"
+              variant="subtle"
+            >
+              {fetching ? (
+                <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
+              ) : null}
+              {t('settings.ai.action.fetchModels')}
             </Button>
-          </>
+            <Button
+              disabled={testing}
+              onClick={() => void testProvider()}
+              type="button"
+              variant="subtle"
+            >
+              {testing ? (
+                <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
+              ) : null}
+              {t('settings.ai.action.testConnection')}
+            </Button>
+          </Flexbox>
         ) : null
       }
       icon={Settings}
       onClose={props.onClose}
       open={Boolean(provider)}
       title={provider ? formatAIProviderLabel(provider) : ''}
-      widthClassName="w-[min(90vw,32rem)]"
+      widthClassName={lobeStyles.ube28d39b}
     >
       {provider ? (
-        <div className="space-y-5 overflow-y-auto p-4">
-          <FormSwitch
+        <div className={lobeStyles.uec979b4f}>
+          <p className={lobeStyles.draftNote}>
+            {settingsCopy(locale, 'stagedInDrawer')}
+          </p>
+          <Checkbox
             checked={provider.enabled}
-            label={t('settings.oauth.switch.enabled')}
-            onCheckedChange={(enabled) => props.onChange({ enabled })}
-          />
-          <div className="space-y-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+            onChange={(enabled) => props.onChange({ enabled })}
+          >
+            {t('settings.oauth.switch.enabled')}
+          </Checkbox>
+          <div className={lobeStyles.u8e0c3efc}>
             {decisionEnabled ? (
-              <p className="text-sm text-fg">
+              <p className={lobeStyles.u9b5df76b}>
                 {t('settings.ai.capability.decision')}
               </p>
             ) : (
               <>
-                <div className="text-sm font-medium text-fg">
+                <div className={lobeStyles.ufa2251b6}>
                   {t('settings.ai.field.capabilities')}
                 </div>
-                <FormSwitch
+                <Checkbox
                   checked={provider.capabilities?.text ?? true}
-                  label={t('settings.ai.capability.text')}
-                  onCheckedChange={(text) =>
+                  onChange={(text) =>
                     props.onChange({
                       capabilities: {
                         text,
@@ -238,11 +357,12 @@ export function AIProviderDrawer(props: {
                       },
                     })
                   }
-                />
-                <FormSwitch
+                >
+                  {t('settings.ai.capability.text')}
+                </Checkbox>
+                <Checkbox
                   checked={provider.capabilities?.image ?? false}
-                  label={t('settings.ai.capability.image')}
-                  onCheckedChange={(image) =>
+                  onChange={(image) =>
                     props.onChange({
                       capabilities: {
                         text: provider.capabilities?.text ?? true,
@@ -251,11 +371,12 @@ export function AIProviderDrawer(props: {
                       },
                     })
                   }
-                />
-                <FormSwitch
+                >
+                  {t('settings.ai.capability.image')}
+                </Checkbox>
+                <Checkbox
                   checked={provider.capabilities?.speech ?? false}
-                  label={t('settings.ai.capability.speech')}
-                  onCheckedChange={(speech) =>
+                  onChange={(speech) =>
                     props.onChange({
                       capabilities: {
                         text: provider.capabilities?.text ?? true,
@@ -264,7 +385,9 @@ export function AIProviderDrawer(props: {
                       },
                     })
                   }
-                />
+                >
+                  {t('settings.ai.capability.speech')}
+                </Checkbox>
               </>
             )}
           </div>
@@ -299,35 +422,44 @@ export function AIProviderDrawer(props: {
             placeholder={getAIProviderNamePlaceholder(t, provider.type)}
             value={provider.name}
           />
-          <TextInput
-            label={t('settings.ai.field.apiKey')}
-            onChange={(apiKey) => props.onChange({ apiKey })}
-            placeholder={getAIProviderKeyPlaceholder(provider.type)}
-            type="password"
-            value={provider.apiKey}
-          />
+          <FieldShell label={t('settings.ai.field.apiKey')}>
+            <InputPassword
+              autoComplete="new-password"
+              onChange={(event) =>
+                props.onChange({ apiKey: event.target.value })
+              }
+              placeholder={getAIProviderKeyPlaceholder(provider.type)}
+              value={provider.apiKey}
+            />
+          </FieldShell>
           {matchedPreset?.apiKeyUrl || matchedPreset?.websiteUrl ? (
-            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+            <div className={lobeStyles.u5c1f5c15}>
               {matchedPreset.apiKeyUrl ? (
                 <a
-                  className="inline-flex items-center gap-1 text-accent hover:underline"
+                  className={lobeStyles.u64721834}
                   href={matchedPreset.apiKeyUrl}
                   rel="noreferrer"
                   target="_blank"
                 >
                   {t('settings.ai.preset.getApiKey')}
-                  <ExternalLink aria-hidden="true" className="size-3" />
+                  <ExternalLink
+                    aria-hidden="true"
+                    className={lobeStyles.uef2d6f74}
+                  />
                 </a>
               ) : null}
               {matchedPreset.websiteUrl ? (
                 <a
-                  className="inline-flex items-center gap-1 text-fg-muted hover:text-fg hover:underline"
+                  className={lobeStyles.u343fbed5}
                   href={matchedPreset.websiteUrl}
                   rel="noreferrer"
                   target="_blank"
                 >
                   {t('settings.ai.preset.website')}
-                  <ExternalLink aria-hidden="true" className="size-3" />
+                  <ExternalLink
+                    aria-hidden="true"
+                    className={lobeStyles.uef2d6f74}
+                  />
                 </a>
               ) : null}
             </div>
@@ -372,11 +504,12 @@ export function AIProviderDrawer(props: {
                 placeholder={t('settings.ai.placeholder.modelListUrl')}
                 value={provider.modelListUrl ?? ''}
               />
-              <FormSwitch
+              <Checkbox
                 checked={provider.appendV1 ?? true}
-                label={t('settings.ai.field.appendV1')}
-                onCheckedChange={(appendV1) => props.onChange({ appendV1 })}
-              />
+                onChange={(appendV1) => props.onChange({ appendV1 })}
+              >
+                {t('settings.ai.field.appendV1')}
+              </Checkbox>
             </>
           ) : null}
           {provider.capabilities?.speech && !isGoogleVertex ? (
@@ -450,10 +583,6 @@ function ModelCombobox(props: {
   value: string
 }) {
   const { t } = useI18n()
-  const modelIds = useMemo(
-    () => props.models.map((model) => model.id),
-    [props.models],
-  )
   const modelById = useMemo(
     () => new Map(props.models.map((model) => [model.id, model])),
     [props.models],
@@ -470,63 +599,51 @@ function ModelCombobox(props: {
     [modelById],
   )
 
+  const options = useMemo(
+    () =>
+      props.models.map((model) => {
+        const name = model.name || model.id
+        const pricing = formatAIModelPricing(model.pricing, t)
+        return {
+          label: (
+            <span className={lobeStyles.ube1287d2}>
+              <span className={lobeStyles.u67bab313}>
+                <span>{name}</span>
+                {name !== model.id ? (
+                  <span className={lobeStyles.u10c992af}>{model.id}</span>
+                ) : null}
+              </span>
+              {pricing ? (
+                <span className={lobeStyles.ub2ddbe74}>{pricing}</span>
+              ) : null}
+            </span>
+          ),
+          value: model.id,
+        }
+      }),
+    [props.models, t],
+  )
+
   return (
-    <Combobox
-      autoComplete="list"
+    <AutoComplete
       disabled={props.disabled}
-      filter={filterModel}
-      inputValue={props.value}
-      items={modelIds}
-      onInputValueChange={(next) => props.onChange(next)}
-      onValueChange={(next) => {
-        if (typeof next === 'string') props.onChange(next)
-      }}
-    >
-      <Combobox.Control>
-        <Combobox.Input placeholder={props.placeholder} />
-        <Combobox.Trigger aria-label="Open model list">
-          {props.loading ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : (
-            <ChevronDown aria-hidden="true" className="size-4" />
-          )}
-        </Combobox.Trigger>
-      </Combobox.Control>
-      <Combobox.Content>
-        <Combobox.Empty />
-        <Scroll
-          className="max-h-72"
-          innerClassName="p-1"
-          viewportClassName="max-h-72"
-        >
-          <Combobox.List>
-            {(id: string) => {
-              const model = modelById.get(id)
-              const name = model?.name || id
-              const pricing = formatAIModelPricing(model?.pricing, t)
-              return (
-                <Combobox.Item key={id} value={id}>
-                  <span className="flex min-w-0 items-center gap-3">
-                    <span className="min-w-0 flex-1 truncate">
-                      <span>{name}</span>
-                      {name !== id ? (
-                        <span className="ml-2 text-xs text-fg-subtle">
-                          {id}
-                        </span>
-                      ) : null}
-                    </span>
-                    {pricing ? (
-                      <span className="shrink-0 text-xs tabular-nums text-fg-muted">
-                        {pricing}
-                      </span>
-                    ) : null}
-                  </span>
-                </Combobox.Item>
-              )
-            }}
-          </Combobox.List>
-        </Scroll>
-      </Combobox.Content>
-    </Combobox>
+      filter={(item, query) =>
+        filterModel(
+          item && typeof item === 'object' && 'value' in item
+            ? String(item.value)
+            : '',
+          query,
+        )
+      }
+      value={props.value}
+      onChange={props.onChange}
+      options={options}
+      placeholder={props.placeholder}
+      suffix={
+        props.loading ? (
+          <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
+        ) : undefined
+      }
+    />
   )
 }

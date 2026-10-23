@@ -1,5 +1,70 @@
+import { createStaticStyles } from '@lobehub/ui'
+
 import type { GraphRow } from './layout'
 import { MAX_LANE } from './layout'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u62bc683e: css`
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 999px;
+    background-color: ${cssVar.colorWarning};
+    box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, ${cssVar.colorWarning} 20%, transparent);
+  `,
+  u88b28b5a: css`
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 999px;
+    background-color: ${cssVar.colorPrimary};
+    box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, ${cssVar.colorPrimary} 25%, transparent);
+  `,
+  u117e152e: css`
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 999px;
+    border-width: 0.5rem;
+    border-color: ${cssVar.colorPrimary};
+    background-color: ${cssVar.colorBgLayout};
+  `,
+  u8084dc2e: css`
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 999px;
+    background-color: ${cssVar.colorSuccess};
+    box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, ${cssVar.colorSuccess} 25%, transparent);
+  `,
+  uc2780701: css`
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 999px;
+    background-color: ${cssVar.colorTextTertiary};
+  `,
+  u925d9134: css`
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    border-width: 0.5rem;
+    border-color: ${cssVar.colorBorder};
+    background-color: ${cssVar.colorBgLayout};
+  `,
+  ud452ad70: css`
+    position: relative;
+    flex-shrink: 0;
+  `,
+  uefbb9c95: css`
+    position: absolute;
+    inset: 0px;
+    width: 100%;
+    height: 100%;
+    color: ${cssVar.colorBorder};
+  `,
+}))
 
 const LANE_WIDTH = 16
 const LANE_INSET = 9
@@ -14,12 +79,12 @@ export type RailTone =
   'conflict' | 'current' | 'draft' | 'online' | 'published' | 'revision'
 
 const DOT_CLASS: Record<RailTone, string> = {
-  conflict: 'size-2.5 rounded-full bg-amber-500 ring-[3px] ring-amber-500/20',
-  current: 'size-2.5 rounded-full bg-accent ring-[3px] ring-accent/25',
-  draft: 'size-2.5 rounded-full border-2 border-accent bg-background',
-  online: 'size-3 rounded-full bg-emerald-500 ring-[3px] ring-emerald-500/25',
-  published: 'size-2.5 rounded-full bg-fg-subtle',
-  revision: 'size-2 rounded-full border-2 border-border-strong bg-background',
+  conflict: lobeStyles.u62bc683e,
+  current: lobeStyles.u88b28b5a,
+  draft: lobeStyles.u117e152e,
+  online: lobeStyles.u8084dc2e,
+  published: lobeStyles.uc2780701,
+  revision: lobeStyles.u925d9134,
 }
 
 const mergePath = (from: number, to: number, dotY: number) => {
@@ -36,9 +101,9 @@ export function VersionRail(props: {
   const x = laneX(row.lane) + 0.5
 
   return (
-    <div aria-hidden="true" className="relative shrink-0">
+    <div aria-hidden="true" className={lobeStyles.ud452ad70}>
       <svg
-        className="absolute inset-0 size-full text-border-strong"
+        className={lobeStyles.uefbb9c95}
         fill="none"
         stroke="currentColor"
         strokeWidth={1}

@@ -1,3 +1,5 @@
+import { ConfigProvider } from '@lobehub/ui'
+import * as motion from 'motion/react-m'
 import { act } from 'react'
 import type { Root } from 'react-dom/client'
 import { createRoot } from 'react-dom/client'
@@ -15,7 +17,11 @@ function render(node: React.ReactNode) {
   document.body.append(container)
   root = createRoot(container)
   act(() => {
-    root!.render(<I18nProvider>{node}</I18nProvider>)
+    root!.render(
+      <ConfigProvider motion={motion}>
+        <I18nProvider>{node}</I18nProvider>
+      </ConfigProvider>,
+    )
   })
   return container
 }
@@ -77,8 +83,6 @@ describe('OnboardingShell', () => {
       </OnboardingShell>,
     )
 
-    expect(
-      el.querySelector('.auth-light [data-float-layer-host]'),
-    ).not.toBeNull()
+    expect(el.querySelector('[data-float-layer-host]')).not.toBeNull()
   })
 })

@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { ExternalLink, MoreHorizontal, Pencil } from 'lucide-react'
 import type {
   ComponentPropsWithoutRef,
@@ -15,6 +16,225 @@ import { showContextMenu } from '~/ui/overlay/context-menu'
 import { Badge } from '~/ui/primitives/badge'
 import { Checkbox } from '~/ui/primitives/checkbox'
 import { cn } from '~/utils/cn'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u59bc5be0: css`
+    display: grid;
+    cursor: default;
+    column-gap: 0.75rem;
+    row-gap: 0.375rem;
+    padding-inline: 1rem;
+    padding-block: 0.75rem;
+  `,
+  u8ea3a009: css`
+    grid-template-columns: auto_minmax(0, 1fr) _auto;
+  `,
+  uf6f6d872: css`
+    grid-template-columns: minmax(0, 1fr) _auto;
+  `,
+  u3382d9c2: css`
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorText} 50%,
+        transparent
+      );
+    }
+  `,
+  u3d5a075f: css`
+    &[data-popup-open] {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    :where(.dark, .dark *) &[data-popup-open] {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorText} 60%,
+        transparent
+      );
+    }
+  `,
+  u39e4b886: css`
+    &[data-selected] {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    :where(.dark, .dark *) &[data-selected] {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorText} 60%,
+        transparent
+      );
+    }
+  `,
+  ud9157ce1: css`
+    &[data-selected]:hover {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorFillSecondary} 60%,
+        transparent
+      );
+    }
+    :where(.dark, .dark *) &[data-selected]:hover {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorText} 80%,
+        transparent
+      );
+    }
+  `,
+  u7bb7c7d8: css`
+    &[data-selected][data-popup-open] {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    :where(.dark, .dark *) &[data-selected][data-popup-open] {
+      background-color: ${cssVar.colorText};
+    }
+  `,
+  u62e55649: css`
+    &:focus-visible {
+      outline-width: 2px;
+    }
+    &:focus-visible {
+      outline-offset: -2px;
+    }
+    &:focus-visible {
+      outline-color: ${cssVar.colorTextSecondary};
+    }
+    :where(.dark, .dark *) &:focus-visible {
+      outline-color: ${cssVar.colorTextSecondary};
+    }
+  `,
+  u15e1b1f4: css`
+    margin-top: 0.125rem;
+  `,
+  u7e0b7cdf: css`
+    min-width: 0px;
+  `,
+  u6a00a25d: css`
+    display: flex;
+    min-width: 0px;
+    align-items: center;
+    gap: 0.5rem;
+  `,
+  u4763858a: css`
+    outline: none;
+    min-width: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+    &:hover {
+      color: ${cssVar.colorTextSecondary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 2px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 var(--color-primary-shallow) ${cssVar.colorPrimary};
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u768a49f3: css`
+    margin-top: 0.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 0.75rem;
+    row-gap: 0.25rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorTextSecondary};
+    }
+  `,
+  u0e6f3366: css`
+    grid-row-start: 1;
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+    align-self: flex-start;
+  `,
+  u8044fff5: css`
+    grid-column-start: 2;
+  `,
+  u21cd6452: css`
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    color: ${cssVar.colorFillSecondary};
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+  u4de3fad5: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextTertiary};
+    font-variant-numeric: tabular-nums;
+  `,
+  u45c6a1de: css`
+    outline: none;
+    display: inline-flex;
+    height: 1.75rem;
+    width: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    color: currentColor;
+    text-decoration: none;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 2px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 var(--color-primary-shallow) ${cssVar.colorPrimary};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u1e9dbf1b: css`
+    .group:hover & {
+      color: ${cssVar.colorTextSecondary};
+    }
+    .group[data-selected] & {
+      color: ${cssVar.colorTextSecondary};
+    }
+  `,
+  uc4c02d26: css`
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorText};
+    }
+    .group:hover :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+    .group[data-selected] :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+}))
 
 export type ContentEntrySelectMode = 'single' | 'toggle' | 'range'
 
@@ -77,16 +297,14 @@ export function ContentEntryListItem(props: ContentEntryListItemProps) {
     <ListRow
       as="article"
       className={cn(
-        'group grid cursor-default gap-x-3 gap-y-1.5 px-4 py-3',
-        selectable
-          ? 'grid-cols-[auto_minmax(0,1fr)_auto]'
-          : 'grid-cols-[minmax(0,1fr)_auto]',
-        'hover:bg-neutral-50 dark:hover:bg-neutral-900/50',
-        'data-popup-open:bg-neutral-100 dark:data-popup-open:bg-neutral-800/60',
-        'data-selected:bg-neutral-100 dark:data-selected:bg-neutral-800/60',
-        'data-selected:hover:bg-neutral-200/60 dark:data-selected:hover:bg-neutral-800/80',
-        'data-selected:data-popup-open:bg-neutral-200 dark:data-selected:data-popup-open:bg-neutral-800',
-        'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-neutral-400 dark:focus-visible:outline-neutral-500',
+        `${lobeStyles.u59bc5be0} group`,
+        selectable ? lobeStyles.u8ea3a009 : lobeStyles.uf6f6d872,
+        lobeStyles.u3382d9c2,
+        lobeStyles.u3d5a075f,
+        lobeStyles.u39e4b886,
+        lobeStyles.ud9157ce1,
+        lobeStyles.u7bb7c7d8,
+        lobeStyles.u62e55649,
         props.className,
       )}
       cursor={props.cursor}
@@ -96,7 +314,7 @@ export function ContentEntryListItem(props: ContentEntryListItemProps) {
           <Checkbox
             aria-label={props.checkboxLabel}
             checked={props.selected ?? false}
-            className="mt-0.5"
+            className={lobeStyles.u15e1b1f4}
             cursor={props.cursor}
             onCheckedChange={handleSelectedChange}
           />
@@ -106,39 +324,34 @@ export function ContentEntryListItem(props: ContentEntryListItemProps) {
       onSelect={props.onSelect}
       selected={props.selected}
     >
-      <div className="min-w-0">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className={lobeStyles.u7e0b7cdf}>
+        <div className={lobeStyles.u6a00a25d}>
           {props.leading}
-          <Link
-            className="outline-hidden min-w-0 truncate text-sm font-medium text-neutral-950 hover:text-neutral-600 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-shallow)] dark:text-neutral-50 dark:hover:text-neutral-300"
-            to={props.titleTo}
-          >
+          <Link className={lobeStyles.u4763858a} to={props.titleTo}>
             {props.title}
           </Link>
           {props.status}
         </div>
         {props.meta ? (
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-            {props.meta}
-          </div>
+          <div className={lobeStyles.u768a49f3}>{props.meta}</div>
         ) : null}
       </div>
 
       <div
         className={cn(
-          'row-start-1 flex shrink-0 flex-col items-end gap-1 self-start',
-          selectable ? 'col-start-3' : 'col-start-2',
+          lobeStyles.u0e6f3366,
+          selectable ? 'col-start-3' : lobeStyles.u8044fff5,
         )}
       >
         <div
           className={cn(
-            'flex items-center gap-0.5 text-neutral-300',
-            'group-hover:text-neutral-600 group-data-[popup-open]:text-neutral-600 group-data-[selected]:text-neutral-600',
-            'dark:text-neutral-700 dark:group-hover:text-neutral-300 dark:group-data-[popup-open]:text-neutral-300 dark:group-data-[selected]:text-neutral-300',
+            lobeStyles.u21cd6452,
+            `${lobeStyles.u1e9dbf1b} group-data-[popup-open]:text-neutral-600`,
+            `${lobeStyles.uc4c02d26} dark:group-data-[popup-open]:text-neutral-300`,
           )}
         >
           <ActionLink title={props.editTitle} to={props.editTo}>
-            <Pencil aria-hidden="true" className="size-4" />
+            <Pencil aria-hidden="true" className={lobeStyles.uf7b5fa97} />
           </ActionLink>
           <ActionLink
             href={props.externalHref}
@@ -146,27 +359,27 @@ export function ContentEntryListItem(props: ContentEntryListItemProps) {
             target="_blank"
             title={props.openTitle}
           >
-            <ExternalLink aria-hidden="true" className="size-4" />
+            <ExternalLink aria-hidden="true" className={lobeStyles.uf7b5fa97} />
           </ActionLink>
           <ActionButton
             onClick={onMoreClick}
             title={t('shared.contentListItem.moreActions')}
           >
-            <MoreHorizontal aria-hidden="true" className="size-4" />
+            <MoreHorizontal
+              aria-hidden="true"
+              className={lobeStyles.uf7b5fa97}
+            />
           </ActionButton>
         </div>
         {props.trailingFooter ? (
-          <div className="text-xs text-fg-subtle tabular-nums">
-            {props.trailingFooter}
-          </div>
+          <div className={lobeStyles.u4de3fad5}>{props.trailingFooter}</div>
         ) : null}
       </div>
     </ListRow>
   )
 }
 
-const actionSlotClassName =
-  'outline-hidden inline-flex h-7 w-7 items-center justify-center rounded text-current no-underline hover:bg-neutral-100 hover:text-neutral-950 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-shallow)] dark:hover:bg-neutral-800 dark:hover:text-neutral-50'
+const actionSlotClassName = lobeStyles.u45c6a1de
 
 type ActionLinkProps =
   | ({ href: string; to?: never } & Omit<

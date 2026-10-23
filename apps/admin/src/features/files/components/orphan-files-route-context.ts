@@ -2,15 +2,13 @@ import { createContext, useContext } from 'react'
 
 import type { OrphanFile } from '~/api/files'
 
-import type { FileRowItem } from '../utils/adapters'
-
 export interface OrphanFilesRouteContextValue {
-  page: number
-  listUpdatedAt: number
   deleteDisabled: boolean
+  listStatus: 'error' | 'pending' | 'success'
+  listUpdatedAt: number
   onBack: () => void
-  onDelete: (item: FileRowItem<OrphanFile>) => void
-  onOpenPreview: (preview: { name: string; url: string }) => void
+  onDelete: (item: OrphanFile) => void
+  onRetry: () => void
 }
 
 export const OrphanFilesRouteContext =

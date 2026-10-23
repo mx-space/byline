@@ -35,6 +35,7 @@ export function buildGenerateTask(
   refId: string,
   detail: AiOverviewDetail,
   force: boolean,
+  regenerateLocked = false,
 ) {
   switch (capability) {
     case 'summary': {
@@ -56,7 +57,12 @@ export function buildGenerateTask(
       )
     }
     case 'translation': {
-      return createTranslationTask({ force, refId, targetLanguages: langs })
+      return createTranslationTask({
+        force,
+        refId,
+        targetLanguages: langs,
+        ...(regenerateLocked ? { regenerateLocked: true } : {}),
+      })
     }
     case 'tts': {
       return createTtsTask({ force, langs, refId })

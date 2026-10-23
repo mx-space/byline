@@ -1,9 +1,18 @@
+import { createStaticStyles, Icon, Tag } from '@lobehub/ui'
 import { CloudCheck, CloudOff, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { useI18n } from '~/i18n'
 import type { DraftModel } from '~/models/draft'
-import { Tag } from '~/ui/primitives/tag'
+
+import { useDraftCopy } from '../copy'
+
+const styles = createStaticStyles(({ css }) => ({
+  label: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+}))
 
 const RELATIVE_TIME_TICK_MS = 30_000
 
@@ -20,7 +29,7 @@ function latestOf(now: Date, savedAt: string) {
 }
 
 export function DraftStatusTag(props: DraftStatusTagProps) {
-  const { format, t } = useI18n()
+  const { copy, format } = useDraftCopy()
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -33,21 +42,16 @@ export function DraftStatusTag(props: DraftStatusTagProps) {
 
   if (props.isSaving) {
     return (
-      <Tag className={props.className}>
-        <Loader2
-          aria-hidden="true"
-          className="size-3.5 shrink-0 animate-spin"
-        />
-        <span>{t('drafts.status.saving')}</span>
+      <Tag className={props.className} icon={<Icon icon={Loader2} spin />}>
+        <span>{copy('statusSaving')}</span>
       </Tag>
     )
   }
 
   if (!props.draft) {
     return (
-      <Tag className={props.className}>
-        <CloudOff aria-hidden="true" className="size-3.5 shrink-0" />
-        <span>{t('drafts.status.unsaved')}</span>
+      <Tag className={props.className} icon={<Icon icon={CloudOff} />}>
+        <span>{copy('statusUnsaved')}</span>
       </Tag>
     )
   }
@@ -59,11 +63,11 @@ export function DraftStatusTag(props: DraftStatusTagProps) {
   return (
     <Tag
       className={props.className}
-      title={t('drafts.status.savedTooltip', { time: absolute })}
+      icon={<Icon icon={CloudCheck} />}
+      title={copy('statusSavedTooltip', { time: absolute })}
     >
-      <CloudCheck aria-hidden="true" className="size-3.5 shrink-0" />
-      <span className="truncate">
-        {t('drafts.status.saved', { time: relative })}
+      <span className={styles.label}>
+        {copy('statusSaved', { time: relative })}
       </span>
     </Tag>
   )

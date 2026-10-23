@@ -1,9 +1,17 @@
-import { Menu } from '@base-ui/react/menu'
+import {
+  DropdownMenuGroup as LobeDropdownMenuGroup,
+  DropdownMenuGroupLabel as LobeDropdownMenuGroupLabel,
+  DropdownMenuItem as LobeDropdownMenuItem,
+  DropdownMenuPopup,
+  DropdownMenuPortal,
+  DropdownMenuPositioner,
+  DropdownMenuRoot as LobeDropdownMenuRoot,
+  DropdownMenuSeparator as LobeDropdownMenuSeparator,
+  DropdownMenuTrigger as LobeDropdownMenuTrigger,
+  Text,
+} from '@lobehub/ui'
 import type { ComponentPropsWithoutRef, ReactNode, RefObject } from 'react'
 import { createContext, useCallback, useContext, useRef } from 'react'
-
-import { menuStyles } from '~/ui/overlay/menu-styles'
-import { cn } from '~/utils/cn'
 
 import {
   useCloseOnAnchorHidden,
@@ -11,37 +19,56 @@ import {
   useLayerZIndex,
 } from '../floating-layer'
 
-type RootProps = ComponentPropsWithoutRef<typeof Menu.Root>
+type RootProps = ComponentPropsWithoutRef<typeof LobeDropdownMenuRoot>
+type MenuActions = NonNullable<
+  Extract<RootProps['actionsRef'], RefObject<unknown>> extends RefObject<
+    infer T
+  >
+    ? T
+    : never
+>
 
-const MenuActionsContext =
-  createContext<RefObject<Menu.Root.Actions | null> | null>(null)
+const MenuActionsContext = createContext<RefObject<MenuActions | null> | null>(
+  null,
+)
 
 function DropdownMenuRoot({ actionsRef, children, ...rest }: RootProps) {
-  const fallbackRef = useRef<Menu.Root.Actions | null>(null)
+  const fallbackRef = useRef<MenuActions | null>(null)
   const resolvedRef = actionsRef ?? fallbackRef
 
   return (
     <MenuActionsContext value={resolvedRef}>
-      <Menu.Root {...rest} actionsRef={resolvedRef}>
+      <LobeDropdownMenuRoot {...rest} actionsRef={resolvedRef}>
         {children}
-      </Menu.Root>
+      </LobeDropdownMenuRoot>
     </MenuActionsContext>
   )
 }
 
 type TriggerOwnProps = Omit<
-  ComponentPropsWithoutRef<typeof Menu.Trigger>,
+  ComponentPropsWithoutRef<typeof LobeDropdownMenuTrigger>,
   'className'
 > & { className?: string }
 
-function DropdownMenuTrigger({ className, ...rest }: TriggerOwnProps) {
-  return <Menu.Trigger {...rest} className={cn('outline-hidden', className)} />
+function DropdownMenuTrigger({
+  className,
+  children,
+  ...rest
+}: TriggerOwnProps) {
+  return (
+    <LobeDropdownMenuTrigger
+      {...(rest as ComponentPropsWithoutRef<typeof LobeDropdownMenuTrigger>)}
+      className={className}
+    >
+      {children}
+    </LobeDropdownMenuTrigger>
+  )
 }
 
-type PositionerProps = ComponentPropsWithoutRef<typeof Menu.Positioner>
+type PositionerProps = ComponentPropsWithoutRef<typeof DropdownMenuPositioner>
 
 type ContentProps = Omit<
-  ComponentPropsWithoutRef<typeof Menu.Popup>,
+  ComponentPropsWithoutRef<typeof DropdownMenuPopup>,
   'className'
 > & {
   align?: PositionerProps['align']
@@ -78,8 +105,8 @@ function DropdownMenuContent({
   const resolvedContainer = container ?? ctxContainer ?? undefined
 
   return (
-    <Menu.Portal container={resolvedContainer}>
-      <Menu.Positioner
+    <DropdownMenuPortal container={resolvedContainer}>
+      <DropdownMenuPositioner
         align={align}
         alignOffset={alignOffset}
         ref={positionerRef}
@@ -87,16 +114,16 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         style={{ zIndex }}
       >
-        <Menu.Popup {...rest} className={cn(menuStyles.popup, className)}>
+        <DropdownMenuPopup {...rest} className={className}>
           {children}
-        </Menu.Popup>
-      </Menu.Positioner>
-    </Menu.Portal>
+        </DropdownMenuPopup>
+      </DropdownMenuPositioner>
+    </DropdownMenuPortal>
   )
 }
 
 type ItemProps = Omit<
-  ComponentPropsWithoutRef<typeof Menu.Item>,
+  ComponentPropsWithoutRef<typeof LobeDropdownMenuItem>,
   'className'
 > & {
   className?: string
@@ -105,50 +132,38 @@ type ItemProps = Omit<
 
 function DropdownMenuItem({ className, danger, ...rest }: ItemProps) {
   return (
-    <Menu.Item
-      {...rest}
-      className={cn(menuStyles.item, danger && menuStyles.danger, className)}
-      data-danger={danger ? '' : undefined}
-    />
+    <LobeDropdownMenuItem {...rest} className={className} danger={danger} />
   )
 }
 
 type SeparatorProps = Omit<
-  ComponentPropsWithoutRef<typeof Menu.Separator>,
+  ComponentPropsWithoutRef<typeof LobeDropdownMenuSeparator>,
   'className'
 > & { className?: string }
 
 function DropdownMenuSeparator({ className, ...rest }: SeparatorProps) {
-  return (
-    <Menu.Separator {...rest} className={cn(menuStyles.separator, className)} />
-  )
+  return <LobeDropdownMenuSeparator {...rest} className={className} />
 }
 
-const DropdownMenuGroup = Menu.Group
+const DropdownMenuGroup = LobeDropdownMenuGroup
 
 type GroupLabelProps = Omit<
-  ComponentPropsWithoutRef<typeof Menu.GroupLabel>,
+  ComponentPropsWithoutRef<typeof LobeDropdownMenuGroupLabel>,
   'className'
 > & { className?: string }
 
 function DropdownMenuGroupLabel({ className, ...rest }: GroupLabelProps) {
-  return (
-    <Menu.GroupLabel
-      {...rest}
-      className={cn(menuStyles.groupLabel, className)}
-    />
-  )
+  return <LobeDropdownMenuGroupLabel {...rest} className={className} />
 }
 
-interface DropdownMenuEmptyProps {
-  children: ReactNode
-}
-
-function DropdownMenuEmpty({ children }: DropdownMenuEmptyProps) {
+function DropdownMenuEmpty({ children }: { children: ReactNode }) {
   return (
-    <div className="px-2 py-3 text-center text-xs text-fg-subtle">
+    <Text
+      style={{ display: 'block', padding: '12px 8px', textAlign: 'center' }}
+      type="secondary"
+    >
       {children}
-    </div>
+    </Text>
   )
 }
 

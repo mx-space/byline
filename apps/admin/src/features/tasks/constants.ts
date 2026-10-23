@@ -8,14 +8,15 @@ import {
   XCircle,
 } from 'lucide-react'
 
-import type { TaskScope } from '~/api/tasks'
 import { AITaskStatus, AITaskType } from '~/api/tasks'
 import type { TranslationKey } from '~/i18n/types'
 import { adminQueryKeys } from '~/query/keys'
 
 export const tasksQueryKey = adminQueryKeys.tasks.tasksRoot
 
-export const pageSize = 50
+export const CONTENT_PUBLISH_TASK_TYPE = 'content:publish'
+
+export const pageSize = 20
 
 export const liveSubscribeIntervalMs = 30_000
 export const fallbackPollingIntervalMs = 5_000
@@ -73,44 +74,22 @@ export const statusCategoryOptionKeys: Array<{
   { labelKey: 'tasks.statusCategory.cancelled', value: 'cancelled' },
 ]
 
-export const typeOptionKeys: Array<{
-  labelKey: TranslationKey
-  value: AITaskType | ''
-}> = [
-  { labelKey: 'tasks.filter.allType', value: '' },
-  { labelKey: 'tasks.taskType.summary', value: AITaskType.Summary },
-  { labelKey: 'tasks.taskType.translation', value: AITaskType.Translation },
-  {
-    labelKey: 'tasks.taskType.translationBatch',
-    value: AITaskType.TranslationBatch,
-  },
-  {
-    labelKey: 'tasks.taskType.translationAll',
-    value: AITaskType.TranslationAll,
-  },
-  { labelKey: 'tasks.taskType.slugBackfill', value: AITaskType.SlugBackfill },
-  { labelKey: 'tasks.taskType.insights', value: AITaskType.Insights },
-  {
-    labelKey: 'tasks.taskType.insightsTranslation',
-    value: AITaskType.InsightsTranslation,
-  },
-  {
-    labelKey: 'tasks.taskType.imageGeneration',
-    value: AITaskType.ImageGeneration,
-  },
-  { labelKey: 'tasks.taskType.tts', value: AITaskType.Tts },
-]
+export const statusSegmentValues = [
+  '',
+  'active',
+  'failed',
+  'completed',
+] as const
 
-export const scopeOptionKeys: Array<{
-  labelKey: TranslationKey
-  value: TaskScope | ''
-}> = [
-  { labelKey: 'tasks.filter.allScope', value: '' },
-  { labelKey: 'tasks.scope.ai', value: 'ai' },
-  { labelKey: 'tasks.scope.content', value: 'content' },
+export const filterableTaskTypes: string[] = [
+  CONTENT_PUBLISH_TASK_TYPE,
+  AITaskType.Translation,
+  AITaskType.TranslationBatch,
+  AITaskType.TranslationAll,
+  AITaskType.Summary,
+  AITaskType.Insights,
+  AITaskType.InsightsTranslation,
+  AITaskType.Tts,
+  AITaskType.ImageGeneration,
+  AITaskType.SlugBackfill,
 ]
-
-export const scopeLabelKeys: Record<TaskScope, TranslationKey> = {
-  ai: 'tasks.scope.ai',
-  content: 'tasks.scope.content',
-}

@@ -1,2 +1,2 @@
-export { FilesByTypePage as FilesPage } from '../components/FilesByTypePage'
+export { FilesLibraryPage as FilesPage } from '../components/FilesLibraryPage'
 export { OrphanFilesPage } from '../components/OrphanFilesPage'

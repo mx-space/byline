@@ -129,12 +129,10 @@ export interface OauthProviderPayload {
 
 export interface SettingsGroupSummary {
   description?: string
-  descriptionKey?: TranslationKey
   icon: LucideIcon
   key: string
   systemGroup?: ConfigFormGroup
   title?: string
-  titleKey?: TranslationKey
   type: SettingsGroupType
 }
 

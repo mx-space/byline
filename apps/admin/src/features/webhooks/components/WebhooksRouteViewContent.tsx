@@ -1,44 +1,36 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, RefreshCw } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { Button, Empty } from '@lobehub/ui'
+import { useQuery } from '@tanstack/react-query'
+import { Plus, Webhook } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { toast } from 'sonner'
 
-import type { WebhookModel } from '~/api/webhooks'
-import { deleteWebhook, getWebhooks, testWebhook } from '~/api/webhooks'
-import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
+import { getWebhooks } from '~/api/webhooks'
+import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { MasterDetailShell } from '~/ui/layout/master-detail-shell'
-import { MobileHeaderAffordance } from '~/ui/layout/mobile-header-affordance'
-import { Button } from '~/ui/primitives/button'
-import { Scroll } from '~/ui/primitives/scroll'
-import { cn } from '~/utils/cn'
+import { DetailPlaceholder, Page } from '~/ui/page'
 
-import { webhooksQueryKey } from '../constants'
-import { presentWebhookEditor } from './WebhookEditorModal'
-import { WebhookList } from './WebhookList'
+import { useWebhookCopy } from '../copy'
+import { WebhookCreateModal } from './WebhookCreateModal'
+import { WebhookListPane } from './WebhookListPane'
 import { WebhooksRouteContext } from './webhooks-route-context'
-import {
-  WebhookDetailEmptyState,
-  WebhookListEmptyState,
-  WebhookListSkeleton,
-} from './WebhookStates'
 
 export function WebhooksRouteViewContent() {
+  const text = useWebhookCopy()
   const { t } = useI18n()
-  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const params = useParams<{ id?: string }>()
+  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
   const detailId = params.id ?? null
   const autoSelectedRef = useRef(false)
+  const [creating, setCreating] = useState(false)
 
   const webhooksQuery = useQuery({
     queryFn: getWebhooks,
     queryKey: adminQueryKeys.webhooks.list(),
   })
-
-  const webhooks = webhooksQuery.data ?? []
+  const webhooks = useMemo(() => webhooksQuery.data ?? [], [webhooksQuery.data])
 
   useEffect(() => {
     if (autoSelectedRef.current) return
@@ -46,130 +38,77 @@ export function WebhooksRouteViewContent() {
       autoSelectedRef.current = true
       return
     }
-    if (webhooks.length === 0) return
+    if (!isDesktop || webhooks.length === 0) return
     autoSelectedRef.current = true
     navigate(`/webhooks/${webhooks[0].id}`, { replace: true })
-  }, [detailId, navigate, webhooks])
-
-  const invalidateWebhooks = async () => {
-    await queryClient.invalidateQueries({ queryKey: webhooksQueryKey })
-  }
+  }, [detailId, isDesktop, navigate, webhooks])
 
   const closeDetail = useCallback(() => {
     navigate('/webhooks')
   }, [navigate])
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteWebhook,
-    onSuccess: async () => {
-      toast.success(t('webhooks.toast.deleted'))
-      closeDetail()
-      await invalidateWebhooks()
-    },
-    onError: () => {
-      toast.error(t('webhooks.toast.deleteFailed'))
-    },
-  })
-
-  const testMutation = useMutation({
-    mutationFn: ({ event, id }: { event: string; id: string }) =>
-      testWebhook(id, event),
-    onSuccess: () => {
-      toast.success(t('webhooks.toast.tested'))
-    },
-    onError: () => {
-      toast.error(t('webhooks.toast.testFailed'))
-    },
-  })
-
-  const openEditor = useCallback(
-    async (webhook: WebhookModel | null) => {
-      const saved = await presentWebhookEditor(webhook)
-      if (saved) {
-        await invalidateWebhooks()
-        navigate(`/webhooks/${saved.id}`)
-      }
-    },
-    [navigate],
-  )
-
   const ctxValue = useMemo(
     () => ({
       onBack: closeDetail,
-      onDelete: (webhook: WebhookModel) => deleteMutation.mutate(webhook.id),
-      onEdit: (webhook: WebhookModel) => openEditor(webhook),
-      onTest: (id: string, event: string) => testMutation.mutate({ event, id }),
+      onDeleted: (id: string) => {
+        const next = webhooks.find((item) => item.id !== id)
+        navigate(isDesktop && next ? `/webhooks/${next.id}` : '/webhooks', {
+          replace: true,
+        })
+      },
     }),
-    [closeDetail, deleteMutation, openEditor, testMutation],
+    [closeDetail, isDesktop, navigate, webhooks],
   )
+
+  const empty = webhooksQuery.isSuccess && webhooks.length === 0
 
   return (
     <WebhooksRouteContext.Provider value={ctxValue}>
-      <MasterDetailShell
-        emptyDetail={<WebhookDetailEmptyState />}
-        list={
-          <section className="flex h-full min-h-0 flex-col">
-            <div
-              className={cn(
-                'flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800',
-                APP_SHELL_HEADER_HEIGHT_CLASS,
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <MobileHeaderAffordance />
-                <div>
-                  <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                    Webhooks
-                  </span>
-                  <span className="ml-2 text-xs text-neutral-400">
-                    {t('webhooks.enabledCount', {
-                      enabled: webhooks.filter((webhook) => webhook.enabled)
-                        .length,
-                      total: webhooks.length,
-                    })}
-                  </span>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  aria-label={t('webhooks.refreshAria')}
-                  className="h-8 px-2"
-                  onClick={() => {
-                    void invalidateWebhooks()
-                  }}
-                  type="button"
-                  variant="subtle"
-                >
-                  <RefreshCw aria-hidden="true" className="size-3.5" />
-                </Button>
-                <Button
-                  className="h-8 px-2"
-                  onClick={() => void openEditor(null)}
-                  type="button"
-                >
-                  <Plus aria-hidden="true" className="size-3.5" />
-                  {t('webhooks.add')}
-                </Button>
-              </div>
-            </div>
-
-            <Scroll className="flex-1">
-              {webhooksQuery.isLoading && webhooks.length === 0 ? (
-                <WebhookListSkeleton />
-              ) : webhooks.length === 0 ? (
-                <WebhookListEmptyState onCreate={() => void openEditor(null)} />
-              ) : (
-                <WebhookList
-                  onSelect={(webhook) => {
-                    navigate(`/webhooks/${webhook.id}`)
-                  }}
-                  selectedId={detailId}
-                  webhooks={webhooks}
-                />
-              )}
-            </Scroll>
-          </section>
-        }
+      {empty ? (
+        <Page
+          description={t('routes.webhooks.description')}
+          title={t('routes.webhooks.title')}
+        >
+          <Empty
+            action={
+              <Button
+                icon={Plus}
+                onClick={() => setCreating(true)}
+                type="primary"
+              >
+                {text('create')}
+              </Button>
+            }
+            description={text('emptyDescription')}
+            icon={Webhook}
+            title={text('emptyTitle')}
+          />
+        </Page>
+      ) : (
+        <MasterDetailShell
+          emptyDetail={
+            webhooks.length > 0 ? (
+              <DetailPlaceholder icon={Webhook} title={text('listTitle')} />
+            ) : null
+          }
+          list={
+            <WebhookListPane
+              onCreate={() => setCreating(true)}
+              onSelect={(webhook) => navigate(`/webhooks/${webhook.id}`)}
+              selectedId={detailId}
+            />
+          }
+          onDismiss={closeDetail}
+        />
+      )}
+      <WebhookCreateModal
+        existingIds={webhooks.map((item) => item.id)}
+        onClose={() => setCreating(false)}
+        onCreated={(id) => {
+          setCreating(false)
+          if (id) navigate(`/webhooks/${id}?tab=deliveries`)
+        }}
+        open={creating}
       />
     </WebhooksRouteContext.Provider>
   )

@@ -11,6 +11,7 @@ import {
   useToolbarState,
 } from '@haklex/rich-plugin-toolbar'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
+import { createStaticStyles } from '@lobehub/ui'
 import {
   FORMAT_ELEMENT_COMMAND,
   FORMAT_TEXT_COMMAND,
@@ -44,13 +45,173 @@ import {
   Underline,
   Undo,
 } from 'lucide-react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 
 import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
 import { cn } from '~/utils/cn'
 
 import { presentEditorDebugDialog } from './EditorDebugDialog'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u783b0d9d: css`
+    width: 14px;
+    height: 14px;
+  `,
+  u90665ca6: css`
+    font-style: italic;
+  `,
+  uc82b67c8: css`
+    text-decoration: underline;
+  `,
+  ufb56d9cf: css`
+    margin-inline-start: auto;
+  `,
+  u2f41b8fa: css`
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+
+    width: 28px;
+    height: 28px;
+    border-radius: ${cssVar.borderRadiusSM};
+
+    color: ${cssVar.colorTextSecondary};
+
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease;
+
+    &:hover {
+      color: ${cssVar.colorText};
+      background-color: ${cssVar.colorFillTertiary};
+    }
+
+    &:disabled {
+      pointer-events: none;
+      opacity: 0.4;
+    }
+
+    &[data-popup-open] {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  uc79576d9: css`
+    color: ${cssVar.colorText};
+    background-color: ${cssVar.colorFillSecondary};
+  `,
+  u8ffe2f5b: css`
+    flex-shrink: 0;
+    width: 1px;
+    height: 16px;
+    margin-inline: 4px;
+    background-color: ${cssVar.colorBorderSecondary};
+  `,
+  ucd87796a: css`
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 4px;
+    align-items: center;
+
+    height: 28px;
+    padding-inline: 6px;
+    border-radius: ${cssVar.borderRadiusSM};
+
+    font-size: ${cssVar.fontSizeSM};
+    font-weight: 500;
+    line-height: ${cssVar.lineHeightSM};
+    color: ${cssVar.colorTextSecondary};
+
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease;
+
+    &:hover {
+      color: ${cssVar.colorText};
+      background-color: ${cssVar.colorFillTertiary};
+    }
+
+    &[data-popup-open] {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  ub481f7c2: css`
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+  `,
+  uf283ea9b: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  u1097ae67: css`
+    width: 12px;
+    height: 12px;
+    opacity: 0.6;
+  `,
+  u85d2070d: css`
+    min-width: 10rem;
+  `,
+  u6a9cae37: css`
+    min-width: 8rem;
+  `,
+  u359090c2: css`
+    gap: 8px;
+  `,
+  ucfc6e672: css`
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  ue8f85260: css`
+    min-width: 11rem;
+  `,
+  u68f02d14: css`
+    position: sticky;
+    z-index: 10;
+    inset-block-start: 0;
+
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    align-items: center;
+
+    width: 100%;
+    padding-block: 6px;
+    padding-inline: 8px;
+    border-block-end: 1px solid ${cssVar.colorBorderSecondary};
+
+    background-color: ${cssVar.colorBgContainer};
+  `,
+  u9580bd2e: css`
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 14px;
+    height: 14px;
+
+    & > svg {
+      width: 14px;
+      height: 14px;
+    }
+  `,
+  ub893c6dc: css`
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+
+    width: 14px;
+    height: 14px;
+
+    & > svg {
+      width: 14px;
+      height: 14px;
+    }
+  `,
+}))
 
 const MAX_INLINE_INSERT_ITEMS = 5
 
@@ -100,10 +261,7 @@ export function EditorToolbar(props: { className?: string }) {
   return (
     <div
       aria-label="编辑器工具栏"
-      className={cn(
-        'sticky top-0 z-10 flex w-full items-center gap-0.5 overflow-x-auto border-b border-neutral-200 bg-white/85 px-2 py-1.5 backdrop-blur dark:border-neutral-900 dark:bg-neutral-950/85',
-        props.className,
-      )}
+      className={cn(lobeStyles.u68f02d14, props.className)}
       role="toolbar"
     >
       <FontFamilyMenu activeValue={state.fontFamily} editor={editor} />
@@ -119,7 +277,7 @@ export function EditorToolbar(props: { className?: string }) {
               active={state.blockType === option.type}
               onClick={() => applyBlockType(editor, option.type)}
             >
-              <Icon aria-hidden="true" className="size-3.5" />
+              <Icon aria-hidden="true" className={lobeStyles.u783b0d9d} />
               {option.label}
             </ToolbarMenuItem>
           )
@@ -219,20 +377,12 @@ export function EditorToolbar(props: { className?: string }) {
 
       <ToolbarDivider />
 
-      {ALIGN_OPTIONS.map((option) => (
-        <ToolbarIconButton
-          key={option.format}
-          active={
-            state.elementFormat === option.format ||
-            (option.format === 'left' && state.elementFormat === '')
-          }
-          icon={option.icon}
-          label={option.label}
-          onClick={() =>
-            editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, option.format)
-          }
-        />
-      ))}
+      <AlignMenu
+        activeFormat={state.elementFormat || 'left'}
+        onSelect={(format) =>
+          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, format)
+        }
+      />
 
       {insertItems.length > 0 ? (
         <>
@@ -259,19 +409,27 @@ export function EditorToolbar(props: { className?: string }) {
         </>
       ) : null}
 
-      <div aria-hidden="true" className="ml-auto" />
-      <button
-        aria-label="调试 · 导出 Editor State"
-        className="focus-visible:outline-hidden inline-flex size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus-visible:ring-1 focus-visible:ring-neutral-400 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100"
-        onClick={() => {
-          const json = JSON.stringify(editor.getEditorState().toJSON(), null, 2)
-          presentEditorDebugDialog(json)
-        }}
-        title="调试 · 导出 Editor State"
-        type="button"
-      >
-        <Bug aria-hidden="true" className="size-3.5" />
-      </button>
+      {import.meta.env.DEV ? (
+        <>
+          <div aria-hidden="true" className={lobeStyles.ufb56d9cf} />
+          <button
+            aria-label="调试 · 导出 Editor State"
+            className={lobeStyles.u2f41b8fa}
+            onClick={() => {
+              const json = JSON.stringify(
+                editor.getEditorState().toJSON(),
+                null,
+                2,
+              )
+              presentEditorDebugDialog(json)
+            }}
+            title="调试 · 导出 Editor State"
+            type="button"
+          >
+            <Bug aria-hidden="true" className={lobeStyles.u783b0d9d} />
+          </button>
+        </>
+      ) : null}
     </div>
   )
 }
@@ -290,11 +448,7 @@ function ToolbarIconButton(props: {
     <button
       aria-label={props.label}
       aria-pressed={props.active}
-      className={cn(
-        'focus-visible:outline-hidden inline-flex size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus-visible:ring-1 focus-visible:ring-neutral-400 disabled:pointer-events-none disabled:opacity-40 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100',
-        props.active &&
-          'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-neutral-50',
-      )}
+      className={cn(lobeStyles.u2f41b8fa, props.active && lobeStyles.uc79576d9)}
       disabled={props.disabled}
       onMouseDown={(event) => {
         event.preventDefault()
@@ -306,12 +460,9 @@ function ToolbarIconButton(props: {
       type="button"
     >
       {Icon ? (
-        <Icon aria-hidden="true" className="size-3.5" />
+        <Icon aria-hidden="true" className={lobeStyles.u783b0d9d} />
       ) : (
-        <span
-          aria-hidden="true"
-          className="inline-flex size-3.5 items-center justify-center [&>svg]:size-3.5"
-        >
+        <span aria-hidden="true" className={lobeStyles.u9580bd2e}>
           {props.iconNode}
         </span>
       )}
@@ -320,16 +471,10 @@ function ToolbarIconButton(props: {
 }
 
 function ToolbarDivider() {
-  return (
-    <div
-      aria-hidden="true"
-      className="mx-1 h-4 w-px shrink-0 bg-neutral-200 dark:bg-neutral-800"
-    />
-  )
+  return <div aria-hidden="true" className={lobeStyles.u8ffe2f5b} />
 }
 
-const toolbarTriggerClass =
-  'inline-flex h-7 shrink-0 items-center gap-1 rounded-sm px-1.5 text-xs font-medium text-fg-muted transition-colors hover:bg-surface-inset hover:text-fg data-[popup-open]:bg-surface-inset'
+const toolbarTriggerClass = lobeStyles.ucd87796a
 
 function BlockMenu(props: {
   activeIcon: LucideIcon
@@ -340,12 +485,50 @@ function BlockMenu(props: {
   return (
     <DropdownMenu>
       <DropdownMenu.Trigger className={toolbarTriggerClass} type="button">
-        <Icon aria-hidden="true" className="size-3.5 shrink-0" />
-        <span className="truncate">{props.label}</span>
-        <ChevronDown aria-hidden="true" className="size-3 opacity-60" />
+        <Icon aria-hidden="true" className={lobeStyles.ub481f7c2} />
+        <span className={lobeStyles.uf283ea9b}>{props.label}</span>
+        <ChevronDown aria-hidden="true" className={lobeStyles.u1097ae67} />
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content className="min-w-40">
+      <DropdownMenu.Content className={lobeStyles.u85d2070d}>
         {props.children}
+      </DropdownMenu.Content>
+    </DropdownMenu>
+  )
+}
+
+function AlignMenu(props: {
+  activeFormat: string
+  onSelect: (format: (typeof ALIGN_OPTIONS)[number]['format']) => void
+}) {
+  const active =
+    ALIGN_OPTIONS.find((option) => option.format === props.activeFormat) ??
+    ALIGN_OPTIONS[0]
+  const Icon = active.icon
+  return (
+    <DropdownMenu>
+      <DropdownMenu.Trigger
+        aria-label={`对齐：${active.label}`}
+        className={toolbarTriggerClass}
+        title="对齐"
+        type="button"
+      >
+        <Icon aria-hidden="true" className={lobeStyles.ub481f7c2} />
+        <ChevronDown aria-hidden="true" className={lobeStyles.u1097ae67} />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content className={lobeStyles.u85d2070d}>
+        {ALIGN_OPTIONS.map((option) => {
+          const OptionIcon = option.icon
+          return (
+            <ToolbarMenuItem
+              active={option.format === active.format}
+              key={option.format}
+              onClick={() => props.onSelect(option.format)}
+            >
+              <OptionIcon aria-hidden="true" className={lobeStyles.u783b0d9d} />
+              {option.label}
+            </ToolbarMenuItem>
+          )
+        })}
       </DropdownMenu.Content>
     </DropdownMenu>
   )
@@ -364,22 +547,19 @@ function FontFamilyMenu(props: {
         title="字体"
         type="button"
       >
-        <Type aria-hidden="true" className="size-3.5 shrink-0" />
-        <span className="truncate">{label}</span>
-        <ChevronDown aria-hidden="true" className="size-3 opacity-60" />
+        <Type aria-hidden="true" className={lobeStyles.ub481f7c2} />
+        <span className={lobeStyles.uf283ea9b}>{label}</span>
+        <ChevronDown aria-hidden="true" className={lobeStyles.u1097ae67} />
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content className="min-w-32">
+      <DropdownMenu.Content className={lobeStyles.u6a9cae37}>
         {FONT_FAMILIES.map((def) => {
-          const style: CSSProperties | undefined = def.value
-            ? { fontFamily: def.value }
-            : undefined
           return (
             <ToolbarMenuItem
               key={def.label}
               active={props.activeValue === def.value}
               onClick={() => applyFontFamily(props.editor, def.value)}
             >
-              <span style={style}>{def.label}</span>
+              {def.label}
             </ToolbarMenuItem>
           )
         })}
@@ -395,7 +575,7 @@ function ToolbarMenuItem(props: {
 }) {
   return (
     <DropdownMenu.Item
-      className={cn('text-xs', props.active && 'text-fg')}
+      className={cn(lobeStyles.u359090c2, props.active && lobeStyles.ucfc6e672)}
       onClick={props.onClick}
     >
       {props.children}
@@ -410,20 +590,17 @@ function InsertOverflowMenu(props: {
     <DropdownMenu>
       <DropdownMenu.Trigger
         aria-label="更多插入"
-        className="outline-hidden inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:bg-surface-inset hover:text-fg data-[popup-open]:bg-surface-inset"
+        className={lobeStyles.u2f41b8fa}
         title="更多"
         type="button"
       >
-        <MoreHorizontal aria-hidden="true" className="size-3.5" />
+        <MoreHorizontal aria-hidden="true" className={lobeStyles.u783b0d9d} />
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="end" className="min-w-44">
+      <DropdownMenu.Content align="end" className={lobeStyles.ue8f85260}>
         {props.items.map((item) => (
           <ToolbarMenuItem key={item.label} onClick={item.onClick}>
             {item.icon ? (
-              <span
-                aria-hidden="true"
-                className="inline-flex size-3.5 shrink-0 items-center justify-center [&>svg]:size-3.5"
-              >
+              <span aria-hidden="true" className={lobeStyles.ub893c6dc}>
                 {item.icon}
               </span>
             ) : null}

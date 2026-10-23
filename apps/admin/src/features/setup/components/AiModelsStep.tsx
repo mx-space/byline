@@ -1,15 +1,13 @@
+import { Alert, Button, Select, Text, toast } from '@lobehub/ui'
+import { Form, useForm } from '@lobehub/ui/form'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { toast } from 'sonner'
+import { useRef, useState } from 'react'
 
 import { getModelsByCapability } from '~/api/ai'
 import type { AIProviderCapability } from '~/features/settings/types/settings'
-import { useI18n } from '~/i18n'
-import type { TranslationKey } from '~/i18n/types'
 import { adminQueryKeys } from '~/query/keys'
-import { Button } from '~/ui/primitives/button'
-import { SelectField } from '~/ui/primitives/select'
 
+import { type SetupCopyKey, useSetupCopy } from '../copy'
 import {
   useOnboardingAiConfig,
   useSaveOnboardingAiConfig,
@@ -23,59 +21,59 @@ import {
 } from '../utils/onboarding'
 import { getErrorMessage } from '../utils/setup'
 import {
-  OnboardingAsideTitle,
   OnboardingCard,
   OnboardingFooter,
   OnboardingShell,
 } from './OnboardingShell'
+import { wizardStyles } from './wizard-styles'
 
 const featureRows: Array<{
   capability: AIProviderCapability
   feature: ModelFeature
-  hintKey: TranslationKey
-  labelKey: TranslationKey
+  hint: SetupCopyKey
+  label: SetupCopyKey
 }> = [
   {
     capability: 'text',
     feature: 'writerModel',
-    hintKey: 'setup.onboarding.ai.models.writerHint',
-    labelKey: 'setup.onboarding.ai.models.writer',
+    hint: 'modelsWriterHint',
+    label: 'modelsWriter',
   },
   {
     capability: 'text',
     feature: 'summaryModel',
-    hintKey: 'setup.onboarding.ai.models.summaryHint',
-    labelKey: 'setup.onboarding.ai.models.summary',
+    hint: 'modelsSummaryHint',
+    label: 'modelsSummary',
   },
   {
     capability: 'text',
     feature: 'translationModel',
-    hintKey: 'setup.onboarding.ai.models.translationHint',
-    labelKey: 'setup.onboarding.ai.models.translation',
+    hint: 'modelsTranslationHint',
+    label: 'modelsTranslation',
   },
   {
     capability: 'text',
     feature: 'translationReviewModel',
-    hintKey: 'setup.onboarding.ai.models.translationReviewHint',
-    labelKey: 'setup.onboarding.ai.models.translationReview',
+    hint: 'modelsReviewHint',
+    label: 'modelsReview',
   },
   {
     capability: 'text',
     feature: 'insightsModel',
-    hintKey: 'setup.onboarding.ai.models.insightsHint',
-    labelKey: 'setup.onboarding.ai.models.insights',
+    hint: 'modelsInsightsHint',
+    label: 'modelsInsights',
   },
   {
     capability: 'speech',
     feature: 'ttsModel',
-    hintKey: 'setup.onboarding.ai.models.ttsHint',
-    labelKey: 'setup.onboarding.ai.models.tts',
+    hint: 'modelsTtsHint',
+    label: 'modelsTts',
   },
   {
     capability: 'image',
     feature: 'imageModel',
-    hintKey: 'setup.onboarding.ai.models.imageHint',
-    labelKey: 'setup.onboarding.ai.models.image',
+    hint: 'modelsImageHint',
+    label: 'modelsImage',
   },
 ]
 
@@ -92,7 +90,7 @@ export function AiModelsStep(props: {
   onLater?: () => void
   onNext: () => void
 }) {
-  const { t } = useI18n()
+  const copy = useSetupCopy()
   const configQuery = useOnboardingAiConfig()
   const save = useSaveOnboardingAiConfig()
   const imageQuery = useModelOptions('image')
@@ -106,12 +104,15 @@ export function AiModelsStep(props: {
   }
   const modelsLoading =
     imageQuery.isPending || speechQuery.isPending || textQuery.isPending
+  const modelsError =
+    imageQuery.isError || speechQuery.isError || textQuery.isError
   const textOptions = optionsByCapability.text
   const [defaultChoice, setDefaultChoice] = useState<string | null>(null)
   const [overrides, setOverrides] = useState<
     Partial<Record<ModelFeature, string>>
   >({})
   const [submitting, setSubmitting] = useState(false)
+  const lock = useRef(false)
 
   const savedDefault = toModelOption(configQuery.data?.writerModel)
   const defaultValue =
@@ -130,122 +131,130 @@ export function AiModelsStep(props: {
     return saved === savedDefault ? '' : saved
   }
 
-  const submit = async () => {
-    if (!configQuery.data || submitting) return
-    setSubmitting(true)
-    try {
-      const plan = {
-        defaultModel: parseModelOption(defaultValue),
-        overrides: Object.fromEntries(
-          featureRows.map(({ feature }) => [
-            feature,
-            parseModelOption(overrides[feature] ?? savedOverride(feature)),
-          ]),
-        ),
+  const form = useForm({
+    initialValues: { ready: true },
+    onSubmit: async () => {
+      if (!configQuery.data || lock.current) return
+      lock.current = true
+      setSubmitting(true)
+      try {
+        const plan = {
+          defaultModel: parseModelOption(defaultValue),
+          overrides: Object.fromEntries(
+            featureRows.map(({ feature }) => [
+              feature,
+              parseModelOption(overrides[feature] ?? savedOverride(feature)),
+            ]),
+          ),
+        }
+        await save(applyModelPlan(configQuery.data, plan))
+        props.onNext()
+      } catch (error) {
+        toast.error(getErrorMessage(error, copy('modelsSaveError')))
+      } finally {
+        lock.current = false
+        setSubmitting(false)
       }
-      await save(applyModelPlan(configQuery.data, plan))
-      props.onNext()
-    } catch (error) {
-      toast.error(
-        getErrorMessage(error, t('setup.onboarding.ai.models.saveError')),
-      )
-    } finally {
-      setSubmitting(false)
-    }
-  }
+    },
+  })
+
+  const blocked =
+    submitting || modelsLoading || modelsError || !configQuery.data
 
   return (
-    <OnboardingShell
-      aside={
-        <>
-          <OnboardingAsideTitle>
-            {t('setup.onboarding.ai.models.asideTitle')}
-          </OnboardingAsideTitle>
-          <div className="flex flex-col gap-2.5 text-sm">
-            <p>{t('setup.onboarding.ai.models.asideWriter')}</p>
-            <p>{t('setup.onboarding.ai.models.asideBulk')}</p>
-            <p className="text-fg-muted">
-              {t('setup.onboarding.ai.models.asideLater')}
-            </p>
-          </div>
-        </>
-      }
-      onLater={props.onLater}
-      step="ai-models"
-    >
-      <OnboardingCard
-        description={t('setup.onboarding.ai.models.description')}
-        footer={
-          <OnboardingFooter onBack={props.onBack}>
-            <Button
-              data-testid="onboarding-submit"
-              disabled={submitting || modelsLoading || !configQuery.data}
-              onClick={() => void submit()}
-              type="button"
+    <OnboardingShell onLater={props.onLater} step="ai-models">
+      <Form form={form} layout="vertical">
+        <OnboardingCard
+          description={copy('modelsDescription')}
+          footer={
+            <OnboardingFooter onBack={props.onBack}>
+              <Button
+                data-testid="onboarding-submit"
+                disabled={blocked}
+                htmlType="submit"
+                loading={submitting}
+                title={blocked ? copy('modelsBlocked') : undefined}
+                type="primary"
+              >
+                {copy('modelsContinue')}
+              </Button>
+            </OnboardingFooter>
+          }
+          title={copy('modelsTitle')}
+        >
+          <div className={wizardStyles.stack}>
+            {modelsLoading || configQuery.isPending ? (
+              <Text type="secondary">{copy('modelsLoading')}</Text>
+            ) : null}
+            {modelsError || configQuery.isError ? (
+              <Alert showIcon title={copy('modelsLoadError')} type="error" />
+            ) : null}
+            {modelsError || configQuery.isError ? (
+              <Button
+                htmlType="button"
+                onClick={() => {
+                  void imageQuery.refetch()
+                  void speechQuery.refetch()
+                  void textQuery.refetch()
+                  void configQuery.refetch()
+                }}
+                type="text"
+              >
+                {copy('retry')}
+              </Button>
+            ) : null}
+            <Form.Field
+              desc={copy('modelsDefaultHint')}
+              label={copy('modelsDefault')}
             >
-              {t('setup.onboarding.action.continue')}
-            </Button>
-          </OnboardingFooter>
-        }
-        title={t('setup.onboarding.ai.models.title')}
-      >
-        <div className="flex flex-col gap-4">
-          <div className="grid gap-1.5 text-sm">
-            <span className="font-medium text-fg">
-              {t('setup.onboarding.ai.models.default')}
-            </span>
-            <SelectField
-              aria-label={t('setup.onboarding.ai.models.default')}
-              disabled={textOptions.length === 0}
-              onValueChange={setDefaultChoice}
-              options={textOptions}
-              value={defaultValue}
-            />
-          </div>
-          <div className="divide-y divide-border rounded-sm border border-border">
+              <Select
+                aria-label={copy('modelsDefault')}
+                disabled={textOptions.length === 0}
+                onChange={(value) => {
+                  if (typeof value === 'string') setDefaultChoice(value)
+                }}
+                options={textOptions}
+                value={defaultValue}
+              />
+            </Form.Field>
             {featureRows.map((row) => {
               const capabilityOptions = optionsByCapability[row.capability]
               const unavailable = capabilityOptions.length === 0
               const emptyLabel = unavailable
-                ? t('setup.onboarding.ai.models.notConfigured')
+                ? copy('modelsMissing')
                 : row.capability === 'text'
-                  ? t('setup.onboarding.ai.models.followDefault')
-                  : t('setup.onboarding.ai.models.none')
+                  ? copy('modelsFollow')
+                  : copy('modelsNone')
+              const value = overrides[row.feature] ?? savedOverride(row.feature)
               return (
-                <div
-                  className="flex items-center gap-3 px-3 py-2.5"
+                <Form.Field
+                  desc={copy(row.hint)}
                   key={row.feature}
+                  label={copy(row.label)}
                 >
-                  <span className="min-w-0 flex-1 text-sm">
-                    <span className="block font-medium text-fg">
-                      {t(row.labelKey)}
-                    </span>
-                    <span className="block text-fg-muted">
-                      {t(row.hintKey)}
-                    </span>
-                  </span>
-                  <SelectField
-                    aria-label={t(row.labelKey)}
-                    className="w-44 shrink-0 sm:w-56"
+                  <Select
+                    aria-label={copy(row.label)}
                     disabled={unavailable}
-                    onValueChange={(value) =>
+                    onChange={(next) => {
+                      if (typeof next !== 'string') return
                       setOverrides((current) => ({
                         ...current,
-                        [row.feature]: value,
+                        [row.feature]: next,
                       }))
-                    }
+                    }}
                     options={[
                       { label: emptyLabel, value: '' },
                       ...capabilityOptions,
                     ]}
-                    value={overrides[row.feature] ?? savedOverride(row.feature)}
+                    value={value}
                   />
-                </div>
+                </Form.Field>
               )
             })}
+            <Text type="secondary">{copy('modelsLater')}</Text>
           </div>
-        </div>
-      </OnboardingCard>
+        </OnboardingCard>
+      </Form>
     </OnboardingShell>
   )
 }

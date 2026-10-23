@@ -1,4 +1,4 @@
-import { Languages, Plus, Sparkles } from 'lucide-react'
+import { Languages, Plus } from 'lucide-react'
 import { useMemo } from 'react'
 
 import type { AIInsights } from '~/api/ai'
@@ -12,28 +12,66 @@ import {
 } from '~/api/ai'
 
 import { ArticleGroupedRouteView } from '../components/article-grouped/ArticleGroupedRouteView'
-import { InsightsEditBody } from '../components/article-grouped/InsightsEditBody'
+import { presentGeneratePrompt } from '../components/article-grouped/GeneratePromptModal'
 import type { ArticleGroupedConfig } from '../components/article-grouped/types'
+import { useAiCopy } from '../copy'
+import { firstLine } from '../utils/ai'
 
 export function AiInsightsRouteView() {
+  const copy = useAiCopy()
+
   const config = useMemo<ArticleGroupedConfig<AIInsights>>(
     () => ({
-      scopeIdPrefix: 'ai-insights',
-      pageTitleKey: 'routes.aiInsights.title',
-      totalCountKey: 'ai.articleGrouped.totalCount',
-      itemCountKey: 'ai.articleGrouped.itemCount',
-      searchPlaceholderKey: 'ai.insights.searchPlaceholder',
-      emptyTitleKey: 'ai.articleGrouped.emptyTitle',
-      emptyDescriptionKey: 'ai.articleGrouped.emptyDescription',
-      detailEmptyTitleKey: 'ai.insights.emptyTitle',
-      detailEmptyDescriptionKey: 'ai.insights.emptyDescription',
-      detailSectionTitleKey: 'ai.insights.detailSectionTitle',
-      inlineEmptyKey: 'ai.articleGrouped.inlineEmpty',
-      itemDeleteConfirmKey: 'ai.articleGrouped.confirmDelete',
-      editTitleKey: 'ai.insights.editTitle',
-      kindKey: 'ai.insights.kind',
-
-      groupedQueryKey: 'insights',
+      deleteItem: deleteInsights,
+      extraItemActions: (item) => [
+        {
+          icon: Languages,
+          id: 'translate',
+          label: copy('translateInsights'),
+          run: async (target) => {
+            const result = await presentGeneratePrompt({
+              promptForLang: true,
+              title: copy('translateInsights'),
+            })
+            if (!result?.langs.length) return
+            await Promise.all(
+              result.langs
+                .filter((lang) => lang !== target.lang)
+                .map((lang) =>
+                  createInsightsTranslationTask({
+                    force: result.force,
+                    refId: target.refId,
+                    targetLang: lang,
+                  }),
+                ),
+            )
+          },
+        },
+        item.isTranslation
+          ? {
+              icon: Languages,
+              id: 'retranslate',
+              label: copy('retryInsightsTranslation'),
+              run: (target) =>
+                createInsightsTranslationTask({
+                  refId: target.refId,
+                  targetLang: target.lang,
+                }),
+            }
+          : {
+              icon: Plus,
+              id: 'regenerate',
+              label: copy('retryInsights'),
+              run: (target) =>
+                createInsightsTask({ force: true, refId: target.refId }),
+            },
+      ],
+      generate: {
+        promptForLang: false,
+        runTask: ({ refId, force }) => createInsightsTask({ force, refId }),
+        taskTypeForQueue: 'Insights',
+      },
+      getCreatedAt: (item) => item.createdAt,
       getGroupedPage: async (params) => {
         const response = await getInsightsGrouped(params)
         return {
@@ -44,73 +82,22 @@ export function AiInsightsRouteView() {
           pagination: response.pagination,
         }
       },
+      getId: (item) => item.id,
       getItemsByRef: async (refId) => {
         const response = await getInsightsByRef(refId)
         return { article: response.article, items: response.insights }
       },
-      deleteItem: deleteInsights,
-      updateItem: (id, next) => updateInsights(id, { content: next.content }),
-
-      generate: {
-        labelKey: 'ai.insights.generateLabel',
-        icon: Sparkles,
-        promptForLang: false,
-        runTask: ({ refId, force }) => createInsightsTask({ force, refId }),
-        taskTypeForQueue: 'Insights',
-      },
-
-      extraItemActions: (item) => {
-        const list: Array<{
-          id: string
-          labelKey:
-            | 'ai.insights.translateLabel'
-            | 'ai.action.retranslate'
-            | 'ai.action.regenerate'
-          icon: typeof Languages
-          run: (target: AIInsights) => Promise<unknown>
-        }> = [
-          {
-            id: 'translate',
-            labelKey: 'ai.insights.translateLabel',
-            icon: Languages,
-            run: (target) =>
-              createInsightsTranslationTask({
-                refId: target.refId,
-                targetLang: target.lang === 'en' ? 'zh' : 'en',
-              }),
-          },
-        ]
-        if (item.isTranslation) {
-          list.push({
-            id: 'retranslate',
-            labelKey: 'ai.action.retranslate',
-            icon: Languages,
-            run: (target) =>
-              createInsightsTranslationTask({
-                refId: target.refId,
-                targetLang: target.lang,
-              }),
-          })
-        } else {
-          list.push({
-            id: 'regenerate',
-            labelKey: 'ai.action.regenerate',
-            icon: Plus,
-            run: (target) =>
-              createInsightsTask({ force: true, refId: target.refId }),
-          })
-        }
-        return list
-      },
-
-      getPreview: (item) => item.content,
       getLang: (item) => item.lang,
-      getCreatedAt: (item) => item.createdAt,
-      getId: (item) => item.id,
-
-      EditDrawerBody: InsightsEditBody,
+      getPreview: (item) => firstLine(item.content),
+      getStatus: (item) =>
+        item.isTranslation && item.sourceLang
+          ? { label: copy('translatedFrom', { lang: item.sourceLang }) }
+          : null,
+      groupedQueryKey: 'insights',
+      product: 'insights',
+      updateItem: (id, next) => updateInsights(id, { content: next.content }),
     }),
-    [],
+    [copy],
   )
 
   return <ArticleGroupedRouteView<AIInsights> config={config} />

@@ -28,8 +28,8 @@ if (typeof window !== 'undefined') {
     {}
 }
 
-// React 19's `act` from `react` (used by raw `react-dom/client` mounts in
-// `responsive-data-table.test.tsx` etc.) requires this flag at module load.
+// React 19's `act` from `react` (used by raw `react-dom/client` mounts)
+// requires this flag at module load.
 ;(
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true

@@ -1,22 +1,67 @@
+import { createStaticStyles, Empty, ScrollArea, Spin, Text } from '@lobehub/ui'
+import { FileWarning } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import { useI18n } from '~/i18n'
-import { Scroll } from '~/ui/primitives/scroll'
-
+import { useDraftCopy } from '../copy'
 import type { DiffRendererInstance } from '../types/drafts'
 import { ensureDiffHighlighter } from '../utils/diff-highlighter'
 
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  frame: css`
+    position: relative;
+    min-height: 240px;
+    border: 1px solid ${cssVar.colorFillSecondary};
+    border-radius: ${cssVar.borderRadius};
+    background: ${cssVar.colorBgContainer};
+  `,
+  head: css`
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-block-end: 8px;
+  `,
+  label: css`
+    font-size: ${cssVar.fontSizeSM};
+    color: ${cssVar.colorTextSecondary};
+  `,
+  overlay: css`
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: ${cssVar.colorBgContainer};
+  `,
+  root: css`
+    min-width: 0;
+  `,
+  title: css`
+    margin: 0;
+    font-size: ${cssVar.fontSize};
+    font-weight: 600;
+  `,
+  viewport: css`
+    min-height: 240px;
+  `,
+}))
+
 export function MarkdownDraftDiffPanel(props: {
   comparisonLabel?: string
+  hideTitle?: boolean
   currentLabel?: string
   currentText: string
   selectedLabel?: string
   selectedText: string
 }) {
-  const { t } = useI18n()
+  const { copy } = useDraftCopy()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const comparisonLabel = props.comparisonLabel ?? copy('diffHistoryDirection')
+  const currentLabel = props.currentLabel ?? copy('diffDraftFile')
+  const selectedLabel = props.selectedLabel ?? copy('diffHistoryFile')
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -45,11 +90,11 @@ export function MarkdownDraftDiffPanel(props: {
           containerWrapper: containerRef.current,
           newFile: {
             contents: props.currentText,
-            name: `${props.currentLabel ?? t('drafts.history.currentFile')}.md`,
+            name: `${currentLabel}.md`,
           },
           oldFile: {
             contents: props.selectedText,
-            name: `${props.selectedLabel ?? t('drafts.history.historyFile')}.md`,
+            name: `${selectedLabel}.md`,
           },
         })
         diffInstance = nextDiffInstance
@@ -67,49 +112,55 @@ export function MarkdownDraftDiffPanel(props: {
       diffInstance?.cleanUp()
       if (containerRef.current) containerRef.current.innerHTML = ''
     }
-  }, [
-    props.currentText,
-    props.currentLabel,
-    props.selectedText,
-    props.selectedLabel,
-    t,
-  ])
+  }, [props.currentText, props.selectedText, currentLabel, selectedLabel])
+
+  const empty =
+    !isLoading && !hasError && !props.selectedText && !props.currentText
 
   return (
-    <section className="min-h-full min-w-0">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h3 className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
-          {t('drafts.diff.markdown.title')}
-        </h3>
-        <span className="shrink-0 text-xs text-neutral-500">
-          {props.comparisonLabel ?? t('drafts.history.direction')}
-        </span>
+    <section className={styles.root}>
+      <div className={styles.head}>
+        {props.hideTitle ? null : (
+          <Text as="h3" className={styles.title}>
+            {copy('diffMarkdownTitle')}
+          </Text>
+        )}
+        <Text as="span" className={styles.label}>
+          {comparisonLabel}
+        </Text>
       </div>
-      <Scroll
-        className="relative min-h-[20rem] border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"
-        orientation="both"
-        viewportClassName="min-h-[20rem]"
+      <ScrollArea
+        className={styles.frame}
+        corner
+        scrollFade="both"
+        viewportProps={{ className: styles.viewport }}
       >
-        <div className="min-h-[20rem]" ref={containerRef} />
+        <div className={styles.viewport} ref={containerRef} />
         {isLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/80 text-sm text-neutral-500 backdrop-blur-sm dark:bg-neutral-950/80 dark:text-neutral-400">
-            {t('drafts.diff.loading')}
+          <div className={styles.overlay}>
+            <Spin size="small" />
+            <Text as="span" type="secondary">
+              {copy('diffLoading')}
+            </Text>
           </div>
         ) : null}
         {hasError ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-white text-sm text-neutral-500 dark:bg-neutral-950 dark:text-neutral-400">
-            {t('drafts.diff.failed')}
+          <div className={styles.overlay}>
+            <Empty
+              description={copy('diffFailed')}
+              icon={FileWarning}
+              title={copy('diffMarkdownTitle')}
+            />
           </div>
         ) : null}
-        {!isLoading &&
-        !hasError &&
-        !props.selectedText &&
-        !props.currentText ? (
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-neutral-500 dark:text-neutral-400">
-            {t('drafts.diff.empty')}
+        {empty ? (
+          <div className={styles.overlay}>
+            <Text as="p" type="secondary">
+              {copy('diffEmpty')}
+            </Text>
           </div>
         ) : null}
-      </Scroll>
+      </ScrollArea>
     </section>
   )
 }

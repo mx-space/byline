@@ -1,7 +1,9 @@
 import { ApiRequestError } from '~/api/http'
-import type { UserDetail } from '~/api/users'
+import type { UserDetail, UserStatusFilter } from '~/api/users'
 import { translate } from '~/i18n/translate'
 import type { TranslationKey } from '~/i18n/types'
+
+export const EMPTY_VALUE = '--'
 
 export type UserStatus = 'active' | 'deactivated' | 'profileOnly'
 
@@ -21,7 +23,41 @@ export function getUserStatus(
 export function getUserDisplayName(
   user: Pick<UserDetail, 'displayName'> & { username?: string | null },
 ) {
-  return user.displayName || user.username || '-'
+  return user.displayName?.trim() || user.username?.trim() || EMPTY_VALUE
+}
+
+export function showValue(value: string | null | undefined) {
+  const trimmed = value?.trim()
+  return trimmed || EMPTY_VALUE
+}
+
+export function parseUserStatusFilter(value: string | null): UserStatusFilter {
+  if (
+    value === 'active' ||
+    value === 'all' ||
+    value === 'deactivated' ||
+    value === 'profile_only'
+  ) {
+    return value
+  }
+  return 'all'
+}
+
+export function bylinePlace(
+  authors: { id: string }[] | undefined,
+  userId: string,
+) {
+  if (!authors?.length) return null
+  const index = authors.findIndex((author) => author.id === userId)
+  return index < 0 ? null : index + 1
+}
+
+export function formatAdminTime(value: string | null | undefined) {
+  if (!value) return EMPTY_VALUE
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return EMPTY_VALUE
+  const pad = (part: number) => String(part).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 export function canEditSignInIdentity(

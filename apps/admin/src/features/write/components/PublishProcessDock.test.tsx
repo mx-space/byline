@@ -6,9 +6,9 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AITaskStatus, getTasks } from '~/api/tasks'
-import { I18nProvider } from '~/i18n'
 
 import { PublishProcessDock } from './PublishProcessDock'
+import { withUi } from './test-providers'
 
 vi.mock('~/api/tasks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('~/api/tasks')>()),
@@ -70,11 +70,7 @@ describe('PublishProcessDock', () => {
           createElement(
             QueryClientProvider,
             { client: queryClient },
-            createElement(
-              I18nProvider,
-              null,
-              createElement(PublishProcessDock),
-            ),
+            withUi(createElement(PublishProcessDock)),
           ),
         ),
       )
@@ -116,11 +112,7 @@ describe('PublishProcessDock', () => {
           createElement(
             QueryClientProvider,
             { client: queryClient },
-            createElement(
-              I18nProvider,
-              null,
-              createElement(PublishProcessDock),
-            ),
+            withUi(createElement(PublishProcessDock)),
           ),
         ),
       )
@@ -180,11 +172,7 @@ describe('PublishProcessDock', () => {
           createElement(
             QueryClientProvider,
             { client: queryClient },
-            createElement(
-              I18nProvider,
-              null,
-              createElement(PublishProcessDock),
-            ),
+            withUi(createElement(PublishProcessDock)),
           ),
         ),
       )

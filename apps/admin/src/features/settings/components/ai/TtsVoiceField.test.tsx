@@ -83,21 +83,26 @@ describe('TtsVoiceField', () => {
       )
     })
 
-    const trigger = document.querySelector<HTMLButtonElement>(
-      'button[aria-label="打开音色列表"]',
+    const input = document.querySelector<HTMLInputElement>(
+      'input[placeholder="选择已发现音色或输入 ID"]',
     )
-    expect(trigger).not.toBeNull()
-    await act(async () => trigger?.click())
+    expect(input).not.toBeNull()
+    await act(async () => {
+      input?.focus()
+      input?.dispatchEvent(
+        new KeyboardEvent('keydown', { bubbles: true, key: 'ArrowDown' }),
+      )
+    })
 
     expect(document.body.textContent).toContain('Eve')
     expect(document.body.textContent).toContain('Rex')
     expect(document.body.textContent).toContain('已发现 5 个音色')
 
-    const input = document.querySelector<HTMLInputElement>(
-      'input[aria-label="音色 ID"]',
+    const voiceInput = document.querySelector<HTMLInputElement>(
+      'input[placeholder="选择已发现音色或输入 ID"]',
     )
-    expect(input).not.toBeNull()
-    await act(async () => setInputValue(input!, 'rex'))
+    expect(voiceInput).not.toBeNull()
+    await act(async () => setInputValue(voiceInput!, 'rex'))
 
     expect(document.body.textContent).not.toContain('Ara')
     const option = Array.from(

@@ -2,14 +2,13 @@ import { Sparkles } from 'lucide-react'
 
 import { defineMetadata } from '~/lib/route-meta'
 
+// `/ai` redirects to the overview. Kept so the redirect stays a real route;
+// it is not a sidebar node.
 export const metadata = defineMetadata({
   titleKey: 'routes.ai.title',
   descriptionKey: 'routes.ai.description',
   icon: Sparkles,
   order: 1,
+  hidden: true,
 })
-
-// Never rendered: the `/ai` redirect in `views/redirects.ts` is registered
-// ahead of the shell routes. This page exists so the sidebar has a parent node
-// to hang `/ai/*` under — without it the whole group flattens.
 export { AiOverviewRouteView as default } from '~/features/ai/routes/AiOverviewRouteView'

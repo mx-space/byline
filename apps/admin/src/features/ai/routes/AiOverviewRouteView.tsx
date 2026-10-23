@@ -1,1 +1,1 @@
-export { ArticleOverviewRouteView as AiOverviewRouteView } from '../components/article-overview/ArticleOverviewRouteView'
+export { CoverageMatrixRouteView as AiOverviewRouteView } from '../overview/CoverageMatrixRouteView'

@@ -1,8 +1,71 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { uploadImageFile, useEditorView } from './editor-store'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ucc24a5d7: css`
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    border-radius: 1rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    background-color: ${cssVar.colorBgContainer};
+    padding-inline: 4rem;
+    padding-block: 3rem;
+    box-shadow: ${cssVar.boxShadow};
+    transition-duration: 150ms;
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      background-color: ${cssVar.colorText};
+    }
+  `,
+  ufdfbb4cb: css`
+    color: ${cssVar.colorTextSecondary};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorTextSecondary};
+    }
+  `,
+  u4b735018: css`
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 500;
+    color: ${cssVar.colorTextSecondary};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  ub82230f8: css`
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: color-mix(
+      in srgb,
+      ${cssVar.colorBgContainer} 60%,
+      transparent
+    );
+    backdrop-filter: blur(12px);
+    :where(.dark, .dark *) & {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorText} 70%,
+        transparent
+      );
+    }
+  `,
+}))
 
 const findScrollableParent = (el: HTMLElement | null): HTMLElement | null => {
   while (el) {
@@ -96,17 +159,15 @@ export function ImageDropZone() {
   if (!isDragging || !teleportTarget) return null
 
   const overlay = (
-    <div className="pointer-events-none absolute inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-md dark:bg-neutral-950/70">
-      <div className="pointer-events-none flex flex-col items-center gap-6 rounded-2xl border border-neutral-200 bg-white px-16 py-12 shadow-2xl duration-150 dark:border-neutral-700 dark:bg-neutral-800">
+    <div className={lobeStyles.ub82230f8}>
+      <div className={lobeStyles.ucc24a5d7}>
         <Upload
           width={48}
           height={48}
           strokeWidth={1.5}
-          className="text-neutral-400 dark:text-neutral-500"
+          className={lobeStyles.ufdfbb4cb}
         />
-        <span className="text-lg font-medium text-neutral-600 dark:text-neutral-300">
-          松开以上传图片
-        </span>
+        <span className={lobeStyles.u4b735018}>松开以上传图片</span>
       </div>
     </div>
   )

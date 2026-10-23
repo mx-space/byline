@@ -1,49 +1,111 @@
+import {
+  Alert,
+  Button,
+  createStaticStyles,
+  Icon,
+  ScrollArea,
+} from '@lobehub/ui'
 import { RefreshCw } from 'lucide-react'
 
 import type { AITaskLog } from '~/api/tasks'
-import { useI18n } from '~/i18n'
-import { Scroll } from '~/ui/primitives/scroll'
 
+import { useTaskCopy } from '../copy'
 import { TaskLogRow } from './TaskLogRow'
 
-interface TaskLogsBlockProps {
-  logs: AITaskLog[] | undefined
-  polling: boolean
-}
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  section: css`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  `,
+  head: css`
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+  `,
+  title: css`
+    color: ${cssVar.colorText};
+    font-size: ${cssVar.fontSize};
+    font-weight: 500;
+    margin: 0;
+  `,
+  live: css`
+    align-items: center;
+    color: ${cssVar.colorInfo};
+    display: inline-flex;
+    font-size: ${cssVar.fontSizeSM};
+    gap: 6px;
+  `,
+  empty: css`
+    color: ${cssVar.colorTextSecondary};
+    font-size: ${cssVar.fontSizeSM};
+    margin: 0;
+  `,
+  list: css`
+    border: 1px solid ${cssVar.colorBorderSecondary};
+    border-radius: ${cssVar.borderRadius};
+    max-height: 24rem;
+  `,
+  rows: css`
+    display: flex;
+    flex-direction: column;
+  `,
+}))
 
-export function TaskLogsBlock(props: TaskLogsBlockProps) {
-  const { t } = useI18n()
-  const logs = props.logs ?? []
+export function TaskLogsBlock(props: {
+  loadFailed: boolean
+  logs: AITaskLog[] | undefined
+  onReload: () => void
+  polling: boolean
+  reloading: boolean
+}) {
+  const copy = useTaskCopy()
+  const logs = Array.isArray(props.logs) ? props.logs : []
+  const missingLogs = !Array.isArray(props.logs)
 
   return (
-    <section className="mb-6">
-      <div className="mb-2 flex items-center justify-between text-xs">
-        <h3 className="font-medium uppercase tracking-wide text-fg-muted">
-          {t('tasks.logs.title')}
-        </h3>
+    <section className={styles.section}>
+      <div className={styles.head}>
+        <h2 className={styles.title}>{copy('logTitle')}</h2>
         {props.polling ? (
-          <span className="inline-flex items-center gap-1 text-fg-subtle">
-            <RefreshCw aria-hidden="true" className="size-3 animate-spin" />
-            <span>{t('tasks.logs.auto')}</span>
+          <span className={styles.live}>
+            <Icon icon={RefreshCw} size="small" spin />
+            {copy('logLive')}
           </span>
         ) : null}
       </div>
-      {logs.length === 0 ? (
-        <p className="rounded border border-dashed border-border px-3 py-6 text-center text-xs text-fg-muted">
-          {t('tasks.logs.emptyDetail')}
-        </p>
-      ) : (
-        <Scroll
-          className="overflow-hidden rounded border border-border"
-          viewportClassName="max-h-[22rem]"
-        >
-          <div className="divide-y divide-border">
+      {props.loadFailed || missingLogs ? (
+        <Alert
+          action={
+            <Button
+              loading={props.reloading}
+              onClick={props.onReload}
+              size="small"
+            >
+              {copy('logReload')}
+            </Button>
+          }
+          description={copy('logLoadBody')}
+          title={copy('logLoadTitle')}
+          type="error"
+        />
+      ) : null}
+      {props.loadFailed && logs.length > 0 ? (
+        <p className={styles.empty}>{copy('logStale')}</p>
+      ) : null}
+      {!props.loadFailed && !missingLogs && logs.length === 0 ? (
+        <p className={styles.empty}>{copy('logEmpty')}</p>
+      ) : null}
+      {logs.length > 0 ? (
+        <ScrollArea className={styles.list} scrollFade="vertical">
+          <div className={styles.rows}>
             {logs.map((log, index) => (
               <TaskLogRow key={`${log.timestamp}-${index}`} log={log} />
             ))}
           </div>
-        </Scroll>
-      )}
+        </ScrollArea>
+      ) : null}
     </section>
   )
 }

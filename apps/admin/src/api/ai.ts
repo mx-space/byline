@@ -33,6 +33,7 @@ export interface PaginationInfo {
   size: number
   total: number
   totalPage?: number
+  totalPages?: number
 }
 
 export interface GenerationMetrics {

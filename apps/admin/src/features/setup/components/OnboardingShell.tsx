@@ -1,16 +1,17 @@
+import { Button, Flexbox, Icon, Text } from '@lobehub/ui'
+import { AuthLayout } from '@lobehub/ui/dashboard'
 import { Check, ChevronLeft } from 'lucide-react'
 import type { PropsWithChildren, ReactNode } from 'react'
 
-import { useI18n } from '~/i18n'
-import type { TranslationKey } from '~/i18n/types'
-import { authBackdropStyle } from '~/lib/auth-backdrop'
+import { AuthTools } from '~/features/auth/components/auth-tools'
+import { AuthScreen } from '~/features/auth/components/AuthScreen'
 import { FloatLayerProvider } from '~/ui/overlay/floating-layer'
-import { Button } from '~/ui/primitives/button'
-import { cn } from '~/utils/cn'
 
 import faviconUrl from '../../../../favicon.png'
+import { type SetupCopyKey, useSetupCopy } from '../copy'
 import type { OnboardingStep } from '../utils/onboarding'
 import { onboardingSteps } from '../utils/onboarding'
+import { wizardStyles } from './wizard-styles'
 
 export const deploymentDocsUrl = 'https://github.com/mx-space/byline'
 
@@ -19,23 +20,23 @@ type RailState = 'active' | 'current' | 'done' | 'pending'
 interface RailItem {
   children?: RailItem[]
   key: OnboardingStep | 'ai'
-  labelKey: TranslationKey
+  label: SetupCopyKey
 }
 
 const railItems: RailItem[] = [
-  { key: 'welcome', labelKey: 'setup.onboarding.rail.welcome' },
-  { key: 'account', labelKey: 'setup.onboarding.rail.account' },
-  { key: 'site', labelKey: 'setup.onboarding.rail.site' },
+  { key: 'welcome', label: 'stepWelcome' },
+  { key: 'account', label: 'stepAccount' },
+  { key: 'site', label: 'stepSite' },
   {
     children: [
-      { key: 'ai-providers', labelKey: 'setup.onboarding.rail.aiProviders' },
-      { key: 'ai-models', labelKey: 'setup.onboarding.rail.aiModels' },
-      { key: 'ai-features', labelKey: 'setup.onboarding.rail.aiFeatures' },
+      { key: 'ai-providers', label: 'stepProviders' },
+      { key: 'ai-models', label: 'stepModels' },
+      { key: 'ai-features', label: 'stepFeatures' },
     ],
     key: 'ai',
-    labelKey: 'setup.onboarding.rail.ai',
+    label: 'stepAi',
   },
-  { key: 'ready', labelKey: 'setup.onboarding.rail.ready' },
+  { key: 'ready', label: 'stepReady' },
 ]
 
 function stepIndex(step: OnboardingStep) {
@@ -56,49 +57,51 @@ function itemState(item: RailItem, current: OnboardingStep): RailState {
   return 'pending'
 }
 
+function currentLabel(step: OnboardingStep): SetupCopyKey {
+  for (const item of railItems) {
+    if (item.key === step) return item.label
+    const child = item.children?.find((entry) => entry.key === step)
+    if (child) return child.label
+  }
+  return 'stepWelcome'
+}
+
 function RailRow(props: {
+  hidden?: boolean
   item: RailItem
-  number?: number
   state: RailState
   sub?: boolean
 }) {
-  const { t } = useI18n()
+  const copy = useSetupCopy()
   const { state } = props
   return (
     <li
       aria-current={state === 'current' ? 'step' : undefined}
-      className={cn(
-        'flex h-8 items-center gap-2 rounded-sm px-3 text-sm',
-        props.sub && 'pl-9',
-        state === 'current' && 'bg-black/[0.04] font-medium text-fg',
-        state === 'active' && 'font-medium text-fg',
-        state === 'done' && 'text-fg',
-        state === 'pending' && 'text-fg-muted',
-      )}
+      className={`${wizardStyles.railItem} ${props.sub ? wizardStyles.railSub : ''} ${state === 'current' ? wizardStyles.railCurrent : ''}`}
       data-state={state}
       data-step={props.item.key}
+      hidden={props.hidden}
     >
-      {props.number ? (
-        <span
-          aria-hidden="true"
-          className={cn(
-            'inline-flex size-4 shrink-0 items-center justify-center rounded-full border text-xs leading-none',
-            state === 'done'
-              ? 'border-accent bg-accent text-white'
-              : state === 'pending'
-                ? 'border-border-strong text-fg-muted'
-                : 'border-accent text-accent',
-          )}
-        >
-          {state === 'done' ? (
-            <Check className="size-2.5" strokeWidth={3} />
-          ) : (
-            props.number
-          )}
-        </span>
-      ) : null}
-      {t(props.item.labelKey)}
+      {state === 'done' ? <Icon icon={Check} size="small" /> : null}
+      {copy(props.item.label)}
     </li>
+  )
+}
+
+export function SetupBoot() {
+  const copy = useSetupCopy()
+  return <AuthScreen loading title={copy('boot')} />
+}
+
+export function SetupPage(props: {
+  children?: ReactNode
+  description?: ReactNode
+  title: ReactNode
+}) {
+  return (
+    <AuthScreen subtitle={props.description} title={props.title}>
+      <FloatLayerProvider>{props.children}</FloatLayerProvider>
+    </AuthScreen>
   )
 }
 
@@ -109,73 +112,80 @@ export function OnboardingShell(
     step: OnboardingStep
   }>,
 ) {
-  const { t } = useI18n()
+  // lobe-design-ignore DETAIL-NO-EMPTY: 步骤清单是写死的，不会出现空列表
+  const copy = useSetupCopy()
+  const index = stepIndex(props.step)
+  const current = index + 1
+  const total = onboardingSteps.length
+  const remaining = total - current
+  const progressValues = {
+    current,
+    name: copy(currentLabel(props.step)),
+    remaining,
+    total,
+  }
 
   return (
-    <div
-      className="auth-light flex min-h-dvh flex-wrap bg-white text-fg"
-      style={authBackdropStyle}
+    <AuthLayout
+      background="grid"
+      brand={
+        <Flexbox horizontal align="center" gap={8}>
+          <img alt="" height={24} src={faviconUrl} width={24} />
+          <Text weight={500}>Byline</Text>
+        </Flexbox>
+      }
+      card={false}
+      tools={<AuthTools />}
+      variant="elevated"
     >
       <FloatLayerProvider>
-        <nav
-          aria-label={t('setup.onboarding.rail.label')}
-          className="flex w-full flex-col gap-5 border-b border-border bg-surface-page/70 px-3 py-5 md:w-60 md:border-r md:border-b-0"
-        >
-          <div className="flex items-center gap-2 px-3 text-base font-semibold">
-            <img alt="" className="size-6 rounded-md" src={faviconUrl} />
-            Byline
-          </div>
-          <ol className="flex flex-wrap gap-0.5 md:flex-col">
-            {railItems.flatMap((item, index) => [
-              <RailRow
-                item={item}
-                key={item.key}
-                number={index + 1}
-                state={itemState(item, props.step)}
-              />,
-              ...(item.children ?? []).map((child) => (
-                <RailRow
-                  item={child}
-                  key={child.key}
-                  state={itemState(child, props.step)}
-                  sub
-                />
-              )),
-            ])}
-          </ol>
-          {props.onLater ? (
-            <button
-              className="flex h-8 items-center rounded-sm px-3 text-left text-sm text-fg-muted transition-colors hover:bg-black/[0.04] hover:text-fg md:mt-auto"
-              onClick={props.onLater}
-              type="button"
+        <div className={wizardStyles.board}>
+          <nav aria-label={copy('railLabel')} className={wizardStyles.railCol}>
+            <p className={wizardStyles.progress}>
+              {remaining === 0
+                ? copy('progressLast', progressValues)
+                : copy('progress', progressValues)}
+            </p>
+            <ol className={wizardStyles.rail}>
+              {railItems.flatMap((item) => {
+                const state = itemState(item, props.step)
+                return [
+                  <RailRow item={item} key={item.key} state={state} />,
+                  ...(item.children ?? []).map((child) => (
+                    <RailRow
+                      hidden={state === 'pending'}
+                      item={child}
+                      key={child.key}
+                      state={itemState(child, props.step)}
+                      sub
+                    />
+                  )),
+                ]
+              })}
+            </ol>
+            {props.onLater ? (
+              <Button htmlType="button" onClick={props.onLater} type="text">
+                {copy('later')}
+              </Button>
+            ) : null}
+            <a
+              className={wizardStyles.docs}
+              href={deploymentDocsUrl}
+              rel="noreferrer"
+              target="_blank"
             >
-              {t('setup.onboarding.action.later')}
-            </button>
-          ) : null}
-          <a
-            className={cn(
-              'hidden px-3 text-sm text-accent hover:text-accent-hover md:block',
-              !props.onLater && 'mt-auto',
-            )}
-            href={deploymentDocsUrl}
-            rel="noreferrer"
-            target="_blank"
-          >
-            {t('setup.onboarding.rail.docs')}
-          </a>
-        </nav>
-        <main className="flex min-w-0 flex-1 justify-center px-4 py-6 md:px-12 md:py-16">
-          <div className="flex w-full max-w-[940px] flex-wrap items-start gap-6">
-            {props.children}
+              {copy('docs')}
+            </a>
+          </nav>
+          <div className={wizardStyles.stage}>
+            <main>{props.children}</main>
             {props.aside ? (
-              <aside className="min-w-0 flex-[1_1_260px] rounded-lg border border-border bg-white/65 p-4 md:max-w-80">
-                {props.aside}
-              </aside>
+              <aside className={wizardStyles.aside}>{props.aside}</aside>
             ) : null}
           </div>
-        </main>
+        </div>
       </FloatLayerProvider>
-    </div>
+    </AuthLayout>
   )
 }
 
@@ -187,48 +197,40 @@ export function OnboardingCard(
   }>,
 ) {
   return (
-    <section className="min-w-0 flex-[1_1_440px] rounded-lg border border-border bg-surface-card shadow-sm md:max-w-[580px]">
-      <header className="border-b border-border px-6 py-5">
-        <h1 className="text-2xl font-semibold text-fg">{props.title}</h1>
+    <section className={wizardStyles.card}>
+      <header>
+        <h1 className={wizardStyles.title}>{props.title}</h1>
         {props.description ? (
-          <p className="mt-1 text-sm text-fg-muted">{props.description}</p>
+          <p className={wizardStyles.description}>{props.description}</p>
         ) : null}
       </header>
-      <div className="px-6 py-5">{props.children}</div>
+      <div className={wizardStyles.body}>{props.children}</div>
       {props.footer ? (
-        <footer className="flex items-center justify-between gap-2 rounded-b-lg border-t border-border bg-surface-page px-6 py-3">
-          {props.footer}
-        </footer>
+        <footer className={wizardStyles.footer}>{props.footer}</footer>
       ) : null}
     </section>
-  )
-}
-
-export function OnboardingAsideTitle(props: PropsWithChildren) {
-  return (
-    <p className="mb-3 text-sm font-medium text-fg-muted">{props.children}</p>
   )
 }
 
 export function OnboardingFooter(
   props: PropsWithChildren<{ meta?: ReactNode; onBack?: () => void }>,
 ) {
-  const { t } = useI18n()
+  const copy = useSetupCopy()
   return (
     <>
       {props.onBack ? (
-        <Button onClick={props.onBack} type="button" variant="secondary">
-          <ChevronLeft aria-hidden="true" className="size-4" />
-          {t('setup.onboarding.action.back')}
+        <Button
+          htmlType="button"
+          icon={ChevronLeft}
+          onClick={props.onBack}
+          type="text"
+        >
+          {copy('back')}
         </Button>
       ) : (
-        <span className="text-sm text-fg-muted">{props.meta}</span>
+        <span>{props.meta}</span>
       )}
-      <div className="flex items-center gap-2">{props.children}</div>
+      <div className={wizardStyles.actions}>{props.children}</div>
     </>
   )
-}
-
-export function FieldHint(props: PropsWithChildren) {
-  return <p className="mt-1.5 text-sm text-fg-muted">{props.children}</p>
 }

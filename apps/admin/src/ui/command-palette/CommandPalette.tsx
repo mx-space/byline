@@ -1,5 +1,6 @@
 import './command-palette.css'
 
+import { createStaticStyles } from '@lobehub/ui'
 import type { LucideIcon } from 'lucide-react'
 import { CornerDownLeft, Search } from 'lucide-react'
 import { useRef } from 'react'
@@ -13,6 +14,135 @@ import {
   CommandList,
 } from '~/ui/command'
 import { Modal } from '~/ui/feedback/modal'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u2783e2cd: css`
+    width: min(640px, calc(100vw-32px));
+  `,
+  ub301630e: css`
+    display: flex;
+    flex-direction: column;
+  `,
+  u89f3d22b: css`
+    display: flex;
+    height: 3rem;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    padding-inline: 1rem;
+  `,
+  u145dbbb5: css`
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  uc8bcf43b: css`
+    flex: 1 1 0%;
+    background-color: transparent;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorText};
+    outline: none;
+    &::placeholder {
+      color: ${cssVar.colorTextTertiary};
+    }
+  `,
+  u4c688253: css`
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 0.375rem;
+    padding-block: 0.125rem;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u9ad0d6bb: css`
+    max-height: 50svh;
+    overflow-y: auto;
+    padding-inline: 0.25rem;
+    padding-block: 0.25rem;
+  `,
+  ud1b1422f: css`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding-inline: 1.5rem;
+    padding-block: 2.5rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u5613661b: css`
+    width: 2rem;
+    height: 2rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u5a5a0788: css`
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 8px;
+    padding-inline: 0.75rem;
+    padding-block: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorText};
+    outline: none;
+    &[data-selected='true'] {
+      background-color: ${cssVar.colorPrimaryBg};
+    }
+  `,
+  uee611559: css`
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u3feada8e: css`
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  `,
+  u004494e1: css`
+    display: flex;
+    min-width: 0px;
+    flex: 1 1 0%;
+    flex-direction: column;
+  `,
+  u4a42a346: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: ${cssVar.colorText};
+  `,
+  u57d3c591: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uf2799e78: css`
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+    color: ${cssVar.colorTextTertiary};
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  `,
+}))
 
 export interface CommandPaletteItem {
   id: string
@@ -35,35 +165,33 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
 
   return (
     <Modal
-      className="w-[min(640px,calc(100vw-32px))]"
+      className={lobeStyles.u2783e2cd}
       initialFocus={inputRef}
       onClose={onClose}
       open={open}
       popupStyle={{ top: '15vh', translate: '-50% 0' }}
     >
-      <Command className="flex flex-col" label={t('commandPalette.title')} loop>
-        <div className="flex h-12 items-center gap-3 border-b border-border px-4">
-          <Search
-            aria-hidden="true"
-            className="size-4 shrink-0 text-fg-subtle"
-          />
+      <Command
+        className={lobeStyles.ub301630e}
+        label={t('commandPalette.title')}
+        loop
+      >
+        <div className={lobeStyles.u89f3d22b}>
+          <Search aria-hidden="true" className={lobeStyles.u145dbbb5} />
           <CommandInput
-            className="flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-subtle"
+            className={lobeStyles.uc8bcf43b}
             placeholder={t('commandPalette.placeholder')}
             ref={inputRef}
           />
-          <kbd
-            aria-hidden="true"
-            className="inline-flex shrink-0 items-center justify-center rounded-sm bg-surface-inset px-1.5 py-0.5 font-mono text-xs text-fg-muted"
-          >
+          <kbd aria-hidden="true" className={lobeStyles.u4c688253}>
             ESC
           </kbd>
         </div>
-        <CommandList className="max-h-[50svh] overflow-y-auto px-1 py-1">
-          <CommandEmpty className="flex flex-col items-center gap-3 px-6 py-10 text-sm text-fg-muted">
+        <CommandList className={lobeStyles.u9ad0d6bb}>
+          <CommandEmpty className={lobeStyles.ud1b1422f}>
             <Search
               aria-hidden="true"
-              className="size-8 text-fg-subtle"
+              className={lobeStyles.u5613661b}
               strokeWidth={1.5}
             />
             <span>{t('commandPalette.empty')}</span>
@@ -72,7 +200,7 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
             const Icon = item.icon
             return (
               <CommandItem
-                className="flex cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-sm text-fg outline-none data-[selected=true]:bg-accent-soft"
+                className={lobeStyles.u5a5a0788}
                 key={item.id}
                 keywords={item.keywords}
                 onSelect={() => {
@@ -82,24 +210,21 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
                 value={`${item.name} ${item.subtitle ?? ''}`}
               >
                 {Icon ? (
-                  <Icon
-                    aria-hidden="true"
-                    className="size-4 shrink-0 text-fg-muted"
-                  />
+                  <Icon aria-hidden="true" className={lobeStyles.uee611559} />
                 ) : (
-                  <span aria-hidden className="inline-block size-4 shrink-0" />
+                  <span aria-hidden className={lobeStyles.u3feada8e} />
                 )}
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-fg">{item.name}</span>
+                <div className={lobeStyles.u004494e1}>
+                  <span className={lobeStyles.u4a42a346}>{item.name}</span>
                   {item.subtitle ? (
-                    <span className="truncate text-xs text-fg-muted">
+                    <span className={lobeStyles.u57d3c591}>
                       {item.subtitle}
                     </span>
                   ) : null}
                 </div>
                 <CornerDownLeft
                   aria-hidden="true"
-                  className="size-3.5 shrink-0 text-fg-subtle opacity-0 transition-opacity"
+                  className={lobeStyles.uf2799e78}
                   data-cmd-palette-enter-hint
                 />
               </CommandItem>

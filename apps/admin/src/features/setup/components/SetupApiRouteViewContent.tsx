@@ -1,38 +1,24 @@
-import { Bug, Check, RotateCcw, Server } from 'lucide-react'
-import type { FormEvent } from 'react'
-import { useMemo, useState } from 'react'
+import { Button, Input, Switch, toast } from '@lobehub/ui'
+import { Form, useForm } from '@lobehub/ui/form'
+import { useMemo, useRef, useState } from 'react'
 
-import { useI18n } from '~/i18n'
-import {
-  authBackdropClassName,
-  authBackdropStyle,
-  authCardClassName,
-  authDescriptionClassName,
-  authIconTileClassName,
-  authTitleClassName,
-} from '~/lib/auth-backdrop'
-import { Button } from '~/ui/primitives/button'
-import { FormSwitch } from '~/ui/primitives/switch'
-import { TextInput } from '~/ui/primitives/text-field'
-import { cn } from '~/utils/cn'
+import { useSetupCopy } from '../copy'
+import { SetupPage } from './OnboardingShell'
+import { wizardStyles } from './wizard-styles'
 
 const storeApiUrlKey = 'mx-admin:setup-api:url'
 const storeGatewayUrlKey = 'mx-admin:setup-api:gateway'
 
-export function SetupApiRouteViewContent() {
-  const { t } = useI18n()
-  const [apiUrl, setApiUrl] = useState(
-    () =>
-      localStorage.getItem('__api') ||
-      `${location.protocol}//${location.host}/api/v2`,
-  )
-  const [gatewayUrl, setGatewayUrl] = useState(
-    () =>
-      localStorage.getItem('__gateway') ||
-      `${location.protocol}//${location.host}`,
-  )
-  const [persist, setPersist] = useState(true)
+interface ApiValues {
+  apiUrl: string
+  gatewayUrl: string
+  persist: boolean
+}
 
+export function SetupApiRouteViewContent() {
+  const copy = useSetupCopy()
+  const lock = useRef(false)
+  const [submitting, setSubmitting] = useState(false)
   const historyApiUrl = useMemo(
     () => readStringArray(localStorage.getItem(storeApiUrlKey)),
     [],
@@ -41,137 +27,150 @@ export function SetupApiRouteViewContent() {
     () => readStringArray(localStorage.getItem(storeGatewayUrlKey)),
     [],
   )
+  const form = useForm<ApiValues>({
+    initialValues: {
+      apiUrl:
+        localStorage.getItem('__api') ||
+        `${location.protocol}//${location.host}/api/v2`,
+      gatewayUrl:
+        localStorage.getItem('__gateway') ||
+        `${location.protocol}//${location.host}`,
+      persist: true,
+    },
+    onSubmit: async (values) => {
+      if (lock.current) return
+      lock.current = true
+      setSubmitting(true)
+      try {
+        const fullApiUrl = transformFullUrl(values.apiUrl)
+        const fullGatewayUrl = transformFullUrl(values.gatewayUrl)
+        const storage = values.persist ? localStorage : sessionStorage
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault()
+        if (fullApiUrl) storage.setItem('__api', fullApiUrl)
+        if (fullGatewayUrl) storage.setItem('__gateway', fullGatewayUrl)
 
-    const fullApiUrl = transformFullUrl(apiUrl)
-    const fullGatewayUrl = transformFullUrl(gatewayUrl)
-    const storage = persist ? localStorage : sessionStorage
+        localStorage.setItem(
+          storeApiUrlKey,
+          JSON.stringify([
+            ...new Set(historyApiUrl.concat(fullApiUrl || values.apiUrl)),
+          ]),
+        )
+        localStorage.setItem(
+          storeGatewayUrlKey,
+          JSON.stringify([
+            ...new Set(
+              historyGatewayUrl.concat(fullGatewayUrl || values.gatewayUrl),
+            ),
+          ]),
+        )
 
-    if (fullApiUrl) storage.setItem('__api', fullApiUrl)
-    if (fullGatewayUrl) storage.setItem('__gateway', fullGatewayUrl)
+        const url = new URL(location.href)
+        url.hash = '#/dashboard'
+        location.href = url.toString()
+        location.reload()
+      } catch {
+        lock.current = false
+        setSubmitting(false)
+        toast.error(copy('apiSaveError'))
+      }
+    },
+  })
 
-    localStorage.setItem(
-      storeApiUrlKey,
-      JSON.stringify([...new Set(historyApiUrl.concat(fullApiUrl || apiUrl))]),
-    )
-    localStorage.setItem(
-      storeGatewayUrlKey,
-      JSON.stringify([
-        ...new Set(historyGatewayUrl.concat(fullGatewayUrl || gatewayUrl)),
-      ]),
-    )
-
-    const url = new URL(location.href)
-    url.hash = '#/dashboard'
-    location.href = url.toString()
-    location.reload()
-  }
-
-  const handleReset = () => {
+  const clearSavedAddresses = () => {
     localStorage.removeItem('__api')
     localStorage.removeItem('__gateway')
     sessionStorage.removeItem('__api')
     sessionStorage.removeItem('__gateway')
-
     location.href = location.pathname
     location.hash = ''
   }
 
-  const handleLocalDev = () => {
-    setApiUrl('http://localhost:2333')
-    setGatewayUrl('http://localhost:2333')
+  const fillLocalAddresses = () => {
+    form.setValues(
+      {
+        apiUrl: 'http://localhost:2333',
+        gatewayUrl: 'http://localhost:2333',
+      },
+      { asUser: true },
+    )
   }
 
   return (
-    <main
-      className={cn(authBackdropClassName, 'flex items-center justify-center')}
-      style={authBackdropStyle}
-    >
-      <form
-        className={cn(authCardClassName, 'max-w-md')}
-        onSubmit={handleSubmit}
-      >
-        <header className="mb-6 flex items-center gap-3">
-          <div className={authIconTileClassName}>
-            <Server aria-hidden="true" className="size-5" />
+    <SetupPage description={copy('apiDescription')} title={copy('apiTitle')}>
+      <Form form={form} gap={16} layout="vertical">
+        <Form.Field
+          desc={copy('apiUrlHint')}
+          label={copy('apiUrl')}
+          name="apiUrl"
+        >
+          <Input
+            autoComplete="url"
+            list={apiListId}
+            name="apiUrl"
+            placeholder={copy('apiPlaceholder')}
+            type="url"
+          />
+        </Form.Field>
+        {historyApiUrl.length === 0 ? null : (
+          <datalist id={apiListId}>
+            {historyApiUrl.map((item) => (
+              <option key={item} value={item} />
+            ))}
+          </datalist>
+        )}
+        <Form.Field
+          desc={copy('apiGatewayHint')}
+          label={copy('apiGateway')}
+          name="gatewayUrl"
+        >
+          <Input
+            autoComplete="url"
+            list={gatewayListId}
+            name="gatewayUrl"
+            placeholder={copy('apiPlaceholder')}
+            type="url"
+          />
+        </Form.Field>
+        {historyGatewayUrl.length === 0 ? null : (
+          <datalist id={gatewayListId}>
+            {historyGatewayUrl.map((item) => (
+              <option key={item} value={item} />
+            ))}
+          </datalist>
+        )}
+        <Form.Field
+          desc={copy('apiPersistHint')}
+          label={copy('apiPersist')}
+          name="persist"
+        >
+          <Switch aria-label={copy('apiPersist')} />
+        </Form.Field>
+        <p className={wizardStyles.description}>{copy('apiClearHint')}</p>
+        <div className={wizardStyles.footer}>
+          <Button htmlType="button" onClick={fillLocalAddresses} type="text">
+            {copy('apiLocal')}
+          </Button>
+          <Button htmlType="button" onClick={clearSavedAddresses} type="text">
+            {copy('apiClear')}
+          </Button>
+          <div className={wizardStyles.actions}>
+            <Button
+              disabled={submitting}
+              htmlType="submit"
+              loading={submitting}
+              type="primary"
+            >
+              {copy('apiSubmit')}
+            </Button>
           </div>
-          <div className="min-w-0">
-            <h1 className={authTitleClassName}>{t('setup.api.title')}</h1>
-            <p className={authDescriptionClassName}>
-              {t('setup.api.description')}
-            </p>
-          </div>
-        </header>
-
-        <div className="space-y-4">
-          <SetupInput
-            history={historyApiUrl}
-            label={t('setup.api.urlLabel')}
-            onChange={setApiUrl}
-            value={apiUrl}
-          />
-
-          <SetupInput
-            history={historyGatewayUrl}
-            label={t('setup.api.gatewayLabel')}
-            onChange={setGatewayUrl}
-            value={gatewayUrl}
-          />
-
-          <FormSwitch
-            checked={persist}
-            label={t('setup.api.persistLabel')}
-            onCheckedChange={setPersist}
-          />
         </div>
-
-        <div className="mt-6 flex flex-wrap justify-end gap-2">
-          <Button onClick={handleLocalDev} type="button" variant="secondary">
-            <Bug aria-hidden="true" className="size-4" />
-            {t('setup.api.actions.localDev')}
-          </Button>
-          <Button onClick={handleReset} type="button" variant="secondary">
-            <RotateCcw aria-hidden="true" className="size-4" />
-            {t('setup.api.actions.reset')}
-          </Button>
-          <Button type="submit">
-            <Check aria-hidden="true" className="size-4" />
-            {t('common.confirm')}
-          </Button>
-        </div>
-      </form>
-    </main>
+      </Form>
+    </SetupPage>
   )
 }
 
-interface SetupInputProps {
-  history: string[]
-  label: string
-  onChange: (value: string) => void
-  value: string
-}
-
-function SetupInput(props: SetupInputProps) {
-  const listId = `${props.label.replaceAll(/\s+/g, '-')}-history`
-
-  return (
-    <>
-      <TextInput
-        label={props.label}
-        list={listId}
-        onChange={props.onChange}
-        value={props.value}
-      />
-      <datalist id={listId}>
-        {props.history.map((item) => (
-          <option key={item} value={item} />
-        ))}
-      </datalist>
-    </>
-  )
-}
+const apiListId = 'setup-api-url-history'
+const gatewayListId = 'setup-gateway-url-history'
 
 function transformFullUrl(url: string): string {
   if (!url) return ''

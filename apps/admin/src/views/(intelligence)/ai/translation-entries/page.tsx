@@ -6,7 +6,7 @@ export const metadata = defineMetadata({
   titleKey: 'routes.aiTranslationEntries.title',
   descriptionKey: 'routes.aiTranslationEntries.description',
   icon: BookOpenText,
-  order: 4,
+  order: 7,
 })
 
 export { AiTranslationEntriesRouteView as default } from '~/features/ai/routes/AiTranslationEntriesRouteView'

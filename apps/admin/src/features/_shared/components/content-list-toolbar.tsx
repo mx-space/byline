@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import {
   ArrowDown,
   ArrowUp,
@@ -12,6 +13,384 @@ import { useI18n } from '~/i18n'
 import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
 import { Checkbox } from '~/ui/primitives/checkbox'
 import { cn } from '~/utils/cn'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u09bd60f1: css`
+    display: flex;
+    height: 2.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.375rem;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    background-color: ${cssVar.colorBgContainer};
+    padding-inline: 1rem;
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      background-color: ${cssVar.colorText};
+    }
+  `,
+  uf5b78765: css`
+    position: relative;
+    display: flex;
+    height: 100%;
+    min-width: 0px;
+    flex: 1 1 0%;
+    align-items: center;
+    align-self: stretch;
+  `,
+  u2e005ac9: css`
+    pointer-events: none;
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    width: 0.875rem;
+    height: 0.875rem;
+    translate: 0 -50%;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uf615bb8e: css`
+    outline: none;
+    &:focus {
+      outline: none;
+    }
+    height: 1.75rem;
+    width: 100%;
+    border-width: 0;
+    background-color: transparent;
+    padding-left: 2rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorText};
+    &::placeholder {
+      color: ${cssVar.colorTextSecondary};
+    }
+    &:focus {
+      box-shadow: none;
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u24c1290b: css`
+    padding-right: 1.5rem;
+  `,
+  u5431dbc4: css`
+    padding-right: 0px;
+  `,
+  u26b8ef54: css`
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    display: inline-flex;
+    width: 1rem;
+    height: 1rem;
+    translate: 0 -50%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  uef2d6f74: css`
+    width: 0.75rem;
+    height: 0.75rem;
+  `,
+  u0a935cc3: css`
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.375rem;
+  `,
+  udaad07d1: css`
+    height: 0.875rem;
+    width: 1px;
+    flex-shrink: 0;
+    background-color: ${cssVar.colorFillSecondary};
+    :where(.dark, .dark *) & {
+      background-color: ${cssVar.colorText};
+    }
+  `,
+  u76478a85: css`
+    outline: none;
+    display: inline-flex;
+    height: 1.75rem;
+    width: 1.75rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 2px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 var(--color-primary-shallow) ${cssVar.colorPrimary};
+    }
+    &:disabled {
+      pointer-events: none;
+    }
+    &:disabled {
+      opacity: 0.5;
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorTextSecondary};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u783b0d9d: css`
+    width: 0.875rem;
+    height: 0.875rem;
+  `,
+  uafbdd13a: css`
+    @keyframes byline-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    animation: byline-spin 1s linear infinite;
+  `,
+  u3c231d97: css`
+    display: inline-flex;
+    height: 1.75rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorTextSecondary};
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u53f0561d: css`
+    display: inline-flex;
+    height: 1.75rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 0.25rem;
+    padding-right: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorText};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u3a9afc88: css`
+    outline: none;
+    display: inline-flex;
+    height: 1.75rem;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 0.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorErrorBg};
+    background-color: color-mix(
+      in srgb,
+      ${cssVar.colorErrorBg} 60%,
+      transparent
+    );
+    padding-inline: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorError};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorErrorBg};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 2px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 var(--color-primary-shallow) ${cssVar.colorPrimary};
+    }
+    &:disabled {
+      pointer-events: none;
+    }
+    &:disabled {
+      opacity: 0.5;
+    }
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorError};
+    }
+    :where(.dark, .dark *) & {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorError} 30%,
+        transparent
+      );
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorError};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorError} 50%,
+        transparent
+      );
+    }
+  `,
+  u85d05420: css`
+    display: inline-flex;
+    height: 1.75rem;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 8px;
+    padding-inline: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, ${cssVar.colorPrimary} 15%, transparent);
+    }
+    &:disabled {
+      cursor: not-allowed;
+    }
+    &:disabled {
+      opacity: 0.6;
+    }
+    &[data-popup-open] {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u9265a502: css`
+    width: 0.875rem;
+    height: 0.875rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  uf283ea9b: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  ue47b6740: css`
+    width: 0.75rem;
+    height: 0.75rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u74b2435a: css`
+    width: 12rem;
+  `,
+  u61324a98: css`
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  ud40b0a80: css`
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u67bab313: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  ua82a1496: css`
+    color: ${cssVar.colorPrimary};
+  `,
+  u83813220: css`
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.25rem;
+  `,
+  uedba4dc5: css`
+    display: inline-flex;
+    height: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  `,
+  u79b58e1f: css`
+    border-color: ${cssVar.colorText};
+    background-color: ${cssVar.colorText};
+    color: ${cssVar.colorBgLayout};
+  `,
+  uebb8f33e: css`
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorBgContainer};
+    color: ${cssVar.colorTextSecondary};
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+  `,
+}))
 
 interface ContentListToolbarSelection {
   allVisibleSelected: boolean
@@ -48,12 +427,7 @@ export function ContentListToolbar(props: ContentListToolbarProps) {
   const hasSelection = selectedCount > 0
 
   return (
-    <div
-      className={cn(
-        'flex h-10 shrink-0 items-center gap-1.5 border-b border-neutral-200 bg-white px-4 dark:border-neutral-800 dark:bg-neutral-950',
-        props.className,
-      )}
-    >
+    <div className={cn(lobeStyles.u09bd60f1, props.className)}>
       {selection ? (
         <ContentListToolbarSelectionControls
           hasSelection={hasSelection}
@@ -61,18 +435,12 @@ export function ContentListToolbar(props: ContentListToolbarProps) {
         />
       ) : null}
 
-      <form
-        className="relative flex h-full min-w-0 flex-1 items-center self-stretch"
-        onSubmit={props.onSearch}
-      >
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400"
-        />
+      <form className={lobeStyles.uf5b78765} onSubmit={props.onSearch}>
+        <Search aria-hidden="true" className={lobeStyles.u2e005ac9} />
         <input
           className={cn(
-            'outline-hidden focus:outline-hidden h-7 w-full border-0 bg-transparent pl-8 text-xs text-neutral-900 placeholder:text-neutral-400 focus:ring-0 dark:text-neutral-100',
-            props.hasSearch ? 'pr-6' : 'pr-0',
+            lobeStyles.uf615bb8e,
+            props.hasSearch ? lobeStyles.u24c1290b : lobeStyles.u5431dbc4,
           )}
           onChange={(event) => props.onSearchValueChange(event.target.value)}
           placeholder={props.searchPlaceholder}
@@ -82,32 +450,25 @@ export function ContentListToolbar(props: ContentListToolbarProps) {
         {props.hasSearch ? (
           <button
             aria-label={t('shared.contentListToolbar.clearSearch')}
-            className="absolute right-3 top-1/2 inline-flex size-4 -translate-y-1/2 items-center justify-center rounded text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            className={lobeStyles.u26b8ef54}
             onClick={props.onClearSearch}
             type="button"
           >
-            <X aria-hidden="true" className="size-3" />
+            <X aria-hidden="true" className={lobeStyles.uef2d6f74} />
           </button>
         ) : null}
       </form>
 
       {props.filters ? (
-        <div className="flex shrink-0 items-center gap-1.5">
-          {props.filters}
-        </div>
+        <div className={lobeStyles.u0a935cc3}>{props.filters}</div>
       ) : null}
 
       {props.sortMenu}
 
       {props.extraActions ? (
         <>
-          <span
-            aria-hidden="true"
-            className="h-3.5 w-px shrink-0 bg-neutral-200 dark:bg-neutral-800"
-          />
-          <div className="flex shrink-0 items-center gap-1.5">
-            {props.extraActions}
-          </div>
+          <span aria-hidden="true" className={lobeStyles.udaad07d1} />
+          <div className={lobeStyles.u0a935cc3}>{props.extraActions}</div>
         </>
       ) : null}
     </div>
@@ -122,14 +483,17 @@ export function ContentListRefreshButton(props: {
   return (
     <button
       aria-label={props.label}
-      className="outline-hidden inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-shallow)] disabled:pointer-events-none disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100"
+      className={lobeStyles.u76478a85}
       disabled={props.isFetching}
       onClick={props.onRefresh}
       type="button"
     >
       <RefreshCw
         aria-hidden="true"
-        className={cn('size-3.5', props.isFetching && 'animate-spin')}
+        className={cn(
+          lobeStyles.u783b0d9d,
+          props.isFetching && lobeStyles.uafbdd13a,
+        )}
       />
     </button>
   )
@@ -146,7 +510,7 @@ function ContentListToolbarSelectionControls(props: {
     return (
       <label
         aria-label={selection.selectAllLabel}
-        className="inline-flex h-7 shrink-0 cursor-pointer items-center justify-center text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-neutral-50"
+        className={lobeStyles.u3c231d97}
         title={selection.selectAllLabel}
       >
         <Checkbox
@@ -161,7 +525,7 @@ function ContentListToolbarSelectionControls(props: {
 
   return (
     <>
-      <label className="inline-flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded pr-2 text-xs tabular-nums text-neutral-700 dark:text-neutral-200">
+      <label className={lobeStyles.u53f0561d}>
         <Checkbox
           aria-label={selection.selectAllLabel}
           checked={selection.allVisibleSelected}
@@ -171,7 +535,7 @@ function ContentListToolbarSelectionControls(props: {
         <span>{selection.selectedLabel}</span>
       </label>
       <button
-        className="outline-hidden inline-flex h-7 shrink-0 items-center gap-1.5 rounded border border-red-200 bg-red-50/60 px-2 text-xs text-red-700 transition-colors hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-shallow)] disabled:pointer-events-none disabled:opacity-50 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
+        className={lobeStyles.u3a9afc88}
         disabled={selection.bulkActionDisabled}
         onClick={selection.onBulkAction}
         type="button"
@@ -205,20 +569,17 @@ export function SortMenu<TField extends string = string>(
     <DropdownMenu>
       <DropdownMenu.Trigger
         aria-label={t('shared.sortMenu.label')}
-        className={cn(
-          'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-sm px-2 text-xs text-fg-muted transition-colors hover:bg-surface-inset hover:text-fg focus-visible:ring-[3px] focus-visible:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-60 data-[popup-open]:bg-surface-inset',
-          props.className,
-        )}
+        className={cn(lobeStyles.u85d05420, props.className)}
         disabled={props.disabled}
         type="button"
       >
-        <ArrowUpDown aria-hidden="true" className="size-3.5 text-fg-subtle" />
-        <span className="truncate">
+        <ArrowUpDown aria-hidden="true" className={lobeStyles.u9265a502} />
+        <span className={lobeStyles.uf283ea9b}>
           {activeOption?.label ?? t('shared.sortMenu.label')}
         </span>
-        <OrderIcon aria-hidden="true" className="size-3 text-fg-subtle" />
+        <OrderIcon aria-hidden="true" className={lobeStyles.ue47b6740} />
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="end" className="w-48">
+      <DropdownMenu.Content align="end" className={lobeStyles.u74b2435a}>
         <DropdownMenu.Group>
           <DropdownMenu.GroupLabel>
             {t('shared.sortMenu.field')}
@@ -227,15 +588,17 @@ export function SortMenu<TField extends string = string>(
             const active = option.value === props.field
             return (
               <DropdownMenu.Item
-                className={cn(active ? 'font-medium text-fg' : 'text-fg-muted')}
+                className={cn(
+                  active ? lobeStyles.u61324a98 : lobeStyles.ud40b0a80,
+                )}
                 key={String(option.value)}
                 onClick={() =>
                   props.onChange({ field: option.value, order: props.order })
                 }
               >
-                <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                <span className={lobeStyles.u67bab313}>{option.label}</span>
                 {active ? (
-                  <span className="text-accent" aria-hidden="true">
+                  <span className={lobeStyles.ua82a1496} aria-hidden="true">
                     ●
                   </span>
                 ) : null}
@@ -248,10 +611,15 @@ export function SortMenu<TField extends string = string>(
           <DropdownMenu.GroupLabel>
             {t('shared.sortMenu.direction')}
           </DropdownMenu.GroupLabel>
-          <div className="grid grid-cols-2 gap-1 p-1">
+          <div className={lobeStyles.u83813220}>
             <SortOrderButton
               active={props.order === 'desc'}
-              icon={<ArrowDown aria-hidden="true" className="size-3.5" />}
+              icon={
+                <ArrowDown
+                  aria-hidden="true"
+                  className={lobeStyles.u783b0d9d}
+                />
+              }
               label={t('shared.sortMenu.desc')}
               onClick={() =>
                 props.onChange({ field: props.field, order: 'desc' })
@@ -259,7 +627,9 @@ export function SortMenu<TField extends string = string>(
             />
             <SortOrderButton
               active={props.order === 'asc'}
-              icon={<ArrowUp aria-hidden="true" className="size-3.5" />}
+              icon={
+                <ArrowUp aria-hidden="true" className={lobeStyles.u783b0d9d} />
+              }
               label={t('shared.sortMenu.asc')}
               onClick={() =>
                 props.onChange({ field: props.field, order: 'asc' })
@@ -281,10 +651,8 @@ function SortOrderButton(props: {
   return (
     <button
       className={cn(
-        'inline-flex h-7 items-center justify-center gap-1.5 rounded-sm border text-xs transition-colors',
-        props.active
-          ? 'border-fg bg-fg text-surface-page'
-          : 'border-border bg-surface-card text-fg-muted hover:bg-surface-inset',
+        lobeStyles.uedba4dc5,
+        props.active ? lobeStyles.u79b58e1f : lobeStyles.uebb8f33e,
       )}
       onClick={props.onClick}
       type="button"

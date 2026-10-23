@@ -1,7 +1,54 @@
+import { createStaticStyles } from '@lobehub/ui'
+
 import { useI18n } from '~/i18n'
 import type { ContentRevision } from '~/models/draft'
 
 import { formatCharCount, summarizeRevisionChange } from './change-summary'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ud764cbe7: css`
+    display: flex;
+    min-width: 0px;
+    align-items: baseline;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorText};
+  `,
+  ud548d54f: css`
+    flex-shrink: 0;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorSuccess};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorSuccess};
+    }
+  `,
+  u3593e6be: css`
+    flex-shrink: 0;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorError};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorError};
+    }
+  `,
+  ub139ad23: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u5bc98aa4: css`
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+}))
 
 const MAX_FIELDS = 2
 
@@ -28,13 +75,11 @@ export function ChangeSummary(props: {
         : t('write.versionTree.bodyOnly')
 
   return (
-    <span className="flex min-w-0 items-baseline gap-1.5 text-sm text-fg">
+    <span className={lobeStyles.ud764cbe7}>
       {summary.charDelta === 0 ? null : (
         <span
           className={
-            summary.charDelta > 0
-              ? 'shrink-0 font-medium tabular-nums text-emerald-700 dark:text-emerald-400'
-              : 'shrink-0 font-medium tabular-nums text-red-700 dark:text-red-400'
+            summary.charDelta > 0 ? lobeStyles.ud548d54f : lobeStyles.u3593e6be
           }
         >
           {t(
@@ -45,7 +90,7 @@ export function ChangeSummary(props: {
           )}
         </span>
       )}
-      <span className="truncate text-fg-muted">{fields}</span>
+      <span className={lobeStyles.ub139ad23}>{fields}</span>
     </span>
   )
 }
@@ -58,7 +103,7 @@ export function TitleChangeLine(props: {
   if (props.base.title === props.head.title) return null
 
   return (
-    <span className="block truncate text-xs text-fg-muted">
+    <span className={lobeStyles.u5bc98aa4}>
       {t('write.versionTree.titleChangedTo', {
         title: props.head.title || t('write.editor.untitled'),
       })}

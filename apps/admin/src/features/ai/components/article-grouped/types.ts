@@ -1,9 +1,9 @@
 import type { LucideIcon } from 'lucide-react'
-import type { ComponentType, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 import type { ArticleInfo, PaginationInfo } from '~/api/ai'
-import type { TranslationKey } from '~/i18n/types'
-import type { HeaderAction } from '~/ui/layout/page-layout'
+
+export type AiProduct = 'insights' | 'summary' | 'translation' | 'tts'
 
 export interface ArticleGroup<TItem> {
   article: ArticleInfo
@@ -11,12 +11,11 @@ export interface ArticleGroup<TItem> {
 }
 
 export interface ItemAction<TItem> {
-  id: string
-  labelKey: TranslationKey
-  icon?: LucideIcon
   destructive?: boolean
+  icon?: LucideIcon
+  id: string
+  label: string
   run: (item: TItem) => Promise<unknown>
-  confirm?: { messageKey: TranslationKey }
 }
 
 export interface GroupedPage<TItem> {
@@ -29,64 +28,56 @@ export interface ItemsByRefResult<TItem> {
   items: TItem[]
 }
 
-export interface EditDrawerBodyProps<TItem> {
-  item: TItem
-  onSubmit: (next: TItem) => Promise<void>
-  onCancel: () => void
-  submitting: boolean
+export interface ItemStatus {
+  color?: string
+  label: string
+}
+
+export interface PageAction {
+  icon: LucideIcon
+  label: string
+  run: (ctx: { invalidate: () => Promise<void> }) => Promise<void>
 }
 
 export interface ArticleGroupedConfig<TItem> {
-  scopeIdPrefix: string
-  pageTitleKey: TranslationKey
-  totalCountKey: TranslationKey
-  itemCountKey: TranslationKey
-  searchPlaceholderKey: TranslationKey
-  emptyTitleKey: TranslationKey
-  emptyDescriptionKey: TranslationKey
-  detailEmptyTitleKey: TranslationKey
-  detailEmptyDescriptionKey: TranslationKey
-  detailSectionTitleKey: TranslationKey
-  inlineEmptyKey: TranslationKey
-  itemDeleteConfirmKey: TranslationKey
-  editTitleKey: TranslationKey
-  /** Label for the primary row-open action; defaults to `ai.action.edit`. */
-  itemOpenLabelKey?: TranslationKey
-  kindKey: TranslationKey
-
-  groupedQueryKey: string
+  deleteItem: (id: string) => Promise<unknown>
+  extraItemActions?: (item: TItem) => ItemAction<TItem>[]
+  generate: {
+    defaultLangsOptionKey?:
+      'summaryTargetLanguages' | 'translationTargetLanguages'
+    promptForLang?: boolean
+    runTask: (input: {
+      force?: boolean
+      langs?: string[]
+      refId: string
+      regenerateLocked?: boolean
+    }) => Promise<{ created: boolean; taskId: string }>
+    taskTypeForQueue: 'Insights' | 'Summary' | 'Translation' | 'Tts'
+  }
+  getCreatedAt: (item: TItem) => string
   getGroupedPage: (params: {
     page: number
     search?: string
     size: number
   }) => Promise<GroupedPage<TItem>>
-  getItemsByRef: (refId: string) => Promise<ItemsByRefResult<TItem>>
-  deleteItem: (id: string) => Promise<unknown>
-  updateItem: (id: string, next: TItem) => Promise<unknown>
-
-  generate: {
-    labelKey: TranslationKey
-    icon: LucideIcon
-    promptForLang?: boolean
-    defaultLangsOptionKey?:
-      'summaryTargetLanguages' | 'translationTargetLanguages'
-    runTask: (input: {
-      refId: string
-      langs?: string[]
-      force?: boolean
-    }) => Promise<{ created: boolean; taskId: string }>
-    taskTypeForQueue: 'Insights' | 'Summary' | 'Translation' | 'Tts'
-  }
-
-  pageActions?: (ctx: { invalidate: () => Promise<void> }) => HeaderAction[]
-
-  extraItemActions?: (item: TItem) => ItemAction<TItem>[]
-
-  getPreview: (item: TItem) => string
-  getBadge?: (item: TItem) => ReactNode
-  getLang: (item: TItem) => string
-  getCreatedAt: (item: TItem) => string
   getId: (item: TItem) => string
+  getItemsByRef: (refId: string) => Promise<ItemsByRefResult<TItem>>
+  getLang: (item: TItem) => string
+  /** One line shown under the post title in the list. */
+  getPreview: (item: TItem) => string
+  /** Overrides the default "generated" status, e.g. locked or incomplete. */
+  getStatus?: (item: TItem) => ItemStatus | null
+  groupedQueryKey: string
+  pageAction?: PageAction
+  product: AiProduct
+  updateItem: (id: string, next: TItem) => Promise<unknown>
+}
 
-  EditDrawerBody: ComponentType<EditDrawerBodyProps<TItem>>
+export interface ProductBodyProps<TItem> {
+  editing: boolean
+  item: TItem
+  onCancel: () => void
+  onSubmit: (next: TItem) => Promise<void>
+  submitting: boolean
+  playback?: ReactNode
 }

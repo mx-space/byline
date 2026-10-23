@@ -6,7 +6,7 @@ export const metadata = defineMetadata({
   titleKey: 'routes.settings.title',
   descriptionKey: 'routes.settings.description',
   icon: Settings,
-  order: 3,
+  order: 2,
 })
 
 export { SettingsRouteView as default } from '~/features/settings/routes/SettingsRouteView'

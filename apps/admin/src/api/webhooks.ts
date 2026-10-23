@@ -76,9 +76,9 @@ export function getWebhookDispatches(
   })
 }
 
-export function redispatchWebhook(hookId: string, eventId: string) {
+export function redispatchWebhook(eventId: string) {
   return postJson<void, Record<string, never>>(
-    `/webhooks/${hookId}/redispatch/${eventId}`,
+    `/webhooks/redispatch/${eventId}`,
     {},
   )
 }

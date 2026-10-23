@@ -6,9 +6,14 @@ import { translate } from '~/i18n/translate'
 import { toProfileInput } from '../components/UserProfileForm'
 import {
   buildInviteRequest,
+  bylinePlace,
   canEditSignInIdentity,
+  EMPTY_VALUE,
+  formatAdminTime,
   getUserConflictField,
+  getUserDisplayName,
   getUserErrorMessage,
+  parseUserStatusFilter,
 } from './users'
 
 const form = {
@@ -84,6 +89,32 @@ describe('getUserErrorMessage', () => {
     const error = new ApiRequestError('Invite expired', 'INVITE_EXPIRED', 410)
     expect(getUserErrorMessage(error, 'fallback')).toBe('Invite expired')
     expect(getUserErrorMessage(null, 'fallback')).toBe('fallback')
+  })
+})
+
+describe('user list helpers', () => {
+  it('uses the empty placeholder when a person has no name', () => {
+    expect(getUserDisplayName({ displayName: ' ' })).toBe(EMPTY_VALUE)
+  })
+
+  it('keeps known status filters and drops anything else', () => {
+    expect(parseUserStatusFilter('profile_only')).toBe('profile_only')
+    expect(parseUserStatusFilter('nope')).toBe('all')
+    expect(parseUserStatusFilter(null)).toBe('all')
+  })
+
+  it('reads byline order from the author list', () => {
+    expect(bylinePlace([{ id: 'a' }, { id: 'b' }], 'b')).toBe(2)
+    expect(bylinePlace([{ id: 'a' }], 'z')).toBeNull()
+    expect(bylinePlace(undefined, 'a')).toBeNull()
+  })
+
+  it('formats a timestamp as a table value', () => {
+    expect(formatAdminTime(null)).toBe(EMPTY_VALUE)
+    expect(formatAdminTime('not-a-date')).toBe(EMPTY_VALUE)
+    expect(formatAdminTime('2026-09-29T15:30:00')).toMatch(
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/,
+    )
   })
 })
 

@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { AudioLines } from 'lucide-react'
 
@@ -8,6 +9,16 @@ import { Button } from '~/ui/primitives/button'
 
 import { TtsGenerationDrawer } from './TtsGenerationDrawer'
 import { useTtsGeneration } from './use-tts-generation'
+
+const lobeStyles = createStaticStyles(({ css }) => ({
+  u6da6a3c3: css`
+    width: 100%;
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+}))
 
 export function TtsGenerationEntry(props: { refId?: string }) {
   const { t } = useI18n()
@@ -26,12 +37,12 @@ export function TtsGenerationEntry(props: { refId?: string }) {
   return (
     <>
       <Button
-        className="w-full"
+        className={lobeStyles.u6da6a3c3}
         onClick={generation.openDrawer}
         type="button"
         variant="subtle"
       >
-        <AudioLines aria-hidden="true" className="size-4" />
+        <AudioLines aria-hidden="true" className={lobeStyles.uf7b5fa97} />
         {t('write.ttsGeneration.entry')}
       </Button>
       <TtsGenerationDrawer {...generation} />

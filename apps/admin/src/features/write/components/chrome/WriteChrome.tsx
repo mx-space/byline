@@ -1,0 +1,387 @@
+import {
+  ActionIcon,
+  Avatar,
+  Badge,
+  Button,
+  DraggablePanel,
+  Drawer,
+  ScrollArea,
+  Skeleton,
+  Tag,
+  TextArea,
+  Tooltip,
+} from '@lobehub/ui'
+import {
+  ArrowLeft,
+  Bot,
+  GitBranch,
+  PanelRightClose,
+  PanelRightOpen,
+} from 'lucide-react'
+import { type ReactNode, useState } from 'react'
+
+import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
+import { useI18n } from '~/i18n'
+import type { DraftModel } from '~/models/draft'
+import { EditorToolbarSlotContext } from '~/vendor/rich-editor/components/toolbar-slot'
+
+import { writeCopy } from '../../copy'
+import { writeChromeStyles as styles } from './styles'
+import { WriteMetaFields, type WriteMetaFieldsProps } from './WriteMetaFields'
+
+export type WriteDockTone =
+  | 'conflict'
+  | 'fresh'
+  | 'matchesLive'
+  | 'needContent'
+  | 'offline'
+  | 'publishing'
+  | 'saved'
+  | 'saving'
+  | 'submitted'
+  | 'unsaved'
+
+const PANEL_STORAGE_KEY = 'byline.write.settingsPanel'
+
+function readPanelOpen() {
+  try {
+    return window.localStorage.getItem(PANEL_STORAGE_KEY) !== 'closed'
+  } catch {
+    return true
+  }
+}
+
+function rememberPanelOpen(open: boolean) {
+  try {
+    window.localStorage.setItem(PANEL_STORAGE_KEY, open ? 'open' : 'closed')
+  } catch {
+    /* storage can be blocked */
+  }
+}
+
+export function WriteChrome(
+  props: {
+    draft?: DraftModel
+    editor: ReactNode
+    notices: ReactNode
+    onBack: () => void
+    onCloseAi: () => void
+    onCloseMeta: () => void
+    onCloseRevisions: () => void
+    onOpenAi: () => void
+    onOpenMeta: () => void
+    onOpenRevisions: () => void
+    onPublish: () => void
+    onRetryLoad: () => void
+    onSave: () => void
+    onViewTask: () => void
+    phase: 'error' | 'loading' | 'ready'
+    publishDisabled: boolean
+    publishLabel: string
+    publishing: boolean
+    revisions: ReactNode
+    revisionsOpen: boolean
+    aiOpen: boolean
+    metaOpen: boolean
+    revisionCount: number
+    saveDisabled: boolean
+    saving: boolean
+    savingDraft: boolean
+    showViewTask: boolean
+    title: string
+    tone: WriteDockTone
+    published: boolean
+  } & WriteMetaFieldsProps,
+) {
+  const { format, locale, t } = useI18n()
+  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
+  const [panelOpen, setPanelOpen] = useState(readPanelOpen)
+  const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null)
+  const copy = (
+    key: Parameters<typeof writeCopy>[1],
+    values?: Record<string, number | string>,
+  ) => writeCopy(locale, key, values)
+
+  const togglePanel = () => {
+    if (!isDesktop) {
+      props.onOpenMeta()
+      return
+    }
+    setPanelOpen((open) => {
+      const next = !open
+      rememberPanelOpen(next)
+      return next
+    })
+  }
+
+  const revisionLabel =
+    props.revisionCount > 0
+      ? copy('revisionsCount', { count: props.revisionCount })
+      : copy('revisions')
+  const savedAt = props.draft?.updatedAt ?? props.draft?.createdAt
+  const saveState: { detail?: string; label: string } | null =
+    props.tone === 'conflict'
+      ? { detail: copy('statusConflict'), label: copy('conflictShort') }
+      : props.tone === 'publishing'
+        ? { detail: copy('publishing'), label: copy('publishingShort') }
+        : props.tone === 'saving'
+          ? { label: copy('saving') }
+          : props.tone === 'unsaved'
+            ? { label: copy('unsavedChanges') }
+            : props.tone === 'submitted'
+              ? { detail: copy('submitted'), label: copy('submittedShort') }
+              : props.tone === 'matchesLive'
+                ? {
+                    detail: copy('matchesLive'),
+                    label: copy('matchesLiveShort'),
+                  }
+                : props.tone === 'saved' && savedAt
+                  ? {
+                      detail: format.dateTime(savedAt),
+                      label: copy('savedAt', {
+                        time: format.relativeTime(savedAt),
+                      }),
+                    }
+                  : props.tone === 'needContent'
+                    ? { label: copy('needContent') }
+                    : null
+
+  const authorsById = new Map(
+    props.authorCandidates.map((author) => [author.id, author]),
+  )
+  const authors = props.values.authors
+    .map((id) => authorsById.get(id))
+    .filter((author) => author !== undefined)
+  const categoryName = props.categories.find(
+    (category) => category.id === props.values.categoryId,
+  )?.name
+
+  const settings =
+    props.phase === 'ready' ? (
+      <WriteMetaFields {...props} />
+    ) : props.phase === 'loading' ? (
+      <div className={styles.settings}>
+        <Skeleton.Text rows={8} />
+      </div>
+    ) : null
+
+  const panelVisible = isDesktop && panelOpen
+
+  return (
+    <div className={styles.root}>
+      <header className={styles.bar}>
+        <div className={styles.barIdentity}>
+          <ActionIcon
+            aria-label={copy('back')}
+            icon={ArrowLeft}
+            onClick={props.onBack}
+            title={copy('back')}
+          />
+          <Tag color={props.published ? 'success' : undefined}>
+            {props.published ? copy('published') : copy('draft')}
+          </Tag>
+          {saveState ? (
+            <Tooltip title={saveState.detail}>
+              <span
+                aria-live="polite"
+                className={styles.saveState}
+                data-tone={props.tone}
+              >
+                {saveState.label}
+              </span>
+            </Tooltip>
+          ) : null}
+          {props.showViewTask ? (
+            <Button
+              htmlType="button"
+              onClick={props.onViewTask}
+              size="small"
+              type="text"
+            >
+              {copy('viewTask')}
+            </Button>
+          ) : null}
+        </div>
+        <div className={styles.barActions}>
+          <Badge count={props.revisionCount} overflowCount={99} size="small">
+            <ActionIcon
+              active={props.revisionsOpen}
+              aria-label={revisionLabel}
+              icon={GitBranch}
+              onClick={props.onOpenRevisions}
+              title={revisionLabel}
+            />
+          </Badge>
+          <ActionIcon
+            active={props.aiOpen}
+            aria-label={props.aiOpen ? copy('closeAi') : copy('openAi')}
+            icon={Bot}
+            onClick={props.aiOpen ? props.onCloseAi : props.onOpenAi}
+            title={props.aiOpen ? copy('closeAi') : copy('openAi')}
+          />
+          <ActionIcon
+            active={panelVisible}
+            aria-label={
+              panelVisible ? copy('hideSettings') : copy('showSettings')
+            }
+            icon={panelVisible ? PanelRightClose : PanelRightOpen}
+            onClick={togglePanel}
+            title={panelVisible ? copy('hideSettings') : copy('showSettings')}
+          />
+          <span aria-hidden className={styles.barDivider} />
+          {isDesktop ? (
+            <Button
+              disabled={props.saveDisabled}
+              htmlType="button"
+              loading={props.saving}
+              onClick={props.onSave}
+            >
+              {copy('save')}
+            </Button>
+          ) : null}
+          <Button
+            disabled={props.publishDisabled}
+            htmlType="button"
+            loading={props.publishing}
+            onClick={props.onPublish}
+            type="primary"
+          >
+            {props.publishLabel}
+          </Button>
+        </div>
+      </header>
+
+      <div className={styles.toolbarSlot} ref={setToolbarSlot} />
+
+      <div className={styles.body}>
+        <div className={styles.canvas}>
+          {props.phase === 'loading' ? (
+            <div className={styles.editorFallback}>
+              <Skeleton height={44} width="60%" />
+              <Skeleton.Text rows={8} />
+            </div>
+          ) : props.phase === 'error' ? (
+            <div className={styles.column}>
+              <div className={styles.notices}>
+                <span>{copy('loadFailed')}</span>
+                <Button htmlType="button" onClick={props.onRetryLoad}>
+                  {copy('retry')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className={styles.column}>
+                {props.notices ? (
+                  <div className={styles.notices}>{props.notices}</div>
+                ) : null}
+                <TextArea
+                  aria-label={copy('title')}
+                  autoSize
+                  className={styles.title}
+                  onChange={(event) =>
+                    props.updateField('title', event.target.value)
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') event.preventDefault()
+                  }}
+                  placeholder={copy('titlePlaceholder')}
+                  value={props.values.title}
+                  variant="borderless"
+                />
+                <button
+                  className={styles.meta}
+                  onClick={togglePanel}
+                  type="button"
+                >
+                  {authors.length > 0 ? (
+                    <>
+                      {authors.slice(0, 3).map((author) => (
+                        <Avatar
+                          alt={author.displayName}
+                          avatar={
+                            author.avatar ||
+                            author.displayName.slice(0, 1).toUpperCase()
+                          }
+                          key={author.id}
+                          size={18}
+                        />
+                      ))}
+                      <span>
+                        {authors.map((author) => author.displayName).join('、')}
+                      </span>
+                    </>
+                  ) : (
+                    <span>{copy('noByline')}</span>
+                  )}
+                  <span aria-hidden>·</span>
+                  <span>{categoryName ?? copy('categoryPlaceholder')}</span>
+                  <span aria-hidden>·</span>
+                  <span className={styles.metaPath}>
+                    {props.slugPrefix}
+                    {props.values.slug || copy('slugPlaceholder')}
+                  </span>
+                </button>
+              </div>
+              <EditorToolbarSlotContext.Provider value={toolbarSlot}>
+                {props.editor}
+              </EditorToolbarSlotContext.Provider>
+            </>
+          )}
+        </div>
+        {isDesktop ? (
+          <DraggablePanel
+            aria-label={copy('settings')}
+            className={styles.panel}
+            classNames={{ content: styles.panelBody }}
+            defaultSize={{ width: 340 }}
+            expand={panelOpen}
+            maxWidth={520}
+            minWidth={280}
+            mode="fixed"
+            onExpandChange={(expand) => {
+              setPanelOpen(expand)
+              rememberPanelOpen(expand)
+            }}
+            placement="right"
+            showHandleWhenCollapsed
+          >
+            <div className={styles.panelHeader}>
+              <span>{copy('settings')}</span>
+            </div>
+            <ScrollArea
+              className={styles.panelScroll}
+              disableContentFit
+              scrollFade
+            >
+              {settings}
+            </ScrollArea>
+          </DraggablePanel>
+        ) : null}
+      </div>
+
+      {isDesktop ? null : (
+        <Drawer
+          onClose={props.onCloseMeta}
+          open={props.metaOpen}
+          placement="right"
+          title={copy('settings')}
+          width="100%"
+        >
+          <div className={styles.drawerBody}>{settings}</div>
+        </Drawer>
+      )}
+
+      <Drawer
+        classNames={{ bodyContent: styles.drawerBody }}
+        onClose={props.onCloseRevisions}
+        open={props.revisionsOpen}
+        placement="right"
+        title={t('write.versionTree.title')}
+        width={isDesktop ? 420 : '100%'}
+      >
+        {props.revisionsOpen ? props.revisions : null}
+      </Drawer>
+    </div>
+  )
+}

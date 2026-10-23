@@ -1,4 +1,3 @@
-export { ContextMenuHost } from './host'
 export {
   closeContextMenu,
   showContextMenu,
@@ -16,3 +15,4 @@ export type {
   ContextMenuSubmenuType,
   MenuClickInfo,
 } from './types'
+export { ContextMenuHost } from '@lobehub/ui'

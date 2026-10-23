@@ -1,3 +1,5 @@
+import { ConfigProvider } from '@lobehub/ui'
+import * as motion from 'motion/react-m'
 import { act, createElement, type ReactNode } from 'react'
 import type { Root } from 'react-dom/client'
 import { createRoot } from 'react-dom/client'
@@ -107,7 +109,12 @@ beforeEach(() => {
 
 function render(element: ReactNode) {
   act(() => {
-    harness.root.render(createElement(I18nProvider, null, element))
+    harness.root.render(
+      createElement(ConfigProvider, {
+        children: createElement(I18nProvider, null, element),
+        motion,
+      }),
+    )
   })
 }
 
@@ -121,7 +128,7 @@ afterEach(() => {
 })
 
 describe('ContentLayout', () => {
-  it('renders the desktop PanelGroup layout when viewport is at lg or above', () => {
+  it('renders the desktop draggable aside when viewport is at lg or above', () => {
     stubMatchMedia(true)
     render(
       createElement(ContentLayout, {

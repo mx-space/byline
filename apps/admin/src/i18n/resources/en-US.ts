@@ -319,6 +319,7 @@ export const enUS = {
 
   'app.loading.auth': 'Checking sign-in state...',
 
+  'auth.login.asideLine': 'Invite-only, multi-author content',
   'auth.login.apple': 'Sign in with Apple',
   'auth.login.failed': 'Sign-in failed',
   'auth.login.github': 'Sign in with GitHub',
@@ -381,7 +382,9 @@ export const enUS = {
   'common.loading': 'Loading',
   'common.noData': 'No data',
   'common.openMainSite': 'Open main site',
+  'common.closeNavigation': 'Close navigation',
   'common.openNavigation': 'Open navigation',
+  'common.skipToContent': 'Skip to content',
   'common.pagination.nextPage': 'Next page',
   'common.pagination.pageSize': '{count} / page',
   'common.pagination.previousPage': 'Previous page',
@@ -649,8 +652,7 @@ export const enUS = {
   'routes.drafts.description':
     'Autosaved drafts, versions, and content recovery.',
   'routes.drafts.title': 'Drafts',
-  'routes.files.description':
-    'Uploaded files, isolated files, and comment image uploads.',
+  'routes.files.description': 'Images, media, and attachments used by posts.',
   'routes.files.title': 'Files',
   'routes.orphanImages.description':
     'Uploaded files not referenced by persisted content or configuration.',
@@ -662,7 +664,7 @@ export const enUS = {
     'Your profile, account security and system options.',
   'routes.settings.title': 'Settings',
   'routes.webhooks.description':
-    'Outbound webhook endpoints and dispatch history.',
+    'Notify your other services when content changes, and check each delivery.',
   'routes.webhooks.title': 'Webhooks',
   'routes.writePost.description':
     'Create and edit posts in the React markdown writing surface.',
@@ -859,8 +861,7 @@ export const enUS = {
   'settings.group.notification.title': 'Notifications',
   'settings.group.site.description': 'Site URL, SEO',
   'settings.group.site.title': 'Site',
-  'settings.group.storage.description':
-    'Backup, image hosting, comment image uploads',
+  'settings.group.storage.description': 'Image hosting and file storage',
   'settings.group.storage.title': 'Storage',
   'settings.group.system.description': 'Admin settings, feature toggles',
   'settings.group.system.title': 'System',
@@ -917,7 +918,7 @@ export const enUS = {
   'settings.oauth.apple.keyIdHelp':
     'Ten-character ID of the key created under Keys with Sign in with Apple enabled, bound to the same primary App ID.',
   'settings.oauth.apple.privateKeyHelp':
-    'Full contents of the downloaded .p8 file, including the BEGIN PRIVATE KEY and END PRIVATE KEY lines.',
+    'Paste the full contents of the downloaded .p8 file, including the BEGIN PRIVATE KEY and END PRIVATE KEY lines.',
   'settings.oauth.apple.servicesIdHelp':
     'Identifier created under Identifiers → Services IDs, e.g. dev.example.web. It is not the app Bundle ID — reusing the Bundle ID fails with invalid_client.',
   'settings.oauth.apple.teamIdHelp':
@@ -1205,12 +1206,15 @@ export const enUS = {
   'setup.onboarding.ai.features.asideSource': 'Original',
   'setup.api.urlLabel': 'API URL',
 
+  'shell.debug.api': 'API debug',
+  'shell.debug.local': 'Local dev',
+  'shell.locale.en': 'English',
   'shell.locale.label': 'Interface language',
+  'shell.locale.zh': '中文',
   'shell.logout': 'Sign out',
   'shell.nav.assets': 'Assets',
   'shell.nav.content': 'Content',
   'shell.nav.intelligence': 'Intelligence',
-  'shell.nav.integrations': 'Integrations',
   'shell.nav.system': 'System',
   'shell.owner.fallback': 'User',
   'shell.theme.dark': 'Dark',
@@ -1551,7 +1555,7 @@ export const enUS = {
   'write.publishConfirm.diverged':
     'This draft started from an older online version. Continuing will replace the online article with this draft. The other {count} draft branch(es) will be preserved.',
   'write.publishConfirm.firstDescription':
-    'Save the current draft, then publish that fixed snapshot.',
+    'Save the current draft, then publish that snapshot.',
   'write.publishConfirm.onlineDescription':
     'Submitting will directly update the current online article.',
   'write.publishConfirm.onlineChanged':
@@ -1559,7 +1563,7 @@ export const enUS = {
   'write.publishConfirm.otherBranchesPreserved':
     'The other {count} draft branch(es) will remain unchanged.',
   'write.publishConfirm.republishDescription':
-    'Save the current draft, then republish that fixed snapshot online.',
+    'Save the current draft, then republish that snapshot online.',
   'write.publishConfirm.savedAt':
     'The draft was last saved {time}; current changes are saved before submission.',
   'write.publishConfirm.willSave':
@@ -1915,5 +1919,6 @@ export const enUS = {
   'ai.translation.regenerateLockedDescription':
     'The manual translation will be replaced by a new AI translation.',
   'settings.schema.site.title': 'Content',
+  'settings.schema.site.defaultSourceLang.title': 'Default source language',
   'settings.schema.site.description': 'Defaults for new posts.',
 } satisfies Record<TranslationKey, string>

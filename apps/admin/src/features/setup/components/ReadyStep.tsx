@@ -1,29 +1,25 @@
+import { Alert, Button, Text } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
-import { Code2, PenLine, UserPlus } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
 import { getUrlOptions } from '~/api/options'
 import { getMe } from '~/api/users'
-import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { Button } from '~/ui/primitives/button'
 
+import { useSetupCopy } from '../copy'
 import { useOnboardingAiConfig } from '../hooks/use-onboarding-ai'
 import { onboardingLanguages } from '../utils/onboarding'
 import {
   deploymentDocsUrl,
-  OnboardingAsideTitle,
   OnboardingCard,
   OnboardingFooter,
   OnboardingShell,
 } from './OnboardingShell'
-
-const nextActionClassName =
-  'flex items-center gap-3 rounded-md border border-border bg-surface-card px-3 py-2.5 text-fg shadow-xs transition-colors hover:bg-surface-page'
+import { wizardStyles } from './wizard-styles'
 
 export function ReadyStep(props: { onFinish: () => void }) {
-  const { t } = useI18n()
+  // lobe-design-ignore DETAIL-NO-EMPTY: 这四行是固定核对项，空值用 -- 表示未填写
+  const copy = useSetupCopy()
   const meQuery = useQuery({
     queryFn: getMe,
     queryKey: adminQueryKeys.onboarding.me(),
@@ -34,13 +30,15 @@ export function ReadyStep(props: { onFinish: () => void }) {
   })
   const aiQuery = useOnboardingAiConfig()
   const ai = aiQuery.data
-  const separator = t('setup.onboarding.ready.separator')
+  const separator = copy('readySeparator')
+  const loading = meQuery.isPending || urlQuery.isPending || aiQuery.isPending
+  const failed = meQuery.isError || urlQuery.isError || aiQuery.isError
 
   const enabledFeatures = [
-    ai?.enableTranslation && t('setup.onboarding.ai.features.translation'),
-    ai?.enableSummary && t('setup.onboarding.ai.features.summary'),
-    ai?.enableInsights && t('setup.onboarding.ai.features.insights'),
-    ai?.tts?.enable && t('setup.onboarding.ai.features.tts'),
+    ai?.enableTranslation && copy('featuresTranslation'),
+    ai?.enableSummary && copy('featuresSummary'),
+    ai?.enableInsights && copy('featuresInsights'),
+    ai?.tts?.enable && copy('featuresTts'),
   ].filter(Boolean)
   const providerNames = (ai?.providers ?? []).map((provider) => provider.name)
   const aiSummary = providerNames.length
@@ -59,116 +57,122 @@ export function ReadyStep(props: { onFinish: () => void }) {
   const summaryRows = [
     {
       href: '/setting/account',
-      label: t('setup.onboarding.ready.account'),
-      value: meQuery.data?.username ?? undefined,
+      label: copy('readyAccount'),
+      value: meQuery.data?.username,
     },
     {
       href: '/setting/site',
-      label: t('setup.onboarding.ready.site'),
+      label: copy('readySite'),
       value: urlQuery.data?.webUrl,
     },
     {
       href: '/setting/ai',
-      label: t('setup.onboarding.ready.ai'),
+      label: copy('readyAi'),
       value: aiSummary,
     },
     {
       href: '/setting/ai',
-      label: t('setup.onboarding.ready.languages'),
+      label: copy('readyLanguages'),
       value: ai?.enableTranslation ? languages : '',
     },
   ]
 
+  const nextLinks = [
+    {
+      hint: copy('readyWriteHint'),
+      href: '/posts/edit',
+      title: copy('readyWrite'),
+    },
+    {
+      hint: copy('readyInviteHint'),
+      href: '/users',
+      title: copy('readyInvite'),
+    },
+  ]
+
   return (
-    <OnboardingShell
-      aside={
-        <>
-          <OnboardingAsideTitle>
-            {t('setup.onboarding.ready.asideTitle')}
-          </OnboardingAsideTitle>
-          <div className="grid grid-cols-[max-content_minmax(0,1fr)_max-content] items-center gap-x-3 gap-y-2.5 text-sm">
-            {summaryRows.map((row) => (
-              <SummaryRow key={row.label} {...row} />
-            ))}
-          </div>
-        </>
-      }
-      step="ready"
-    >
+    <OnboardingShell step="ready">
       <OnboardingCard
-        description={t('setup.onboarding.ready.description', {
-          name: 'Byline',
-        })}
+        description={copy('readyDescription')}
         footer={
           <OnboardingFooter>
             <Button
               data-testid="onboarding-submit"
+              htmlType="button"
               onClick={props.onFinish}
-              type="button"
+              type="primary"
             >
-              {t('setup.onboarding.ready.enter')}
+              {copy('readyEnter')}
             </Button>
           </OnboardingFooter>
         }
-        title={t('setup.onboarding.ready.title')}
+        title={copy('readyTitle')}
       >
-        <div className="flex flex-col gap-2">
-          <Link className={nextActionClassName} to="/posts/edit">
-            <NextAction
-              hint={t('setup.onboarding.ready.writeHint')}
-              icon={<PenLine className="size-3.5" />}
-              title={t('setup.onboarding.ready.write')}
-            />
-          </Link>
-          <Link className={nextActionClassName} to="/users">
-            <NextAction
-              hint={t('setup.onboarding.ready.inviteHint')}
-              icon={<UserPlus className="size-3.5" />}
-              title={t('setup.onboarding.ready.invite')}
-            />
-          </Link>
-          <a
-            className={nextActionClassName}
-            href={deploymentDocsUrl}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <NextAction
-              hint={t('setup.onboarding.ready.connectHint')}
-              icon={<Code2 className="size-3.5" />}
-              title={t('setup.onboarding.ready.connect')}
-            />
-          </a>
+        <div className={wizardStyles.stack}>
+          {loading ? (
+            <Text type="secondary">{copy('readyLoading')}</Text>
+          ) : null}
+          {failed ? (
+            <Alert showIcon title={copy('readyLoadError')} type="error" />
+          ) : null}
+          {failed ? (
+            <Button
+              htmlType="button"
+              onClick={() => {
+                void meQuery.refetch()
+                void urlQuery.refetch()
+                void aiQuery.refetch()
+              }}
+              type="text"
+            >
+              {copy('retry')}
+            </Button>
+          ) : null}
+          <div className={wizardStyles.summary}>
+            {summaryRows.map((row) => (
+              <SummaryRow key={row.label} {...row} />
+            ))}
+          </div>
+          {nextLinks.map((item) => (
+            <div key={item.href}>
+              <Link className={wizardStyles.link} to={item.href}>
+                {item.title}
+              </Link>
+              <Text type="secondary">{item.hint}</Text>
+            </div>
+          ))}
+          <div>
+            <a
+              className={wizardStyles.link}
+              href={deploymentDocsUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {copy('readyConnect')}
+            </a>
+            <Text type="secondary">{copy('readyConnectHint')}</Text>
+          </div>
         </div>
       </OnboardingCard>
     </OnboardingShell>
   )
 }
 
-function NextAction(props: { hint: string; icon: ReactNode; title: string }) {
+function SummaryRow(props: {
+  href: string
+  label: string
+  value?: string | null
+}) {
+  const copy = useSetupCopy()
+  const value = props.value || copy('readyEmpty')
   return (
     <>
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-sm bg-accent-soft text-accent">
-        {props.icon}
-      </span>
-      <span className="min-w-0 text-sm">
-        <span className="block font-medium">{props.title}</span>
-        <span className="block text-fg-muted">{props.hint}</span>
-      </span>
-    </>
-  )
-}
-
-function SummaryRow(props: { href: string; label: string; value?: string }) {
-  const { t } = useI18n()
-  return (
-    <>
-      <span className="text-fg-muted">{props.label}</span>
-      <span className={props.value ? 'truncate text-fg' : 'text-fg-subtle'}>
-        {props.value || t('setup.onboarding.ready.notSet')}
-      </span>
-      <Link className="text-accent hover:text-accent-hover" to={props.href}>
-        {t('setup.onboarding.ready.edit')}
+      <Text as="span" type="secondary">
+        {props.label}
+      </Text>
+      <span className={wizardStyles.summaryValue}>{value}</span>
+      <Link className={wizardStyles.link} to={props.href}>
+        {copy('readyEdit')}
       </Link>
     </>
   )

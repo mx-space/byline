@@ -2,6 +2,7 @@ import { isPlainObject } from 'es-toolkit'
 
 import { API_URL } from '~/constants/env'
 import { SESSION_WITH_LOGIN } from '~/constants/keys'
+import { clearAuthBearerToken, readAuthBearerToken } from '~/utils/authjs/auth'
 
 const requestUuid = createRequestUuid()
 
@@ -148,6 +149,11 @@ export function buildAdminRequestHeaders(headers?: HeadersInit) {
   next.set('x-skip-translation', '1')
   next.set('x-uuid', requestUuid)
 
+  if (!next.has('authorization')) {
+    const bearer = readAuthBearerToken()
+    if (bearer) next.set('authorization', `Bearer ${bearer}`)
+  }
+
   return next
 }
 
@@ -178,6 +184,7 @@ function isUnauthorizedResponse<TResponse>(
 
 function handleUnauthorized() {
   sessionStorage.removeItem(SESSION_WITH_LOGIN)
+  clearAuthBearerToken()
 
   const current = `${window.location.pathname}${window.location.hash}`
   const hash = window.location.hash.replace(/^#/, '')

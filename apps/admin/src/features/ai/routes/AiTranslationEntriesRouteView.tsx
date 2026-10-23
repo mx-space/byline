@@ -1,7 +1,19 @@
+import {
+  Button,
+  Drawer,
+  Empty,
+  Input,
+  Pagination,
+  Select,
+  Skeleton,
+  Table,
+  Tag,
+  TextArea,
+  toast,
+} from '@lobehub/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BookOpenText, Loader2, RefreshCw, Sparkles } from 'lucide-react'
-import { useMemo } from 'react'
-import { toast } from 'sonner'
+import { RefreshCw } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import type { TranslationEntry, TranslationEntryKeyPath } from '~/api/ai'
 import {
@@ -11,29 +23,15 @@ import {
   updateTranslationEntry,
 } from '~/api/ai'
 import { useUrlListState } from '~/features/_shared/hooks/use-url-list-state'
-import { Code, SmallBadge } from '~/features/tasks/components/TaskPrimitives'
-import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { CompactPagination } from '~/ui/data/compact-pagination'
 import { confirmDialog } from '~/ui/feedback/confirm'
-import { FocusScope } from '~/ui/focus-scope'
-import { PageHeader } from '~/ui/layout/page-layout'
-import { Button } from '~/ui/primitives/button'
-import { Scroll } from '~/ui/primitives/scroll'
-import { SelectField } from '~/ui/primitives/select'
-import { TextInput } from '~/ui/primitives/text-field'
-import { cn } from '~/utils/cn'
 
-import {
-  GroupedResourceSkeleton,
-  ResourceEmpty,
-  ResourceError,
-} from '../components/GroupedResourceStates'
 import { translationEntryKeyPathOptions } from '../constants'
+import { useAiCopy } from '../copy'
+import { aiStyles } from '../shell/styles'
 import { getErrorMessage } from '../utils/ai'
 
-const FOCUS_SCOPE_ID = 'ai-translation-entries'
-const PAGE_SIZE = 50
+const PAGE_SIZE = 20
 
 function readPositiveInt(value: null | string) {
   const n = Number(value)
@@ -58,9 +56,19 @@ function writeTranslationEntriesUrlState(state: TranslationEntriesUrlState) {
   return next
 }
 
+function usageLabel(
+  keyPath: TranslationEntryKeyPath,
+  copy: ReturnType<typeof useAiCopy>,
+) {
+  if (keyPath === 'category.name') return copy('usageCategory')
+  return copy('usageTag')
+}
+
 export function AiTranslationEntriesRouteView() {
-  const { t } = useI18n()
+  const copy = useAiCopy()
   const queryClient = useQueryClient()
+  const [editing, setEditing] = useState<TranslationEntry | null>(null)
+  const [draft, setDraft] = useState('')
   const urlStateOptions = useMemo(
     () => ({
       read: (searchParams: URLSearchParams): TranslationEntriesUrlState => {
@@ -77,13 +85,13 @@ export function AiTranslationEntriesRouteView() {
   )
   const [urlState, setUrlState] = useUrlListState(urlStateOptions)
   const { keyPath, lang, page } = urlState
-
   const params = {
     keyPath: keyPath || undefined,
     lang: lang.trim() || undefined,
     page,
     size: PAGE_SIZE,
   }
+  const filtered = Boolean(keyPath || lang.trim())
 
   const query = useQuery({
     placeholderData: (previous) => previous,
@@ -104,10 +112,10 @@ export function AiTranslationEntriesRouteView() {
   const generateMutation = useMutation({
     mutationFn: () => generateTranslationEntries(),
     onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('ai.toast.entryGenerateFailed'))),
+      toast.error(getErrorMessage(error, copy('entryGenerateFailed'))),
     onSuccess: async (result) => {
       toast.success(
-        t('ai.toast.entryGenerated', {
+        copy('entryGenerated', {
           created: result.created,
           skipped: result.skipped,
         }),
@@ -117,19 +125,13 @@ export function AiTranslationEntriesRouteView() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: (entry: TranslationEntry) => {
-      const translatedText = window.prompt(
-        t('ai.edit.translatedTextPrompt'),
-        entry.translatedText,
-      )
-      if (translatedText === null) return Promise.resolve(entry)
-
-      return updateTranslationEntry(entry.id, { translatedText })
-    },
+    mutationFn: (entry: TranslationEntry) =>
+      updateTranslationEntry(entry.id, { translatedText: draft }),
     onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('ai.toast.entrySaveFailed'))),
+      toast.error(getErrorMessage(error, copy('entrySaveFailed'))),
     onSuccess: async () => {
-      toast.success(t('ai.toast.entrySaved'))
+      toast.success(copy('entrySaved'))
+      setEditing(null)
       await invalidate()
     },
   })
@@ -137,181 +139,249 @@ export function AiTranslationEntriesRouteView() {
   const deleteMutation = useMutation({
     mutationFn: deleteTranslationEntry,
     onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('ai.toast.entryDeleteFailed'))),
+      toast.error(getErrorMessage(error, copy('entryDeleteFailed'))),
     onSuccess: async () => {
-      toast.success(t('ai.toast.entryDeleted'))
+      toast.success(copy('entryDeleted'))
       await invalidate()
     },
   })
 
   const confirmAndDelete = async (entry: TranslationEntry) => {
     const ok = await confirmDialog({
+      cancelText: copy('cancel'),
+      confirmText: copy('deleteEntry'),
+      description: copy('deleteEntryBody'),
       destructive: true,
-      title: t('ai.confirm.deleteEntry'),
+      title: copy('deleteEntryTitle'),
     })
     if (ok) deleteMutation.mutate(entry.id)
   }
 
-  const keyPathOptions = [
-    { label: t('ai.filter.allKeyPath'), value: '' },
-    ...translationEntryKeyPathOptions.map((option) => ({
-      label: option,
-      value: option,
-    })),
-  ]
+  const status =
+    query.isLoading && entries.length === 0
+      ? 'loading'
+      : query.isError
+        ? 'error'
+        : entries.length === 0
+          ? filtered
+            ? 'filter-empty'
+            : 'empty'
+          : 'ready'
 
   return (
-    <FocusScope
-      className="outline-hidden flex h-full min-h-0 flex-col bg-background"
-      id={FOCUS_SCOPE_ID}
-    >
-      <PageHeader
-        actions={
-          <Button
-            className="text-xs"
-            disabled={generateMutation.isPending}
-            onClick={() => generateMutation.mutate()}
-            type="button"
-            variant="primary"
-          >
-            {generateMutation.isPending ? (
-              <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
-            ) : (
-              <Sparkles aria-hidden="true" className="size-3.5" />
-            )}
-            {t('ai.action.generateEntries')}
-          </Button>
-        }
-        count={t('ai.translation.entryCountSuffix', { count: total })}
-        icon={<BookOpenText aria-hidden="true" className="size-4" />}
-        title={t('routes.aiTranslationEntries.title')}
-      />
-
-      <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border bg-surface-inset px-4">
-        <div className="flex shrink-0 items-center gap-1.5">
-          <SelectField
-            aria-label={t('ai.filter.keyPathAria')}
-            onValueChange={(value) => {
-              setUrlState((current) => ({
-                ...current,
-                keyPath: isKeyPath(value) ? value : '',
-                page: 1,
-              }))
-            }}
-            options={keyPathOptions}
-            triggerClassName="w-36 !h-7 !border-transparent !bg-transparent text-xs hover:!bg-surface-inset"
-            value={keyPath}
-          />
-          <TextInput
-            controlClassName="h-7 w-24 !border-transparent !bg-transparent text-xs hover:!bg-surface-inset"
-            onChange={(value) => {
-              setUrlState((current) => ({ ...current, lang: value, page: 1 }))
-            }}
-            placeholder={t('ai.filter.langPlaceholder')}
-            value={lang}
-          />
+    <div className={aiStyles.page}>
+      <header className={aiStyles.pageHead}>
+        <div>
+          <h1 className={aiStyles.title}>{copy('glossaryTitle')}</h1>
+          <p className={aiStyles.meta}>
+            {copy('glossaryCount', { count: total })}
+          </p>
         </div>
-        <span className="ml-auto h-3.5 w-px shrink-0 bg-border" />
-        <button
-          aria-label={t('common.refresh')}
-          className="outline-hidden inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-fg-muted transition-colors hover:bg-surface-inset hover:text-fg focus-visible:ring-2 focus-visible:ring-[var(--color-primary-shallow)] disabled:pointer-events-none disabled:opacity-50"
-          disabled={query.isFetching}
-          onClick={() => void query.refetch()}
-          type="button"
+        <Button
+          htmlType="button"
+          loading={generateMutation.isPending}
+          onClick={() => generateMutation.mutate()}
+          type={editing ? 'default' : 'primary'}
         >
-          <RefreshCw
-            aria-hidden="true"
-            className={cn('size-3.5', query.isFetching && 'animate-spin')}
-          />
-        </button>
+          {copy('generateEntries')}
+        </Button>
+      </header>
+      <div className={aiStyles.filters}>
+        <Select
+          aria-label={copy('columnUsage')}
+          className={aiStyles.filterControl}
+          onChange={(value) => {
+            const next = typeof value === 'string' ? value : ''
+            setUrlState((current) => ({
+              ...current,
+              keyPath: isKeyPath(next) ? next : '',
+              page: 1,
+            }))
+          }}
+          options={[
+            { label: copy('allUsage'), value: '' },
+            ...translationEntryKeyPathOptions.map((option) => ({
+              label: usageLabel(option, copy),
+              value: option,
+            })),
+          ]}
+          value={keyPath}
+        />
+        <Input
+          allowClear
+          aria-label={copy('columnLang')}
+          className={aiStyles.filterControl}
+          onChange={(event) => {
+            const value = typeof event === 'string' ? event : event.target.value
+            setUrlState((current) => ({ ...current, lang: value, page: 1 }))
+          }}
+          placeholder={copy('langPlaceholder')}
+          value={lang}
+        />
+        <Button
+          aria-label={copy('refresh')}
+          htmlType="button"
+          icon={RefreshCw}
+          loading={query.isFetching}
+          onClick={() => void query.refetch()}
+        />
       </div>
-
-      <Scroll className="min-h-0 flex-1" orientation="both">
-        {query.isLoading && entries.length === 0 ? (
-          <GroupedResourceSkeleton />
-        ) : query.isError ? (
-          <ResourceError onRetry={() => void query.refetch()} />
-        ) : entries.length === 0 ? (
-          <ResourceEmpty label={t('ai.tab.entries')} />
-        ) : (
-          <table className="w-full min-w-[860px] text-sm">
-            <thead className="border-b border-border text-left text-xs uppercase text-fg-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">
-                  {t('ai.translation.column.path')}
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  {t('ai.translation.column.lang')}
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  {t('ai.translation.column.source')}
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  {t('ai.translation.column.translated')}
-                </th>
-                <th className="px-4 py-3 text-right font-medium">
-                  {t('ai.translation.column.actions')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {entries.map((entry) => (
-                <tr key={entry.id}>
-                  <td className="px-4 py-3 align-top">
-                    <Code>{entry.keyPath}</Code>
-                  </td>
-                  <td className="px-4 py-3 align-top">
-                    <SmallBadge tone="info">{entry.lang}</SmallBadge>
-                  </td>
-                  <td className="max-w-xs px-4 py-3 align-top text-fg">
-                    {entry.sourceText}
-                  </td>
-                  <td className="max-w-md px-4 py-3 align-top text-fg">
-                    {entry.translatedText || '-'}
-                  </td>
-                  <td className="px-4 py-3 align-top">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        disabled={updateMutation.isPending}
-                        onClick={() => updateMutation.mutate(entry)}
-                        type="button"
-                        variant="subtle"
-                      >
-                        {t('ai.action.edit')}
-                      </Button>
-                      <Button
-                        className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-950 dark:text-red-400 dark:hover:bg-red-950/30"
-                        disabled={deleteMutation.isPending}
-                        onClick={() => void confirmAndDelete(entry)}
-                        type="button"
-                        variant="subtle"
-                      >
-                        {t('ai.action.delete')}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Scroll>
-
-      {pageCount > 1 ? (
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border px-4 py-3">
-          <span className="text-xs tabular-nums text-fg-muted">
-            {t('ai.page.pageIndex', { page })}
-          </span>
-          <CompactPagination
-            onPageChange={(nextPage) => setUrlState({ page: nextPage })}
-            onPageSizeChange={() => undefined}
-            page={page}
-            pageCount={pageCount}
+      <div className={aiStyles.tableWrap}>
+        {status === 'loading' ? (
+          <div aria-busy="true" className={aiStyles.stack}>
+            <p className={aiStyles.meta}>{copy('glossaryLoading')}</p>
+            <Skeleton height={40} />
+            <Skeleton height={40} />
+            <Skeleton height={40} />
+          </div>
+        ) : null}
+        {status === 'error' ? (
+          <Empty
+            action={
+              <Button htmlType="button" onClick={() => void query.refetch()}>
+                {copy('retryLoad')}
+              </Button>
+            }
+            description={copy('glossaryFailedBody')}
+            title={copy('glossaryFailedTitle')}
+          />
+        ) : null}
+        {status === 'empty' ? (
+          <Empty
+            description={copy('glossaryEmptyBody')}
+            title={copy('glossaryEmptyTitle')}
+          />
+        ) : null}
+        {status === 'filter-empty' ? (
+          <Empty
+            action={
+              <Button
+                htmlType="button"
+                onClick={() => setUrlState({ keyPath: '', lang: '', page: 1 })}
+              >
+                {copy('clearFilters')}
+              </Button>
+            }
+            description={copy('glossaryFilterBody')}
+            title={copy('glossaryFilterTitle')}
+          />
+        ) : null}
+        {status === 'ready' ? (
+          <Table<TranslationEntry>
+            columns={[
+              {
+                dataIndex: 'sourceText',
+                key: 'sourceText',
+                title: copy('columnSource'),
+              },
+              {
+                dataIndex: 'translatedText',
+                key: 'translatedText',
+                render: (value: string) => value || copy('emptyValue'),
+                title: copy('columnTranslated'),
+              },
+              {
+                dataIndex: 'lang',
+                key: 'lang',
+                render: (value: string) => <Tag>{value}</Tag>,
+                title: copy('columnLang'),
+              },
+              {
+                dataIndex: 'keyPath',
+                key: 'keyPath',
+                render: (value: TranslationEntryKeyPath) => (
+                  <span>
+                    {usageLabel(value, copy)}
+                    <span className={aiStyles.meta}> {value}</span>
+                  </span>
+                ),
+                title: copy('columnUsage'),
+              },
+              {
+                key: 'actions',
+                render: (_value: unknown, entry: TranslationEntry) => (
+                  <div className={aiStyles.actions}>
+                    <Button
+                      htmlType="button"
+                      onClick={() => {
+                        setDraft(entry.translatedText)
+                        setEditing(entry)
+                      }}
+                    >
+                      {copy('editEntry')}
+                    </Button>
+                    <Button
+                      danger
+                      htmlType="button"
+                      onClick={() => void confirmAndDelete(entry)}
+                    >
+                      {copy('deleteEntry')}
+                    </Button>
+                  </div>
+                ),
+                title: '',
+              },
+            ]}
+            dataSource={entries}
+            pagination={false}
+            rowKey="id"
+            scroll={{ x: true }}
+          />
+        ) : null}
+      </div>
+      {status === 'ready' && pageCount > 1 ? (
+        <div className={aiStyles.pager}>
+          <span className={aiStyles.meta}>{copy('pageIndex', { page })}</span>
+          <Pagination
+            current={page}
+            onChange={(nextPage) => setUrlState({ page: nextPage })}
             pageSize={PAGE_SIZE}
-            pageSizes={[PAGE_SIZE]}
+            total={total}
           />
         </div>
       ) : null}
-    </FocusScope>
+      <Drawer
+        onClose={() => setEditing(null)}
+        open={Boolean(editing)}
+        placement="right"
+        title={copy('editEntry')}
+        width={420}
+      >
+        {editing ? (
+          <form
+            className={aiStyles.drawerForm}
+            onSubmit={(event) => {
+              event.preventDefault()
+              updateMutation.mutate(editing)
+            }}
+          >
+            <p className={aiStyles.meta}>
+              {usageLabel(editing.keyPath, copy)} · {editing.lang}
+            </p>
+            <p className={aiStyles.prose}>{editing.sourceText}</p>
+            <label className={aiStyles.field}>
+              <span className={aiStyles.label}>{copy('columnTranslated')}</span>
+              <TextArea
+                onChange={(event) => setDraft(event.target.value)}
+                rows={6}
+                value={draft}
+              />
+            </label>
+            <div className={aiStyles.actions}>
+              <Button htmlType="button" onClick={() => setEditing(null)}>
+                {copy('cancel')}
+              </Button>
+              <Button
+                htmlType="submit"
+                loading={updateMutation.isPending}
+                type={editing ? 'primary' : 'default'}
+              >
+                {copy('saveEntry')}
+              </Button>
+            </div>
+          </form>
+        ) : null}
+      </Drawer>
+    </div>
   )
 }

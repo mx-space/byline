@@ -1,10 +1,7 @@
+import { Button, createModal, useModalContext } from '@lobehub/ui'
 import type { ReactNode } from 'react'
 
-import { useI18n } from '~/i18n'
-import { ModalFooter, ModalTitle } from '~/ui/feedback/modal'
-import { present, useModal } from '~/ui/feedback/modal-imperative'
-import { Button } from '~/ui/primitives/button'
-import { cn } from '~/utils/cn'
+import { translate } from '~/i18n/translate'
 
 export interface ConfirmDialogOptions {
   title: ReactNode
@@ -14,59 +11,58 @@ export interface ConfirmDialogOptions {
   destructive?: boolean
 }
 
-interface ConfirmDialogProps extends ConfirmDialogOptions {}
-
-function ConfirmDialog(props: ConfirmDialogProps) {
-  const modal = useModal<boolean>()
-  const { t } = useI18n()
-  const confirmText = props.confirmText ?? t('common.confirm')
-  const cancelText = props.cancelText ?? t('common.cancel')
+function ConfirmActions(props: {
+  cancelText: ReactNode
+  confirmText: ReactNode
+  destructive?: boolean
+  onResolve: (value: boolean) => void
+}) {
+  const { close } = useModalContext()
+  const choose = (value: boolean) => {
+    props.onResolve(value)
+    close()
+  }
 
   return (
-    <div className="flex w-full flex-col">
-      <div className="flex shrink-0 items-start px-6 pt-5 pb-4">
-        <ModalTitle className="text-lg leading-snug font-semibold break-words text-fg">
-          {props.title}
-        </ModalTitle>
-      </div>
-      {props.description ? (
-        <div className="px-6 pb-4 text-sm break-words text-fg-muted">
-          {props.description}
-        </div>
-      ) : null}
-      <ModalFooter>
-        <Button
-          autoFocus
-          onClick={() => modal.close(false)}
-          variant="secondary"
-        >
-          {cancelText}
-        </Button>
-        <Button
-          className={cn(
-            props.destructive && 'bg-red-600 text-white hover:bg-red-700',
-          )}
-          onClick={() => modal.close(true)}
-        >
-          {confirmText}
-        </Button>
-      </ModalFooter>
-    </div>
+    <>
+      <Button onClick={() => choose(false)}>{props.cancelText}</Button>
+      <Button
+        danger={props.destructive}
+        onClick={() => choose(true)}
+        type="primary"
+      >
+        {props.confirmText}
+      </Button>
+    </>
   )
 }
 
 /**
- * Imperative confirm dialog. Resolves true on confirm, false on cancel/dismiss.
- * Drop-in replacement for window.confirm with project-styled modal UI.
+ * Imperative confirm dialog. Resolves true on confirm, false on cancel or dismiss.
  */
-export async function confirmDialog(
-  options: ConfirmDialogOptions,
-): Promise<boolean> {
-  const handle = present<ConfirmDialogProps, boolean>(ConfirmDialog, options, {
-    modalProps: {
-      popupStyle: { width: 'min(92vw, 26rem)' },
-    },
+export function confirmDialog(options: ConfirmDialogOptions): Promise<boolean> {
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (value: boolean) => {
+      if (settled) return
+      settled = true
+      resolve(value)
+    }
+    createModal({
+      content: options.description,
+      footer: (
+        <ConfirmActions
+          cancelText={options.cancelText ?? translate('common.cancel')}
+          confirmText={options.confirmText ?? translate('common.confirm')}
+          destructive={options.destructive}
+          onResolve={finish}
+        />
+      ),
+      onOpenChange: (open) => {
+        if (!open) finish(false)
+      },
+      title: options.title,
+      width: 'min(92vw, 26rem)',
+    })
   })
-  const result = await handle
-  return result === true
 }

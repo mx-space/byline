@@ -1,17 +1,52 @@
+import {
+  Button,
+  createStaticStyles,
+  Descriptions,
+  Flexbox,
+  Input,
+  Text,
+  TextArea,
+  toast,
+} from '@lobehub/ui'
+import { Form, useForm, useWatch } from '@lobehub/ui/form'
 import { useMutation } from '@tanstack/react-query'
-import { Camera, Loader2, Save } from 'lucide-react'
-import type { FormEvent, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { z } from 'zod'
 
 import { uploadFile } from '~/api/files'
 import type { UserDetail, UserProfileInput } from '~/api/users'
 import { useI18n } from '~/i18n'
-import { Button } from '~/ui/primitives/button'
-import { TextArea, TextInput } from '~/ui/primitives/text-field'
 
-import { getUserErrorMessage } from '../utils/users'
+import { useUsersCopy } from '../copy'
+import { getUserErrorMessage, showValue } from '../utils/users'
 import { UserAvatar } from './UserAvatar'
+
+const styles = createStaticStyles(({ css }) => ({
+  file: css`
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  `,
+  upload: css`
+    position: relative;
+  `,
+}))
+
+const profileSchema = z.object({
+  avatar: z.string(),
+  bio: z.string(),
+  displayName: z.string(),
+  email: z.string(),
+  url: z.string(),
+  username: z.string(),
+})
 
 interface ProfileFormState {
   avatar: string
@@ -58,135 +93,133 @@ export function UserProfileForm(props: {
   submitLabel?: string
   user?: Partial<UserDetail>
 }) {
+  const copy = useUsersCopy()
   const { t } = useI18n()
-  const [form, setForm] = useState(() => toFormState(props.user))
   const [submitting, setSubmitting] = useState(false)
-  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const form = useForm({
+    initialValues: toFormState(props.user),
+    onSubmit: async (values) => {
+      const base = toFormState(props.user)
+      const merged: ProfileFormState = {
+        ...base,
+        ...values,
+        email: props.identityLocked ? base.email : values.email,
+        username: props.identityLocked ? base.username : values.username,
+      }
+      if (!merged.displayName.trim()) {
+        form.setErrors({ displayName: copy('displayNameRequired') })
+        return
+      }
+      setSubmitting(true)
+      try {
+        await props.onSubmit(
+          toProfileInput(merged, { identityLocked: props.identityLocked }),
+        )
+      } finally {
+        setSubmitting(false)
+      }
+    },
+    schema: profileSchema,
+  })
+  const avatar = useWatch(form, 'avatar')
+  const displayName = useWatch(form, 'displayName')
+  const username = useWatch(form, 'username')
 
   const avatarUpload = useMutation({
     mutationFn: (file: File) => uploadFile(file, 'avatar'),
     onError: (error: unknown) =>
-      toast.error(getUserErrorMessage(error, t('users.toast.avatarFailed'))),
+      toast.error(getUserErrorMessage(error, copy('avatarFailed'))),
     onSuccess: (result) => {
-      setForm((current) => ({ ...current, avatar: result.url }))
+      form.setValue('avatar', result.url)
     },
   })
 
-  const setField = (key: keyof ProfileFormState) => (value: string) =>
-    setForm((current) => ({ ...current, [key]: value }))
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!form.displayName.trim()) {
-      toast.error(t('users.validation.displayNameRequired'))
-      return
-    }
-    setSubmitting(true)
-    try {
-      await props.onSubmit(
-        toProfileInput(form, { identityLocked: props.identityLocked }),
-      )
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   return (
-    <form className="space-y-5" onSubmit={submit}>
-      <div className="flex items-center gap-4">
-        <input
-          accept="image/*"
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            event.target.value = ''
-            if (file) avatarUpload.mutate(file)
-          }}
-          ref={avatarInputRef}
-          type="file"
-        />
-        <button
-          aria-label={t('users.field.avatarUpload')}
-          className="group relative rounded-full focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-accent/15"
-          onClick={() => avatarInputRef.current?.click()}
-          title={t('users.field.avatarUpload')}
-          type="button"
-        >
-          <UserAvatar
-            avatar={form.avatar}
-            className="size-16 text-lg"
-            name={form.displayName || form.username}
+    <Form form={form} gap={16} layout="vertical">
+      <Flexbox align="center" gap={12} horizontal>
+        <UserAvatar avatar={avatar} name={displayName || username} size={48} />
+        <Flexbox className={styles.upload} flex={1} gap={8}>
+          <input
+            accept="image/*"
+            aria-label={copy('uploadAvatar')}
+            className={styles.file}
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              event.target.value = ''
+              if (file) avatarUpload.mutate(file)
+            }}
+            ref={fileRef}
+            type="file"
           />
-          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
-            {avatarUpload.isPending ? (
-              <Loader2
-                aria-hidden="true"
-                className="size-4 animate-spin text-white"
-              />
-            ) : (
-              <Camera aria-hidden="true" className="size-4 text-white" />
-            )}
-          </span>
-        </button>
-        <div className="min-w-0 flex-1">
-          <TextInput
-            label={t('users.field.avatar')}
-            onChange={setField('avatar')}
-            placeholder="https://"
-            value={form.avatar}
-          />
-        </div>
-      </div>
+          <Button
+            htmlType="button"
+            loading={avatarUpload.isPending}
+            onClick={() => fileRef.current?.click()}
+          >
+            {copy('uploadAvatar')}
+          </Button>
+          <Form.Field label={copy('avatarUrl')} name="avatar">
+            <Input placeholder="https://" />
+          </Form.Field>
+        </Flexbox>
+      </Flexbox>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <TextInput
-          label={t('users.field.displayName')}
-          onChange={setField('displayName')}
-          required
-          value={form.displayName}
-        />
-        <TextInput
-          disabled={props.identityLocked}
-          label={t('users.field.username')}
-          onChange={setField('username')}
-          value={form.username}
-        />
-        <TextInput
-          disabled={props.identityLocked}
-          label={t('users.field.email')}
-          onChange={setField('email')}
-          type="email"
-          value={form.email}
-        />
-        <TextInput
-          label={t('users.field.url')}
-          onChange={setField('url')}
-          placeholder="https://"
-          value={form.url}
-        />
-      </div>
+      <Form.Field
+        label={copy('displayName')}
+        name="displayName"
+        required={copy('displayNameRequired')}
+      >
+        <Input />
+      </Form.Field>
+
       {props.identityLocked ? (
-        <p className="-mt-2 text-xs text-fg-muted">
-          {t('users.field.identityLocked')}
-        </p>
-      ) : null}
-      <TextArea
-        label={t('users.field.bio')}
-        onChange={setField('bio')}
-        value={form.bio}
-      />
+        <Flexbox gap={8}>
+          <Descriptions
+            column={1}
+            items={[
+              {
+                children: showValue(props.user?.email),
+                key: 'email',
+                label: copy('email'),
+              },
+              {
+                children: showValue(props.user?.username),
+                key: 'username',
+                label: copy('username'),
+              },
+            ]}
+          />
+          <Text type="secondary">{copy('identityLocked')}</Text>
+        </Flexbox>
+      ) : (
+        <>
+          <Form.Field label={copy('username')} name="username">
+            <Input />
+          </Form.Field>
+          <Form.Field label={copy('email')} name="email">
+            <Input type="email" />
+          </Form.Field>
+        </>
+      )}
 
-      <div className="flex items-center justify-end gap-2">
+      <Form.Field label={copy('url')} name="url">
+        <Input placeholder="https://" />
+      </Form.Field>
+      <Form.Field label={copy('bio')} name="bio">
+        <TextArea />
+      </Form.Field>
+
+      <Flexbox align="center" gap={8} horizontal justify="flex-end">
         {props.footer}
-        <Button disabled={submitting || avatarUpload.isPending} type="submit">
-          {submitting ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : (
-            <Save aria-hidden="true" className="size-4" />
-          )}
+        <Button
+          htmlType="submit"
+          loading={submitting || avatarUpload.isPending}
+          type="primary"
+        >
           {props.submitLabel ?? t('common.save')}
         </Button>
-      </div>
-    </form>
+      </Flexbox>
+    </Form>
   )
 }

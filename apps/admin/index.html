@@ -2,6 +2,37 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      ;(function () {
+        var mode = 'system'
+        try {
+          var raw = localStorage.getItem('theme-mode')
+          if (raw) {
+            var stripped = raw.replace(/^"|"$/g, '')
+            if (
+              stripped === 'dark' ||
+              stripped === 'light' ||
+              stripped === 'system'
+            ) {
+              mode = stripped
+            } else {
+              var parsed = JSON.parse(raw)
+              if (parsed && parsed.state && parsed.state.themeMode) {
+                mode = parsed.state.themeMode
+              }
+            }
+          }
+        } catch (e) {}
+        var dark =
+          mode === 'dark' ||
+          (mode !== 'light' &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches)
+        var appearance = dark ? 'dark' : 'light'
+        document.documentElement.setAttribute('data-theme', appearance)
+        document.documentElement.classList.toggle('dark', dark)
+        document.documentElement.style.colorScheme = appearance
+      })()
+    </script>
 
     <meta
       name="viewport"

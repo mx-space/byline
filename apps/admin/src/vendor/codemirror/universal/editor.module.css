@@ -1,5 +1,6 @@
-@reference 'tailwindcss';
-
 .editor.loading {
-  @apply flex w-full items-center justify-center;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
 }

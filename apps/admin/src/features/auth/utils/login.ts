@@ -6,10 +6,6 @@ export function isInitEnvelope(
   return 'data' in value
 }
 
-export function readErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message || fallback : fallback
-}
-
 export function buildHashRouteUrl(path: string) {
   return `${window.location.origin}${window.location.pathname}#${path}`
 }
