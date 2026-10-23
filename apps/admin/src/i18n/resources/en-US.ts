@@ -1862,6 +1862,60 @@ export const enUS = {
   'users.invite.linkAuthorNone': 'None, create a new account',
   'users.invite.linkAuthorHint':
     'When the invite is accepted, this author becomes a sign-in account. Posts and bylines stay attached.',
+  'users.permission.title': 'Permissions',
+  'users.permission.role': 'Role',
+  'users.permission.roleOverwrites':
+    'Picking a role replaces the switches below.',
+  'users.permission.customHint': '{base}, plus: {added}.',
+  'users.permission.customHintNoBase': 'Custom: {added}.',
+  'users.permission.save': 'Save permissions',
+  'users.permission.saved': 'Permissions saved',
+  'users.permission.saveFailed': 'Could not save permissions',
+  'users.permission.selfLock':
+    'You cannot remove your own "Manage users" permission.',
+  'users.permission.readOnly':
+    'Only members who can manage users can change permissions.',
+  'users.permission.editPost': 'Edit posts',
+  'users.permission.editPost.description':
+    'Create posts and edit posts they are an author of',
+  'users.permission.editOthersPost': "Edit others' posts",
+  'users.permission.editOthersPost.description':
+    'Edit posts they are not an author of',
+  'users.permission.publishPost': 'Publish',
+  'users.permission.publishPost.description':
+    'Publish, unpublish and delete posts, and change live posts',
+  'users.permission.editTranslation': 'Edit translations',
+  'users.permission.editTranslation.description':
+    'Generate and edit translations; changes go live directly',
+  'users.permission.manageCategories': 'Manage categories',
+  'users.permission.manageCategories.description':
+    'Create, edit and delete categories',
+  'users.permission.manageFiles': 'Manage files',
+  'users.permission.manageFiles.description':
+    'Delete, rename and clean up files',
+  'users.permission.manageSettings': 'Manage settings',
+  'users.permission.manageSettings.description':
+    'Site, AI providers, webhooks and other settings',
+  'users.permission.manageUsers': 'Manage users',
+  'users.permission.manageUsers.description':
+    'Invite and deactivate members and set their permissions',
+  'users.role.owner': 'Owner',
+  'users.role.owner.description': 'Every permission',
+  'users.role.editor': 'Editor',
+  'users.role.editor.description':
+    'Write, edit and publish posts; manage categories and files',
+  'users.role.author': 'Author',
+  'users.role.author.description':
+    'Write and edit their own posts; cannot publish',
+  'users.role.translator': 'Translator',
+  'users.role.translator.description': 'Edit translations only',
+  'users.role.custom': 'Custom',
+  'users.invite.role': 'Role',
+  'users.invite.roleHint':
+    'You can fine-tune each permission on the user page after they join.',
+  'users.filter.roleLabel': 'Filter by role',
+  'users.filter.roleAll': 'All roles',
+  'users.error.permissionDenied': 'You do not have permission to do this.',
   'users.field.identityLocked':
     'Only the account holder can change the email or username of a sign-in account.',
   'users.error.identityLocked':

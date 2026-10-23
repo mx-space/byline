@@ -12,7 +12,15 @@ import { present, useModal } from '~/ui/feedback/modal-imperative'
 import { Button } from '~/ui/primitives/button'
 import { SelectField } from '~/ui/primitives/select'
 import { TextInput } from '~/ui/primitives/text-field'
+import { cn } from '~/utils/cn'
 
+import type { InvitableRole } from '../utils/permissions'
+import {
+  INVITABLE_ROLES,
+  PERMISSION_ROLES,
+  ROLE_DESCRIPTION_KEYS,
+  ROLE_LABEL_KEYS,
+} from '../utils/permissions'
 import {
   buildInviteRequest,
   getUserDisplayName,
@@ -30,6 +38,7 @@ function InviteUserModal(props: InviteUserModalProps) {
   const [email, setEmail] = useState(target?.email ?? '')
   const [displayName, setDisplayName] = useState('')
   const [linkedAuthorId, setLinkedAuthorId] = useState('')
+  const [role, setRole] = useState<InvitableRole>('author')
   const [error, setError] = useState('')
   const [created, setCreated] = useState<CreatedUserInvite | null>(null)
   const [copied, setCopied] = useState(false)
@@ -49,12 +58,17 @@ function InviteUserModal(props: InviteUserModalProps) {
         displayName,
         email,
         linkedAuthorId: target?.id ?? linkedAuthorId,
+        permissions: PERMISSION_ROLES[role],
       })
       return request.kind === 'existing'
-        ? inviteExistingUser(request.userId, { email: request.email })
+        ? inviteExistingUser(request.userId, {
+            email: request.email,
+            permissions: request.permissions,
+          })
         : createInvite({
             displayName: request.displayName,
             email: request.email,
+            permissions: request.permissions,
           })
     },
     onError: (mutationError: unknown) =>
@@ -167,6 +181,41 @@ function InviteUserModal(props: InviteUserModalProps) {
             value={displayName}
           />
         )}
+        <fieldset className="grid gap-2 text-sm">
+          <legend className="mb-1.5 font-medium text-fg">
+            {t('users.invite.role')}
+          </legend>
+          {INVITABLE_ROLES.map((value) => (
+            <label
+              className={cn(
+                'flex cursor-pointer items-start gap-2.5 rounded-md border px-3 py-2.5',
+                role === value
+                  ? 'border-accent bg-accent-soft'
+                  : 'border-border hover:bg-surface-inset',
+              )}
+              key={value}
+            >
+              <input
+                checked={role === value}
+                className="mt-0.5 accent-accent"
+                name="invite-role"
+                onChange={() => setRole(value)}
+                type="radio"
+              />
+              <span className="grid gap-0.5">
+                <span className="font-medium text-fg">
+                  {t(ROLE_LABEL_KEYS[value])}
+                </span>
+                <span className="text-xs text-fg-muted">
+                  {t(ROLE_DESCRIPTION_KEYS[value])}
+                </span>
+              </span>
+            </label>
+          ))}
+          <span className="text-xs text-fg-muted">
+            {t('users.invite.roleHint')}
+          </span>
+        </fieldset>
         {error ? (
           <p className="text-xs text-red-600 dark:text-red-400" role="alert">
             {error}

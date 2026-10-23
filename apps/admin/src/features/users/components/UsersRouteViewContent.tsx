@@ -3,7 +3,7 @@ import { UserPlus, UserRoundPen, Users } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
-import type { UserDetail, UserStatusFilter } from '~/api/users'
+import type { UserDetail, UserRoleFilter, UserStatusFilter } from '~/api/users'
 import { getMe, getUsers } from '~/api/users'
 import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
 import { useI18n } from '~/i18n'
@@ -14,9 +14,15 @@ import { EmptyState } from '~/ui/patterns/EmptyState'
 import { Button } from '~/ui/primitives/button'
 import { Scroll } from '~/ui/primitives/scroll'
 import { SegmentedControl } from '~/ui/primitives/segmented-control'
+import { SelectField } from '~/ui/primitives/select'
 import { TextInput } from '~/ui/primitives/text-field'
 import { cn } from '~/utils/cn'
 
+import {
+  hasPermission,
+  Permission,
+  ROLE_LABEL_KEYS,
+} from '../utils/permissions'
 import { presentCreateAuthor } from './CreateAuthorModal'
 import { presentInviteUser } from './InviteUserModal'
 import { PendingInvites } from './PendingInvites'
@@ -31,6 +37,7 @@ export function UsersRouteViewContent() {
   const navigate = useNavigate()
   const params = useParams<{ id?: string }>()
   const [status, setStatus] = useState<UserStatusFilter>('all')
+  const [role, setRole] = useState<UserRoleFilter | 'all'>('all')
   const [search, setSearch] = useState('')
   const trimmedSearch = search.trim()
 
@@ -42,11 +49,15 @@ export function UsersRouteViewContent() {
     queryFn: () =>
       getUsers({
         page: 1,
+        role: role === 'all' ? undefined : role,
         search: trimmedSearch,
         size: USER_PAGE_SIZE,
         status,
       }),
-    queryKey: adminQueryKeys.users.list({ search: trimmedSearch, status }),
+    queryKey: [
+      ...adminQueryKeys.users.list({ search: trimmedSearch, status }),
+      role,
+    ],
   })
   const users = usersQuery.data?.data ?? []
   const total = usersQuery.data?.pagination.total ?? users.length
@@ -62,13 +73,20 @@ export function UsersRouteViewContent() {
   const ctxValue = useMemo(
     () => ({
       currentUserId: meQuery.data?.id ?? null,
+      currentUserPermissions: meQuery.data?.permissions ?? 0,
       onBack,
       onUserChanged: async (user: UserDetail) => {
         queryClient.setQueryData(adminQueryKeys.users.detail(user.id), user)
         await invalidateUsers()
       },
     }),
-    [invalidateUsers, meQuery.data?.id, onBack, queryClient],
+    [
+      invalidateUsers,
+      meQuery.data?.id,
+      meQuery.data?.permissions,
+      onBack,
+      queryClient,
+    ],
   )
 
   const statusOptions: { label: string; value: UserStatusFilter }[] = [
@@ -76,6 +94,18 @@ export function UsersRouteViewContent() {
     { label: t('users.filter.active'), value: 'active' },
     { label: t('users.filter.profileOnly'), value: 'profile_only' },
     { label: t('users.filter.deactivated'), value: 'deactivated' },
+  ]
+
+  const canManageUsers = hasPermission(
+    meQuery.data?.permissions,
+    Permission.ManageUsers,
+  )
+
+  const roleOptions: { label: string; value: UserRoleFilter | 'all' }[] = [
+    { label: t('users.filter.roleAll'), value: 'all' },
+    ...(['owner', 'editor', 'author', 'translator', 'custom'] as const).map(
+      (value) => ({ label: t(ROLE_LABEL_KEYS[value]), value }),
+    ),
   ]
 
   const invite = async () => {
@@ -117,26 +147,28 @@ export function UsersRouteViewContent() {
                 </span>
                 <span className="text-xs text-fg-subtle">{total}</span>
               </div>
-              <div className="flex gap-1.5">
-                <Button
-                  aria-label={t('users.author.title')}
-                  className="h-8 px-2"
-                  onClick={() => void createAuthor()}
-                  title={t('users.author.title')}
-                  type="button"
-                  variant="subtle"
-                >
-                  <UserRoundPen aria-hidden="true" className="size-3.5" />
-                </Button>
-                <Button
-                  className="h-8 px-2"
-                  onClick={() => void invite()}
-                  type="button"
-                >
-                  <UserPlus aria-hidden="true" className="size-3.5" />
-                  {t('users.invite.action')}
-                </Button>
-              </div>
+              {canManageUsers ? (
+                <div className="flex gap-1.5">
+                  <Button
+                    aria-label={t('users.author.title')}
+                    className="h-8 px-2"
+                    onClick={() => void createAuthor()}
+                    title={t('users.author.title')}
+                    type="button"
+                    variant="subtle"
+                  >
+                    <UserRoundPen aria-hidden="true" className="size-3.5" />
+                  </Button>
+                  <Button
+                    className="h-8 px-2"
+                    onClick={() => void invite()}
+                    type="button"
+                  >
+                    <UserPlus aria-hidden="true" className="size-3.5" />
+                    {t('users.invite.action')}
+                  </Button>
+                </div>
+              ) : null}
             </div>
             <div className="grid shrink-0 gap-2 border-b border-border px-4 py-3">
               <TextInput
@@ -151,6 +183,12 @@ export function UsersRouteViewContent() {
                 onValueChange={setStatus}
                 options={statusOptions}
                 value={status}
+              />
+              <SelectField<UserRoleFilter | 'all'>
+                aria-label={t('users.filter.roleLabel')}
+                onValueChange={setRole}
+                options={roleOptions}
+                value={role}
               />
             </div>
             <Scroll className="flex-1">

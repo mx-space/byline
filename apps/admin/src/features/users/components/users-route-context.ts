@@ -4,6 +4,7 @@ import type { UserDetail } from '~/api/users'
 
 export interface UsersRouteContextValue {
   currentUserId: string | null
+  currentUserPermissions: number
   onBack: () => void
   onUserChanged: (user: UserDetail) => Promise<void>
 }

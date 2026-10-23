@@ -18,6 +18,7 @@ import { Button } from '~/ui/primitives/button'
 import { Scroll } from '~/ui/primitives/scroll'
 import { cn } from '~/utils/cn'
 
+import { hasPermission, Permission } from '../utils/permissions'
 import {
   canEditSignInIdentity,
   getUserDisplayName,
@@ -26,6 +27,7 @@ import {
 } from '../utils/users'
 import { presentInviteUser } from './InviteUserModal'
 import { UserAvatar } from './UserAvatar'
+import { UserPermissionsCard } from './UserPermissionsCard'
 import { UserProfileForm } from './UserProfileForm'
 import { useUsersRouteContext } from './users-route-context'
 import { UserStatusBadge } from './UserStatusBadge'
@@ -73,6 +75,10 @@ export function UserDetailRoute() {
 
   const status = getUserStatus(user)
   const isSelf = user.id === ctx.currentUserId
+  const canManageUsers = hasPermission(
+    ctx.currentUserPermissions,
+    Permission.ManageUsers,
+  )
   const name = getUserDisplayName(user)
 
   const inviteToSignIn = async () => {
@@ -119,7 +125,7 @@ export function UserDetailRoute() {
           <span className="truncate text-sm font-semibold text-fg">{name}</span>
           <UserStatusBadge status={status} />
         </div>
-        {isSelf ? null : (
+        {isSelf || !canManageUsers ? null : (
           <div className="flex shrink-0 items-center gap-1.5">
             {status === 'profileOnly' ? (
               <Button
@@ -176,6 +182,15 @@ export function UserDetailRoute() {
           }}
           user={user}
         />
+        {status === 'profileOnly' ? null : (
+          <UserPermissionsCard
+            canEdit={canManageUsers}
+            isSelf={isSelf}
+            key={`${user.id}:${user.permissions}`}
+            onSaved={ctx.onUserChanged}
+            user={user}
+          />
+        )}
         <dl className="mt-8 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t border-border pt-4 text-xs">
           <dt className="text-fg-muted">{t('users.detail.createdAt')}</dt>
           <dd className="text-fg">{formatTime(user.createdAt)}</dd>

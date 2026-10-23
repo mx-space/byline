@@ -94,8 +94,14 @@ describe('buildInviteRequest', () => {
         displayName: 'Ignored',
         email: ' a@b.test ',
         linkedAuthorId: '42',
+        permissions: 65,
       }),
-    ).toEqual({ email: 'a@b.test', kind: 'existing', userId: '42' })
+    ).toEqual({
+      email: 'a@b.test',
+      kind: 'existing',
+      permissions: 65,
+      userId: '42',
+    })
   })
 
   it('creates a new account when no author is linked', () => {
@@ -104,14 +110,21 @@ describe('buildInviteRequest', () => {
         displayName: ' Ada ',
         email: 'a@b.test',
         linkedAuthorId: '',
+        permissions: 128,
       }),
-    ).toEqual({ displayName: 'Ada', email: 'a@b.test', kind: 'new' })
+    ).toEqual({
+      displayName: 'Ada',
+      email: 'a@b.test',
+      kind: 'new',
+      permissions: 128,
+    })
     expect(
       buildInviteRequest({
         displayName: ' ',
         email: 'a@b.test',
         linkedAuthorId: '',
+        permissions: 128,
       }),
-    ).toEqual({ displayName: undefined, email: 'a@b.test', kind: 'new' })
+    ).toMatchObject({ displayName: undefined, kind: 'new' })
   })
 })

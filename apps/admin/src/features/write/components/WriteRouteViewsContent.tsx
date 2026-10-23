@@ -84,6 +84,7 @@ import { publishPost } from '~/data/resources/post.mutations'
 import { DraftStatusTag } from '~/features/drafts/components/draft-status-tag'
 import type { AIConfig } from '~/features/settings/types/settings'
 import { useTaskDetailSubscription } from '~/features/tasks/hooks/useTaskSubscription'
+import { hasPermission, Permission } from '~/features/users/utils/permissions'
 import { AgentPanel, useWriteAgent } from '~/features/write/components/agent'
 import { CoverGenerationEntry } from '~/features/write/components/cover-generation/CoverGenerationEntry'
 import { DraftConflictBanner } from '~/features/write/components/DraftConflictBanner'
@@ -780,6 +781,10 @@ function WritePage(props: { kind: WriteKind }) {
     queryKey: adminQueryKeys.users.me(),
     staleTime: 5 * 60_000,
   })
+  const canPublish = hasPermission(
+    meQuery.data?.permissions,
+    Permission.PublishPost,
+  )
   const authorsQuery = useQuery({
     queryFn: () => getUsers({ page: 1, size: 100, status: 'all' }),
     queryKey: adminQueryKeys.users.authors(),
@@ -1583,24 +1588,26 @@ function WritePage(props: { kind: WriteKind }) {
             >
               <SlidersHorizontal aria-hidden="true" className="size-4" />
             </WriteHeaderIconButton>
-            <WriteHeaderIconButton
-              disabled={
-                saveMutation.isPending ||
-                draftMutation.isPending ||
-                detailLoading ||
-                draftConflictResolving ||
-                !canSubmitPublication
-              }
-              title={t(publishActionKey)}
-              type="submit"
-              variant="primary"
-            >
-              {saveMutation.isPending ? (
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                <Send aria-hidden="true" className="size-4" />
-              )}
-            </WriteHeaderIconButton>
+            {canPublish ? (
+              <WriteHeaderIconButton
+                disabled={
+                  saveMutation.isPending ||
+                  draftMutation.isPending ||
+                  detailLoading ||
+                  draftConflictResolving ||
+                  !canSubmitPublication
+                }
+                title={t(publishActionKey)}
+                type="submit"
+                variant="primary"
+              >
+                {saveMutation.isPending ? (
+                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                ) : (
+                  <Send aria-hidden="true" className="size-4" />
+                )}
+              </WriteHeaderIconButton>
+            ) : null}
           </div>
         </div>
 
@@ -1759,6 +1766,7 @@ function WritePage(props: { kind: WriteKind }) {
               draftMutationPending={draftMutation.isPending}
               onApplyDraft={applyDraft}
               onGenerateTitleOrSlug={generateTitleOrSlug}
+              canPublish={canPublish}
               onPublishedChange={(published) => {
                 if (published) {
                   publicationMutation.mutate(true)
@@ -1871,6 +1879,7 @@ function ContentSettingsPanel(props: {
   hasArticle: boolean
   onApplyDraft: (draft: DraftModel) => void
   onGenerateTitleOrSlug: () => void
+  canPublish: boolean
   onPublishedChange: (published: boolean) => void
   onSaveDraft: () => void
   postFields: ReactNode
@@ -1896,7 +1905,9 @@ function ContentSettingsPanel(props: {
         <PanelBlock title={t('write.section.publish.title')}>
           <FormSwitch
             checked={props.published}
-            disabled={!props.refId || props.publicationPending}
+            disabled={
+              !props.canPublish || !props.refId || props.publicationPending
+            }
             label={t(
               props.published
                 ? 'write.publication.published'

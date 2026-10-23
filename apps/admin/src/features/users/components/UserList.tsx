@@ -4,6 +4,7 @@ import { cn } from '~/utils/cn'
 
 import { getUserDisplayName, getUserStatus } from '../utils/users'
 import { UserAvatar } from './UserAvatar'
+import { UserRoleBadge } from './UserRoleBadge'
 import { UserStatusBadge } from './UserStatusBadge'
 
 export function UserList(props: {
@@ -49,7 +50,11 @@ export function UserList(props: {
                 {user.username ? `@${user.username}` : user.email || '-'}
               </div>
             </div>
-            {status === 'active' ? null : <UserStatusBadge status={status} />}
+            {status === 'active' ? (
+              <UserRoleBadge permissions={user.permissions} />
+            ) : (
+              <UserStatusBadge status={status} />
+            )}
           </button>
         )
       })}
