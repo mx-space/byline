@@ -102,7 +102,7 @@
     "mkdirp": "^3.0.1",
     "nanoid": "6.0.2",
     "node-machine-id": "1.1.12",
-    "nodemailer": "10.0.15",
+    "nodemailer": "10.1.4",
     "object-scan": "^20.0.4",
     "ofetch": "1.5.1",
     "p-limit": "^7.3.3",
