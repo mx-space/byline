@@ -6,6 +6,7 @@ import { normalizePublishAiResources } from './publish.types'
 
 const PublishAiResourceSchema = z.enum([
   'insights',
+  'seo',
   'summary',
   'translation',
   'tts',

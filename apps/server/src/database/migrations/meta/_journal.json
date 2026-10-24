@@ -36,6 +36,13 @@
       "when": 1792841040810,
       "tag": "0004_post_public_time",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792843549312,
+      "tag": "0005_document_ai_seo",
+      "breakpoints": true
     }
   ]
 }

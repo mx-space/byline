@@ -462,6 +462,16 @@ export class DraftRepository extends BaseRepository {
       .where(eq(contentDocuments.id, parseEntityId(documentId)))
   }
 
+  async setAiSeo(
+    documentId: EntityId | string,
+    aiSeo: ContentDocumentRow['aiSeo'],
+  ): Promise<void> {
+    await this.db
+      .update(contentDocuments)
+      .set({ aiSeo })
+      .where(eq(contentDocuments.id, parseEntityId(documentId)))
+  }
+
   async recordPublication(
     documentId: EntityId | string,
     revisionId: EntityId | string,

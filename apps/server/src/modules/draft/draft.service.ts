@@ -559,6 +559,10 @@ export class DraftService {
     await this.draftRepository.setPublishAiResources(documentId, resources)
   }
 
+  async setAiSeo(documentId: string, aiSeo: ContentDocumentRow['aiSeo']) {
+    await this.draftRepository.setAiSeo(documentId, aiSeo)
+  }
+
   private async ensurePublishedDocument(
     refType: DraftRefType,
     refId: string,

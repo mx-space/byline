@@ -3,7 +3,8 @@ import type { RevisionSnapshot } from '../draft/draft.types'
 
 export const CONTENT_PUBLISH_TASK = 'content:publish'
 
-export type PublishAiResource = 'insights' | 'summary' | 'translation' | 'tts'
+export type PublishAiResource =
+  'insights' | 'seo' | 'summary' | 'translation' | 'tts'
 export type PublishAiMode = 'sync' | 'async'
 
 export interface PublishAiResourceRequest {

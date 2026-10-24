@@ -1,3 +1,4 @@
+import type { DocumentAiSeo } from '~/database/schema'
 import type { EntityId } from '~/shared/id/entity-id'
 
 import type { PublishAiResourceRequest } from '../publish/publish.types'
@@ -25,6 +26,7 @@ export interface DraftActor {
 }
 
 export interface ContentDocumentRow {
+  aiSeo: DocumentAiSeo | null
   createdAt: Date
   createdBy: string | null
   id: EntityId

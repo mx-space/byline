@@ -1,0 +1,1 @@
+ALTER TABLE "content_documents" ADD COLUMN "ai_seo" jsonb;

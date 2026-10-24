@@ -22,6 +22,11 @@ export interface PostSeo {
   image?: string | null
 }
 
+export interface DocumentAiSeo {
+  description: string
+  sourceHash: string
+}
+
 export const categories = pgTable(
   'categories',
   {
@@ -133,9 +138,10 @@ export const contentDocuments = pgTable(
     publishAiResources: jsonb('publish_ai_resources').$type<
       {
         mode: 'sync' | 'async'
-        resource: 'insights' | 'summary' | 'translation' | 'tts'
+        resource: 'insights' | 'seo' | 'summary' | 'translation' | 'tts'
       }[]
     >(),
+    aiSeo: jsonb('ai_seo').$type<DocumentAiSeo | null>(),
   },
   (table) => [
     uniqueIndex('content_documents_ref_uniq')

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { AppErrorCode } from '~/common/errors/app-error-code'
 import { AppException } from '~/common/errors/exception.types'
+import type { DocumentAiSeo } from '~/database/schema'
 import { DraftRefType } from '~/modules/draft/draft.enum'
 import { CreatePublishJobSchema } from '~/modules/publish/publish.schema'
 import { PublishService } from '~/modules/publish/publish.service'
@@ -27,6 +28,7 @@ const makeBranch = () => ({
   baseRevisionId: 'published-1',
   commonAncestorRevisionId: 'published-1',
   document: {
+    aiSeo: null as DocumentAiSeo | null,
     id: 'document-1',
     publishAiResources: null as PublishAiResourceRequest[] | null,
     publishedRevisionId: 'published-1',
@@ -51,6 +53,7 @@ const harness = (options: { online?: boolean } = {}) => {
     findById: vi.fn(async () => branch),
     linkDocument: vi.fn(),
     recordPublication: vi.fn(async () => ({ kind: 'ok' })),
+    setAiSeo: vi.fn(),
     setPublishAiResources: vi.fn(),
   }
   const posts = {
@@ -92,12 +95,19 @@ const harness = (options: { online?: boolean } = {}) => {
       handler = registered
     }),
   }
+  const aiWriter = {
+    generateSeoDescription: vi.fn(async () => {
+      order.push('seo')
+      return 'Generated description'
+    }),
+  }
   const service = new PublishService(
     drafts as never,
     posts as never,
     aiTasks as never,
     tasks as never,
     processor as never,
+    aiWriter as never,
   )
   service.onModuleInit()
 
@@ -128,6 +138,7 @@ const harness = (options: { online?: boolean } = {}) => {
 
   return {
     aiTasks,
+    aiWriter,
     branch,
     create,
     service,
@@ -321,6 +332,106 @@ describe('PublishService AI resource modes', () => {
 
     expect(tasks.cancelTask).toHaveBeenCalledWith('task-summary')
     expect(aiTasks.createInsightsTask).not.toHaveBeenCalled()
+  })
+})
+
+describe('PublishService AI SEO description', () => {
+  const committedSeo = (posts: ReturnType<typeof harness>['posts']) =>
+    (posts.updateById.mock.calls.at(-1)?.[1] as { seo?: unknown }).seo
+
+  const withSeo = (
+    branch: ReturnType<typeof harness>['branch'],
+    seo: Record<string, unknown> | null,
+  ) => {
+    branch.headRevision.typeSpecificData = {
+      slug: 'selected-title',
+      seo,
+      summary: 'Author summary',
+    } as never
+  }
+
+  it('generates and stores a description before saving and translating', async () => {
+    const { aiWriter, branch, create, drafts, order, posts, run } = harness()
+    withSeo(branch, { title: 'SEO title' })
+    await create(false, [
+      { mode: 'sync', resource: 'seo' },
+      { mode: 'sync', resource: 'translation' },
+    ])
+
+    await run()
+
+    expect(aiWriter.generateSeoDescription).toHaveBeenCalledWith({
+      summary: 'Author summary',
+      text: 'Body',
+      title: 'Selected title',
+    })
+    expect(drafts.setAiSeo).toHaveBeenCalledWith('document-1', {
+      description: 'Generated description',
+      sourceHash: expect.any(String),
+    })
+    expect(committedSeo(posts)).toEqual({
+      description: 'Generated description',
+      title: 'SEO title',
+    })
+    expect(order.slice(0, 2)).toEqual(['seo', 'translation'])
+  })
+
+  it('never replaces a description the author wrote', async () => {
+    const { aiWriter, branch, create, posts, run } = harness()
+    branch.document.aiSeo = { description: 'Old AI', sourceHash: 'x' }
+    withSeo(branch, { description: 'Written by hand' })
+    await create(false, [{ mode: 'sync', resource: 'seo' }])
+
+    await run()
+
+    expect(aiWriter.generateSeoDescription).not.toHaveBeenCalled()
+    expect(committedSeo(posts)).toEqual({ description: 'Written by hand' })
+  })
+
+  it('reuses the stored description while the article is unchanged', async () => {
+    const first = harness()
+    withSeo(first.branch, null)
+    await first.create(false, [{ mode: 'sync', resource: 'seo' }])
+    await first.run()
+    const stored = first.drafts.setAiSeo.mock.calls[0][1] as DocumentAiSeo
+
+    const second = harness()
+    withSeo(second.branch, null)
+    second.branch.document.aiSeo = stored
+    await second.create(false, [{ mode: 'sync', resource: 'seo' }])
+    await second.run()
+
+    expect(second.aiWriter.generateSeoDescription).not.toHaveBeenCalled()
+    expect(committedSeo(second.posts)).toEqual({
+      description: 'Generated description',
+    })
+  })
+
+  it('keeps the stored description when the option is off', async () => {
+    const { aiWriter, branch, create, posts, run } = harness()
+    withSeo(branch, null)
+    branch.document.aiSeo = { description: 'Stored AI', sourceHash: 'stale' }
+    await create(false, [])
+
+    await run()
+
+    expect(aiWriter.generateSeoDescription).not.toHaveBeenCalled()
+    expect(committedSeo(posts)).toEqual({ description: 'Stored AI' })
+  })
+
+  it('publishes without a description when generation fails', async () => {
+    const { aiWriter, branch, create, drafts, posts, run } = harness()
+    withSeo(branch, null)
+    aiWriter.generateSeoDescription.mockRejectedValueOnce(new Error('quota'))
+    await create(false, [{ mode: 'sync', resource: 'seo' }])
+
+    const setResult = await run()
+
+    expect(drafts.setAiSeo).not.toHaveBeenCalled()
+    expect(committedSeo(posts)).toBeNull()
+    expect(setResult).toHaveBeenLastCalledWith(
+      expect.objectContaining({ articleCommitted: true }),
+    )
   })
 })
 

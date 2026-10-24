@@ -7,18 +7,21 @@ import {
 } from '@nestjs/common'
 
 import { AppErrorCode, createAppException } from '~/common/errors'
+import type { DocumentAiSeo } from '~/database/schema'
 import {
   type TaskExecuteContext,
   TaskQueueProcessor,
   TaskQueueService,
   TaskStatus,
 } from '~/processors/task-queue'
+import { md5 } from '~/utils/tool.util'
 
 import { AiTaskService } from '../ai/ai-task/ai-task.service'
+import { AiWriterService } from '../ai/ai-writer/ai-writer.service'
 import { DraftRefType } from '../draft/draft.enum'
 import { DraftService } from '../draft/draft.service'
 import { PostService } from '../post/post.service'
-import type { PostModel } from '../post/post.types'
+import type { PostModel, PostSeo } from '../post/post.types'
 import { isPostPublic } from '../post/post-visibility'
 import type { CreatePublishJobDto } from './publish.schema'
 import {
@@ -46,6 +49,7 @@ export class PublishService implements OnModuleInit {
     private readonly aiTasks: AiTaskService,
     private readonly tasks: TaskQueueService,
     private readonly processor: TaskQueueProcessor,
+    private readonly aiWriter: AiWriterService,
   ) {}
 
   onModuleInit() {
@@ -136,15 +140,23 @@ export class PublishService implements OnModuleInit {
     context: TaskExecuteContext,
   ) {
     throwIfAborted(context.signal)
-    await this.assertFrozenSelection(payload)
+    const document = await this.assertFrozenSelection(payload)
     const aiResources = normalizePublishAiResources(payload.aiResources)
     const byMode = (mode: 'sync' | 'async') =>
       aiResources
         .filter((item) => item.mode === mode)
         .map((item) => item.resource)
+        .filter(isTaskResource)
+    const aiSeo = await this.resolveAiSeo(
+      payload,
+      document.aiSeo,
+      aiResources.some((item) => item.resource === 'seo'),
+      context,
+    )
+    throwIfAborted(context.signal)
     await context.updateProgress(2, 'Saving article snapshot', 0, 2)
 
-    const committed = await this.commitSnapshot(payload)
+    const committed = await this.commitSnapshot(payload, aiSeo)
     const result: PublishTaskResult = {
       articleCommitted: committed.wasPublished,
       articleId: committed.id,
@@ -214,6 +226,43 @@ export class PublishService implements OnModuleInit {
       })
     }
     payload.refId = branch.document.refId
+    return branch.document
+  }
+
+  private async resolveAiSeo(
+    payload: PublishTaskPayload,
+    stored: DocumentAiSeo | null,
+    generate: boolean,
+    context: TaskExecuteContext,
+  ): Promise<DocumentAiSeo | null> {
+    const snapshot = payload.snapshot
+    const data = snapshot.typeSpecificData ?? {}
+    if (readSeoDescription(data.seo)) return null
+    if (!generate) return stored
+
+    const summary = typeof data.summary === 'string' ? data.summary : null
+    const sourceHash = md5(
+      JSON.stringify([snapshot.title, summary ?? '', snapshot.text]),
+    )
+    if (stored?.sourceHash === sourceHash) return stored
+
+    await context.updateProgress(1, 'Generating SEO description', 0, 2)
+    try {
+      const description = await this.aiWriter.generateSeoDescription({
+        summary,
+        text: snapshot.text,
+        title: snapshot.title,
+      })
+      if (!description) return stored
+      const generated = { description, sourceHash }
+      await this.drafts.setAiSeo(payload.documentId, generated)
+      return generated
+    } catch (error) {
+      this.logger.warn(
+        `SEO description for document ${payload.documentId} was not generated: ${(error as Error).message}`,
+      )
+      return stored
+    }
   }
 
   private async commitPublicationPointer(payload: PublishTaskPayload) {
@@ -236,11 +285,14 @@ export class PublishService implements OnModuleInit {
     }
   }
 
-  private async commitSnapshot(payload: PublishTaskPayload) {
+  private async commitSnapshot(
+    payload: PublishTaskPayload,
+    aiSeo: DocumentAiSeo | null,
+  ) {
     const existing = payload.refId
       ? await this.findArticle(payload.refType, payload.refId)
       : null
-    const data = this.articleData(payload, existing)
+    const data = this.articleData(payload, existing, aiSeo)
     const wasPublished = Boolean(
       existing &&
       isPostPublic(existing) &&
@@ -271,9 +323,19 @@ export class PublishService implements OnModuleInit {
     return { id: String(saved.id), wasPublished }
   }
 
-  private articleData(payload: PublishTaskPayload, existing: PostModel | null) {
+  private articleData(
+    payload: PublishTaskPayload,
+    existing: PostModel | null,
+    aiSeo: DocumentAiSeo | null,
+  ) {
     const snapshot = payload.snapshot
     const typeSpecificData = { ...snapshot.typeSpecificData }
+    if (aiSeo && !readSeoDescription(typeSpecificData.seo)) {
+      typeSpecificData.seo = {
+        ...(typeSpecificData.seo as PostSeo | null),
+        description: aiSeo.description,
+      }
+    }
     if (payload.refType === DraftRefType.Post && 'pin' in typeSpecificData) {
       const pin = Boolean(typeSpecificData.pin)
       delete typeSpecificData.pin
@@ -295,7 +357,7 @@ export class PublishService implements OnModuleInit {
   }
 
   private async prepareResources(
-    resources: PublishAiResource[],
+    resources: TaskAiResource[],
     refId: string,
     result: PublishTaskResult,
     context: TaskExecuteContext,
@@ -340,7 +402,7 @@ export class PublishService implements OnModuleInit {
   }
 
   private async startAsyncResources(
-    resources: PublishAiResource[],
+    resources: TaskAiResource[],
     refId: string,
     result: PublishTaskResult,
     regenerateLocked?: boolean,
@@ -362,7 +424,7 @@ export class PublishService implements OnModuleInit {
   }
 
   private createResourceTask(
-    resource: PublishAiResource,
+    resource: TaskAiResource,
     refId: string,
     regenerateLocked?: boolean,
   ) {
@@ -434,4 +496,15 @@ export class PublishService implements OnModuleInit {
   private dedupTarget(payload: PublishTaskPayload) {
     return payload.documentId
   }
+}
+
+type TaskAiResource = Exclude<PublishAiResource, 'seo'>
+
+const isTaskResource = (
+  resource: PublishAiResource,
+): resource is TaskAiResource => resource !== 'seo'
+
+function readSeoDescription(seo: unknown) {
+  const description = (seo as PostSeo | null | undefined)?.description
+  return typeof description === 'string' ? description.trim() : ''
 }
