@@ -215,7 +215,7 @@ overrides:
   '@mx-space/ai>@haklex/rich-headless': 0.54.3
   '@mx-space/editor>@haklex/rich-headless': 0.54.3
   '@mx-space/editor>@haklex/rich-litexml': 0.54.3
-  '@esbuild-kit/core-utils>esbuild': 0.25.12
+  '@esbuild-kit/core-utils>esbuild': 0.28.2
   '@cloudflare/workers-types': 5.20261005.1
   '@fastify/static': 10.1.7
   brace-expansion@<1.1.16: 1.1.21
@@ -12266,7 +12266,7 @@ snapshots:
 
   '@esbuild-kit/core-utils@3.3.2':
     dependencies:
-      esbuild: 0.25.12
+      esbuild: 0.28.2
       source-map-support: 0.5.21
 
   '@esbuild-kit/esm-loader@2.6.5':
