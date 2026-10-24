@@ -5,7 +5,6 @@ import {
   SearchBar,
   Select,
   showContextMenu,
-  Tag,
   Text,
   Tooltip,
 } from '@lobehub/ui'
@@ -36,7 +35,12 @@ import type { PostSortKey, SortOrder } from '../types/posts'
 import { buildPostActions } from './buildPostActions'
 import { buildPostMenuItems } from './buildPostMenuItems'
 import { formatUpdatedAt, postExternalHref, postTitle } from './post-format'
-import { PostBylineCell, PostRowActions, PostTitleCell } from './PostCells'
+import {
+  PostBylineCell,
+  PostRowActions,
+  PostStatusCell,
+  PostTitleCell,
+} from './PostCells'
 import { PostsEmpty } from './PostsEmpty'
 import { PostsError } from './PostsError'
 import { styles } from './styles'
@@ -249,12 +253,7 @@ export function PostsRouteViewContent() {
     },
     {
       dataIndex: 'isPublished',
-      render: (_dom, post) =>
-        post.isPublished ? (
-          <Tag color="success">{copy('published')}</Tag>
-        ) : (
-          <Tag>{copy('draft')}</Tag>
-        ),
+      render: (_dom, post) => <PostStatusCell post={post} />,
       responsive: ['md'],
       title: copy('status'),
       width: 96,

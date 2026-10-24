@@ -1622,6 +1622,7 @@ export const enUS = {
   'write.recovery.field.meta': 'Custom meta',
   'write.recovery.field.pin': 'Pinned',
   'write.recovery.field.pinOrder': 'Pin order',
+  'write.recovery.field.publicAt': 'Public time',
   'write.recovery.field.slug': 'Slug',
   'write.recovery.field.summary': 'Summary',
   'write.recovery.field.tags': 'Tags',

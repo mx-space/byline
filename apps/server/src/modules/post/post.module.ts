@@ -8,6 +8,7 @@ import { SlugTrackerModule } from '../slug-tracker/slug-tracker.module'
 import { PostController } from './post.controller'
 import { PostRepository } from './post.repository'
 import { PostService } from './post.service'
+import { PostPublicationScheduler } from './post-publication.scheduler'
 
 @Global()
 @Module({
@@ -16,6 +17,7 @@ import { PostService } from './post.service'
   providers: [
     PostRepository,
     PostService,
+    PostPublicationScheduler,
     { provide: POST_SERVICE_TOKEN, useExisting: PostService },
   ],
   exports: [PostService, PostRepository, POST_SERVICE_TOKEN],

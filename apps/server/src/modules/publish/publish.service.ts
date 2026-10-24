@@ -19,6 +19,7 @@ import { DraftRefType } from '../draft/draft.enum'
 import { DraftService } from '../draft/draft.service'
 import { PostService } from '../post/post.service'
 import type { PostModel } from '../post/post.types'
+import { isPostPublic } from '../post/post-visibility'
 import type { CreatePublishJobDto } from './publish.schema'
 import {
   CONTENT_PUBLISH_TASK,
@@ -238,14 +239,21 @@ export class PublishService implements OnModuleInit {
     const existing = payload.refId
       ? await this.findArticle(payload.refType, payload.refId)
       : null
-    const wasPublished =
-      existing && 'isPublished' in existing
-        ? existing.isPublished !== false
-        : Boolean(existing)
     const data = this.articleData(payload, existing)
+    const wasPublished = Boolean(
+      existing &&
+      isPostPublic(existing) &&
+      isPostPublic({
+        ...existing,
+        ...data,
+      } as PostModel),
+    )
 
     let saved: PostModel | undefined | null = existing
-      ? await this.posts.updateById(existing.id, data as Partial<PostModel>)
+      ? await this.posts.updateById(existing.id, {
+          ...data,
+          ...(!wasPublished ? { isPublished: false } : {}),
+        } as Partial<PostModel>)
       : await this.posts.create(
           { ...(data as unknown as PostModel), isPublished: false },
           payload.actorId,

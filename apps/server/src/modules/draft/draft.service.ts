@@ -623,6 +623,10 @@ export class DraftService {
         seo: article.seo ?? null,
         slug: article.slug,
         sourceLang: article.sourceLang ?? null,
+        publicAt:
+          article.publicAt instanceof Date
+            ? article.publicAt.toISOString()
+            : (article.publicAt ?? null),
         summary: article.summary,
         tags: article.tags,
       },

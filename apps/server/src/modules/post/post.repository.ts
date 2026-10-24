@@ -8,7 +8,10 @@ import {
   gte,
   ilike,
   inArray,
+  isNotNull,
+  isNull,
   lt,
+  lte,
   type SQL,
   sql,
 } from 'drizzle-orm'
@@ -33,6 +36,7 @@ import type {
   PostRow,
   PostTagCount,
 } from './post.types'
+import { publicPostCondition } from './post-visibility'
 
 type PostRowSource = Omit<typeof posts.$inferSelect, 'text' | 'content'> &
   Partial<Pick<typeof posts.$inferSelect, 'text' | 'content'>>
@@ -51,6 +55,7 @@ const mapBase = (row: PostRowSource): PostRow => ({
   modifiedAt: row.modifiedAt,
   categoryId: toEntityId(row.categoryId) as EntityId,
   isPublished: row.isPublished,
+  publicAt: row.publicAt,
   sourceLang: row.sourceLang,
   image: row.image,
   seo: row.seo ?? null,
@@ -98,7 +103,7 @@ export class PostRepository extends BaseRepository {
     options: { publishedOnly?: boolean } = {},
   ): Promise<PostRow | null> {
     const filters: SQL[] = [eq(posts.slug, slug)]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
     const [row] = await this.db
       .select()
       .from(posts)
@@ -125,7 +130,7 @@ export class PostRepository extends BaseRepository {
       )
     }
     if (params.publishedOnly) {
-      filters.push(eq(posts.isPublished, true))
+      filters.push(publicPostCondition())
     }
     if (params.authorId) {
       filters.push(
@@ -208,6 +213,7 @@ export class PostRepository extends BaseRepository {
           tags: input.tags ?? [],
           categoryId: parseEntityId(input.categoryId),
           isPublished: input.isPublished ?? true,
+          publicAt: input.publicAt ?? null,
           sourceLang: input.sourceLang ?? null,
           image: input.image ?? null,
           seo: input.seo ?? null,
@@ -240,6 +246,7 @@ export class PostRepository extends BaseRepository {
     if (patch.tags !== undefined) update.tags = patch.tags
     if (patch.categoryId !== undefined)
       update.categoryId = parseEntityId(patch.categoryId)
+    if (patch.publicAt !== undefined) update.publicAt = patch.publicAt
     if (patch.isPublished !== undefined) update.isPublished = patch.isPublished
     if (patch.sourceLang !== undefined) update.sourceLang = patch.sourceLang
     if (patch.image !== undefined) update.image = patch.image
@@ -250,7 +257,14 @@ export class PostRepository extends BaseRepository {
     const row = await this.db.transaction(async (tx) => {
       const [updated] = await tx
         .update(posts)
-        .set(update)
+        .set({
+          ...update,
+          ...(patch.publicAt !== undefined
+            ? {
+                publicNotifiedAt: sql`case when ${posts.publicAt} is distinct from ${patch.publicAt?.toISOString() ?? null}::timestamptz then null else ${posts.publicNotifiedAt} end`,
+              }
+            : {}),
+        })
         .where(eq(posts.id, idBig))
         .returning()
       if (updated && patch.authorIds !== undefined) {
@@ -275,7 +289,7 @@ export class PostRepository extends BaseRepository {
     options: { publishedOnly?: boolean } = {},
   ): Promise<number> {
     const filters: SQL[] = [eq(posts.categoryId, parseEntityId(categoryId))]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
     const [row] = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(posts)
@@ -294,9 +308,7 @@ export class PostRepository extends BaseRepository {
     size: number,
     options: { publishedOnly?: boolean; metaOnly?: boolean } = {},
   ): Promise<PostRow[]> {
-    const where = options.publishedOnly
-      ? eq(posts.isPublished, true)
-      : undefined
+    const where = options.publishedOnly ? publicPostCondition() : undefined
     const rows = await this.db
       .select(options.metaOnly ? postMetaColumns : postColumns)
       .from(posts)
@@ -334,7 +346,7 @@ export class PostRepository extends BaseRepository {
         count: sql<number>`count(*)::int`,
       })
       .from(posts)
-      .where(options.publishedOnly ? eq(posts.isPublished, true) : undefined)
+      .where(options.publishedOnly ? publicPostCondition() : undefined)
       .groupBy(tagAlias)
       .orderBy(sql`count(*) desc`, sql`tag asc`)
     return rows.map((row) => ({
@@ -348,7 +360,7 @@ export class PostRepository extends BaseRepository {
     options: { publishedOnly?: boolean } = {},
   ): Promise<PostTagCount[]> {
     const filters: SQL[] = [eq(posts.categoryId, parseEntityId(categoryId))]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
     const tagAlias = sql<string>`tag`
     const rows = await this.db
       .select({
@@ -374,7 +386,7 @@ export class PostRepository extends BaseRepository {
     } = {},
   ): Promise<PostRow[]> {
     const filters: SQL[] = [sql`${posts.tags} @> array[${tag}]::text[]`]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
     const rows = await this.db
       .select(options.metaOnly ? postMetaColumns : postColumns)
       .from(posts)
@@ -391,7 +403,7 @@ export class PostRepository extends BaseRepository {
     options: PostListByCategoryOptions = {},
   ): Promise<PostRow[]> {
     const filters: SQL[] = [eq(posts.categoryId, parseEntityId(categoryId))]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
 
     const query = this.db
       .select(options.metaOnly ? postMetaColumns : postColumns)
@@ -417,7 +429,7 @@ export class PostRepository extends BaseRepository {
 
     const parsedIds = categoryIds.map((id) => parseEntityId(id))
     const filters: SQL[] = [inArray(posts.categoryId, parsedIds)]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
 
     const rows = await this.db
       .select(options.metaOnly ? postMetaColumns : postColumns)
@@ -449,7 +461,7 @@ export class PostRepository extends BaseRepository {
       eq(posts.categoryId, parseEntityId(categoryId)),
       eq(posts.slug, slug),
     ]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
     const [row] = await this.db
       .select()
       .from(posts)
@@ -470,7 +482,7 @@ export class PostRepository extends BaseRepository {
         : sql`${posts.createdAt} > ${pivotDate}`,
     ]
     if (options.publishedOnly) {
-      filters.push(eq(posts.isPublished, true))
+      filters.push(publicPostCondition())
     }
     const where = and(...filters)
     const [row] = await this.db
@@ -487,9 +499,29 @@ export class PostRepository extends BaseRepository {
     const rows = await this.db
       .select(postMetaColumns)
       .from(posts)
-      .where(eq(posts.isPublished, true))
+      .where(publicPostCondition())
       .orderBy(desc(posts.createdAt))
     return this.hydrate(rows.map(mapBase))
+  }
+
+  async dispatchDuePublications(
+    notify: (posts: Array<{ id: string }>) => Promise<void>,
+  ) {
+    await this.db.transaction(async (tx) => {
+      const due = await tx
+        .update(posts)
+        .set({ publicNotifiedAt: sql`now()` })
+        .where(
+          and(
+            eq(posts.isPublished, true),
+            isNotNull(posts.publicAt),
+            lte(posts.publicAt, sql`now()`),
+            isNull(posts.publicNotifiedAt),
+          ),
+        )
+        .returning({ id: posts.id })
+      if (due.length) await notify(due)
+    })
   }
 
   private async attachCategories(rows: PostRow[]): Promise<PostRow[]> {

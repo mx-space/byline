@@ -21,6 +21,7 @@ import {
 import { type ReactNode, useState } from 'react'
 
 import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
+import { usePostScheduled } from '~/hooks/use-post-scheduled'
 import { useI18n } from '~/i18n'
 import type { DraftModel } from '~/models/draft'
 import { EditorToolbarSlotContext } from '~/vendor/rich-editor/components/toolbar-slot'
@@ -94,6 +95,10 @@ export function WriteChrome(
   } & WriteMetaFieldsProps,
 ) {
   const { format, locale, t } = useI18n()
+  const scheduled = usePostScheduled({
+    isPublished: props.published,
+    publicAt: props.publishedPublicAt,
+  })
   const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
   const [panelOpen, setPanelOpen] = useState(readPanelOpen)
   const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null)
@@ -177,8 +182,16 @@ export function WriteChrome(
             onClick={props.onBack}
             title={copy('back')}
           />
-          <Tag color={props.published ? 'success' : undefined}>
-            {props.published ? copy('published') : copy('draft')}
+          <Tag
+            color={
+              scheduled ? 'warning' : props.published ? 'success' : undefined
+            }
+          >
+            {scheduled
+              ? copy('scheduled')
+              : props.published
+                ? copy('published')
+                : copy('draft')}
           </Tag>
           {saveState ? (
             <Tooltip title={saveState.detail}>

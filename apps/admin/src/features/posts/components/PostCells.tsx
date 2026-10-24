@@ -4,10 +4,14 @@ import {
   type ContextMenuItem,
   DropdownMenu,
   Icon,
+  Tag,
   Text,
+  Tooltip,
 } from '@lobehub/ui'
 import { Ellipsis, ExternalLink, Pencil, Pin } from 'lucide-react'
 
+import { usePostScheduled } from '~/hooks/use-post-scheduled'
+import { useI18n } from '~/i18n'
 import type { PostModel } from '~/models/post'
 
 import { usePostCopy } from '../copy'
@@ -15,6 +19,21 @@ import { bylineNames, postExternalHref, postTitle } from './post-format'
 import { styles } from './styles'
 
 const MAX_AVATARS = 3
+
+export function PostStatusCell({ post }: { post: PostModel }) {
+  const copy = usePostCopy()
+  const { format } = useI18n()
+  const scheduled = usePostScheduled(post)
+  return scheduled ? (
+    <Tooltip title={post.publicAt ? format.dateTime(post.publicAt) : undefined}>
+      <Tag color="warning">{copy('scheduled')}</Tag>
+    </Tooltip>
+  ) : post.isPublished ? (
+    <Tag color="success">{copy('published')}</Tag>
+  ) : (
+    <Tag>{copy('draft')}</Tag>
+  )
+}
 
 export function PostTitleCell(props: { post: PostModel }) {
   const copy = usePostCopy()
@@ -77,6 +96,7 @@ export function PostRowActions(props: {
   post: PostModel
 }) {
   const copy = usePostCopy()
+  const scheduled = usePostScheduled(props.post)
   return (
     <div className={styles.actions} data-row-actions="">
       <ActionIcon
@@ -86,7 +106,7 @@ export function PostRowActions(props: {
         size="small"
         title={copy('edit')}
       />
-      {props.post.isPublished ? (
+      {props.post.isPublished && !scheduled ? (
         <ActionIcon
           aria-label={copy('openLink')}
           icon={ExternalLink}

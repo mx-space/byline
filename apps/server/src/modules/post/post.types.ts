@@ -27,6 +27,7 @@ export interface PostRow {
   categoryId: EntityId
   category?: PostCategorySummary
   isPublished: boolean
+  publicAt?: Date | null
   sourceLang: string | null
   image: string | null
   seo: PostSeo | null
@@ -49,6 +50,7 @@ export interface PostCreateInput {
   tags?: string[]
   categoryId: EntityId | string
   isPublished?: boolean
+  publicAt?: Date | null
   sourceLang?: string | null
   image?: string | null
   seo?: PostSeo | null

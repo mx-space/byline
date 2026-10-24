@@ -94,6 +94,7 @@ export interface DraftResponse {
 }
 
 export interface PostSpecificData {
+  publicAt?: string | null
   authors?: Array<string | { id: string }>
   categoryId?: string
   image?: string | null

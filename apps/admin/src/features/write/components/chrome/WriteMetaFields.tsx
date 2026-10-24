@@ -1,6 +1,7 @@
 import {
   Accordion,
   Button,
+  DatePicker,
   Image,
   Input,
   Select,
@@ -12,6 +13,7 @@ import { ExternalLink } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import type { CategoryEntity } from '~/data/resources/category'
+import { usePostScheduled } from '~/hooks/use-post-scheduled'
 import { useI18n } from '~/i18n'
 import type { Image as ImageModel } from '~/models/base'
 
@@ -23,6 +25,7 @@ import { TtsGenerationEntry } from '../tts/TtsGenerationEntry'
 import { writeChromeStyles as styles } from './styles'
 
 export interface WriteRailValues {
+  publicAt: string
   authors: string[]
   categoryId: string
   image: string
@@ -53,6 +56,7 @@ export interface WriteMetaFieldsProps {
   onUnpublish: () => void
   publicPath: string
   published: boolean
+  publishedPublicAt?: string | null
   refId?: string
   siteDefaultLang: string
   slugPrefix: string
@@ -75,7 +79,11 @@ function splitCommaList(value: string) {
 }
 
 export function WriteMetaFields(props: WriteMetaFieldsProps) {
-  const { locale } = useI18n()
+  const { locale, format } = useI18n()
+  const scheduled = usePostScheduled({
+    isPublished: props.published,
+    publicAt: props.publishedPublicAt,
+  })
   const navigate = useNavigate()
   const copy = (
     key: Parameters<typeof writeCopy>[1],
@@ -87,7 +95,31 @@ export function WriteMetaFields(props: WriteMetaFieldsProps) {
 
   const publishSection = (
     <div className={styles.section}>
-      {props.published && props.publicPath ? (
+      <div className={styles.field}>
+        <label className={styles.fieldLabel} htmlFor="write-public-at">
+          {copy('publicAt')}
+        </label>
+        <DatePicker
+          allowClear
+          id="write-public-at"
+          needConfirm={false}
+          onChange={(date) =>
+            props.updateField('publicAt', date?.toISOString() ?? '')
+          }
+          placeholder={copy('publicAtPlaceholder')}
+          showTime
+          value={props.values.publicAt ? new Date(props.values.publicAt) : null}
+        />
+        <span className={styles.fieldHint}>{copy('publicAtHint')}</span>
+      </div>
+      {scheduled ? (
+        <span className={styles.fieldHint}>
+          {copy('scheduledFor', {
+            time: format.dateTime(props.publishedPublicAt!),
+          })}
+        </span>
+      ) : null}
+      {props.published && !scheduled && props.publicPath ? (
         <div className={styles.field}>
           <span className={styles.fieldLabel}>{copy('liveAt')}</span>
           <a href={props.publicPath} rel="noreferrer" target="_blank">
@@ -96,9 +128,9 @@ export function WriteMetaFields(props: WriteMetaFieldsProps) {
             </Text>
           </a>
         </div>
-      ) : (
+      ) : !scheduled ? (
         <span className={styles.fieldHint}>{copy('notPublished')}</span>
-      )}
+      ) : null}
       {props.published && props.hasArticle ? (
         <Button
           block
@@ -111,7 +143,7 @@ export function WriteMetaFields(props: WriteMetaFieldsProps) {
           {copy('unpublish')}
         </Button>
       ) : null}
-      {props.published && props.publicPath ? (
+      {props.published && !scheduled && props.publicPath ? (
         <Button
           block
           htmlType="button"

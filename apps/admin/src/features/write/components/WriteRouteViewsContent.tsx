@@ -1581,6 +1581,7 @@ function WritePage(props: { kind: WriteKind }) {
         }
         publishLabel={publishLabel}
         published={isPublished}
+        publishedPublicAt={detailModel?.publicAt}
         publishing={saveMutation.isPending}
         refId={isEditing ? id : undefined}
         revisionCount={versionBranchCount}
@@ -1902,6 +1903,12 @@ function buildDraftRecoveryReviewData(
     ancestorState?.title,
   )
   add('write.recovery.field.slug', current.slug, next.slug, ancestorState?.slug)
+  add(
+    'write.recovery.field.publicAt',
+    current.publicAt,
+    next.publicAt,
+    ancestorState?.publicAt,
+  )
 
   add(
     'write.recovery.field.summary',

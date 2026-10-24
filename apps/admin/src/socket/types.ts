@@ -11,6 +11,7 @@ export enum EventTypes {
 
   POST_CREATE = 'post.create',
   POST_UPDATE = 'post.update',
+  POST_REPUBLISH = 'post.republish',
   POST_DELETE = 'post.delete',
 
   CONTENT_REFRESH = 'content.refresh',

@@ -82,6 +82,7 @@ const catalog = {
   deleteTitle: { 'en-US': 'Delete "{title}"?', 'zh-CN': '删除「{title}」？' },
   deleted: { 'en-US': 'Post deleted', 'zh-CN': '已删除博文' },
   draft: { 'en-US': 'Draft', 'zh-CN': '草稿' },
+  scheduled: { 'en-US': 'Scheduled', 'zh-CN': '待公开' },
   edit: { 'en-US': 'Edit', 'zh-CN': '编辑' },
   emptyValue: { 'en-US': '--', 'zh-CN': '--' },
   errorDescription: {

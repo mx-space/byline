@@ -61,6 +61,7 @@ Proposed by the designer from mx-core's modules. The author has reviewed the
 list but not confirmed each item. Comments are removed entirely, on both server and admin.
 
 **Settings, kept:**
+
 - Site URLs: `webUrl`, `adminUrl`, `serverUrl`.
 - AI: models, target languages for translation, summary and insights, TTS, and image generation (for covers).
 - Storage: image storage (S3 and the like) and file upload options.
@@ -75,6 +76,7 @@ comment uploads, Bark, friend links, Baidu/Bing push, feature toggles,
 third-party integrations, membership, backup, maintenance, snippets.
 
 **Posts:**
+
 - Kept: `title`, `slug`, `content` (Lexical only), `summary`/excerpt, `images`,
   `meta`, `tags`, `categoryId`, `isPublished`, `pinAt`/`pinOrder`, and the timestamps.
 - New: `authors[]`, `sourceLang`, cover `image`, and `seo{title,description,image}`,
@@ -83,6 +85,7 @@ third-party integrations, membership, backup, maintenance, snippets.
 - Mechanisms kept: drafts, the revision tree, publish jobs with AI resources, and translations.
 
 **Users:**
+
 - A user list, invites, and deactivation. Deactivation keeps the user's posts and byline.
 - Profile editing: display name, avatar, bio, URL.
 - Profile-only authors who cannot log in.
@@ -90,6 +93,7 @@ third-party integrations, membership, backup, maintenance, snippets.
 - A `permissions` bitmask is stored but not shown in the UI.
 
 **Files:**
+
 - Kept: browsing by type, upload, search, preview, delete, and orphan-file cleanup (reference reconciliation).
 - Dropped: comment images and reader upload quotas.
 
@@ -130,6 +134,23 @@ third-party integrations, membership, backup, maintenance, snippets.
   `summaryTargetLanguages` and `insightsTargetLanguages`, the same shape as in mx-core.
 - Summary, insights and TTS are carried over. Consumers decide whether to show them.
 
+### Scheduled public visibility
+
+- Posts have an optional `publicAt` timestamp, separate from their creation date.
+  The editor can set, change or clear it in the publishing settings. Saving a
+  draft alone does not schedule publication: the publish job must finish first.
+- A prepared post is public only when `isPublished` is true and `publicAt` is
+  unset or has arrived. The same rule covers lists, direct links, categories,
+  tags, author discovery and AI resources. Authenticated editors can inspect
+  scheduled posts. Clearing the time and publishing makes the post public now;
+  unpublishing cancels public visibility even after the scheduled time.
+- A persistent notification marker and a ten-second scheduler invalidate API
+  caches and emit the public publish event when the time arrives. The scheduler
+  also runs on startup to catch up after downtime. Concurrent replicas claim
+  the same scheduled event once; failed event dispatch can be retried.
+- Consumers receive the existing publication webhook and own their cache
+  revalidation. This behaviour belongs to Byline; mx-core stays unchanged.
+
 ### Deployment and delivery
 
 - Public open-source project in its own repository, maintained by the author.
@@ -168,7 +189,7 @@ third-party integrations, membership, backup, maintenance, snippets.
 
 - Phase 1: the LobeHub landing reads from two sources, the existing MDX in git and the CMS API. Merge by slug, CMS wins.
 - Phase 2: posts move into the CMS gradually until the MDX path is deleted.
-- Only the *tool* belongs to this project: a generic MDX import command
+- Only the _tool_ belongs to this project: a generic MDX import command
   (MDX + frontmatter + per-locale files → Lexical post + translations +
   authors), usable by any MDX-based blog. LobeHub's component mapping (e.g.
   `<Image>`, `<Callout>`, `<Cards>`, `<Video>`, `<Steps>`) is supplied as
@@ -178,31 +199,31 @@ third-party integrations, membership, backup, maintenance, snippets.
 
 These are the designer's proposals. The author has not decided them and can override any of them.
 
-- **Redis required** *(my call)*: same as mx-core. An earlier idea was to make
+- **Redis required** _(my call)_: same as mx-core. An earlier idea was to make
   Redis optional, but the task queue, in-flight AI locks, the TTS lock and caching
   all assume Redis, and a second in-memory implementation is not worth it in v1.
-- **Regional locales stay distinct** *(my call)*: `zh-CN`, `zh-TW`, `pt-BR` and
+- **Regional locales stay distinct** _(my call)_: `zh-CN`, `zh-TW`, `pt-BR` and
   similar are separate translation targets, as LobeHub needs. This only takes the
   folding option from "Relationship with mx-core"; mx-core's behaviour stays the same.
-- **Source language** *(my call)*: the site sets a default, and each post can override it.
-- **Prose stays in native nodes** *(my call)*: the translation parser cannot see
+- **Source language** _(my call)_: the site sets a default, and each post can override it.
+- **Prose stays in native nodes** _(my call)_: the translation parser cannot see
   inside Dynamic Node `props`. Components that carry prose (callout, steps, cards,
   image, video) map to native haklex nodes. Dynamic Nodes are only for widgets
   with no translatable text, and adding any missing haklex nodes is in scope.
-- **Profile-only authors** *(my call)*: a user can exist without credentials,
+- **Profile-only authors** _(my call)_: a user can exist without credentials,
   for guests, former staff and imported bylines. The MDX import creates such
   profiles for unknown frontmatter authors.
-- **Invite-only accounts** *(my call)*: v1 gives everyone every permission
+- **Invite-only accounts** _(my call)_: v1 gives everyone every permission
   bit, so there is no open sign-up. Existing users invite new ones.
-- **Imported translations are locked** *(my call)*: translations brought in by
+- **Imported translations are locked** _(my call)_: translations brought in by
   the MDX import carry a manual/locked flag. Publish-time AI translation skips
   locked locales unless the user explicitly asks to regenerate them.
-- **Author profile replaces static author lists** *(my call)*: each user
+- **Author profile replaces static author lists** _(my call)_: each user
   has display name, avatar, bio, URL. Post responses expand `authors` into
   these profiles so consumers don't keep an `AUTHOR_LIST`.
-- **Configurable categories** *(my call)*: categories are managed in admin,
+- **Configurable categories** _(my call)_: categories are managed in admin,
   not an enum.
-- **Translations read via `?lang=`** *(my call)*: same contract as mx-core.
+- **Translations read via `?lang=`** _(my call)_: same contract as mx-core.
 
 ## Constraints
 

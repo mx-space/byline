@@ -105,6 +105,34 @@ const createService = () => {
 }
 
 describe('PostService', () => {
+  it('persists the public time on create and can change or clear it on update', async () => {
+    const { repository, service } = createService()
+    const publicAt = new Date('2999-01-01T12:00:00Z')
+    repository.findBySlug.mockResolvedValue(null)
+    repository.create.mockImplementation(async (input) =>
+      createPost(input as Partial<PostRow>),
+    )
+    const created = await service.create({
+      title: 'Scheduled',
+      slug: 'scheduled',
+      categoryId: 'cat-1',
+      publicAt,
+    } as any)
+    expect(created.publicAt).toEqual(publicAt)
+
+    repository.findById.mockResolvedValue(created)
+    repository.update.mockImplementation(async (_id, patch) =>
+      createPost(patch as Partial<PostRow>),
+    )
+    const changedTime = new Date('2999-02-01T12:00:00Z')
+    const changed = await service.updateById(created.id, {
+      publicAt: changedTime,
+    })
+    expect(changed?.publicAt).toEqual(changedTime)
+    const cleared = await service.updateById(created.id, { publicAt: null })
+    expect(cleared?.publicAt).toBeNull()
+  })
+
   it('rejects Markdown content', async () => {
     const { repository, service } = createService()
     repository.findById.mockResolvedValue(createPost())

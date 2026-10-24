@@ -1542,6 +1542,7 @@ export const zhCN = {
   'write.recovery.field.meta': '自定义 Meta',
   'write.recovery.field.pin': '置顶',
   'write.recovery.field.pinOrder': '置顶顺序',
+  'write.recovery.field.publicAt': '定时公开',
   'write.recovery.field.slug': '链接标识',
   'write.recovery.field.summary': '摘要',
   'write.recovery.field.tags': '标签',

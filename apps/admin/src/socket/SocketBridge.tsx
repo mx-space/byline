@@ -94,6 +94,7 @@ export function SocketBridge() {
         }
         case EventTypes.POST_CREATE:
         case EventTypes.POST_UPDATE:
+        case EventTypes.POST_REPUBLISH:
         case EventTypes.POST_DELETE: {
           void queryClient.invalidateQueries({
             queryKey: adminQueryKeys.posts.root,

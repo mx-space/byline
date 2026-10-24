@@ -663,32 +663,33 @@ describe('SocketBridge — transport wiring', () => {
     expect(getAdminSocket()).toBeNull()
   })
 
-  it('dispatches an incoming business event to a window CustomEvent and to its cache handler', () => {
-    renderSocketBridge(harness)
-    const client = instances[0]
-    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+  it.each([EventTypes.POST_UPDATE, EventTypes.POST_REPUBLISH])(
+    'dispatches %s to a window CustomEvent and to its cache handler',
+    (type) => {
+      renderSocketBridge(harness)
+      const client = instances[0]
+      const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
-    const events: Array<{ payload: unknown; type: string }> = []
-    const listener = (event: Event) => {
-      events.push((event as CustomEvent).detail)
-    }
-    window.addEventListener('mx-admin:socket-event', listener)
-    try {
-      client.emit(EventTypes.POST_UPDATE, { id: 'p1' })
-    } finally {
-      window.removeEventListener('mx-admin:socket-event', listener)
-    }
+      const events: Array<{ payload: unknown; type: string }> = []
+      const listener = (event: Event) => {
+        events.push((event as CustomEvent).detail)
+      }
+      window.addEventListener('mx-admin:socket-event', listener)
+      try {
+        client.emit(type, { id: 'p1' })
+      } finally {
+        window.removeEventListener('mx-admin:socket-event', listener)
+      }
 
-    expect(events).toEqual([
-      { payload: { id: 'p1' }, type: EventTypes.POST_UPDATE },
-    ])
-    expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: adminQueryKeys.posts.root,
-    })
-    expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ['dashboard'],
-    })
-  })
+      expect(events).toEqual([{ payload: { id: 'p1' }, type }])
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: adminQueryKeys.posts.root,
+      })
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ['dashboard'],
+      })
+    },
+  )
 
   it('routes a TASK_UPDATE event through handleTaskUpdate', () => {
     renderSocketBridge(harness)

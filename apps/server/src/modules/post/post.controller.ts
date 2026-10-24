@@ -43,6 +43,7 @@ import {
 import { PostService } from './post.service'
 import type { PostModel, PostRow } from './post.types'
 import { PostMetaBuilder } from './post-meta-builder'
+import { isPostPublic } from './post-visibility'
 
 const CATEGORY_NAME_RULES: ReadonlyArray<EntryRule> = [
   {
@@ -206,12 +207,15 @@ export class PostController {
   }
 
   @Get('/get-url/:slug')
-  async getBySlug(@Param('slug') slug: string) {
+  async getBySlug(
+    @Param('slug') slug: string,
+    @HasAdminAccess() isAuthenticated?: boolean,
+  ) {
     if (typeof slug !== 'string') {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }
     const doc = await this.postService.findBySlug(slug)
-    if (!doc) {
+    if (!doc || (!isAuthenticated && !isPostPublic(doc))) {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }
 
@@ -270,7 +274,7 @@ export class PostController {
       throw createAppException(AppErrorCode.POST_NOT_FOUND, { id })
     }
 
-    if (!isAuthenticated && !doc.isPublished) {
+    if (!isAuthenticated && !isPostPublic(doc)) {
       throw createAppException(AppErrorCode.POST_NOT_FOUND, { id })
     }
 
@@ -347,7 +351,7 @@ export class PostController {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }
 
-    if (!isAuthenticated && !postDocument.isPublished) {
+    if (!isAuthenticated && !isPostPublic(postDocument)) {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }
 

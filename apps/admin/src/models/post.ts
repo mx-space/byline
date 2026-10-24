@@ -35,6 +35,7 @@ export interface PostModel {
   pinOrder?: number | null
   meta?: any
   isPublished?: boolean
+  publicAt?: string | null
 }
 
 export interface Category {

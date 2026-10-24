@@ -12,11 +12,13 @@ import { createPagerSchema } from '~/shared/dto/pager.dto'
 
 import {
   PostAuthorIdsSchema,
+  PostPublicAtSchema,
   PostSeoSchema,
   PostSourceLangSchema,
 } from './post-write.schema'
 
 export const PartialPostSchema = z.object({
+  publicAt: PostPublicAtSchema.optional(),
   categoryId: zEntityId.optional(),
   pinAt: zPinDate,
   authors: PostAuthorIdsSchema.refine((ids) => ids.length > 0, {

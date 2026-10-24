@@ -183,6 +183,7 @@ export interface PostImage {
 }
 
 export interface Post {
+  publicAt?: string | null
   id: string
   title: string
   slug: string
@@ -222,6 +223,7 @@ export interface PostListQuery {
 }
 
 export interface PostPatch {
+  publicAt?: string | null
   categoryId?: string
   pinAt?: string | null
   authors?: string[]
@@ -231,6 +233,7 @@ export interface PostPatch {
 }
 
 export interface PostWriteInput {
+  publicAt?: string | null
   title: string
   content: string | LexicalEditorState
   text?: string

@@ -18,6 +18,7 @@ const PostCardSchema = z
     createdAt: z.date().or(z.string()),
     cover: z.string().nullable().optional(),
     isPublished: z.boolean(),
+    publicAt: z.date().or(z.string()).nullable().optional(),
     pinAt: z.date().or(z.string()).nullable().optional(),
   })
   .loose()
