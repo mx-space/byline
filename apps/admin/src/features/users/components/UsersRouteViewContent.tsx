@@ -256,11 +256,7 @@ export function UsersRouteViewContent() {
             <UserRoleTag permissions={user.permissions} />
           ),
         responsive: ['sm'],
-        title: (
-          <span className={styles.headerTitle}>
-            {t('users.filter.roleLabel')}
-          </span>
-        ),
+        title: <span className={styles.headerTitle}>{copy('columnRole')}</span>,
         width: 140,
       },
       {

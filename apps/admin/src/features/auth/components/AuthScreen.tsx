@@ -3,8 +3,8 @@ import { AuthLayout } from '@lobehub/ui/dashboard'
 import { lazy, type ReactNode, Suspense } from 'react'
 
 import { useI18n } from '~/i18n'
+import { LogoColor } from '~/ui/brand'
 
-import faviconUrl from '../../../../favicon.png'
 import { AuthTools } from './auth-tools'
 
 const Grainient = lazy(() =>
@@ -33,14 +33,6 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     &:focus-visible {
       text-decoration: underline;
     }
-  `,
-  logo: css`
-    display: block;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-
-    object-fit: cover;
   `,
 }))
 
@@ -72,7 +64,7 @@ export function AuthScreen(props: {
       description={props.subtitle}
       footer={props.footer}
       loading={props.loading}
-      logo={<img alt="" className={styles.logo} src={faviconUrl} />}
+      logo={<LogoColor size={40} />}
       title={props.title}
       tools={<AuthTools />}
       variant="elevated"

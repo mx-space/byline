@@ -57,10 +57,12 @@ import {
   useState,
 } from 'react'
 
+import { useI18n } from '~/i18n'
 import { Button } from '~/ui/site-button'
 import { cn } from '~/utils/cn'
 
 import { EditorDebugDialog } from './EditorDebugDialog'
+import { fontLabelKey, toolbarCopy, type ToolbarCopyKey } from './toolbar-copy'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u90665ca6: css`
@@ -224,33 +226,52 @@ interface ToolbarSlot {
   menuItems: DropdownItem[]
 }
 
+type ToolbarCopy = (
+  key: ToolbarCopyKey,
+  values?: Record<string, number | string>,
+) => string
+
 interface BlockOption {
   type: BlockType
-  label: string
+  labelKey: ToolbarCopyKey
   icon: LucideIcon
 }
 
 const BLOCK_OPTIONS: BlockOption[] = [
-  { type: 'paragraph', label: '正文', icon: Pilcrow },
-  { type: 'h1', label: '标题 1', icon: Heading1 },
-  { type: 'h2', label: '标题 2', icon: Heading2 },
-  { type: 'h3', label: '标题 3', icon: Heading3 },
+  { type: 'paragraph', labelKey: 'blockParagraph', icon: Pilcrow },
+  { type: 'h1', labelKey: 'blockH1', icon: Heading1 },
+  { type: 'h2', labelKey: 'blockH2', icon: Heading2 },
+  { type: 'h3', labelKey: 'blockH3', icon: Heading3 },
 ]
 
 const ALIGN_OPTIONS: Array<{
   format: 'left' | 'center' | 'right' | 'justify'
-  label: string
+  labelKey: ToolbarCopyKey
   icon: LucideIcon
 }> = [
-  { format: 'left', label: '左对齐', icon: AlignLeft },
-  { format: 'center', label: '居中', icon: AlignCenter },
-  { format: 'right', label: '右对齐', icon: AlignRight },
-  { format: 'justify', label: '两端对齐', icon: AlignJustify },
+  { format: 'left', labelKey: 'alignLeft', icon: AlignLeft },
+  { format: 'center', labelKey: 'alignCenter', icon: AlignCenter },
+  { format: 'right', labelKey: 'alignRight', icon: AlignRight },
+  { format: 'justify', labelKey: 'alignJustify', icon: AlignJustify },
 ]
+
+function useToolbarCopy(): ToolbarCopy {
+  const { locale } = useI18n()
+  return useMemo(
+    () => (key, values) => toolbarCopy(locale, key, values),
+    [locale],
+  )
+}
+
+function fontLabel(copy: ToolbarCopy, label: string) {
+  const key = fontLabelKey(label)
+  return key ? copy(key) : label
+}
 
 export function EditorToolbar(props: { className?: string }) {
   const [editor] = useLexicalComposerContext()
   const state = useToolbarState()
+  const copy = useToolbarCopy()
   const activeBlock =
     BLOCK_OPTIONS.find((option) => option.type === state.blockType) ??
     BLOCK_OPTIONS[0]
@@ -306,7 +327,7 @@ export function EditorToolbar(props: { className?: string }) {
         bar: <FontFamilyMenu activeValue={state.fontFamily} editor={editor} />,
         menuItems: FONT_FAMILIES.map((def) => ({
           key: def.label,
-          label: def.label,
+          label: fontLabel(copy, def.label),
           onClick: () => applyFontFamily(editor, def.value),
         })),
       },
@@ -317,13 +338,13 @@ export function EditorToolbar(props: { className?: string }) {
           <BlockMenu
             activeIcon={ActiveBlockIcon}
             editor={editor}
-            label={activeBlock.label}
+            label={copy(activeBlock.labelKey)}
           />
         ),
         menuItems: BLOCK_OPTIONS.map((option) => ({
           icon: option.icon,
           key: option.type,
-          label: option.label,
+          label: copy(option.labelKey),
           onClick: () => applyBlockType(editor, option.type),
         })),
       },
@@ -332,7 +353,7 @@ export function EditorToolbar(props: { className?: string }) {
         leadingDivider: true,
         disabled: !state.canUndo,
         icon: Undo,
-        label: '撤销',
+        label: copy('undo'),
         onClick: () => editor.dispatchCommand(UNDO_COMMAND, undefined),
         shortcut: '⌘Z',
       }),
@@ -340,7 +361,7 @@ export function EditorToolbar(props: { className?: string }) {
         key: 'redo',
         disabled: !state.canRedo,
         icon: Redo,
-        label: '重做',
+        label: copy('redo'),
         onClick: () => editor.dispatchCommand(REDO_COMMAND, undefined),
         shortcut: '⌘⇧Z',
       }),
@@ -349,7 +370,7 @@ export function EditorToolbar(props: { className?: string }) {
         leadingDivider: true,
         active: state.isBold,
         icon: Bold,
-        label: '粗体',
+        label: copy('bold'),
         onClick: () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold'),
         shortcut: '⌘B',
       }),
@@ -357,7 +378,7 @@ export function EditorToolbar(props: { className?: string }) {
         key: 'italic',
         active: state.isItalic,
         icon: Italic,
-        label: '斜体',
+        label: copy('italic'),
         onClick: () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic'),
         shortcut: '⌘I',
       }),
@@ -365,7 +386,7 @@ export function EditorToolbar(props: { className?: string }) {
         key: 'underline',
         active: state.isUnderline,
         icon: Underline,
-        label: '下划',
+        label: copy('underline'),
         onClick: () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline'),
         shortcut: '⌘U',
       }),
@@ -373,7 +394,7 @@ export function EditorToolbar(props: { className?: string }) {
         key: 'strike',
         active: state.isStrikethrough,
         icon: Strikethrough,
-        label: '删除线',
+        label: copy('strike'),
         onClick: () =>
           editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough'),
       }),
@@ -381,7 +402,7 @@ export function EditorToolbar(props: { className?: string }) {
         key: 'code',
         active: state.isCode,
         icon: Code,
-        label: '行内代码',
+        label: copy('code'),
         onClick: () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code'),
       }),
       icon({
@@ -389,14 +410,14 @@ export function EditorToolbar(props: { className?: string }) {
         leadingDivider: true,
         active: state.isHighlight,
         icon: Highlighter,
-        label: '高亮',
+        label: copy('highlight'),
         onClick: () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'highlight'),
       }),
       icon({
         key: 'spoiler',
         active: state.isSpoiler,
         icon: EyeOff,
-        label: '剧透遮罩',
+        label: copy('spoiler'),
         onClick: () => editor.update($toggleSpoilerSelection),
       }),
       icon({
@@ -404,21 +425,21 @@ export function EditorToolbar(props: { className?: string }) {
         leadingDivider: true,
         active: state.blockType === 'bullet',
         icon: List,
-        label: '无序列表',
+        label: copy('bullet'),
         onClick: () => applyBlockType(editor, 'bullet'),
       }),
       icon({
         key: 'number',
         active: state.blockType === 'number',
         icon: ListOrdered,
-        label: '有序列表',
+        label: copy('number'),
         onClick: () => applyBlockType(editor, 'number'),
       }),
       icon({
         key: 'check',
         active: state.blockType === 'check',
         icon: ListChecks,
-        label: '待办列表',
+        label: copy('check'),
         onClick: () => applyBlockType(editor, 'check'),
       }),
       {
@@ -435,7 +456,7 @@ export function EditorToolbar(props: { className?: string }) {
         menuItems: ALIGN_OPTIONS.map((option) => ({
           icon: option.icon,
           key: option.format,
-          label: option.label,
+          label: copy(option.labelKey),
           onClick: () =>
             editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, option.format),
         })),
@@ -454,7 +475,8 @@ export function EditorToolbar(props: { className?: string }) {
     ]
   }, [
     ActiveBlockIcon,
-    activeBlock.label,
+    activeBlock.labelKey,
+    copy,
     editor,
     insertItems,
     state.blockType,
@@ -527,7 +549,7 @@ export function EditorToolbar(props: { className?: string }) {
   return (
     <>
       <div
-        aria-label="编辑器工具栏"
+        aria-label={copy('toolbar')}
         className={cn(
           lobeStyles.u68f02d14,
           import.meta.env.DEV && lobeStyles.withDebug,
@@ -552,9 +574,9 @@ export function EditorToolbar(props: { className?: string }) {
             placement="bottomRight"
             popupProps={{ className: lobeStyles.ue8f85260 }}
             triggerProps={{
-              'aria-label': '更多',
+              'aria-label': copy('more'),
               className: lobeStyles.u2f41b8fa,
-              title: '更多',
+              title: copy('more'),
             }}
           >
             <MoreHorizontal aria-hidden size={14} />
@@ -562,7 +584,7 @@ export function EditorToolbar(props: { className?: string }) {
         ) : null}
         {import.meta.env.DEV ? (
           <Button
-            aria-label="调试 · 导出 Editor State"
+            aria-label={copy('debug')}
             className={lobeStyles.debug}
             icon={Bug}
             onClick={() => {
@@ -571,7 +593,7 @@ export function EditorToolbar(props: { className?: string }) {
               )
             }}
             onMouseDown={(event) => event.preventDefault()}
-            title="调试 · 导出 Editor State"
+            title={copy('debug')}
             type="text"
           />
         ) : null}
@@ -633,12 +655,13 @@ function BlockMenu(props: {
   label: string
 }) {
   const Icon = props.activeIcon
+  const copy = useToolbarCopy()
   return (
     <DropdownMenu
       items={BLOCK_OPTIONS.map((option) => ({
         icon: option.icon,
         key: option.type,
-        label: option.label,
+        label: copy(option.labelKey),
         onClick: () => applyBlockType(props.editor, option.type),
       }))}
       popupProps={{ className: lobeStyles.u85d2070d }}
@@ -659,19 +682,20 @@ function AlignMenu(props: {
     ALIGN_OPTIONS.find((option) => option.format === props.activeFormat) ??
     ALIGN_OPTIONS[0]
   const Icon = active.icon
+  const copy = useToolbarCopy()
   return (
     <DropdownMenu
       items={ALIGN_OPTIONS.map((option) => ({
         icon: option.icon,
         key: option.format,
-        label: option.label,
+        label: copy(option.labelKey),
         onClick: () => props.onSelect(option.format),
       }))}
       popupProps={{ className: lobeStyles.u85d2070d }}
       triggerProps={{
-        'aria-label': `对齐：${active.label}`,
+        'aria-label': copy('alignActive', { label: copy(active.labelKey) }),
         className: toolbarTriggerClass,
-        title: '对齐',
+        title: copy('align'),
       }}
     >
       <Icon aria-hidden="true" className={lobeStyles.ub481f7c2} />
@@ -684,19 +708,20 @@ function FontFamilyMenu(props: {
   activeValue: string
   editor: ReturnType<typeof useLexicalComposerContext>[0]
 }) {
-  const label = getFontLabel(props.activeValue)
+  const copy = useToolbarCopy()
+  const label = fontLabel(copy, getFontLabel(props.activeValue))
   return (
     <DropdownMenu
       items={FONT_FAMILIES.map((def) => ({
         key: def.label,
-        label: def.label,
+        label: fontLabel(copy, def.label),
         onClick: () => applyFontFamily(props.editor, def.value),
       }))}
       popupProps={{ className: lobeStyles.u6a9cae37 }}
       triggerProps={{
-        'aria-label': '字体',
+        'aria-label': copy('font'),
         className: toolbarTriggerClass,
-        title: '字体',
+        title: copy('font'),
       }}
     >
       <Type aria-hidden="true" className={lobeStyles.ub481f7c2} />

@@ -1,13 +1,13 @@
-import { Flexbox, Icon, Text } from '@lobehub/ui'
+import { Icon } from '@lobehub/ui'
 import { AuthLayout } from '@lobehub/ui/dashboard'
 import { Check, ChevronLeft } from 'lucide-react'
 import type { PropsWithChildren, ReactNode } from 'react'
 
 import { AuthTools } from '~/features/auth/components/auth-tools'
 import { AuthScreen } from '~/features/auth/components/AuthScreen'
+import { Combine } from '~/ui/brand'
 import { Button } from '~/ui/site-button'
 
-import faviconUrl from '../../../../favicon.png'
 import { type SetupCopyKey, useSetupCopy } from '../copy'
 import type { OnboardingStep } from '../utils/onboarding'
 import { onboardingSteps } from '../utils/onboarding'
@@ -128,12 +128,7 @@ export function OnboardingShell(
   return (
     <AuthLayout
       background="grid"
-      brand={
-        <Flexbox horizontal align="center" gap={8}>
-          <img alt="" height={24} src={faviconUrl} width={24} />
-          <Text weight={500}>Byline</Text>
-        </Flexbox>
-      }
+      brand={<Combine size={24} />}
       card={false}
       tools={<AuthTools />}
       variant="elevated"

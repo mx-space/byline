@@ -5,6 +5,8 @@ import type { Root } from 'react-dom/client'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { I18nProvider } from '~/i18n'
+
 import { EditorToolbar } from './EditorToolbar'
 
 const mocks = vi.hoisted(() => {
@@ -96,9 +98,11 @@ function mount(): Harness {
 function renderToolbar() {
   act(() => {
     harness.root.render(
-      createElement(ConfigProvider, {
-        children: createElement(EditorToolbar),
-        motion,
+      createElement(I18nProvider, {
+        children: createElement(ConfigProvider, {
+          children: createElement(EditorToolbar),
+          motion,
+        }),
       }),
     )
   })

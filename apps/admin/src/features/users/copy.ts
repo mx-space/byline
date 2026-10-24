@@ -48,6 +48,10 @@ export const usersCopy = createFeatureCopy({
     'en-US': 'Name',
     'zh-CN': '名字',
   },
+  columnRole: {
+    'en-US': 'Role',
+    'zh-CN': '角色',
+  },
   columnStatus: {
     'en-US': 'Account status',
     'zh-CN': '账号状态',
