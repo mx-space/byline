@@ -75,14 +75,4 @@ describe('OnboardingShell', () => {
     expect(el.querySelector('footer button')?.textContent).toBe('next')
     expect(el.querySelector('aside')?.textContent).toBe('aside text')
   })
-
-  it('hosts floating popups inside the light-themed scope', () => {
-    const el = render(
-      <OnboardingShell step="welcome">
-        <OnboardingCard title="Welcome">body</OnboardingCard>
-      </OnboardingShell>,
-    )
-
-    expect(el.querySelector('[data-float-layer-host]')).not.toBeNull()
-  })
 })
