@@ -1,14 +1,19 @@
-import { toast } from '@lobehub/ui'
+import {
+  createStaticStyles,
+  Flexbox,
+  Select,
+  Switch,
+  Text,
+  toast,
+} from '@lobehub/ui'
 import { useMutation } from '@tanstack/react-query'
-import { Loader2, Save } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { useState } from 'react'
 
 import type { UserDetail } from '~/api/users'
 import { setUserPermissions } from '~/api/users'
 import { useI18n } from '~/i18n'
-import { Button } from '~/ui/primitives/button'
-import { SelectField } from '~/ui/primitives/select'
-import { Switch } from '~/ui/primitives/switch'
+import { Button } from '~/ui/site-button'
 
 import type { PermissionRoleOrCustom } from '../utils/permissions'
 import {
@@ -24,6 +29,38 @@ import {
 import { getUserErrorMessage } from '../utils/users'
 
 const ROLE_ORDER = ['owner', 'editor', 'author', 'translator'] as const
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  list: css`
+    display: flex;
+    flex-direction: column;
+
+    padding-inline: 16px;
+    border: 1px solid ${cssVar.colorBorderSecondary};
+    border-radius: ${cssVar.borderRadiusLG};
+  `,
+  role: css`
+    width: 176px;
+  `,
+  row: css`
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+
+    padding-block: 12px;
+
+    & + & {
+      border-block-start: 1px solid ${cssVar.colorBorderSecondary};
+    }
+  `,
+  rowText: css`
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  `,
+}))
 
 interface UserPermissionsCardProps {
   canEdit: boolean
@@ -72,61 +109,53 @@ export function UserPermissionsCard(props: UserPermissionsCardProps) {
       : t('users.permission.customHintNoBase', { added: addedLabels ?? '' })
 
   return (
-    <section
-      aria-labelledby="user-permissions-title"
-      className="mt-8 space-y-4 border-t border-border pt-6"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2
-          className="text-sm font-semibold text-fg"
-          id="user-permissions-title"
-        >
+    <Flexbox aria-labelledby="user-permissions-title" as="section" gap={12}>
+      <Flexbox
+        align="center"
+        gap={12}
+        horizontal
+        justify="space-between"
+        wrap="wrap"
+      >
+        <Text id="user-permissions-title" strong>
           {t('users.permission.title')}
-        </h2>
-        <label className="flex items-center gap-2 text-xs text-fg-muted">
-          {t('users.permission.role')}
-          <SelectField<PermissionRoleOrCustom>
-            aria-label={t('users.permission.role')}
-            className="w-44"
-            disabled={!props.canEdit}
-            onValueChange={(value) => {
-              if (value !== 'custom') {
-                setMask(applyPermissionRole(value, { isSelf: props.isSelf }))
-              }
-            }}
-            options={roleOptions}
-            value={role}
-          />
-        </label>
-      </div>
-      <p className="text-xs text-fg-muted">
+        </Text>
+        <Select
+          aria-label={t('users.permission.role')}
+          className={styles.role}
+          disabled={!props.canEdit}
+          onChange={(value: PermissionRoleOrCustom) => {
+            if (value !== 'custom') {
+              setMask(applyPermissionRole(value, { isSelf: props.isSelf }))
+            }
+          }}
+          options={roleOptions}
+          prefix={t('users.permission.role')}
+          value={role}
+        />
+      </Flexbox>
+      <Text fontSize={12} type="secondary">
         {props.canEdit ? hint : t('users.permission.readOnly')}
-      </p>
-      <div className="grid gap-x-8 md:grid-cols-2">
+      </Text>
+      <div className={styles.list}>
         {PERMISSION_FIELDS.map((field) => {
-          const locked =
-            !props.canEdit ||
-            (props.isSelf && field.bit === Permission.ManageUsers)
+          const selfLocked =
+            props.isSelf && field.bit === Permission.ManageUsers
           return (
-            <div
-              className="flex items-center justify-between gap-3 border-t border-border/60 py-3"
-              key={field.bit}
-            >
-              <div className="min-w-0">
-                <div className="text-sm font-medium text-fg">
-                  {t(field.label)}
-                </div>
-                <div className="text-xs text-fg-muted">
-                  {props.isSelf && field.bit === Permission.ManageUsers
+            <div className={styles.row} key={field.bit}>
+              <div className={styles.rowText}>
+                <Text>{t(field.label)}</Text>
+                <Text fontSize={12} type="secondary">
+                  {selfLocked
                     ? t('users.permission.selfLock')
                     : t(field.description)}
-                </div>
+                </Text>
               </div>
               <Switch
                 aria-label={t(field.label)}
                 checked={hasPermission(mask, field.bit)}
-                disabled={locked}
-                onCheckedChange={() =>
+                disabled={!props.canEdit || selfLocked}
+                onChange={() =>
                   setMask((current) => togglePermission(current, field.bit))
                 }
               />
@@ -135,29 +164,24 @@ export function UserPermissionsCard(props: UserPermissionsCardProps) {
         })}
       </div>
       {props.canEdit ? (
-        <div className="flex items-center justify-end gap-2">
+        <Flexbox gap={8} horizontal justify="flex-end">
           <Button
             disabled={!dirty || mutation.isPending}
             onClick={() => setMask(props.user.permissions)}
-            type="button"
-            variant="subtle"
           >
             {t('common.cancel')}
           </Button>
           <Button
-            disabled={!dirty || mutation.isPending}
+            disabled={!dirty}
+            icon={Save}
+            loading={mutation.isPending}
             onClick={() => mutation.mutate()}
-            type="button"
+            type="primary"
           >
-            {mutation.isPending ? (
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-            ) : (
-              <Save aria-hidden="true" className="size-4" />
-            )}
             {t('users.permission.save')}
           </Button>
-        </div>
+        </Flexbox>
       ) : null}
-    </section>
+    </Flexbox>
   )
 }
