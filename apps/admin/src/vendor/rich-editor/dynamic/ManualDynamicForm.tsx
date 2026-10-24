@@ -1,9 +1,12 @@
+import { Input } from '@lobehub/ui'
+import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 
 import { useI18n } from '~/i18n'
 import { PropsEditor } from '~/ui/patterns/PropsEditor'
-import { Button } from '~/ui/primitives/button'
-import { TextInput } from '~/ui/primitives/text-field'
+import { Button } from '~/ui/site-button'
+
+import { styles } from './styles'
 
 const NO_SCHEMA = {}
 
@@ -35,53 +38,53 @@ export function ManualDynamicForm(props: {
   }
 
   return (
-    <div className="grid">
-      <div className="grid gap-3 p-3">
-        <TextInput
-          autoFocus
-          controlClassName="font-mono text-xs"
-          label={t('dynamicNode.url')}
-          onChange={setUrl}
-          placeholder="https://cdn.example.com/widget.js"
-          type="url"
-          value={url}
-        />
-        <TextInput
-          label={t('dynamicNode.height')}
-          min={0}
-          onChange={setHeight}
-          type="number"
-          value={height}
-        />
+    <>
+      <div className={styles.body}>
+        <label className={styles.field}>
+          <span className={styles.label}>{t('dynamicNode.url')}</span>
+          <Input
+            autoFocus
+            classNames={{ input: styles.mono }}
+            onChange={(event) => setUrl(event.target.value)}
+            placeholder="https://cdn.example.com/widget.js"
+            type="url"
+            value={url}
+          />
+        </label>
+        <label className={styles.field}>
+          <span className={styles.label}>{t('dynamicNode.height')}</span>
+          <Input
+            min={0}
+            onChange={(event) => setHeight(event.target.value)}
+            type="number"
+            value={height}
+          />
+        </label>
         <PropsEditor
           onChange={setComponentProps}
           schema={NO_SCHEMA}
           value={componentProps}
         />
-        <p className="text-xs text-fg-muted">{t('dynamicNode.manualHint')}</p>
+        <p className={styles.hint}>{t('dynamicNode.manualHint')}</p>
       </div>
-      <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
-        <button
-          className="text-xs text-accent hover:text-accent-hover"
+      <div className={styles.footer}>
+        <Button
+          icon={ArrowLeft}
           onClick={props.onBack}
-          type="button"
+          size="small"
+          type="text"
         >
           {t('dynamicNode.backToPicker')}
-        </button>
-        <div className="flex gap-2">
-          <Button
-            className="text-red-600 dark:text-red-400"
-            onClick={props.onRemove}
-            type="button"
-            variant="subtle"
-          >
+        </Button>
+        <div className={styles.footerActions}>
+          <Button danger onClick={props.onRemove}>
             {t('dynamicNode.remove')}
           </Button>
-          <Button disabled={!url.trim()} onClick={apply} type="button">
+          <Button disabled={!url.trim()} onClick={apply} type="primary">
             {t('dynamicNode.apply')}
           </Button>
         </div>
       </div>
-    </div>
+    </>
   )
 }

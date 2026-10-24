@@ -1,3 +1,4 @@
+import { createStaticStyles, TextArea } from '@lobehub/ui'
 import { useState } from 'react'
 
 import { useI18n } from '~/i18n'
@@ -7,11 +8,36 @@ import {
   parseJsonObject,
 } from '~/lib/dynamic-props'
 import { SegmentedControl } from '~/ui/primitives/segmented-control'
-import { TextArea } from '~/ui/primitives/text-field'
 
 import { SchemaPropsForm } from './SchemaPropsForm'
 
 type PropsEditorMode = 'form' | 'json'
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  error: css`
+    margin: 0;
+    font-size: ${cssVar.fontSizeSM};
+    color: ${cssVar.colorError};
+  `,
+  json: css`
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: ${cssVar.fontSizeSM};
+    line-height: 20px;
+  `,
+  mode: css`
+    align-self: flex-start;
+  `,
+  root: css`
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  `,
+  stack: css`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  `,
+}))
 
 export function PropsEditor(props: {
   onChange: (value: Record<string, unknown>) => void
@@ -34,9 +60,9 @@ export function PropsEditor(props: {
   }
 
   return (
-    <div className="grid gap-3">
+    <div className={styles.root}>
       <SegmentedControl<PropsEditorMode>
-        className="justify-self-start"
+        className={styles.mode}
         onValueChange={switchMode}
         options={[
           { label: t('dynamicProps.form'), value: 'form' },
@@ -51,10 +77,12 @@ export function PropsEditor(props: {
           value={props.value}
         />
       ) : (
-        <div className="grid gap-1.5">
+        <div className={styles.stack}>
           <TextArea
-            controlClassName="min-h-28 font-mono text-xs leading-5"
-            onChange={(text) => {
+            autoSize={{ maxRows: 16, minRows: 5 }}
+            classNames={{ input: styles.json }}
+            onChange={(event) => {
+              const text = event.target.value
               setJsonText(text)
               const parsed = parseJsonObject(text)
               setJsonInvalid(!parsed)
@@ -64,7 +92,7 @@ export function PropsEditor(props: {
             value={jsonText}
           />
           {jsonInvalid ? (
-            <p className="text-xs text-red-600 dark:text-red-400" role="alert">
+            <p className={styles.error} role="alert">
               {t('dynamicProps.jsonInvalid')}
             </p>
           ) : null}

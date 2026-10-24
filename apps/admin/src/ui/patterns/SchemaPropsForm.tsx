@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { useMemo } from 'react'
 
 import { useI18n } from '~/i18n'
@@ -6,6 +7,39 @@ import { applyFieldValue, fieldsFromSchema } from '~/lib/dynamic-props'
 import { SelectField } from '~/ui/primitives/select'
 import { Switch } from '~/ui/primitives/switch'
 import { TextInput } from '~/ui/primitives/text-field'
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  field: css`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  `,
+  fields: css`
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  `,
+  hint: css`
+    margin: 0;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: 1.5;
+    color: ${cssVar.colorTextDescription};
+  `,
+  label: css`
+    font-size: ${cssVar.fontSize};
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  required: css`
+    color: ${cssVar.colorError};
+  `,
+  switchRow: css`
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+  `,
+}))
 
 export function SchemaPropsForm(props: {
   onChange: (value: Record<string, unknown>) => void
@@ -16,23 +50,23 @@ export function SchemaPropsForm(props: {
   const fields = useMemo(() => fieldsFromSchema(props.schema), [props.schema])
 
   if (fields.length === 0) {
-    return <p className="text-xs text-fg-muted">{t('dynamicProps.noFields')}</p>
+    return <p className={styles.hint}>{t('dynamicProps.noFields')}</p>
   }
 
   const update = (field: PropsField, input: boolean | string) =>
     props.onChange(applyFieldValue(props.value, field, input))
 
   return (
-    <div className="grid gap-3">
+    <div className={styles.fields}>
       {fields.map((field) => (
-        <div className="grid gap-1" key={field.key}>
+        <div className={styles.field} key={field.key}>
           <FieldControl
             field={field}
             onInput={(input) => update(field, input)}
             value={props.value[field.key]}
           />
           {field.description ? (
-            <p className="text-xs text-fg-muted">{field.description}</p>
+            <p className={styles.hint}>{field.description}</p>
           ) : null}
         </div>
       ))}
@@ -51,11 +85,8 @@ function FieldControl(props: {
 
   if (field.kind === 'boolean') {
     return (
-      <label className="flex items-center justify-between gap-3 text-sm font-medium text-fg">
-        <span>
-          {field.label}
-          {field.required ? <span className="text-red-500"> *</span> : null}
-        </span>
+      <label className={styles.switchRow}>
+        <FieldLabel field={field} />
         <Switch
           aria-label={field.label}
           checked={Boolean(props.value ?? field.defaultValue)}
@@ -67,11 +98,8 @@ function FieldControl(props: {
 
   if (field.kind === 'enum') {
     return (
-      <div className="grid gap-1.5 text-sm">
-        <span className="font-medium text-fg">
-          {field.label}
-          {field.required ? <span className="text-red-500"> *</span> : null}
-        </span>
+      <div className={styles.field}>
+        <FieldLabel field={field} />
         <SelectField
           aria-label={field.label}
           onValueChange={props.onInput}
@@ -96,5 +124,16 @@ function FieldControl(props: {
       type={field.kind === 'number' ? 'number' : 'text'}
       value={props.value === undefined ? '' : String(props.value)}
     />
+  )
+}
+
+function FieldLabel(props: { field: PropsField }) {
+  return (
+    <span className={styles.label}>
+      {props.field.label}
+      {props.field.required ? (
+        <span className={styles.required}> *</span>
+      ) : null}
+    </span>
   )
 }
