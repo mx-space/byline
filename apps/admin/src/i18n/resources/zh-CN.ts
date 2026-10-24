@@ -394,6 +394,7 @@ export const zhCN = {
   'imageUploadPrivacy.dialog.title': '检测到 GPS 元数据',
   'imageUploadPrivacy.toast.stripFailed': '无法移除 GPS 元数据，图片未上传。',
 
+  'shell.brand.derivedFrom': '基于 Mix Space',
   'shell.search.clear': '清除',
   'shell.search.empty': '没有匹配结果',
   'shell.search.hint': '试试页面名称或文章标题。',

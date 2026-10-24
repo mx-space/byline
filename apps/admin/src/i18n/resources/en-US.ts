@@ -413,6 +413,7 @@ export const enUS = {
   'imageUploadPrivacy.toast.stripFailed':
     'Failed to remove GPS metadata. The image was not uploaded.',
 
+  'shell.brand.derivedFrom': 'Based on Mix Space',
   'shell.search.clear': 'Clear',
   'shell.search.empty': 'No matches',
   'shell.search.hint': 'Try a page name or a post title.',

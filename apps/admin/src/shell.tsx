@@ -169,6 +169,7 @@ const BRAND_WORDMARK_SIZE = 20
 
 export function ShellBrand() {
   const { collapsed } = useConsoleShell()
+  const { t } = useI18n()
 
   return (
     <ConsoleBrand
@@ -180,6 +181,7 @@ export function ShellBrand() {
         ) : (
           <Combine
             aria-hidden
+            caption={t('shell.brand.derivedFrom')}
             size={BRAND_LOCKUP_SIZE}
             textSize={BRAND_WORDMARK_SIZE}
           />
