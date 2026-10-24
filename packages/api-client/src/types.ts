@@ -278,6 +278,7 @@ export interface ContentDocument {
   refType: DraftRefType
   publishedRevisionId: string | null
   publishAiResources: PublishAiResourceRequest[] | null
+  aiSeo: { description: string; sourceHash: string } | null
   createdAt: string
   updatedAt: string | null
 }
@@ -321,7 +322,8 @@ export interface CreateDraftInput {
   data: DraftWriteData
 }
 
-export type PublishAiResource = 'insights' | 'summary' | 'translation' | 'tts'
+export type PublishAiResource =
+  'insights' | 'seo' | 'summary' | 'translation' | 'tts'
 
 export interface PublishAiResourceRequest {
   resource: PublishAiResource
