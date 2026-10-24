@@ -1891,6 +1891,7 @@ export const zhCN = {
   'dynamicComponents.refreshAria': '刷新组件目录',
   'dynamicComponents.searchPlaceholder': '搜索名称或 URL',
   'dynamicComponents.noMatch': '没有匹配的组件',
+  'dynamicComponents.loadFailed': '组件目录加载失败',
   'dynamicComponents.empty.title': '暂无动态组件',
   'dynamicComponents.empty.description':
     '注册一个 ES 模块，或在写作助手中发布组件。',

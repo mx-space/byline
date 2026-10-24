@@ -1,6 +1,7 @@
 import { useParams } from 'react-router'
 
 import { useDocumentTitle } from '~/hooks/use-document-title'
+import { DetailSkeleton } from '~/ui/placeholders'
 
 import { useDynamicCatalog } from '../hooks/use-dynamic-catalog'
 import { useDynamicComponentsRouteContext } from './dynamic-components-route-context'
@@ -10,12 +11,18 @@ import { DynamicComponentDetailEmptyState } from './DynamicComponentStates'
 export function DynamicComponentDetailRoute() {
   const { id } = useParams<{ id: string }>()
   const ctx = useDynamicComponentsRouteContext()
-  const { items } = useDynamicCatalog()
+  const { items, query } = useDynamicCatalog()
   const item = items.find((entry) => entry.id === id)
 
   useDocumentTitle(item?.name)
 
-  if (!item) return <DynamicComponentDetailEmptyState />
+  if (!item) {
+    return query.isPending ? (
+      <DetailSkeleton />
+    ) : (
+      <DynamicComponentDetailEmptyState />
+    )
+  }
 
   return (
     <DynamicComponentDetail

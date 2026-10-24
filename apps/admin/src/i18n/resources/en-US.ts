@@ -2006,6 +2006,7 @@ export const enUS = {
   'dynamicComponents.refreshAria': 'Refresh catalog',
   'dynamicComponents.searchPlaceholder': 'Search name or URL',
   'dynamicComponents.noMatch': 'No component matches the search',
+  'dynamicComponents.loadFailed': 'Could not load the component catalog',
   'dynamicComponents.empty.title': 'No dynamic components',
   'dynamicComponents.empty.description':
     'Register an ES module, or publish one from the write agent.',

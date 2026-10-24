@@ -1,8 +1,8 @@
-import { toast } from '@lobehub/ui'
+import { Alert, Input, TextArea, toast } from '@lobehub/ui'
 import { useMutation } from '@tanstack/react-query'
-import { CircleAlert, Loader2, Upload } from 'lucide-react'
-import type { FormEvent } from 'react'
-import { useRef, useState } from 'react'
+import { Upload } from 'lucide-react'
+import type { FormEvent, ReactNode } from 'react'
+import { useId, useRef, useState } from 'react'
 
 import type { DynamicCatalog } from '~/api/dynamic-components'
 import {
@@ -15,11 +15,10 @@ import { useI18n } from '~/i18n'
 import { formatJson, parseJsonObject } from '~/lib/dynamic-props'
 import { ModalFooter, ModalHeader } from '~/ui/feedback/modal'
 import { present, useModal } from '~/ui/feedback/modal-imperative'
-import { Button } from '~/ui/primitives/button'
-import { Scroll } from '~/ui/primitives/scroll'
-import { TextArea, TextInput } from '~/ui/primitives/text-field'
+import { Button } from '~/ui/site-button'
 
 import type { DynamicComponentItem } from '../types/dynamic-components'
+import { styles } from './styles'
 
 const ERROR_KEYS = {
   DYNAMIC_COMPONENT_NAME_CONFLICT:
@@ -36,10 +35,31 @@ export interface DynamicComponentEditorResult {
   url: string
 }
 
+function Field(props: {
+  children: ReactNode
+  hint?: ReactNode
+  htmlFor: string
+  label: ReactNode
+  required?: boolean
+}) {
+  return (
+    <div className={styles.field}>
+      <label className={styles.fieldLabel} htmlFor={props.htmlFor}>
+        {props.label}
+        {props.required ? ' *' : null}
+      </label>
+      {props.children}
+      {props.hint ? <p className={styles.fieldHint}>{props.hint}</p> : null}
+    </div>
+  )
+}
+
 function DynamicComponentEditorModal({ item }: EditorProps) {
   const { t } = useI18n()
   const modal = useModal<DynamicComponentEditorResult>()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const idPrefix = useId()
+  const fieldId = (name: string) => `${idPrefix}-${name}`
 
   const [name, setName] = useState(item?.name ?? '')
   const [url, setUrl] = useState(item?.url ?? '')
@@ -124,7 +144,7 @@ function DynamicComponentEditorModal({ item }: EditorProps) {
   return (
     <form
       aria-busy={busy}
-      className="flex h-[min(90svh,48rem)] min-h-0 flex-col"
+      className={styles.editorForm}
       onSubmit={handleSubmit}
     >
       <ModalHeader
@@ -135,37 +155,43 @@ function DynamicComponentEditorModal({ item }: EditorProps) {
         )}
       />
 
-      <Scroll className="flex-1" innerClassName="grid gap-5 px-5 py-5">
-        <TextInput
+      <div className={styles.editorBody}>
+        <Field
+          htmlFor={fieldId('name')}
           label={t('dynamicComponents.editor.name')}
-          onChange={setName}
-          placeholder="PriceTable"
           required
-          value={name}
-        />
+        >
+          <Input
+            id={fieldId('name')}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="PriceTable"
+            required
+            value={name}
+          />
+        </Field>
 
-        <div className="grid gap-1.5">
-          <div className="flex items-end gap-2">
-            <TextInput
-              className="flex-1"
-              controlClassName="font-mono text-xs"
-              label={t('dynamicComponents.editor.url')}
-              onChange={setUrl}
+        <Field
+          hint={t('dynamicComponents.editor.urlHint')}
+          htmlFor={fieldId('url')}
+          label={t('dynamicComponents.editor.url')}
+          required
+        >
+          <div className={styles.uploadRow}>
+            <Input
+              className={styles.uploadInput}
+              classNames={{ input: styles.monoInput }}
+              id={fieldId('url')}
+              onChange={(event) => setUrl(event.target.value)}
               placeholder="https://cdn.example.com/widget.js"
               required
+              spellCheck={false}
               value={url}
             />
             <Button
-              disabled={uploadMutation.isPending}
+              icon={Upload}
+              loading={uploadMutation.isPending}
               onClick={() => fileInputRef.current?.click()}
-              type="button"
-              variant="secondary"
             >
-              {uploadMutation.isPending ? (
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                <Upload aria-hidden="true" className="size-4" />
-              )}
               {t(
                 uploadMutation.isPending
                   ? 'dynamicComponents.editor.uploading'
@@ -174,7 +200,7 @@ function DynamicComponentEditorModal({ item }: EditorProps) {
             </Button>
             <input
               accept=".js,.mjs,text/javascript"
-              className="hidden"
+              className={styles.hiddenInput}
               onChange={(event) => {
                 const file = event.target.files?.[0]
                 event.target.value = ''
@@ -186,62 +212,66 @@ function DynamicComponentEditorModal({ item }: EditorProps) {
               type="file"
             />
           </div>
-          <p className="text-xs text-fg-muted">
-            {t('dynamicComponents.editor.urlHint')}
-          </p>
-        </div>
+        </Field>
 
-        <TextInput
-          inputMode="numeric"
+        <Field
+          htmlFor={fieldId('height')}
           label={t('dynamicComponents.editor.initialHeight')}
-          min={0}
-          onChange={setInitialHeight}
           required
-          type="number"
-          value={initialHeight}
-        />
+        >
+          <Input
+            id={fieldId('height')}
+            inputMode="numeric"
+            min={0}
+            onChange={(event) => setInitialHeight(event.target.value)}
+            required
+            type="number"
+            value={initialHeight}
+          />
+        </Field>
 
-        <div className="grid gap-1.5">
+        <Field
+          hint={t('dynamicComponents.editor.descriptionHint')}
+          htmlFor={fieldId('description')}
+          label={t('dynamicComponents.editor.description')}
+        >
           <TextArea
-            label={t('dynamicComponents.editor.description')}
-            onChange={setDescription}
+            autoSize={{ maxRows: 8, minRows: 3 }}
+            id={fieldId('description')}
+            onChange={(event) => setDescription(event.target.value)}
             value={description}
           />
-          <p className="text-xs text-fg-muted">
-            {t('dynamicComponents.editor.descriptionHint')}
-          </p>
-        </div>
+        </Field>
 
-        <TextArea
-          controlClassName="min-h-48 font-mono text-xs leading-5"
+        <Field
+          htmlFor={fieldId('schema')}
           label={t('dynamicComponents.editor.propsSchema')}
-          onChange={setSchemaText}
-          spellCheck={false}
-          value={schemaText}
-        />
-      </Scroll>
+        >
+          <TextArea
+            autoSize={{ maxRows: 20, minRows: 8 }}
+            className={styles.monoInput}
+            id={fieldId('schema')}
+            onChange={(event) => setSchemaText(event.target.value)}
+            spellCheck={false}
+            value={schemaText}
+          />
+        </Field>
+      </div>
 
       {error ? (
-        <div
-          className="flex shrink-0 items-start gap-2 border-t border-red-500/20 bg-red-500/10 px-5 py-2.5 text-xs text-red-600 dark:text-red-400"
-          role="alert"
-        >
-          <CircleAlert
-            aria-hidden="true"
-            className="mt-0.5 size-3.5 shrink-0"
-          />
-          <span className="min-w-0 break-words">{error}</span>
+        <div className={styles.editorError}>
+          <Alert showIcon title={error} type="error" />
         </div>
       ) : null}
 
       <ModalFooter>
-        <Button onClick={() => modal.dismiss()} type="button" variant="subtle">
-          {t('common.cancel')}
-        </Button>
-        <Button disabled={busy} type="submit">
-          {saveMutation.isPending ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : null}
+        <Button onClick={() => modal.dismiss()}>{t('common.cancel')}</Button>
+        <Button
+          disabled={uploadMutation.isPending}
+          htmlType="submit"
+          loading={saveMutation.isPending}
+          type="primary"
+        >
           {t(
             saveMutation.isPending
               ? 'dynamicComponents.editor.saving'
@@ -261,11 +291,6 @@ export async function presentDynamicComponentEditor(
   return await present<EditorProps, DynamicComponentEditorResult>(
     DynamicComponentEditorModal,
     { item },
-    {
-      modalProps: {
-        className: 'max-h-[90svh]',
-        popupStyle: { width: 'min(94vw, 40rem)' },
-      },
-    },
+    { modalProps: { popupStyle: { width: 'min(94vw, 40rem)' } } },
   )
 }
