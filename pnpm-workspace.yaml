@@ -80,7 +80,7 @@ overrides:
   '@mx-space/ai>@haklex/rich-headless': 0.54.3
   '@mx-space/editor>@haklex/rich-headless': 0.54.3
   '@mx-space/editor>@haklex/rich-litexml': 0.54.3
-  '@esbuild-kit/core-utils>esbuild': 0.25.12
+  '@esbuild-kit/core-utils>esbuild': 0.28.2
   '@cloudflare/workers-types': 5.20261005.1
   '@fastify/static': 10.1.7
   'brace-expansion@<1.1.16': 1.1.21
