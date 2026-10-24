@@ -1,10 +1,8 @@
-import type { ContextMenuItem as LobeMenuItem } from '@lobehub/ui'
-import { toast } from '@lobehub/ui'
+import { type ContextMenuItem as LobeMenuItem, toast } from '@lobehub/ui'
 import { Check, Copy } from 'lucide-react'
 
 import type { PostModel } from '~/models/post'
 import type { ListAction } from '~/ui/list-actions'
-import type { ContextMenuItem } from '~/ui/overlay/context-menu'
 
 import type { PostCopy } from '../copy'
 
@@ -16,7 +14,7 @@ export interface PostMenuCategoryOption {
 export interface BuildPostMenuItemsOptions {
   actions: ReadonlyArray<ListAction<PostModel>>
   aiLabel: string
-  aiMenuItems?: ContextMenuItem[]
+  aiMenuItems?: LobeMenuItem[]
   categories: PostMenuCategoryOption[]
   categoryDisabled?: boolean
   copy: PostCopy
@@ -58,33 +56,6 @@ function actionToItem(
     label: action.label,
     onClick: () => void action.run([target]),
   }
-}
-
-function adaptAiItems(items: ContextMenuItem[]): LobeMenuItem[] {
-  const next: LobeMenuItem[] = []
-  for (const item of items) {
-    if (!item) continue
-    if (item.type === 'divider') {
-      next.push({ key: item.key ?? 'ai-divider', type: 'divider' })
-      continue
-    }
-    if (
-      item.type === 'checkbox' ||
-      item.type === 'group' ||
-      item.type === 'submenu' ||
-      'children' in item
-    ) {
-      continue
-    }
-    const click = item.onClick
-    next.push({
-      icon: item.icon,
-      key: item.key ?? 'ai-item',
-      label: item.label,
-      onClick: click ? () => click(undefined as never) : undefined,
-    })
-  }
-  return next
 }
 
 export function buildPostMenuItems(
@@ -139,9 +110,9 @@ export function buildPostMenuItems(
     })
   }
 
-  const aiItems = options.aiMenuItems?.length
-    ? adaptAiItems(options.aiMenuItems)
-    : []
+  const aiItems = (options.aiMenuItems ?? []).filter(
+    (item): item is NonNullable<LobeMenuItem> => item != null,
+  )
   if (aiItems.length > 0) {
     items.push(
       { key: 'sep-ai', type: 'divider' },

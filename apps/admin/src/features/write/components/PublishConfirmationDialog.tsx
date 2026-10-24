@@ -30,14 +30,13 @@ import {
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   uaaebda38: css`
     height: min(88svh, 42rem);
-    width: min(calc(100vw-2rem), 38rem);
+    max-height: min(88svh, 42rem);
+    width: min(calc(100vw - 2rem), 38rem);
+    max-width: none;
     @media (max-width: 639px) {
       height: 100svh;
-    }
-    @media (max-width: 639px) {
+      max-height: 100svh;
       width: 100vw;
-    }
-    @media (max-width: 639px) {
       border-radius: 0;
     }
   `,

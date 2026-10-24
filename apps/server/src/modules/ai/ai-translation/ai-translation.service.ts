@@ -1145,15 +1145,7 @@ export class AiTranslationService
         search: query.search,
         databaseService: this.databaseService,
         fetchCandidateArticles: () =>
-          this.databaseService.findAllArticlesForTranslation(),
-        fetchRecordsPage: (page, size, refIds) =>
-          this.aiTranslationRepository.groupByRefIdPaginated(
-            page,
-            size,
-            refIds,
-          ),
-        fetchRecordsDistinctRefIds: (refIds) =>
-          this.aiTranslationRepository.findDistinctRefIds(refIds),
+          this.databaseService.findArticlesForProductLists(),
         fetchItemsByRefIds: async (refIds) =>
           this.generationMetrics.attachLatest(
             'translation',

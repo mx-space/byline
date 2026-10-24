@@ -23,7 +23,21 @@ import { useUsersCopy } from '../copy'
 import { getUserErrorMessage } from '../utils/users'
 import { UserAvatar } from './UserAvatar'
 
-const styles = createStaticStyles(({ css }) => ({
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  avatarButton: css`
+    cursor: pointer;
+
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+
+    background: transparent;
+
+    &:focus-visible {
+      outline: 2px solid ${cssVar.colorPrimary};
+      outline-offset: 2px;
+    }
+  `,
   file: css`
     position: absolute;
     width: 1px;
@@ -34,9 +48,6 @@ const styles = createStaticStyles(({ css }) => ({
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
-  `,
-  upload: css`
-    position: relative;
   `,
 }))
 
@@ -138,12 +149,23 @@ export function UserProfileForm(props: {
 
   return (
     <Form form={form} gap={16} layout="vertical">
-      <Flexbox align="center" gap={12} horizontal>
-        <UserAvatar avatar={avatar} name={displayName || username} size={48} />
-        <Flexbox className={styles.upload} flex={1} gap={8}>
+      <Flexbox gap={12}>
+        <Flexbox align="center" gap={12} horizontal>
+          <button
+            aria-label={copy('uploadAvatar')}
+            className={styles.avatarButton}
+            disabled={avatarUpload.isPending}
+            onClick={() => fileRef.current?.click()}
+            type="button"
+          >
+            <UserAvatar
+              avatar={avatar}
+              name={displayName || username}
+              size={56}
+            />
+          </button>
           <input
             accept="image/*"
-            aria-label={copy('uploadAvatar')}
             className={styles.file}
             onChange={(event) => {
               const file = event.target.files?.[0]
@@ -151,19 +173,21 @@ export function UserProfileForm(props: {
               if (file) avatarUpload.mutate(file)
             }}
             ref={fileRef}
+            tabIndex={-1}
             type="file"
           />
           <Button
             htmlType="button"
             loading={avatarUpload.isPending}
             onClick={() => fileRef.current?.click()}
+            type="text"
           >
             {copy('uploadAvatar')}
           </Button>
-          <Form.Field label={copy('avatarUrl')} name="avatar">
-            <Input placeholder="https://" />
-          </Form.Field>
         </Flexbox>
+        <Form.Field label={copy('avatarUrl')} name="avatar">
+          <Input placeholder="https://" />
+        </Form.Field>
       </Flexbox>
 
       <Form.Field

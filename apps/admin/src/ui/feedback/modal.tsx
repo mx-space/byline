@@ -17,20 +17,6 @@ import { PortalLayerScope, useFloatingZ } from '~/ui/feedback/portal-layer'
 import { cn } from '~/utils/cn'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
-  u466e3f9f: css`
-    outline: none;
-    box-shadow: ${cssVar.boxShadow};
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    display: flex;
-    translate: -50%;
-    translate: 0 -50%;
-    flex-direction: column;
-    overflow: hidden;
-    border-radius: 12px;
-    background-color: ${cssVar.colorBgContainer};
-  `,
   u6db1278a: css`
     display: grid;
     flex-shrink: 0;
@@ -128,11 +114,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     padding-inline: 1rem;
     padding-block: 0.5rem;
   `,
-  u4d3af606: css`
-    position: fixed;
-    inset: 0px;
-    background-color: color-mix(in srgb, ${cssVar.colorText} 35%, transparent);
-  `,
 }))
 
 export interface ModalProps {
@@ -166,7 +147,7 @@ export function Modal(props: ModalProps) {
         <ModalPopup
           initialFocus={props.initialFocus}
           panelClassName={props.className}
-          popupStyle={props.popupStyle}
+          style={props.popupStyle}
         >
           <PortalLayerScope depth={depth}>{props.children}</PortalLayerScope>
         </ModalPopup>

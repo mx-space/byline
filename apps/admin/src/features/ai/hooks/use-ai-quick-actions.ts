@@ -1,3 +1,4 @@
+import type { ContextMenuItem } from '@lobehub/ui'
 import {
   AudioLines,
   FileText,
@@ -15,7 +16,6 @@ import {
   getTranslationsByRef,
 } from '~/api/ai'
 import type { CreateTaskResponse } from '~/api/tasks'
-import type { ContextMenuItem } from '~/ui/overlay/context-menu'
 
 import { presentGeneratePrompt } from '../components/article-grouped/GeneratePromptModal'
 import { useAiCopy } from '../copy'

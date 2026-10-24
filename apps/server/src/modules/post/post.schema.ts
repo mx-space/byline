@@ -64,9 +64,11 @@ export const PostPagerSchema = createPagerSchema([
   'createdAt',
   'modifiedAt',
   'pinAt',
+  'publicAt',
 ]).extend({
   truncate: zCoerceInt.optional(),
   authorId: zEntityId.optional(),
+  visibility: z.enum(['scheduled']).optional(),
   categoryIds: z
     .preprocess(
       (val) => (typeof val === 'string' ? val.split(',') : val),
@@ -83,6 +85,7 @@ export const PostSearchSchema = z.object({
   keyword: z.string().trim().min(1).max(200),
   page: zCoerceInt.min(1).optional(),
   size: zCoerceInt.min(1).max(50).optional(),
+  visibility: z.enum(['scheduled']).optional(),
 })
 
 export type PostSearchDto = z.infer<typeof PostSearchSchema>

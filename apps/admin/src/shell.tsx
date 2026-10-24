@@ -6,6 +6,7 @@ import {
   ConsoleShell,
   SurfaceLinkProvider,
   type SurfaceRenderLink,
+  useConsoleShell,
 } from '@lobehub/ui/dashboard'
 import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
@@ -17,17 +18,21 @@ import { sidebarTree } from 'virtual:admin-routes'
 
 import { getAppInfo } from '~/api/system'
 import { failedTasksQuery } from '~/features/dashboard/queries'
+import { useDocumentTitleOverride } from '~/hooks/use-document-title'
 import { useI18n } from '~/i18n'
+import { Combine, LogoColor } from '~/ui/brand'
 import { GlobalSearch } from '~/ui/global-search'
 import { filterSidebarNode } from '~/ui/layout/filter-sidebar-node'
 import { PageLoadingFrame } from '~/ui/page'
 import { Button } from '~/ui/site-button'
 
-import faviconUrl from '../favicon.png'
 import { ConsoleFooter } from './layouts/console-footer'
 import {
+  artefactWriteBreadcrumb,
+  productDetailBreadcrumb,
   toBreadcrumbItems,
   toConsoleNavigation,
+  withDetailCrumb,
   withParentCrumb,
 } from './layouts/console-nav'
 import {
@@ -49,12 +54,6 @@ const styles = createStaticStyles(({ css }) => ({
     width: 100%;
     height: 100dvh;
     min-height: 0;
-  `,
-  logo: css`
-    display: block;
-    width: 20px;
-    height: 20px;
-    object-fit: cover;
   `,
   navigation: css`
     display: flex;
@@ -117,7 +116,7 @@ const styles = createStaticStyles(({ css }) => ({
 
 const WRITE_PATH = '/posts/edit'
 
-const WRITE_BUTTON_PATHS = new Set(['/dashboard', '/posts'])
+const WRITE_BUTTON_PATHS = new Set(['/dashboard', '/posts', '/posts/scheduled'])
 
 function ShellTools(props: {
   pathname: string
@@ -164,14 +163,29 @@ function navSectionDividerClass(childIndexes: number[]) {
 
 const SHELL_STORAGE_KEY = 'byline-console-shell'
 
+const BRAND_RAIL_SIZE = 24
+const BRAND_LOCKUP_SIZE = 40
+const BRAND_WORDMARK_SIZE = 20
+
 export function ShellBrand() {
+  const { collapsed } = useConsoleShell()
+
   return (
     <ConsoleBrand
       href="/dashboard"
       label="Byline"
-      logo={<img alt="" className={styles.logo} src={faviconUrl} />}
+      logo={
+        collapsed ? (
+          <LogoColor aria-hidden size={BRAND_RAIL_SIZE} />
+        ) : (
+          <Combine
+            aria-hidden
+            size={BRAND_LOCKUP_SIZE}
+            textSize={BRAND_WORDMARK_SIZE}
+          />
+        )
+      }
       renderLink={renderRouterLink}
-      title="Byline"
     />
   )
 }
@@ -270,9 +284,30 @@ export function AdminShell(props: PropsWithChildren) {
       ),
     [failedCount, sections, t],
   )
+  const detailTitle = useDocumentTitleOverride()
   const breadcrumbItems = useMemo(() => {
     const items = toBreadcrumbItems(sections, location.pathname, t)
+    if (/^\/users\/[^/]+$/.test(location.pathname)) {
+      return withDetailCrumb(
+        items,
+        `/users${location.search}`,
+        t('routes.users.detail'),
+      )
+    }
+    const product = productDetailBreadcrumb(
+      location.pathname,
+      location.search,
+      detailTitle || t('routes.ai.detail'),
+      t,
+    )
+    if (product) return product
     if (location.pathname !== WRITE_PATH) return items
+    const translationTrail = artefactWriteBreadcrumb(
+      location.search,
+      pageTitle || t('routes.ai.detail'),
+      t,
+    )
+    if (translationTrail) return translationTrail
     const trail = withParentCrumb(items, {
       href: '/posts',
       label: t('routes.posts.title'),
@@ -281,7 +316,7 @@ export function AdminShell(props: PropsWithChildren) {
     return trail.map((item, index) =>
       index === trail.length - 1 ? { ...item, label: pageTitle } : item,
     )
-  }, [location.pathname, pageTitle, sections, t])
+  }, [detailTitle, location.pathname, location.search, pageTitle, sections, t])
   const sectionDividerClass = navSectionDividerClass(
     navigation.dividerBefore.flatMap((key) => {
       const index = navigation.groups.findIndex((group) => group.key === key)

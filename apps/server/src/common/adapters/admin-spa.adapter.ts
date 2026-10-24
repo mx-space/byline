@@ -12,6 +12,7 @@ import { isDev } from '~/global/env.global'
 import { ConfigsService } from '~/modules/configs/configs.service'
 
 const INJECT_PLACEHOLDER = '<!-- injectable script -->'
+const OG_IMAGE_PATH = 'og.png'
 const IMMUTABLE_DIRS = new Set(['assets', 'js'])
 
 const serializeForScript = (value: unknown) =>
@@ -44,7 +45,7 @@ export function registerAdminSpa(app: NestFastifyApplication) {
     return entryTemplate
   }
 
-  const renderEntry = async (template: string) => {
+  const renderEntry = async (template: string, request: FastifyRequest) => {
     const { webUrl } = await app.get(ConfigsService).get('url')
     const injectData = {
       BASE_API: isDev ? '/' : `/api/v${API_VERSION}`,
@@ -52,12 +53,27 @@ export function registerAdminSpa(app: NestFastifyApplication) {
       WEB_URL: webUrl,
     }
     const script = `<script>window.pageSource='server';window.injectData=Object.assign(window.injectData||{},${serializeForScript(injectData)});</script>`
-    return template.includes(INJECT_PLACEHOLDER)
+    const withInject = template.includes(INJECT_PLACEHOLDER)
       ? template.replace(INJECT_PLACEHOLDER, script)
       : template.replace('</head>', `${script}</head>`)
+    const forwardedProto = request.headers['x-forwarded-proto']
+    const proto =
+      (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto)
+        ?.split(',')[0]
+        ?.trim() || request.protocol
+    const forwardedHost = request.headers['x-forwarded-host']
+    const host =
+      (Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost)
+        ?.split(',')[0]
+        ?.trim() || request.headers.host
+    const ogImage = `${proto}://${host}${ADMIN_MOUNT_PATH}/${OG_IMAGE_PATH}`
+    return withInject.replaceAll(
+      `content="${OG_IMAGE_PATH}"`,
+      `content="${ogImage}"`,
+    )
   }
 
-  const sendEntry = async (reply: FastifyReply) => {
+  const sendEntry = async (request: FastifyRequest, reply: FastifyReply) => {
     const template = await loadEntryTemplate()
     if (!template) {
       return reply
@@ -68,7 +84,7 @@ export function registerAdminSpa(app: NestFastifyApplication) {
     return reply
       .header('cache-control', 'no-cache')
       .type('text/html; charset=utf-8')
-      .send(await renderEntry(template))
+      .send(await renderEntry(template, request))
   }
 
   fastify.get(ADMIN_MOUNT_PATH, (request, reply) => {
@@ -86,7 +102,7 @@ export function registerAdminSpa(app: NestFastifyApplication) {
         return reply.code(400).type('text/plain').send('Bad Request')
       }
       if (!relativePath || relativePath === 'index.html') {
-        return sendEntry(reply)
+        return sendEntry(request, reply)
       }
 
       const assetPath = resolveAssetPath(relativePath)
@@ -94,7 +110,7 @@ export function registerAdminSpa(app: NestFastifyApplication) {
         if (path.extname(relativePath)) {
           return reply.code(404).type('text/plain').send('Not Found')
         }
-        return sendEntry(reply)
+        return sendEntry(request, reply)
       }
 
       const topDir = relativePath.split('/')[0]

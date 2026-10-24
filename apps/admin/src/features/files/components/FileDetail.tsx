@@ -64,6 +64,9 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     font-weight: 600;
     color: ${cssVar.colorText};
   `,
+  status: css`
+    flex-shrink: 0;
+  `,
   url: css`
     font-family: ${cssVar.fontFamilyCode};
     font-size: ${cssVar.fontSizeSM};
@@ -195,8 +198,15 @@ export function FileDetail(props: {
       title={
         <Flexbox gap={2} style={{ minWidth: 0 }}>
           <Flexbox align="center" gap={8} horizontal style={{ minWidth: 0 }}>
-            <Text ellipsis>{props.name}</Text>
-            {props.status}
+            <Text
+              ellipsis={{ tooltipWhenOverflow: true }}
+              style={{ flex: '0 1 auto', minWidth: 0 }}
+            >
+              {props.name}
+            </Text>
+            {props.status ? (
+              <span className={styles.status}>{props.status}</span>
+            ) : null}
           </Flexbox>
           {props.meta ? (
             <Text type="secondary">

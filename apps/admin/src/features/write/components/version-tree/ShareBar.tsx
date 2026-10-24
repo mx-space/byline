@@ -1,10 +1,9 @@
-import { createStaticStyles, toast } from '@lobehub/ui'
+import { createStaticStyles, DropdownMenu, toast } from '@lobehub/ui'
 import { Copy, Ellipsis, Link2, Loader2 } from 'lucide-react'
 
 import { WEB_URL } from '~/constants/env'
 import { useI18n } from '~/i18n'
 import type { DraftShare } from '~/models/draft'
-import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
 import { Button } from '~/ui/site-button'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
@@ -42,10 +41,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
       }
     }
     animation: byline-spin 1s linear infinite;
-  `,
-  u783b0d9d: css`
-    width: 0.875rem;
-    height: 0.875rem;
   `,
   u37be67be: css`
     display: flex;
@@ -118,11 +113,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   uf7b5fa97: css`
     width: 1rem;
     height: 1rem;
-  `,
-  u73f8c158: css`
-    width: 1rem;
-    height: 1rem;
-    color: ${cssVar.colorTextTertiary};
   `,
   uadfa235e: css`
     flex-shrink: 0;
@@ -211,32 +201,35 @@ export function ShareBar(props: {
           title={t('write.share.copy')}
           type="text"
         />
-        <DropdownMenu>
-          <DropdownMenu.Trigger
-            aria-label={t('write.share.moreActions')}
-            className={lobeStyles.ud56b74b1}
-            disabled={props.pending}
-            type="button"
-          >
-            {props.pending ? (
-              <Loader2 aria-hidden="true" className={lobeStyles.uf9dfa057} />
-            ) : (
-              <Ellipsis aria-hidden="true" className={lobeStyles.uf7b5fa97} />
-            )}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end">
-            <DropdownMenu.Item
-              disabled={!props.canFollowCurrentDraft || following}
-              onClick={props.onFollowCurrentDraft}
-            >
-              <Link2 aria-hidden="true" className={lobeStyles.u73f8c158} />
-              {t('write.share.followCurrent')}
-            </DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item danger onClick={props.onRevoke}>
-              {t('write.share.revoke')}
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
+        <DropdownMenu
+          items={[
+            {
+              disabled: !props.canFollowCurrentDraft || following,
+              icon: Link2,
+              key: 'follow',
+              label: t('write.share.followCurrent'),
+              onClick: props.onFollowCurrentDraft,
+            },
+            { key: 'sep', type: 'divider' },
+            {
+              danger: true,
+              key: 'revoke',
+              label: t('write.share.revoke'),
+              onClick: props.onRevoke,
+            },
+          ]}
+          placement="bottomRight"
+          triggerProps={{
+            'aria-label': t('write.share.moreActions'),
+            className: lobeStyles.ud56b74b1,
+            disabled: props.pending,
+          }}
+        >
+          {props.pending ? (
+            <Loader2 aria-hidden="true" className={lobeStyles.uf9dfa057} />
+          ) : (
+            <Ellipsis aria-hidden="true" className={lobeStyles.uf7b5fa97} />
+          )}
         </DropdownMenu>
       </div>
       <div className={lobeStyles.u6cfc7e6a}>

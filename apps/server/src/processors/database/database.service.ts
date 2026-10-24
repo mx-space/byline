@@ -11,14 +11,20 @@ export type RefArticleInfo = {
   id: string
   title: string
   type: CollectionRefTypes
+  draftId?: string
 }
 
 export const buildRefArticleMap = (articles: {
-  posts: Array<{ id: string; title: string }>
+  posts: Array<{ id: string; title: string; draftId?: string }>
 }): Record<string, RefArticleInfo> => {
   const map: Record<string, RefArticleInfo> = {}
   for (const a of articles.posts) {
-    map[a.id] = { id: a.id, title: a.title, type: CollectionRefTypes.Post }
+    map[a.id] = {
+      id: a.id,
+      title: a.title,
+      type: CollectionRefTypes.Post,
+      ...(a.draftId ? { draftId: a.draftId } : {}),
+    }
   }
   return map
 }
@@ -116,10 +122,8 @@ export class DatabaseService {
     return { posts: posts.map(({ id, title }) => ({ id, title })) }
   }
 
-  public async findAllArticlesForAIText(): Promise<{
-    posts: Array<{ id: string; title: string }>
-  }> {
-    return this.findAllArticlesForTranslation()
+  public async findArticlesForProductLists() {
+    return { posts: await this.postRepository.findProductListArticles() }
   }
 
   flatCollectionToMap(combinedCollection: IdsCollection) {

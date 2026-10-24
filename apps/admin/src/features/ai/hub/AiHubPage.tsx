@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { Outlet } from 'react-router'
 
 import { Page, RouteTabs } from '~/ui/page'
 
@@ -32,7 +31,6 @@ export function AiHubPage(props: {
       width="wide"
     >
       {props.children}
-      <Outlet />
     </Page>
   )
 }

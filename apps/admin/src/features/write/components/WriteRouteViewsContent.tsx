@@ -2120,7 +2120,7 @@ function projectWriteState(state: WriteFormState): WriteFormState {
   }
 }
 
-function RichWriteSurface(props: {
+export function RichWriteSurface(props: {
   agentVisible?: boolean
   onAgentClose?: () => void
   autoFocus?: boolean

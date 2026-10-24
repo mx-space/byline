@@ -1,5 +1,5 @@
 import { createStaticStyles, cx, Icon, Tag, Tooltip } from '@lobehub/ui'
-import { Image as ImageIcon } from 'lucide-react'
+import { Image as ImageIcon, Undo2 } from 'lucide-react'
 import { useState } from 'react'
 
 import type { DraftModel } from '~/models/draft'
@@ -10,6 +10,7 @@ import { useDraftCopy } from '../copy'
 import {
   draftAuthorIds,
   draftHasConflict,
+  draftRevertsChanges,
   draftSavedAt,
   draftTitle,
   relativeDraftTime,
@@ -152,7 +153,18 @@ export function DraftRow(props: {
       className={styles.row}
       cursor={props.cursor}
       dataId={props.draft.id}
-      menuItems={() => buildMenuItemsFromActions(props.actions, props.draft)}
+      menuItems={() =>
+        buildMenuItemsFromActions(props.actions, props.draft).map((item) =>
+          item.key === 'delete' && draftRevertsChanges(props.draft)
+            ? {
+                ...item,
+                danger: false,
+                icon: Undo2,
+                label: copy('revertChanges'),
+              }
+            : item,
+        )
+      }
       onSelect={props.onSelect}
       role="row"
     >

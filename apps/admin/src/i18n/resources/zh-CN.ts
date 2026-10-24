@@ -610,6 +610,7 @@ export const zhCN = {
   'posts.toast.pinFailed': '置顶状态更新失败',
 
   'routes.ai.description': '译文、摘要、精读和朗读。',
+  'routes.ai.detail': '文章',
   'routes.ai.title': '产物',
   'routes.aiOverview.description':
     '查看每篇文章的译文、摘要、精读和朗读是否齐全。',
@@ -640,6 +641,8 @@ export const zhCN = {
   'routes.orphanImages.title': '孤立文件',
   'routes.posts.description': '已发布文章的搜索与操作。',
   'routes.posts.title': '已发布',
+  'routes.scheduledPosts.description': '已发布、尚未到公开时间的文章。',
+  'routes.scheduledPosts.title': '定时发布',
   'routes.settings.description': '个人资料、账户安全与系统选项。',
   'routes.settings.title': '设置',
   'routes.webhooks.description':
@@ -1687,6 +1690,7 @@ export const zhCN = {
   'write.validation.titleRequired': '请输入标题',
   'write.validation.createCategoryFirst': '请先创建分类',
   'routes.users.title': '用户',
+  'routes.users.detail': '用户详情',
   'routes.users.description': '邀请作者、管理署名资料与停用账户。',
   'auth.login.subtitle': '登录工作区',
   'auth.login.identifierLabel': '用户名或邮箱',
@@ -1821,17 +1825,16 @@ export const zhCN = {
   'write.seo.searchPreview': '搜索',
   'write.seo.cardPreview': '卡片',
   'write.seo.imageFallback': '未单独填写时使用封面',
-  'write.publishAi.lockedTranslations': '已锁定的翻译将保持不变：{langs}。',
-  'write.publishAi.regenerateLocked':
-    '同时重新生成已锁定的翻译（会覆盖手动修改）',
-  'ai.action.lock': '锁定翻译',
-  'ai.action.unlock': '解锁翻译',
-  'ai.translation.locked': '已锁定',
+  'write.publishAi.lockedTranslations': '这些译文会保留：{langs}。',
+  'write.publishAi.regenerateLocked': '这些译文也重新生成（会盖掉现有修改）',
+  'ai.action.lock': '生成时不覆盖',
+  'ai.action.unlock': '允许覆盖',
+  'ai.translation.locked': '不覆盖',
   'ai.translation.lockDescription':
-    '锁定的翻译视为人工维护，除非明确要求重新生成，AI 不会覆盖。',
-  'ai.translation.regenerateLockedTitle': '重新生成已锁定的 {lang} 翻译？',
+    '重新生成和发布不会替换这条译文，除非明确要求覆盖。',
+  'ai.translation.regenerateLockedTitle': '重新生成 {lang} 的译文？',
   'ai.translation.regenerateLockedDescription':
-    '人工翻译将被新的 AI 翻译替换。',
+    '这条译文标成了不覆盖。继续会用新的生成结果替换它。',
   'settings.schema.site.title': '内容',
   'settings.schema.site.defaultSourceLang.title': '默认原文语言',
   'settings.schema.site.description': '新文章的默认设置。',

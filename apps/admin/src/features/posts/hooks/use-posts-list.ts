@@ -19,6 +19,8 @@ import {
   readSortOrder,
 } from '../utils/search-params'
 
+export type PostsListVisibility = 'all' | 'scheduled'
+
 interface PostsListState {
   categoryId: string
   keyword: string
@@ -27,15 +29,19 @@ interface PostsListState {
   sortOrder: SortOrder
 }
 
-export function usePostsList() {
+export function usePostsList(visibility: PostsListVisibility = 'all') {
+  const defaultSortKey: PostSortKey =
+    visibility === 'scheduled' ? 'publicAt' : 'createdAt'
+  const defaultSortOrder: SortOrder =
+    visibility === 'scheduled' ? 'asc' : 'desc'
   const urlStateOptions = useMemo(
     () => ({
       read: (searchParams: URLSearchParams): PostsListState => ({
         categoryId: searchParams.get('category') ?? allCategoriesValue,
         keyword: searchParams.get('keyword') ?? '',
         page: readPage(searchParams.get('page')),
-        sortKey: readPostSortKey(searchParams.get('sort')),
-        sortOrder: readSortOrder(searchParams.get('order')),
+        sortKey: readPostSortKey(searchParams.get('sort'), defaultSortKey),
+        sortOrder: readSortOrder(searchParams.get('order'), defaultSortOrder),
       }),
       write: (state: PostsListState) => {
         const nextParams = new URLSearchParams()
@@ -44,12 +50,16 @@ export function usePostsList() {
         if (state.categoryId !== allCategoriesValue) {
           nextParams.set('category', state.categoryId)
         }
-        if (state.sortKey !== 'createdAt') nextParams.set('sort', state.sortKey)
-        if (state.sortOrder !== 'desc') nextParams.set('order', state.sortOrder)
+        if (state.sortKey !== defaultSortKey) {
+          nextParams.set('sort', state.sortKey)
+        }
+        if (state.sortOrder !== defaultSortOrder) {
+          nextParams.set('order', state.sortOrder)
+        }
         return nextParams
       },
     }),
-    [],
+    [defaultSortKey, defaultSortOrder],
   )
 
   const [state, setState] = useUrlListState(urlStateOptions)
@@ -76,6 +86,7 @@ export function usePostsList() {
     size: postsPageSize,
     sortKey: state.sortKey,
     sortOrder: state.sortOrder,
+    visibility,
   })
   const collectionQuery = useCollectionListQuery(posts, {
     enabled: !state.keyword,
@@ -89,6 +100,7 @@ export function usePostsList() {
         size: postsPageSize,
         sort_by: state.sortKey,
         sort_order: state.sortOrder,
+        visibility: visibility === 'scheduled' ? 'scheduled' : undefined,
       }),
     queryKey: postsListKey,
     toPage: (result) => ({
@@ -106,6 +118,7 @@ export function usePostsList() {
         keyword: state.keyword,
         page: state.page,
         size: postsPageSize,
+        visibility: visibility === 'scheduled' ? 'scheduled' : undefined,
       }),
     queryKey: [...postsListKey, 'search'],
   })

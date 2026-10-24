@@ -632,6 +632,7 @@ export const enUS = {
 
   'routes.ai.description':
     'Translations, summaries, close readings, and narration.',
+  'routes.ai.detail': 'Post',
   'routes.ai.title': 'Outputs',
   'routes.aiOverview.description':
     'See whether each article has a translation, summary, close reading, and narration.',
@@ -667,6 +668,9 @@ export const enUS = {
   'routes.orphanImages.description':
     'Uploaded files not referenced by persisted content or configuration.',
   'routes.orphanImages.title': 'Isolated Files',
+  'routes.scheduledPosts.description':
+    'Published posts that are not public yet.',
+  'routes.scheduledPosts.title': 'Scheduled',
   'routes.posts.description':
     'Posts, publishing state, search, and article operations.',
   'routes.posts.title': 'Published',
@@ -1781,6 +1785,7 @@ export const enUS = {
   'write.validation.titleRequired': 'Enter a title',
   'write.validation.createCategoryFirst': 'Create a category first',
   'routes.users.title': 'Users',
+  'routes.users.detail': 'User details',
   'routes.users.description':
     'Invite writers, manage authors and deactivate accounts.',
   'auth.login.subtitle': 'Sign in to your workspace',
@@ -1931,18 +1936,17 @@ export const enUS = {
   'write.seo.cardPreview': 'Card',
   'write.seo.imageFallback': 'Uses the cover when left empty',
   'write.publishAi.lockedTranslations':
-    'Locked translations are kept as they are: {langs}.',
+    'These translations stay as they are: {langs}.',
   'write.publishAi.regenerateLocked':
-    'Regenerate locked translations too (overwrites manual edits)',
-  'ai.action.lock': 'Lock translation',
-  'ai.action.unlock': 'Unlock translation',
-  'ai.translation.locked': 'Locked',
+    'Regenerate these translations too (replaces the current text)',
+  'ai.action.lock': 'Keep on regenerate',
+  'ai.action.unlock': 'Allow overwrite',
+  'ai.translation.locked': 'Kept',
   'ai.translation.lockDescription':
-    'Locked translations are manual and AI never overwrites them unless you ask to regenerate.',
-  'ai.translation.regenerateLockedTitle':
-    'Regenerate the locked {lang} translation?',
+    'Regeneration and publishing leave this translation in place unless you ask to replace it.',
+  'ai.translation.regenerateLockedTitle': 'Regenerate the {lang} translation?',
   'ai.translation.regenerateLockedDescription':
-    'The manual translation will be replaced by a new AI translation.',
+    'This translation is marked Kept. Continuing replaces it with a new result.',
   'settings.schema.site.title': 'Content',
   'settings.schema.site.defaultSourceLang.title': 'Default source language',
   'settings.schema.site.description': 'Defaults for new posts.',

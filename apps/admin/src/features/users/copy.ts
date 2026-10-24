@@ -64,6 +64,10 @@ export const usersCopy = createFeatureCopy({
     'en-US': 'Create byline profile',
     'zh-CN': '创建署名',
   },
+  createdAt: {
+    'en-US': 'Created',
+    'zh-CN': '创建时间',
+  },
   currentAccount: {
     'en-US': 'Current account',
     'zh-CN': '当前账号',
@@ -95,6 +99,10 @@ export const usersCopy = createFeatureCopy({
   description: {
     'en-US': 'Find a person, then invite, deactivate, or edit the profile.',
     'zh-CN': '找到一个人，邀请、停用，或修改资料。',
+  },
+  detailDescription: {
+    'en-US': 'Edit the byline profile and see posts under this name.',
+    'zh-CN': '修改署名资料，查看这个人写过的文章。',
   },
   detailError: {
     'en-US': 'This profile did not load. Retry.',

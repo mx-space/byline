@@ -39,6 +39,10 @@ export function draftHasConflict(draft: DraftModel) {
   return draft.relationToPublished === 'diverged'
 }
 
+export function draftRevertsChanges(draft: DraftModel) {
+  return draftChangeKind(draft) === 'behind'
+}
+
 export function isPublishedIdenticalDraft(draft: DraftModel) {
   return draftChangeKind(draft) === 'same'
 }

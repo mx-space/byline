@@ -1,6 +1,6 @@
 import { Alert, createStaticStyles, Segmented, Tag, Tooltip } from '@lobehub/ui'
-import { Pencil, Trash2 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Surface } from '@lobehub/ui/dashboard'
+import { Pencil, Trash2, Undo2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 
@@ -13,6 +13,7 @@ import {
   draftAuthorIds,
   draftChangeKind,
   draftHasConflict,
+  draftRevertsChanges,
   draftSavedAt,
   draftSlug,
   draftTitle,
@@ -21,6 +22,7 @@ import {
 import { computeDiffStats } from '../utils/draft-diff'
 import { getEditPathForDraft } from '../utils/draft-edit-path'
 import { DraftChanges, DraftOverview } from './DraftChanges'
+import { DraftChecks } from './DraftChecks'
 import { DraftDiffPreview } from './DraftDiffPreview'
 import { DraftHistory } from './DraftHistory'
 import { DraftKindTag } from './DraftKindTag'
@@ -33,23 +35,14 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     flex-direction: column;
     gap: 32px;
   `,
-  section: css`
+  bodyBlock: css`
     display: flex;
     flex-direction: column;
     gap: 12px;
   `,
-  sectionHead: css`
+  bodySwitch: css`
     display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 28px;
-  `,
-  sectionTitle: css`
-    margin: 0;
-    font-size: ${cssVar.fontSize};
-    font-weight: 600;
-    color: ${cssVar.colorText};
+    justify-content: flex-end;
   `,
   slug: css`
     font-family: ${cssVar.fontFamilyCode};
@@ -61,22 +54,6 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
 }))
 
 type BodyView = 'diff' | 'preview'
-
-function Section(props: {
-  children: ReactNode
-  extra?: ReactNode
-  title: ReactNode
-}) {
-  return (
-    <section className={styles.section}>
-      <div className={styles.sectionHead}>
-        <h3 className={styles.sectionTitle}>{props.title}</h3>
-        {props.extra}
-      </div>
-      {props.children}
-    </section>
-  )
-}
 
 export function DraftDetail(props: {
   deleting: boolean
@@ -105,6 +82,7 @@ export function DraftDetail(props: {
     setBodyView(bodyDiffers ? 'diff' : 'preview')
   }, [bodyDiffers, draft.id])
 
+  const reverts = draftRevertsChanges(draft)
   const notice = draftHasConflict(draft) ? (
     <Alert
       description={copy('conflictDetail')}
@@ -121,13 +99,13 @@ export function DraftDetail(props: {
       actions={
         <>
           <Button
-            danger
-            icon={Trash2}
+            danger={!reverts}
+            icon={reverts ? Undo2 : Trash2}
             loading={props.deleting}
             onClick={() => props.onDelete(draft)}
             type="text"
           >
-            {copy('deleteDraft')}
+            {copy(reverts ? 'revertChanges' : 'deleteDraft')}
           </Button>
           <Button
             icon={Pencil}
@@ -170,18 +148,21 @@ export function DraftDetail(props: {
     >
       <div className={styles.body}>
         {notice}
+        <Surface bleed title={copy('checkSectionTitle')}>
+          <DraftChecks draft={draft} />
+        </Surface>
         {published ? (
-          <Section title={copy('changesTitle')}>
+          <Surface bleed title={copy('changesTitle')}>
             <DraftChanges head={head} published={published} />
-          </Section>
+          </Surface>
         ) : (
-          <Section title={copy('overviewTitle')}>
+          <Surface bleed title={copy('overviewTitle')}>
             <DraftOverview draft={draft} />
-          </Section>
+          </Surface>
         )}
-        <Section
-          extra={
-            published && bodyDiffers ? (
+        <div className={styles.bodyBlock}>
+          {published && bodyDiffers ? (
+            <div className={styles.bodySwitch}>
               <Segmented
                 onChange={(value) => setBodyView(value as BodyView)}
                 options={[
@@ -191,12 +172,11 @@ export function DraftDetail(props: {
                 size="small"
                 value={bodyView}
               />
-            ) : undefined
-          }
-          title={copy('bodyTitle')}
-        >
+            </div>
+          ) : null}
           {published && bodyDiffers && bodyView === 'diff' ? (
             <DraftDiffPreview
+              bare
               comparisonLabel={copy('diffDirectionPublished')}
               currentDraft={head}
 
@@ -207,10 +187,10 @@ export function DraftDetail(props: {
           ) : (
             <DraftPreview revision={head} />
           )}
-        </Section>
-        <Section title={copy('historyTitle')}>
+        </div>
+        <Surface bleed title={copy('historyTitle')}>
           <DraftHistory draft={draft} />
-        </Section>
+        </Surface>
       </div>
     </DetailPane>
   )

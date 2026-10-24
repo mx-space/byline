@@ -37,10 +37,7 @@ const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
   list: css`
     display: grid;
     grid-template-columns: 6rem minmax(0, 1fr);
-
     margin: 0;
-    border: 1px solid ${cssVar.colorFillSecondary};
-    border-radius: ${cssVar.borderRadiusLG};
 
     ${responsive.md} {
       grid-template-columns: 4.5rem minmax(0, 1fr);
@@ -50,9 +47,6 @@ const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
     margin: 0;
     padding-block: 12px;
     padding-inline: 16px;
-    border: 1px solid ${cssVar.colorFillSecondary};
-    border-radius: ${cssVar.borderRadiusLG};
-
     color: ${cssVar.colorTextSecondary};
   `,
   term: css`
@@ -97,7 +91,7 @@ const fieldLabel: Record<DraftFieldKey, DraftCopyKey> = {
   title: 'fieldTitle',
 }
 
-function FactList(props: {
+export function FactList(props: {
   rows: Array<{ key: string; label: string; value: ReactNode }>
 }) {
   return (

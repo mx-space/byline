@@ -21,10 +21,7 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     text-align: center;
   `,
   frame: css`
-    padding-block: 16px;
-    padding-inline: 20px;
-    border: 1px solid ${cssVar.colorFillSecondary};
-    border-radius: ${cssVar.borderRadiusLG};
+    min-width: 0;
   `,
 }))
 

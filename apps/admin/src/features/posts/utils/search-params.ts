@@ -5,11 +5,25 @@ export function readPage(value: string | null) {
   return Number.isFinite(page) && page > 0 ? page : 1
 }
 
-export function readPostSortKey(value: string | null): PostSortKey {
-  if (value === 'modifiedAt' || value === 'pinAt') return value
-  return 'createdAt'
+export function readPostSortKey(
+  value: string | null,
+  fallback: PostSortKey = 'createdAt',
+): PostSortKey {
+  if (
+    value === 'createdAt' ||
+    value === 'modifiedAt' ||
+    value === 'pinAt' ||
+    value === 'publicAt'
+  ) {
+    return value
+  }
+  return fallback
 }
 
-export function readSortOrder(value: string | null): SortOrder {
-  return value === 'asc' ? 'asc' : 'desc'
+export function readSortOrder(
+  value: string | null,
+  fallback: SortOrder = 'desc',
+): SortOrder {
+  if (value === 'asc' || value === 'desc') return value
+  return fallback
 }

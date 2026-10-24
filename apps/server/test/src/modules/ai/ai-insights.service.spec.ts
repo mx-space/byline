@@ -27,9 +27,7 @@ const createService = () => {
     findGlobalById: vi.fn(),
     getRefArticleMap: vi.fn().mockResolvedValue({}),
     findArticleIdsByTitle: vi.fn().mockResolvedValue([]),
-    findAllArticlesForAIText: vi
-      .fn()
-      .mockResolvedValue({ posts: [], notes: [] }),
+    findArticlesForProductLists: vi.fn().mockResolvedValue({ posts: [] }),
   }
   const configService = {
     get: vi.fn(),
@@ -168,9 +166,15 @@ describe('AiInsightsService', () => {
     })
     repository.findDistinctRefIds.mockResolvedValue(['post-1'])
     repository.listByRefIds.mockResolvedValue([row] as any)
-    databaseService.findAllArticlesForAIText.mockResolvedValue({
-      posts: [{ id: 'post-1', title: 'Post' }],
-      notes: [],
+    databaseService.findArticlesForProductLists.mockResolvedValue({
+      posts: [
+        {
+          id: 'post-1',
+          title: 'Post',
+          isPublished: true,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
+      ],
     })
     databaseService.getRefArticleMap.mockResolvedValue({
       'post-1': { id: 'post-1', title: 'Post', type: CollectionRefTypes.Post },
@@ -192,11 +196,26 @@ describe('AiInsightsService', () => {
     })
     repository.findDistinctRefIds.mockResolvedValue(['post-1'])
     repository.listByRefIds.mockResolvedValue([row] as any)
-    databaseService.findAllArticlesForAIText.mockResolvedValue({
+    databaseService.findArticlesForProductLists.mockResolvedValue({
       posts: [
-        { id: 'post-1', title: 'Has Insight' },
-        { id: 'post-2', title: 'Orphan Post' },
-        { id: 'note-9', title: 'Orphan Note' },
+        {
+          id: 'post-1',
+          title: 'Has Insight',
+          isPublished: true,
+          createdAt: '2024-03-01T00:00:00.000Z',
+        },
+        {
+          id: 'post-2',
+          title: 'Orphan Post',
+          isPublished: true,
+          createdAt: '2024-02-01T00:00:00.000Z',
+        },
+        {
+          id: 'note-9',
+          title: 'Orphan Note',
+          isPublished: true,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
       ],
     })
     databaseService.getRefArticleMap.mockResolvedValue({

@@ -76,7 +76,9 @@ export function AiTranslationRouteView() {
       getLang: (item) => item.lang,
       getPreview: (item) => item.title,
       getStatus: (item) =>
-        item.isLocked ? { color: 'gold', label: copy('locked') } : null,
+        item.isLocked
+          ? { color: 'gold', hint: copy('lockedHint'), label: copy('locked') }
+          : null,
       groupedQueryKey: 'translations',
       pageAction: {
         icon: Languages,

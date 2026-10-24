@@ -179,6 +179,82 @@ export function toBreadcrumbItems(
   return crumbs
 }
 
+/** Turn the current trail's last item into a link and append the detail page. */
+export function withDetailCrumb(
+  items: BreadcrumbItem[],
+  parentHref: string,
+  detailLabel: BreadcrumbItem['label'],
+): BreadcrumbItem[] {
+  const parent = items.at(-1)
+  if (!parent) return [{ label: detailLabel }]
+  return [
+    ...items.slice(0, -1),
+    { href: parent.href ?? parentHref, label: parent.label },
+    { label: detailLabel },
+  ]
+}
+
+const PRODUCT_LIST_TITLE = {
+  insights: 'routes.aiInsights.title',
+  overview: 'routes.aiOverview.title',
+  summary: 'routes.aiSummary.title',
+  translation: 'routes.aiTranslation.title',
+  tts: 'routes.aiTts.title',
+} as const satisfies Record<string, TranslationKey>
+
+export function productDetailBreadcrumb(
+  pathname: string,
+  search: string,
+  detailLabel: BreadcrumbItem['label'],
+  t: Translate,
+): BreadcrumbItem[] | null {
+  const match =
+    /^\/ai\/(overview|translation|summary|insights|tts)\/[^/]+$/.exec(pathname)
+  if (!match) return null
+  const segment = match[1] as keyof typeof PRODUCT_LIST_TITLE
+  const params = new URLSearchParams(search)
+  params.delete('item')
+  params.delete('lang')
+  const query = params.toString()
+  return [
+    { label: t('shell.nav.intelligence'), optional: true },
+    {
+      href: query ? `/ai/${segment}?${query}` : `/ai/${segment}`,
+      label: t(PRODUCT_LIST_TITLE[segment]),
+    },
+    { label: detailLabel },
+  ]
+}
+
+const WRITE_ARTEFACT = {
+  insightsId: 'insights',
+  summaryId: 'summary',
+  translationId: 'translation',
+} as const
+
+export function artefactWriteBreadcrumb(
+  search: string,
+  detailLabel: BreadcrumbItem['label'],
+  t: Translate,
+): BreadcrumbItem[] | null {
+  const params = new URLSearchParams(search)
+  const postId = params.get('id')
+  if (!postId) return null
+  const key = (
+    Object.keys(WRITE_ARTEFACT) as (keyof typeof WRITE_ARTEFACT)[]
+  ).find((name) => params.get(name))
+  if (!key) return null
+  const segment = WRITE_ARTEFACT[key]
+  return [
+    { label: t('shell.nav.intelligence'), optional: true },
+    {
+      href: `/ai/${segment}/${postId}`,
+      label: t(PRODUCT_LIST_TITLE[segment]),
+    },
+    { label: detailLabel },
+  ]
+}
+
 export function withParentCrumb(
   items: BreadcrumbItem[],
   parent: { href: string; label: BreadcrumbItem['label'] },

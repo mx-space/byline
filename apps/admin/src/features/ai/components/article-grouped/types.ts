@@ -30,6 +30,7 @@ export interface ItemsByRefResult<TItem> {
 
 export interface ItemStatus {
   color?: string
+  hint?: string
   label: string
 }
 

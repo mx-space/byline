@@ -11,17 +11,22 @@ export function PostsEmpty(props: {
   onBack: () => void
   onClear: () => void
   onWrite: () => void
+  scheduled?: boolean
 }) {
   const copy = usePostCopy()
   const title =
     props.kind === 'first'
-      ? copy('firstEmptyTitle')
+      ? copy(props.scheduled ? 'scheduledEmptyTitle' : 'firstEmptyTitle')
       : props.kind === 'page'
         ? copy('pageEmptyTitle')
         : copy('filterEmptyTitle')
   const description =
     props.kind === 'first'
-      ? copy('firstEmptyDescription')
+      ? copy(
+          props.scheduled
+            ? 'scheduledEmptyDescription'
+            : 'firstEmptyDescription',
+        )
       : props.kind === 'page'
         ? copy('pageEmptyDescription')
         : copy('filterEmptyDescription')

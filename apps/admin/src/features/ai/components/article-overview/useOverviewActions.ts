@@ -41,6 +41,18 @@ export function useOverviewActions(refId: string) {
       queryClient.invalidateQueries({
         queryKey: adminQueryKeys.tasks.tasksRoot,
       }),
+      queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.ai.groupedRoot('summaries'),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.ai.groupedRoot('insights'),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.ai.groupedRoot('translations'),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.ai.groupedRoot('tts'),
+      }),
     ])
   }
 

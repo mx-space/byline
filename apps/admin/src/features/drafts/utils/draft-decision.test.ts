@@ -10,6 +10,7 @@ import {
   draftChangeKind,
   draftFieldChanges,
   draftHasConflict,
+  draftRevertsChanges,
   draftTitle,
   isPublishedIdenticalDraft,
   parentPostLabel,
@@ -72,6 +73,11 @@ describe('draft decision', () => {
       '删除草稿「晨记」？',
     )
     expect(draftCopy('zh-CN', 'confirmDeleteBody')).toContain('无法恢复')
+    expect(draftCopy('zh-CN', 'changeBehind')).toBe('改动')
+    expect(draftCopy('zh-CN', 'confirmRevertTitle', { title: '晨记' })).toBe(
+      '撤销「晨记」的改动？',
+    )
+    expect(draftCopy('zh-CN', 'confirmRevertBody')).toContain('已发布的文章')
   })
 
   it('reads title, parent post, change, and conflict from the draft', () => {
@@ -106,6 +112,13 @@ describe('draft decision', () => {
       relationToPublished: 'diverged',
     })
     expect(draftChangeKind(diverged)).toBe('changed')
+    expect(draftRevertsChanges(diverged)).toBe(false)
+    expect(draftRevertsChanges(fresh)).toBe(false)
+    expect(
+      draftRevertsChanges(
+        draft({ ...diverged, relationToPublished: 'ancestor' }),
+      ),
+    ).toBe(true)
     expect(isPublishedIdenticalDraft(diverged)).toBe(false)
     expect(
       isPublishedIdenticalDraft(

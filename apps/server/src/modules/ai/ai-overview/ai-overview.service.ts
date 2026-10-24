@@ -19,6 +19,7 @@ import {
   readArticleMetaLang,
   toArticleContent,
 } from '../ai-translation/article-content.util'
+import { compareArticlesByPublishTime } from '../article-publish-order'
 import { AiOverviewRepository } from './ai-overview.repository'
 import type { GetOverviewGroupedQueryDto } from './ai-overview.schema'
 import type {
@@ -63,17 +64,17 @@ export class AiOverviewService {
       }
     }
 
-    const candidates =
-      await this.databaseService.findAllArticlesForTranslation()
-    const candidateMap = buildRefArticleMap(candidates)
+    const { posts } = await this.databaseService.findArticlesForProductLists()
+    const candidateMap = buildRefArticleMap({ posts })
 
     const searchSet = searchableRefIds ? new Set(searchableRefIds) : null
-    // Snowflake ids are monotonic, so descending id is descending creation
-    // time without joining the article tables again for a timestamp.
-    const orderedIds = Object.keys(candidateMap)
-      .filter((id) => !searchSet || searchSet.has(id))
-      .filter((id) => !query.type || candidateMap[id].type === query.type)
-      .sort((a, b) => b.localeCompare(a))
+    const orderedIds = posts
+      .filter((post) => !searchSet || searchSet.has(post.id))
+      .filter(
+        (post) => !query.type || candidateMap[post.id].type === query.type,
+      )
+      .sort(compareArticlesByPublishTime)
+      .map((post) => post.id)
 
     const total = orderedIds.length
     const pageIds = orderedIds.slice(

@@ -5,7 +5,6 @@ import type { PropsWithChildren, ReactNode } from 'react'
 
 import { AuthTools } from '~/features/auth/components/auth-tools'
 import { AuthScreen } from '~/features/auth/components/AuthScreen'
-import { FloatLayerProvider } from '~/ui/overlay/floating-layer'
 import { Button } from '~/ui/site-button'
 
 import faviconUrl from '../../../../favicon.png'
@@ -101,7 +100,7 @@ export function SetupPage(props: {
 }) {
   return (
     <AuthScreen subtitle={props.description} title={props.title}>
-      <FloatLayerProvider>{props.children}</FloatLayerProvider>
+      {props.children}
     </AuthScreen>
   )
 }
@@ -139,53 +138,51 @@ export function OnboardingShell(
       tools={<AuthTools />}
       variant="elevated"
     >
-      <FloatLayerProvider>
-        <div className={wizardStyles.board}>
-          <nav aria-label={copy('railLabel')} className={wizardStyles.railCol}>
-            <p className={wizardStyles.progress}>
-              {remaining === 0
-                ? copy('progressLast', progressValues)
-                : copy('progress', progressValues)}
-            </p>
-            <ol className={wizardStyles.rail}>
-              {railItems.flatMap((item) => {
-                const state = itemState(item, props.step)
-                return [
-                  <RailRow item={item} key={item.key} state={state} />,
-                  ...(item.children ?? []).map((child) => (
-                    <RailRow
-                      hidden={state === 'pending'}
-                      item={child}
-                      key={child.key}
-                      state={itemState(child, props.step)}
-                      sub
-                    />
-                  )),
-                ]
-              })}
-            </ol>
-            {props.onLater ? (
-              <Button htmlType="button" onClick={props.onLater} type="text">
-                {copy('later')}
-              </Button>
-            ) : null}
-            <a
-              className={wizardStyles.docs}
-              href={deploymentDocsUrl}
-              rel="noreferrer"
-              target="_blank"
-            >
-              {copy('docs')}
-            </a>
-          </nav>
-          <div className={wizardStyles.stage}>
-            <main>{props.children}</main>
-            {props.aside ? (
-              <aside className={wizardStyles.aside}>{props.aside}</aside>
-            ) : null}
-          </div>
+      <div className={wizardStyles.board}>
+        <nav aria-label={copy('railLabel')} className={wizardStyles.railCol}>
+          <p className={wizardStyles.progress}>
+            {remaining === 0
+              ? copy('progressLast', progressValues)
+              : copy('progress', progressValues)}
+          </p>
+          <ol className={wizardStyles.rail}>
+            {railItems.flatMap((item) => {
+              const state = itemState(item, props.step)
+              return [
+                <RailRow item={item} key={item.key} state={state} />,
+                ...(item.children ?? []).map((child) => (
+                  <RailRow
+                    hidden={state === 'pending'}
+                    item={child}
+                    key={child.key}
+                    state={itemState(child, props.step)}
+                    sub
+                  />
+                )),
+              ]
+            })}
+          </ol>
+          {props.onLater ? (
+            <Button htmlType="button" onClick={props.onLater} type="text">
+              {copy('later')}
+            </Button>
+          ) : null}
+          <a
+            className={wizardStyles.docs}
+            href={deploymentDocsUrl}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {copy('docs')}
+          </a>
+        </nav>
+        <div className={wizardStyles.stage}>
+          <main>{props.children}</main>
+          {props.aside ? (
+            <aside className={wizardStyles.aside}>{props.aside}</aside>
+          ) : null}
         </div>
-      </FloatLayerProvider>
+      </div>
     </AuthLayout>
   )
 }

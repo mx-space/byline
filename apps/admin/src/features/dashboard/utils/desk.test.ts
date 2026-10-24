@@ -215,7 +215,13 @@ describe('postTranslationCheck', () => {
         expected: [],
         langs: ['en', 'zh-CN'],
       }),
-    ).toEqual({ done: 2, missing: 0, state: 'done', total: 2 })
+    ).toEqual({
+      done: 2,
+      missing: 0,
+      missingLangs: [],
+      state: 'done',
+      total: 2,
+    })
   })
 
   it('counts expected langs that are absent', () => {
@@ -225,7 +231,13 @@ describe('postTranslationCheck', () => {
         expected: ['en', 'ja'],
         langs: ['en'],
       }),
-    ).toEqual({ done: 1, missing: 1, state: 'gap', total: 2 })
+    ).toEqual({
+      done: 1,
+      missing: 1,
+      missingLangs: ['ja'],
+      state: 'gap',
+      total: 2,
+    })
   })
 })
 

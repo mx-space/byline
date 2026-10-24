@@ -20,6 +20,7 @@ export interface AIWriterGenerateResponse {
 }
 
 export interface ArticleInfo {
+  draftId?: string | null
   id: string
   title: string
   type: 'Post'

@@ -14,20 +14,16 @@ export const draftCopy = createFeatureCopy({
   },
   behindDetail: {
     'en-US':
-      'The published article is newer than this draft. Check the diff before you continue.',
-    'zh-CN': '已发布文章比这篇草稿新。继续编辑前先看正文差异。',
-  },
-  bodyTitle: {
-    'en-US': 'Body',
-    'zh-CN': '正文',
+      'This draft has changes against the published article. Reverting leaves the published article as it is.',
+    'zh-CN': '这篇相对已发布版有改动。撤销后，已发布的文章保持不变。',
   },
   cancel: {
     'en-US': 'Cancel',
     'zh-CN': '取消',
   },
   changeBehind: {
-    'en-US': 'Behind',
-    'zh-CN': '落后',
+    'en-US': 'Changes',
+    'zh-CN': '改动',
   },
   changeChanged: {
     'en-US': 'Changed',
@@ -52,6 +48,68 @@ export const draftCopy = createFeatureCopy({
   changesNone: {
     'en-US': 'Nothing differs from the published article.',
     'zh-CN': '与已发布文章相同，没有未发布的改动。',
+  },
+  checkCoverMissing: {
+    'en-US': 'No cover yet.',
+    'zh-CN': '还没有封面。',
+  },
+  checkCoverOk: {
+    'en-US': 'Cover is set ({source}).',
+    'zh-CN': '已有封面（{source}）。',
+  },
+  checkLabelCover: { 'en-US': 'Cover', 'zh-CN': '封面' },
+  checkLabelDescription: { 'en-US': 'Description', 'zh-CN': '描述' },
+  checkLabelTitle: { 'en-US': 'Title', 'zh-CN': '标题' },
+  checkLabelTranslation: { 'en-US': 'Translation', 'zh-CN': '翻译' },
+  checkLengthLong: {
+    'en-US': 'Too long, {used} of {limit} characters ({source}).',
+    'zh-CN': '过长，已用 {used} 字，建议不超过 {limit} 字（{source}）。',
+  },
+  checkLengthOk: {
+    'en-US': '{used} of {limit} characters ({source}).',
+    'zh-CN': '已用 {used} 字，建议不超过 {limit} 字（{source}）。',
+  },
+  checkSectionTitle: { 'en-US': 'Checks', 'zh-CN': '检查' },
+  checkSourceCover: { 'en-US': 'article cover', 'zh-CN': '文章封面' },
+  checkSourceSeoImage: { 'en-US': 'SEO image', 'zh-CN': 'SEO 图片' },
+  checkDescriptionMissing: {
+    'en-US': 'No description yet.',
+    'zh-CN': '还没有描述。',
+  },
+  checkSourceSeoDescription: {
+    'en-US': 'SEO description',
+    'zh-CN': 'SEO 描述',
+  },
+  checkSourceSeoTitle: { 'en-US': 'SEO title', 'zh-CN': 'SEO 标题' },
+  checkSourceSummary: { 'en-US': 'summary', 'zh-CN': '摘要' },
+  checkSourceTitle: { 'en-US': 'article title', 'zh-CN': '文章标题' },
+  checkTitleMissing: {
+    'en-US': 'No title yet.',
+    'zh-CN': '还没有标题。',
+  },
+  checkTranslationDone: {
+    'en-US': 'All {total} languages are in.',
+    'zh-CN': '{total} 种语言都已齐。',
+  },
+  checkTranslationGap: {
+    'en-US': 'Missing {langs}. {done} of {total} are in.',
+    'zh-CN': '缺 {langs}，已有 {done}/{total}。',
+  },
+  checkTranslationLoading: {
+    'en-US': 'Translation coverage is still loading.',
+    'zh-CN': '翻译覆盖还在加载。',
+  },
+  checkTranslationNew: {
+    'en-US': 'Not published yet, so translation is not checked.',
+    'zh-CN': '还没发布，发布后才检查翻译。',
+  },
+  checkTranslationUnset: {
+    'en-US': 'Translation is not set up.',
+    'zh-CN': '还没有配置翻译。',
+  },
+  checkViewTranslation: {
+    'en-US': 'View translations',
+    'zh-CN': '查看译文',
   },
   changesTitle: {
     'en-US': 'Changes since published',
@@ -102,6 +160,30 @@ export const draftCopy = createFeatureCopy({
   deleted: {
     'en-US': 'Draft deleted',
     'zh-CN': '已删除草稿',
+  },
+  revertChanges: {
+    'en-US': 'Revert changes',
+    'zh-CN': '撤销改动',
+  },
+  revertFailed: {
+    'en-US': 'The changes were not reverted. Try again.',
+    'zh-CN': '改动未撤销。请重试。',
+  },
+  reverted: {
+    'en-US': 'Changes reverted',
+    'zh-CN': '已撤销改动',
+  },
+  confirmRevertBody: {
+    'en-US': 'Unpublished changes are discarded. The published article stays.',
+    'zh-CN': '未发布的改动会被丢掉。已发布的文章保持不变。',
+  },
+  confirmRevertConfirm: {
+    'en-US': 'Revert changes',
+    'zh-CN': '撤销改动',
+  },
+  confirmRevertTitle: {
+    'en-US': 'Revert changes to "{title}"?',
+    'zh-CN': '撤销「{title}」的改动？',
   },
   detailErrorBody: {
     'en-US': 'The network or service is unavailable.',

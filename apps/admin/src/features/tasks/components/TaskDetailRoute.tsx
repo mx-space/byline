@@ -45,6 +45,9 @@ const styles = createStaticStyles(({ css }) => ({
     flex-direction: column;
     gap: 12px;
   `,
+  tag: css`
+    flex-shrink: 0;
+  `,
 }))
 
 const GROUP_PARENT_TYPES = new Set<AITaskType>([
@@ -95,8 +98,15 @@ export function TaskDetailRoute() {
   if (task && subject) {
     title = (
       <Flexbox align="center" gap={8} horizontal style={{ minWidth: 0 }}>
-        <Text ellipsis>{subject.title}</Text>
-        <TaskStatusTag task={task} />
+        <Text
+          ellipsis={{ tooltipWhenOverflow: true }}
+          style={{ flex: '0 1 auto', minWidth: 0 }}
+        >
+          {subject.title}
+        </Text>
+        <span className={styles.tag}>
+          <TaskStatusTag task={task} />
+        </span>
       </Flexbox>
     )
     footer = (

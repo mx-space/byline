@@ -1,10 +1,9 @@
-import { createStaticStyles } from '@lobehub/ui'
+import { createStaticStyles, Popover } from '@lobehub/ui'
 import { Check, ChevronDown, Search, Sparkles } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 
 import type { ProviderModelsResponse } from '~/api/ai'
 import { useI18n } from '~/i18n'
-import { Popover } from '~/ui/overlay/popover'
 import { cn } from '~/utils/cn'
 
 import {
@@ -268,73 +267,72 @@ export function ModelSelector({
   }
 
   return (
-    <Popover onOpenChange={handleOpenChange} open={open}>
-      <Popover.Trigger
-        className={lobeStyles.u3c0e9874}
-        disabled={isEmpty}
-        type="button"
-      >
-        <Sparkles aria-hidden="true" className={lobeStyles.u6c752655} />
-        <span className={lobeStyles.ueed8aad8}>
-          {isEmpty ? t('write.agent.modelNoConfig') : triggerLabel}
-        </span>
-        <ChevronDown aria-hidden="true" className={lobeStyles.u6c752655} />
-      </Popover.Trigger>
-      <Popover.Content
-        align="start"
-        className={lobeStyles.ud21bcf04}
-        initialFocus={inputRef}
-        side="top"
-        sideOffset={6}
-      >
-        <div className={lobeStyles.ub95c9673}>
-          <Search aria-hidden="true" className={lobeStyles.u5174ce5e} />
-          <input
-            className={lobeStyles.uee6bd472}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t('write.agent.model.search')}
-            ref={inputRef}
-            value={query}
-          />
-        </div>
-        <div className={lobeStyles.ua9dc758b}>
-          {hasResults ? (
-            groups.map((group) => (
-              <div key={group.key}>
-                <div className={lobeStyles.u2b60679d}>{group.label}</div>
-                {group.rows.map((row) => {
-                  const active =
-                    selectedModel?.providerId === row.providerId &&
-                    selectedModel?.modelId === row.modelId
-                  return (
-                    <button
-                      className={cn(
-                        lobeStyles.u8748abb9,
-                        active && lobeStyles.ucfc6e672,
-                      )}
-                      key={`${group.key}:${row.providerId}::${row.modelId}`}
-                      onClick={() => handleSelect(row)}
-                      type="button"
-                    >
-                      <span className={lobeStyles.u67bab313}>{row.name}</span>
-                      {active ? (
-                        <Check
-                          aria-hidden="true"
-                          className={lobeStyles.u44c3b3cd}
-                        />
-                      ) : null}
-                    </button>
-                  )
-                })}
+    <Popover
+      className={lobeStyles.ud21bcf04}
+      classNames={{ trigger: lobeStyles.u3c0e9874 }}
+      content={
+        <>
+          <div className={lobeStyles.ub95c9673}>
+            <Search aria-hidden="true" className={lobeStyles.u5174ce5e} />
+            <input
+              className={lobeStyles.uee6bd472}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t('write.agent.model.search')}
+              ref={inputRef}
+              value={query}
+            />
+          </div>
+          <div className={lobeStyles.ua9dc758b}>
+            {hasResults ? (
+              groups.map((group) => (
+                <div key={group.key}>
+                  <div className={lobeStyles.u2b60679d}>{group.label}</div>
+                  {group.rows.map((row) => {
+                    const active =
+                      selectedModel?.providerId === row.providerId &&
+                      selectedModel?.modelId === row.modelId
+                    return (
+                      <button
+                        className={cn(
+                          lobeStyles.u8748abb9,
+                          active && lobeStyles.ucfc6e672,
+                        )}
+                        key={`${group.key}:${row.providerId}::${row.modelId}`}
+                        onClick={() => handleSelect(row)}
+                        type="button"
+                      >
+                        <span className={lobeStyles.u67bab313}>{row.name}</span>
+                        {active ? (
+                          <Check
+                            aria-hidden="true"
+                            className={lobeStyles.u44c3b3cd}
+                          />
+                        ) : null}
+                      </button>
+                    )
+                  })}
+                </div>
+              ))
+            ) : (
+              <div className={lobeStyles.ub948486c}>
+                {t('write.agent.model.empty')}
               </div>
-            ))
-          ) : (
-            <div className={lobeStyles.ub948486c}>
-              {t('write.agent.model.empty')}
-            </div>
-          )}
-        </div>
-      </Popover.Content>
+            )}
+          </div>
+        </>
+      }
+      disabled={isEmpty}
+      onOpenChange={handleOpenChange}
+      open={open}
+      placement="topLeft"
+      popupProps={{ initialFocus: inputRef }}
+      trigger="click"
+    >
+      <Sparkles aria-hidden="true" className={lobeStyles.u6c752655} />
+      <span className={lobeStyles.ueed8aad8}>
+        {isEmpty ? t('write.agent.modelNoConfig') : triggerLabel}
+      </span>
+      <ChevronDown aria-hidden="true" className={lobeStyles.u6c752655} />
     </Popover>
   )
 }

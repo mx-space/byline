@@ -35,6 +35,7 @@ const catalog = {
     'en-US': 'Pick target languages in AI settings to track gaps.',
   },
   langCount: { 'zh-CN': '{count} 种语言', 'en-US': '{count} languages' },
+  anchorNav: { 'zh-CN': '快速导航', 'en-US': 'On this page' },
   langProgress: { 'zh-CN': '{done}/{total}', 'en-US': '{done}/{total}' },
   langDone: { 'zh-CN': '已生成', 'en-US': 'Generated' },
   filterAllPosts: { 'zh-CN': '全部', 'en-US': 'All' },
@@ -131,7 +132,12 @@ const catalog = {
     'en-US': 'The network or service is unavailable.',
   },
   post: { 'zh-CN': '文章', 'en-US': 'Post' },
-  locked: { 'zh-CN': '锁定', 'en-US': 'Locked' },
+  locked: { 'zh-CN': '不覆盖', 'en-US': 'Kept' },
+  lockedHint: {
+    'zh-CN': '重新生成和发布不会替换这条译文。改过或导入的译文可以这样保住。',
+    'en-US':
+      'Regeneration and publishing leave this translation in place. Use it for edited or imported text.',
+  },
   generating: { 'zh-CN': '生成中', 'en-US': 'Generating' },
   failed: { 'zh-CN': '失败', 'en-US': 'Failed' },
   missing: { 'zh-CN': '缺失', 'en-US': 'Missing' },
@@ -146,41 +152,44 @@ const catalog = {
   retry: { 'zh-CN': '重试', 'en-US': 'Retry' },
   fillOne: { 'zh-CN': '补齐{kind}', 'en-US': 'Fill {kind}' },
   replaceTitle: {
-    'zh-CN': '替换未锁定译文？',
-    'en-US': 'Replace unlocked translations?',
+    'zh-CN': '替换这些译文？',
+    'en-US': 'Replace these translations?',
   },
   replaceBody: {
-    'zh-CN': '未锁定译文会被替换。已锁定的语言会跳过，除非明确要求覆盖。',
+    'zh-CN': '这些译文会重新生成。标成「不覆盖」的语言会跳过。',
     'en-US':
-      'Unlocked translations will be replaced. Locked languages are skipped unless overwrite is requested.',
+      'These translations are generated again. Languages marked Kept are skipped.',
   },
   replaceConfirm: {
-    'zh-CN': '替换未锁定译文',
-    'en-US': 'Replace unlocked translations',
+    'zh-CN': '替换译文',
+    'en-US': 'Replace translations',
   },
   overwriteTitle: {
-    'zh-CN': '覆盖锁定译文？',
-    'en-US': 'Overwrite locked translations?',
+    'zh-CN': '连不覆盖的译文也替换？',
+    'en-US': 'Replace kept translations too?',
   },
   overwriteBody: {
-    'zh-CN': '这些语言已锁定：{langs}。覆盖后，锁定译文也会被替换。',
+    'zh-CN': '{langs} 标成了不覆盖。继续的话，这些译文也会被替换。',
     'en-US':
-      'These languages are locked: {langs}. Overwrite replaces those translations too.',
+      '{langs} are marked Kept. Continuing replaces those translations too.',
   },
   overwriteLocked: {
-    'zh-CN': '覆盖锁定译文',
-    'en-US': 'Overwrite locked translations',
+    'zh-CN': '仍然替换',
+    'en-US': 'Replace anyway',
   },
   skipLocked: {
-    'zh-CN': '跳过锁定语言',
-    'en-US': 'Skip locked languages',
+    'zh-CN': '跳过不覆盖的语言',
+    'en-US': 'Skip kept languages',
   },
   skippedLocked: {
-    'zh-CN': '已跳过锁定语言',
-    'en-US': 'Locked languages were skipped',
+    'zh-CN': '已跳过不覆盖的语言',
+    'en-US': 'Kept languages were skipped',
   },
-  lockedBefore: { 'zh-CN': '锁定语言', 'en-US': 'Locked languages' },
-  noLocked: { 'zh-CN': '没有锁定语言', 'en-US': 'No locked languages' },
+  lockedBefore: { 'zh-CN': '不覆盖', 'en-US': 'Kept' },
+  noLocked: {
+    'zh-CN': '没有要保住的译文',
+    'en-US': 'No translations are kept',
+  },
   openKind: { 'zh-CN': '打开{kind}', 'en-US': 'Open {kind}' },
   stale: { 'zh-CN': '旧版', 'en-US': 'Stale' },
   sourceLang: { 'zh-CN': '原文语言 {lang}', 'en-US': 'Source language {lang}' },
@@ -227,15 +236,30 @@ const catalog = {
     'en-US': 'The generation task was not created',
   },
   saved: { 'zh-CN': '已保存', 'en-US': 'Saved' },
+  unsaved: { 'zh-CN': '未保存', 'en-US': 'Unsaved' },
+  leaveUnsavedTitle: {
+    'zh-CN': '离开当前页面？',
+    'en-US': 'Leave this page?',
+  },
+  leaveUnsavedBody: {
+    'zh-CN': '还有未保存的修改。',
+    'en-US': 'There are unsaved changes.',
+  },
+  translationNoBody: { 'zh-CN': '还没有正文', 'en-US': 'No body yet' },
+  translationMissingTitle: {
+    'zh-CN': '没有找到这篇译文',
+    'en-US': 'This translation was not found',
+  },
   deleted: { 'zh-CN': '已删除', 'en-US': 'Deleted' },
   saveFailed: { 'zh-CN': '没有保存', 'en-US': 'Not saved' },
   deleteFailed: { 'zh-CN': '没有删除', 'en-US': 'Not deleted' },
   generateTranslation: { 'zh-CN': '生成译文', 'en-US': 'Generate translation' },
   editTranslation: { 'zh-CN': '修改译文', 'en-US': 'Edit translation' },
   saveTranslation: { 'zh-CN': '保存译文', 'en-US': 'Save translation' },
+  viewOriginal: { 'zh-CN': '查看原文', 'en-US': 'View original' },
   retryTranslation: { 'zh-CN': '重试译文', 'en-US': 'Retry translation' },
-  lockTranslation: { 'zh-CN': '锁定译文', 'en-US': 'Lock translation' },
-  unlockTranslation: { 'zh-CN': '解除锁定', 'en-US': 'Unlock' },
+  lockTranslation: { 'zh-CN': '生成时不覆盖', 'en-US': 'Keep on regenerate' },
+  unlockTranslation: { 'zh-CN': '允许覆盖', 'en-US': 'Allow overwrite' },
   translateAll: { 'zh-CN': '全量翻译', 'en-US': 'Translate all' },
   translateAllCreated: {
     'zh-CN': '已开始全量翻译',
@@ -263,11 +287,12 @@ const catalog = {
     'en-US': 'This post has no translation',
   },
   translationEmptyBody: {
-    'zh-CN': '生成译文后，可以在这里阅读、锁定或修改。',
-    'en-US': 'After generation, read, lock, or edit the translation here.',
+    'zh-CN':
+      '生成后可以在这里阅读，再选一篇进入编辑页。改过的译文可以标成生成时不覆盖。',
+    'en-US':
+      'After generation, read them here, then open one in the editor. Mark an edited translation so regeneration leaves it in place.',
   },
   fieldTitle: { 'zh-CN': '标题', 'en-US': 'Title' },
-  fieldSubtitle: { 'zh-CN': '副标题', 'en-US': 'Subtitle' },
   fieldSummary: { 'zh-CN': '摘要', 'en-US': 'Summary' },
   fieldBody: { 'zh-CN': '正文', 'en-US': 'Body' },
   fieldSeo: { 'zh-CN': '搜索摘要', 'en-US': 'Search summary' },
@@ -289,8 +314,12 @@ const catalog = {
     'en-US': 'This post has no summary',
   },
   summaryEmptyBody: {
-    'zh-CN': '生成摘要后，可以在这里阅读或修改。',
-    'en-US': 'After generation, read or edit the summary here.',
+    'zh-CN': '生成后可以在这里阅读，再选一篇进入编辑页。',
+    'en-US': 'After generation, read them here, then open one in the editor.',
+  },
+  summaryMissingTitle: {
+    'zh-CN': '没有找到这篇摘要',
+    'en-US': 'This summary was not found',
   },
   summaryRequired: {
     'zh-CN': '摘要不能为空',
@@ -322,8 +351,12 @@ const catalog = {
     'en-US': 'This post has no close reading',
   },
   insightsEmptyBody: {
-    'zh-CN': '生成精读后，可以在这里阅读或修改。',
-    'en-US': 'After generation, read or edit the close reading here.',
+    'zh-CN': '生成后可以在这里阅读，再选一篇进入编辑页。',
+    'en-US': 'After generation, read them here, then open one in the editor.',
+  },
+  insightsMissingTitle: {
+    'zh-CN': '没有找到这篇精读',
+    'en-US': 'This close reading was not found',
   },
   insightsRequired: {
     'zh-CN': '精读不能为空',
@@ -349,9 +382,9 @@ const catalog = {
     'en-US': 'This post has no narration',
   },
   ttsEmptyBody: {
-    'zh-CN': '生成后可以在这里播放，而不只是看到文件名。',
+    'zh-CN': '生成后，各语言的朗读会列在这里，可以分别播放或重新生成。',
     'en-US':
-      'After generation, play it here instead of seeing only a file name.',
+      'After generation, every language is listed here to play or regenerate.',
   },
   ttsNoAudio: {
     'zh-CN': '这一条还没有可播放的片段。',
@@ -391,9 +424,9 @@ const catalog = {
   },
   forceLabel: { 'zh-CN': '替换已有产物', 'en-US': 'Replace existing output' },
   forceHintTranslation: {
-    'zh-CN': '未锁定译文会被替换。已锁定的语言会跳过，除非勾选覆盖。',
+    'zh-CN': '已有译文会被替换。标成「不覆盖」的语言会跳过，除非勾选覆盖。',
     'en-US':
-      'Unlocked translations will be replaced. Locked languages are skipped unless overwrite is checked.',
+      'Existing translations are replaced. Languages marked Kept are skipped unless overwrite is checked.',
   },
   forceHintOther: {
     'zh-CN': '已有产物会被替换。',

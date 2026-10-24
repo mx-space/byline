@@ -21,7 +21,12 @@ import {
 import { Ellipsis, Eye, RefreshCw, Trash2, WandSparkles } from 'lucide-react'
 import type { HTMLAttributes, ReactNode } from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate, useSearchParams } from 'react-router'
+import {
+  useLocation,
+  useNavigate,
+  useOutlet,
+  useSearchParams,
+} from 'react-router'
 
 import type { ArticleInfo } from '~/api/ai'
 import { useI18n } from '~/i18n'
@@ -42,8 +47,9 @@ import { useAiCopy } from '../../copy'
 import { AiHubPage } from '../../hub/AiHubPage'
 import { hubStyles } from '../../hub/styles'
 import { CAPABILITY_PATH } from '../../overview/capability-label'
+import { productDraftPath } from '../../product-draft-path'
 import { ArticleGroupedRouteContext } from './article-grouped-route-context'
-import type { ArticleGroupedConfig } from './types'
+import type { ArticleGroupedConfig, ItemStatus } from './types'
 import {
   GENERATE_LABEL,
   isLockedItem,
@@ -79,6 +85,16 @@ function isInteractiveTarget(target: EventTarget) {
   )
 }
 
+function statusTag(status: ItemStatus) {
+  const tag = <Tag color={status.color}>{status.label}</Tag>
+  if (!status.hint) return tag
+  return (
+    <Tooltip title={status.hint}>
+      <span>{tag}</span>
+    </Tooltip>
+  )
+}
+
 export function ArticleGroupedRouteView<TItem>(props: {
   config: ArticleGroupedConfig<TItem>
 }) {
@@ -88,6 +104,7 @@ export function ArticleGroupedRouteView<TItem>(props: {
   const { format } = useI18n()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const outlet = useOutlet()
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const basePath = CAPABILITY_PATH[config.product]
@@ -199,7 +216,13 @@ export function ArticleGroupedRouteView<TItem>(props: {
   const total = listQuery.data?.pagination.total
   const search = location.search
 
+  const openDraft = (draftId: string) => navigate(productDraftPath(draftId))
+
   const openRow = (row: ArtefactRow<TItem>) => {
+    if (row.article.draftId) {
+      openDraft(row.article.draftId)
+      return
+    }
     const params = new URLSearchParams(search)
     if (row.item) params.set('item', config.getId(row.item))
     else params.delete('item')
@@ -215,6 +238,15 @@ export function ArticleGroupedRouteView<TItem>(props: {
   ): ContextMenuItem[] => {
     const { item } = row
     if (!item) {
+      if (row.article.draftId) {
+        return [
+          {
+            key: 'edit',
+            label: copy('editPost'),
+            onClick: () => openDraft(row.article.draftId ?? ''),
+          },
+        ]
+      }
       return [
         {
           icon: WandSparkles,
@@ -320,17 +352,17 @@ export function ArticleGroupedRouteView<TItem>(props: {
           const same = flagged.filter(
             (status) => status.label === first.label,
           ).length
-          return (
-            <Tag color={first.color}>
-              {same === statuses.length
+          return statusTag({
+            ...first,
+            label:
+              same === statuses.length
                 ? first.label
-                : `${first.label} ${same}/${statuses.length}`}
-            </Tag>
-          )
+                : `${first.label} ${same}/${statuses.length}`,
+          })
         }
         const status = config.getStatus?.(row.item)
         return status ? (
-          <Tag color={status.color}>{status.label}</Tag>
+          statusTag(status)
         ) : (
           <Tag color="success">{copy('ready')}</Tag>
         )
@@ -369,16 +401,27 @@ export function ArticleGroupedRouteView<TItem>(props: {
       render: (_dom, row) => {
         const { item } = row
         if (!item) {
+          const draftId = row.article.draftId
           return (
             <div className={hubStyles.rowActions} data-row-actions="">
               <ActionIcon
-                aria-label={copy(GENERATE_LABEL[config.product])}
-                icon={WandSparkles}
+                aria-label={
+                  draftId
+                    ? copy('editPost')
+                    : copy(GENERATE_LABEL[config.product])
+                }
+                icon={draftId ? Eye : WandSparkles}
                 onClick={() =>
-                  void actions.generate(row.article.id, row.lockedLangs)
+                  draftId
+                    ? openDraft(draftId)
+                    : void actions.generate(row.article.id, row.lockedLangs)
                 }
                 size="small"
-                title={copy(GENERATE_LABEL[config.product])}
+                title={
+                  draftId
+                    ? copy('editPost')
+                    : copy(GENERATE_LABEL[config.product])
+                }
               />
             </div>
           )
@@ -452,22 +495,22 @@ export function ArticleGroupedRouteView<TItem>(props: {
 
   const initialLoading = listQuery.isLoading && !listQuery.data
   const pageAction = config.pageAction
+  const routeContext = {
+    basePath,
+    config: config as ArticleGroupedConfig<unknown>,
+    invalidate,
+  }
+
+  if (outlet) {
+    return (
+      <ArticleGroupedRouteContext.Provider value={routeContext}>
+        {outlet}
+      </ArticleGroupedRouteContext.Provider>
+    )
+  }
 
   return (
-    <ArticleGroupedRouteContext.Provider
-      value={{
-        basePath,
-        config: config as ArticleGroupedConfig<unknown>,
-        invalidate,
-        onBack: () => {
-          const params = new URLSearchParams(search)
-          params.delete('item')
-          params.delete('lang')
-          const next = params.toString()
-          navigate({ pathname: basePath, search: next ? `?${next}` : '' })
-        },
-      }}
-    >
+    <ArticleGroupedRouteContext.Provider value={routeContext}>
       <AiHubPage
         actions={
           pageAction ? (
@@ -515,7 +558,8 @@ export function ArticleGroupedRouteView<TItem>(props: {
               'data-scope-item': 'row',
               onClick: (event) => {
                 if (isInteractiveTarget(event.target)) return
-                if (row.item) openRow(row)
+                if (row.article.draftId) openDraft(row.article.draftId)
+                else if (row.item) openRow(row)
                 else void actions.generate(row.article.id, row.lockedLangs)
               },
               onContextMenu: (event) => {
