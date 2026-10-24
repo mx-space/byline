@@ -20,6 +20,7 @@ import {
   contentPublicationEvents,
   contentRevisions,
   drafts,
+  postAuthors,
 } from '~/database/schema'
 import {
   BaseRepository,
@@ -250,11 +251,26 @@ export class DraftRepository extends BaseRepository {
     return rows.map(mapBranch)
   }
 
+  async isPostAuthor(postId: EntityId | string, userId: string) {
+    const [row] = await this.db
+      .select({ userId: postAuthors.userId })
+      .from(postAuthors)
+      .where(
+        and(
+          eq(postAuthors.postId, parseEntityId(postId)),
+          eq(postAuthors.userId, userId),
+        ),
+      )
+      .limit(1)
+    return !!row
+  }
+
   async createDocumentWithRoot(
     refType: DraftRefType,
     refId: EntityId | string | null,
     snapshot: RevisionSnapshot,
     published: boolean,
+    createdBy: string | null = null,
   ): Promise<{
     document: ContentDocumentRow
     revision: ContentRevisionRow
@@ -268,6 +284,7 @@ export class DraftRepository extends BaseRepository {
           id: documentId,
           refId: refId ? parseEntityId(refId) : null,
           refType,
+          createdBy,
         })
         .returning()
       const [revision] = await tx

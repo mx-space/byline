@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { Injectable, Logger } from '@nestjs/common'
 
 import { AppErrorCode, createAppException } from '~/common/errors'
+import { PERMISSION_PRESETS } from '~/constants/permission.constant'
 import { ConfigsService } from '~/modules/configs/configs.service'
 import {
   EmailService,
@@ -61,6 +62,7 @@ export class UserInviteService {
         email,
         displayName: dto.displayName ?? existing?.displayName ?? null,
         userId: existing?.id ?? null,
+        permissions: dto.permissions ?? null,
       },
       inviter,
     )
@@ -91,6 +93,7 @@ export class UserInviteService {
         email,
         displayName: dto.displayName ?? user.displayName,
         userId: user.id,
+        permissions: dto.permissions ?? null,
       },
       inviter,
     )
@@ -112,6 +115,7 @@ export class UserInviteService {
       email: string
       displayName: string | null
       userId: string | null
+      permissions: number | null
     },
     inviter: { id: string; name?: string },
   ) {
@@ -128,6 +132,7 @@ export class UserInviteService {
       tokenHash: hashInviteToken(token),
       invitedBy: inviter.id,
       userId: target.userId,
+      permissions: target.permissions,
       expiresAt: new Date(Date.now() + INVITE_TTL_MS),
     })
     const acceptUrl = await this.buildAcceptUrl(token)
@@ -197,6 +202,7 @@ export class UserInviteService {
 
   async accept(token: string, dto: AcceptInviteDto) {
     const invite = await this.findUsable(token)
+    const permissions = invite.permissions ?? PERMISSION_PRESETS.author
     if (invite.userId) {
       const converted = await this.userService.convertProfileOnly({
         userId: invite.userId,
@@ -204,6 +210,7 @@ export class UserInviteService {
         username: dto.username,
         displayName: dto.displayName,
         password: dto.password,
+        permissions,
         claimInviteId: invite.id,
       })
       return this.userService.toDetail(converted)
@@ -214,6 +221,7 @@ export class UserInviteService {
         emailVerified: true,
         username: dto.username,
         displayName: dto.displayName || invite.displayName || dto.username,
+        permissions,
       },
       password: dto.password,
       claimInviteId: invite.id,

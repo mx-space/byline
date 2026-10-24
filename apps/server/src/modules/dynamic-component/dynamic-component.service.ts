@@ -7,13 +7,15 @@ import { DynamicComponentRepository } from './dynamic-component.repository'
 import {
   DYNAMIC_CATALOG_VERSION,
   type RegisterDynamicComponentDto,
+  type UpdateDynamicComponentDto,
 } from './dynamic-component.schema'
 import type { DynamicComponentRow } from './dynamic-component.types'
 import { DynamicComponentViews } from './dynamic-component.views'
 
 const NAME_UNIQUE_CONSTRAINT = 'dynamic_components_name_uniq'
+const URL_UNIQUE_CONSTRAINT = 'dynamic_components_url_uniq'
 
-const isNameConflict = (error: unknown): boolean => {
+const findUniqueViolation = (error: unknown): string | null => {
   for (
     let current: unknown = error;
     current && typeof current === 'object';
@@ -23,9 +25,9 @@ const isNameConflict = (error: unknown): boolean => {
       code?: unknown
       constraint?: unknown
     }
-    if (code === '23505' && constraint === NAME_UNIQUE_CONSTRAINT) return true
+    if (code === '23505' && typeof constraint === 'string') return constraint
   }
-  return false
+  return null
 }
 
 @Injectable()
@@ -63,14 +65,49 @@ export class DynamicComponentService {
         actorId,
       )
     } catch (error) {
-      if (isNameConflict(error)) {
-        throw createAppException(AppErrorCode.DYNAMIC_COMPONENT_NAME_CONFLICT, {
-          name: dto.name,
-        })
-      }
-      throw error
+      this.rethrowConflict(error, dto)
     }
     await this.apiCache.invalidate()
     return this.getCatalog()
+  }
+
+  async update(id: string, dto: UpdateDynamicComponentDto) {
+    let row: DynamicComponentRow | null
+    try {
+      row = await this.repository.updateById(id, dto)
+    } catch (error) {
+      this.rethrowConflict(error, dto)
+    }
+    if (!row) {
+      throw createAppException(AppErrorCode.DYNAMIC_COMPONENT_NOT_FOUND, { id })
+    }
+    await this.apiCache.invalidate()
+    return this.getCatalog()
+  }
+
+  async remove(id: string) {
+    if (!(await this.repository.deleteById(id))) {
+      throw createAppException(AppErrorCode.DYNAMIC_COMPONENT_NOT_FOUND, { id })
+    }
+    await this.apiCache.invalidate()
+    return this.getCatalog()
+  }
+
+  private rethrowConflict(
+    error: unknown,
+    dto: { name?: string; url?: string },
+  ): never {
+    const constraint = findUniqueViolation(error)
+    if (constraint === NAME_UNIQUE_CONSTRAINT) {
+      throw createAppException(AppErrorCode.DYNAMIC_COMPONENT_NAME_CONFLICT, {
+        name: dto.name ?? '',
+      })
+    }
+    if (constraint === URL_UNIQUE_CONSTRAINT) {
+      throw createAppException(AppErrorCode.DYNAMIC_COMPONENT_URL_CONFLICT, {
+        url: dto.url ?? '',
+      })
+    }
+    throw error
   }
 }

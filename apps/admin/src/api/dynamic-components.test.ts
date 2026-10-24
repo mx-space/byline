@@ -3,8 +3,10 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { AUTH_BEARER_TOKEN_KEY } from '~/constants/keys'
 
 import {
+  deleteDynamicComponentEntry,
   getDynamicComponents,
   registerDynamicComponentEntry,
+  updateDynamicComponentEntry,
 } from './dynamic-components'
 
 vi.mock('~/constants/env', () => ({ API_URL: 'https://api.example' }))
@@ -77,6 +79,75 @@ it('posts a new entry to /dynamic-components and returns the appended catalog', 
   expect(init.method).toBe('POST')
   expect(JSON.parse(init.body)).toEqual(entry)
   expect(catalog.components).toEqual([entry])
+})
+
+it('patches an entry by id and keeps the id from the catalog', async () => {
+  const stored = {
+    id: '42',
+    name: 'Counter',
+    description: 'Edited',
+    url: 'https://cdn.example/counter.js',
+    initial_height: 320,
+    props_schema: { max_count: 1 },
+  }
+  respond(200, { data: { version: 1, components: [stored] } })
+
+  const catalog = await updateDynamicComponentEntry('42', {
+    description: 'Edited',
+  })
+
+  const [url, init] = fetchMock.mock.calls[0]
+  expect(url).toBe('https://api.example/dynamic-components/42')
+  expect(init.method).toBe('PATCH')
+  expect(JSON.parse(init.body)).toEqual({ description: 'Edited' })
+  expect(catalog.components[0]).toEqual({
+    id: '42',
+    name: 'Counter',
+    description: 'Edited',
+    url: 'https://cdn.example/counter.js',
+    initialHeight: 320,
+    propsSchema: { max_count: 1 },
+  })
+})
+
+it('reads the earlier urls of an entry', async () => {
+  respond(200, {
+    data: {
+      version: 1,
+      components: [
+        {
+          id: '7',
+          name: 'Ring',
+          description: '',
+          url: 'https://cdn.example/v3.js',
+          initial_height: 100,
+          props_schema: {},
+          previous_urls: [
+            'https://cdn.example/v1.js',
+            'https://cdn.example/v2.js',
+          ],
+        },
+      ],
+    },
+  })
+
+  const catalog = await getDynamicComponents()
+
+  expect(catalog.components[0].previousUrls).toEqual([
+    'https://cdn.example/v1.js',
+    'https://cdn.example/v2.js',
+  ])
+})
+
+it('deletes an entry by id', async () => {
+  respond(200, { data: { version: 1, components: [] } })
+
+  const catalog = await deleteDynamicComponentEntry('42')
+
+  const [url, init] = fetchMock.mock.calls[0]
+  expect(url).toBe('https://api.example/dynamic-components/42')
+  expect(init.method).toBe('DELETE')
+  expect(catalog.components).toEqual([])
 })
 
 it('surfaces the server error envelope', async () => {

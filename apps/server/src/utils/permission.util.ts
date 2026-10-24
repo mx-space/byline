@@ -1,9 +1,8 @@
 import type { UserPermissionFlag } from '~/constants/permission.constant'
 
 export function hasPermission(
-  _user: { permissions?: number | null } | null | undefined,
-  _permission: UserPermissionFlag,
+  user: { permissions?: number | null } | null | undefined,
+  permission: UserPermissionFlag,
 ): boolean {
-  // v1 grants every permission to every user; enforcement is added here without a schema change.
-  return true
+  return ((user?.permissions ?? 0) & permission) === permission
 }

@@ -1,6 +1,8 @@
 import { Body, Delete, Get, Put, Query } from '@nestjs/common'
 
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
+import { UserPermission } from '~/constants/permission.constant'
 import { EmailService } from '~/processors/helper/helper.email.service'
 
 import { OptionController } from '../option.decorator'
@@ -36,6 +38,7 @@ export class EmailOptionController {
   }
 
   @Put('/template')
+  @RequirePermissions(UserPermission.ManageSettings)
   async overrideEmailTemplate(
     @Query({ schema: EmailTemplateTypeSchema }) { type }: EmailTemplateTypeDto,
     @Body({ schema: EmailTemplateBodySchema }) body: EmailTemplateBodyDto,
@@ -47,6 +50,7 @@ export class EmailOptionController {
   }
 
   @Delete('/template')
+  @RequirePermissions(UserPermission.ManageSettings)
   async deleteEmailTemplate(
     @Query({ schema: EmailTemplateTypeSchema }) { type }: EmailTemplateTypeDto,
   ) {

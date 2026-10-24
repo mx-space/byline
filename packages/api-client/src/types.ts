@@ -428,12 +428,14 @@ export interface TranslationTaskResult {
 }
 
 export interface DynamicComponent {
+  id: string
   name: string
   description: string
   url: string
   initialHeight: number
   propsSchema: Record<string, unknown>
   parentUrl?: string
+  previousUrls: string[]
 }
 
 export interface DynamicComponentCatalog {
@@ -449,6 +451,10 @@ export interface RegisterDynamicComponentInput {
   propsSchema?: Record<string, unknown>
   parentUrl?: string
 }
+
+export type UpdateDynamicComponentInput = Partial<
+  Omit<RegisterDynamicComponentInput, 'parentUrl'>
+> & { parentUrl?: string | null }
 
 export type FileType = 'image' | 'file' | 'avatar' | 'icon' | 'video' | 'audio'
 

@@ -23,6 +23,9 @@ export interface UserDetail extends AuthorProfile {
 
 export type UserStatusFilter = 'active' | 'all' | 'deactivated' | 'profile_only'
 
+export type UserRoleFilter =
+  'author' | 'custom' | 'editor' | 'owner' | 'translator'
+
 export interface UserProfileInput {
   avatar?: string | null
   bio?: string | null
@@ -92,12 +95,14 @@ export function updateMe(data: UserProfileInput) {
 
 export function getUsers(params: {
   page?: number
+  role?: UserRoleFilter
   search?: string
   size?: number
   status?: UserStatusFilter
 }) {
   return getJson<PaginateResult<UserDetail>>('/users', {
     page: params.page,
+    role: params.role,
     search: params.search || undefined,
     size: params.size,
     status: params.status,
@@ -136,15 +141,26 @@ export function getInvites() {
   return getJson<UserInvite[]>('/users/invites')
 }
 
-export function createInvite(data: { displayName?: string; email: string }) {
+export function createInvite(data: {
+  displayName?: string
+  email: string
+  permissions?: number
+}) {
   return postJson<CreatedUserInvite, typeof data>('/users/invites', data)
 }
 
 export function inviteExistingUser(
   id: string,
-  data: { displayName?: string; email?: string },
+  data: { displayName?: string; email?: string; permissions?: number },
 ) {
   return postJson<CreatedUserInvite, typeof data>(`/users/${id}/invite`, data)
+}
+
+export function setUserPermissions(id: string, permissions: number) {
+  return patchJson<UserDetail, { permissions: number }>(
+    `/users/${id}/permissions`,
+    { permissions },
+  )
 }
 
 export function revokeInvite(id: string) {

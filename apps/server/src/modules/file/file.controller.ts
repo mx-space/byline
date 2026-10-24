@@ -21,10 +21,12 @@ import { lookup } from 'mime-types'
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { HTTPDecorators } from '~/common/decorators/http.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
 import { STATIC_FILE_DIR } from '~/constants/path.constant'
+import { UserPermission } from '~/constants/permission.constant'
 import { ConfigsService } from '~/modules/configs/configs.service'
 import { UploadService } from '~/processors/helper/helper.upload.service'
 import { type BasicPagerDto, BasicPagerSchema } from '~/shared/dto/pager.dto'
@@ -65,6 +67,7 @@ export class FileController {
   @Post('/references/reconcile')
   @HttpCode(200)
   @Auth()
+  @RequirePermissions(UserPermission.ManageFiles)
   async reconcileFileReferences(
     @Body({ schema: ReconcileFileReferencesSchema })
     body: ReconcileFileReferencesDto,
@@ -74,6 +77,7 @@ export class FileController {
 
   @Delete('/orphans/batch')
   @Auth()
+  @RequirePermissions(UserPermission.ManageFiles)
   async batchDeleteOrphans(
     @Body({ schema: BatchOrphanDeleteSchema }) body: BatchOrphanDeleteDto,
   ) {
@@ -116,6 +120,7 @@ export class FileController {
   @Post('/orphans/cleanup')
   @HttpCode(200)
   @Auth()
+  @RequirePermissions(UserPermission.ManageFiles)
   async cleanupOrphanFiles(@Query('maxAgeMinutes') maxAgeMinutes?: number) {
     return this.fileReferenceService.cleanupOrphanFiles(maxAgeMinutes || 60)
   }
@@ -186,6 +191,7 @@ export class FileController {
 
   @Post('/upload')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   async upload(
     @Query({ schema: FileUploadSchema }) query: FileUploadDto,
     @Req() req: FastifyRequest,
@@ -336,6 +342,7 @@ export class FileController {
 
   @Delete('/:type/:name')
   @Auth()
+  @RequirePermissions(UserPermission.ManageFiles)
   async delete(@Param({ schema: FileQuerySchema }) params: FileQueryDto) {
     const { type, name } = params
     await this.service.deleteFile(type, name)
@@ -343,6 +350,7 @@ export class FileController {
 
   @Auth()
   @Patch('/:type/:name/rename')
+  @RequirePermissions(UserPermission.ManageFiles)
   async rename(
     @Param({ schema: FileQuerySchema }) params: FileQueryDto,
     @Query({ schema: RenameFileQuerySchema }) query: RenameFileQueryDto,

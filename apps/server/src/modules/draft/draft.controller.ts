@@ -2,9 +2,13 @@ import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
+import { CurrentUser } from '~/common/decorators/current-user.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
+import { UserPermission } from '~/constants/permission.constant'
+import type { SessionUser } from '~/modules/auth/auth.types'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 
 import { DraftRefType } from './draft.enum'
@@ -37,8 +41,12 @@ export class DraftController {
 
   @Post('/')
   @Auth()
-  create(@Body({ schema: CreateDraftSchema }) body: CreateDraftDto) {
-    return this.draftService.create(body)
+  @RequirePermissions(UserPermission.EditPost)
+  create(
+    @CurrentUser() user: SessionUser,
+    @Body({ schema: CreateDraftSchema }) body: CreateDraftDto,
+  ) {
+    return this.draftService.create(body, user)
   }
 
   @Get('/')
@@ -98,19 +106,23 @@ export class DraftController {
 
   @Put('/documents/:documentId/share')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   setShare(
+    @CurrentUser() user: SessionUser,
     @Param({ schema: DraftDocumentIdSchema }) params: DraftDocumentIdDto,
     @Body({ schema: SetDraftShareSchema }) body: SetDraftShareDto,
   ) {
-    return this.draftService.setShare(params.documentId, body)
+    return this.draftService.setShare(params.documentId, body, user)
   }
 
   @Delete('/documents/:documentId/share')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   async deleteShare(
+    @CurrentUser() user: SessionUser,
     @Param({ schema: DraftDocumentIdSchema }) params: DraftDocumentIdDto,
   ) {
-    await this.draftService.deleteShare(params.documentId)
+    await this.draftService.deleteShare(params.documentId, user)
     return { success: true }
   }
 
@@ -146,17 +158,23 @@ export class DraftController {
 
   @Put('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   update(
+    @CurrentUser() user: SessionUser,
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: UpdateDraftSchema }) body: UpdateDraftDto,
   ) {
-    return this.draftService.update(params.id, body)
+    return this.draftService.update(params.id, body, user)
   }
 
   @Delete('/:id')
   @Auth()
-  async delete(@Param({ schema: EntityIdSchema }) params: EntityIdDto) {
-    await this.draftService.delete(params.id)
+  @RequirePermissions(UserPermission.EditPost)
+  async delete(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+  ) {
+    await this.draftService.delete(params.id, user)
     return { success: true }
   }
 }

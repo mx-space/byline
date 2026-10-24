@@ -1,7 +1,7 @@
 {
   "name": "@mx-space/byline-admin",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.4",
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development vite --mode development --open --host",
@@ -88,11 +88,11 @@
     "shiki": "^4.5.0",
     "thumbhash": "0.1.1",
     "tinykeys": "4.0.1",
-    "zod": "4.5.4",
+    "zod": "4.6.6",
     "zustand": "5.0.15"
   },
   "devDependencies": {
-    "@babel/core": "8.0.6",
+    "@babel/core": "8.0.9",
     "@babel/parser": "^8.0.6",
     "@babel/types": "^8.0.6",
     "@rolldown/plugin-babel": "0.2.4",

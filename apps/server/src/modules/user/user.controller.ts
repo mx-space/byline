@@ -22,6 +22,8 @@ import {
   type InviteExistingUserDto,
   InviteExistingUserSchema,
   type UpdateUserDto,
+  type UpdateUserPermissionsDto,
+  UpdateUserPermissionsSchema,
   UpdateUserSchema,
   type UserListQueryDto,
   UserListQuerySchema,
@@ -149,6 +151,18 @@ export class UserController {
     @Body({ schema: UpdateUserSchema }) body: UpdateUserDto,
   ) {
     return this.userService.updateProfile(params.id, body, user.id)
+  }
+
+  @Patch('/:id/permissions')
+  @Auth()
+  @RequirePermissions(UserPermission.ManageUsers)
+  setPermissions(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+    @Body({ schema: UpdateUserPermissionsSchema })
+    body: UpdateUserPermissionsDto,
+  ) {
+    return this.userService.setPermissions(params.id, body.permissions, user.id)
   }
 
   @Post('/:id/invite')

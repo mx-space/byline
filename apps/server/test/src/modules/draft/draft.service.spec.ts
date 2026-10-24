@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { AppErrorCode } from '~/common/errors/app-error-code'
 import { AppException } from '~/common/errors/exception.types'
 import { BusinessEvents, EventScope } from '~/constants/business-event.constant'
+import {
+  ALL_PERMISSIONS,
+  PERMISSION_PRESETS,
+} from '~/constants/permission.constant'
 import { DraftRefType } from '~/modules/draft/draft.enum'
 import { DraftService } from '~/modules/draft/draft.service'
 import { FileReferenceType } from '~/modules/file/file-reference.enum'
@@ -46,6 +50,9 @@ const branch = {
   updatedAt: at,
 }
 
+const owner = { id: 'owner', permissions: ALL_PERMISSIONS }
+const author = { id: 'writer', permissions: PERMISSION_PRESETS.author }
+
 const harness = () => {
   const repository = {
     archiveBranch: vi.fn(),
@@ -62,6 +69,7 @@ const harness = () => {
     findRevisionsByIds: vi.fn(),
     findShareByDocument: vi.fn(),
     findShareByToken: vi.fn(),
+    isPostAuthor: vi.fn(),
     saveBranch: vi.fn(),
     upsertShare: vi.fn(),
   }
@@ -101,12 +109,15 @@ describe('DraftService tree revisions', () => {
         : ['branch-head', 'published-1', 'root'],
     )
 
-    const created = await service.create({
-      baseRevisionId: 'published-1',
-      data: snapshot('New branch'),
-      refId: 'post-1',
-      refType: DraftRefType.Post,
-    } as never)
+    const created = await service.create(
+      {
+        baseRevisionId: 'published-1',
+        data: snapshot('New branch'),
+        refId: 'post-1',
+        refType: DraftRefType.Post,
+      } as never,
+      owner,
+    )
 
     expect(repository.createBranch).toHaveBeenCalledWith(
       document.id,
@@ -133,10 +144,14 @@ describe('DraftService tree revisions', () => {
     })
 
     const error = await service
-      .update(branch.id, {
-        data: snapshot('Loser'),
-        expectedHeadRevisionId: 'branch-head',
-      } as never)
+      .update(
+        branch.id,
+        {
+          data: snapshot('Loser'),
+          expectedHeadRevisionId: 'branch-head',
+        } as never,
+        owner,
+      )
       .catch((reason) => reason)
 
     expect(error).toBeInstanceOf(AppException)
@@ -246,13 +261,119 @@ describe('DraftService tree revisions', () => {
     const { fileReferences, repository, service } = harness()
     repository.archiveBranch.mockResolvedValue(branch)
 
-    await service.delete(branch.id)
+    await service.delete(branch.id, owner)
 
     expect(repository.archiveBranch).toHaveBeenCalledWith(branch.id)
     expect(fileReferences.removeReferencesForDocument).toHaveBeenCalledWith(
       branch.id,
       FileReferenceType.Draft,
     )
+  })
+})
+
+describe('DraftService ownership', () => {
+  const save = { data: snapshot('Edit'), expectedHeadRevisionId: 'branch-head' }
+
+  it('lets a post author edit a branch of their post', async () => {
+    const { repository, service } = harness()
+    repository.findBranchById.mockResolvedValue(branch)
+    repository.findDocumentById.mockResolvedValue(document)
+    repository.isPostAuthor.mockResolvedValue(true)
+    repository.saveBranch.mockResolvedValue({ kind: 'missing' })
+
+    const error = await service
+      .update(branch.id, save as never, author)
+      .catch((reason) => reason)
+
+    expect(repository.isPostAuthor).toHaveBeenCalledWith('post-1', 'writer')
+    expect(error.code).toBe(AppErrorCode.DRAFT_NOT_FOUND)
+  })
+
+  it('refuses an author editing someone else’s post', async () => {
+    const { repository, service } = harness()
+    repository.findBranchById.mockResolvedValue(branch)
+    repository.findDocumentById.mockResolvedValue(document)
+    repository.isPostAuthor.mockResolvedValue(false)
+
+    const error = await service
+      .update(branch.id, save as never, author)
+      .catch((reason) => reason)
+
+    expect(error.code).toBe(AppErrorCode.PERMISSION_DENIED)
+    expect(repository.saveBranch).not.toHaveBeenCalled()
+  })
+
+  it('keeps a post editable by the member who started it after someone else publishes it', async () => {
+    const { repository, service } = harness()
+    repository.findBranchById.mockResolvedValue(branch)
+    repository.findDocumentById.mockResolvedValue({
+      ...document,
+      createdBy: 'writer',
+    })
+    repository.isPostAuthor.mockResolvedValue(false)
+    repository.saveBranch.mockResolvedValue({ kind: 'missing' })
+
+    const error = await service
+      .update(branch.id, save as never, author)
+      .catch((reason) => reason)
+
+    expect(error.code).toBe(AppErrorCode.DRAFT_NOT_FOUND)
+  })
+
+  it('lets the creator of an unpublished post keep editing it, and nobody else', async () => {
+    const { repository, service } = harness()
+    repository.findBranchById.mockResolvedValue(branch)
+    repository.findDocumentById.mockResolvedValue({
+      ...document,
+      createdBy: 'writer',
+      publishedRevisionId: null,
+      refId: null,
+    })
+
+    await expect(
+      service.delete(branch.id, { ...author, id: 'someone-else' }),
+    ).rejects.toMatchObject({ code: AppErrorCode.PERMISSION_DENIED })
+    repository.archiveBranch.mockResolvedValue(branch)
+    await service.delete(branch.id, author)
+    expect(repository.archiveBranch).toHaveBeenCalledWith(branch.id)
+    expect(repository.isPostAuthor).not.toHaveBeenCalled()
+  })
+
+  it('records who started a new post', async () => {
+    const { repository, service } = harness()
+    repository.createDocumentWithRoot.mockResolvedValue({
+      document: { ...document, refId: null, createdBy: 'writer' },
+      revision: revision('root', null, 'New'),
+    })
+    repository.createBranch.mockResolvedValue({
+      branch,
+      headRevision: revision('branch-head', 'root', 'New'),
+    })
+    repository.findRevisionById.mockResolvedValue(revision('root', null, 'New'))
+    repository.findAncestryIds.mockResolvedValue(['root'])
+
+    await service
+      .create(
+        { data: snapshot('New'), refType: DraftRefType.Post } as never,
+        author,
+      )
+      .catch(() => {})
+
+    expect(repository.createDocumentWithRoot).toHaveBeenCalledWith(
+      DraftRefType.Post,
+      null,
+      snapshot('New'),
+      false,
+      'writer',
+    )
+  })
+
+  it('skips the lookup for members who may edit others’ posts', async () => {
+    const { repository, service } = harness()
+    repository.archiveBranch.mockResolvedValue(branch)
+    await service.delete(branch.id, owner)
+    expect(repository.findBranchById).not.toHaveBeenCalled()
+    expect(repository.isPostAuthor).not.toHaveBeenCalled()
   })
 })
 
@@ -273,10 +394,11 @@ describe('DraftService share links', () => {
       async (documentId: string, token: string) => ({ documentId, token }),
     )
 
-    await service.setShare(document.id, {
-      mode: 'pinned',
-      revisionId: 'published-1',
-    })
+    await service.setShare(
+      document.id,
+      { mode: 'pinned', revisionId: 'published-1' },
+      owner,
+    )
 
     expect(repository.upsertShare).toHaveBeenCalledWith(
       document.id,
@@ -372,10 +494,14 @@ describe('DraftService realtime notification', () => {
       kind: 'ok',
     })
 
-    await service.update(branch.id, {
-      data: snapshot('Saved'),
-      expectedHeadRevisionId: 'branch-head',
-    } as never)
+    await service.update(
+      branch.id,
+      {
+        data: snapshot('Saved'),
+        expectedHeadRevisionId: 'branch-head',
+      } as never,
+      owner,
+    )
 
     const { emit } = (service as unknown as { eventManager: { emit: unknown } })
       .eventManager as { emit: ReturnType<typeof vi.fn> }

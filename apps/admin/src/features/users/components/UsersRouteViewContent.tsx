@@ -6,6 +6,7 @@ import {
   Flexbox,
   SearchBar,
   Segmented,
+  Select,
   Tag,
   Text,
 } from '@lobehub/ui'
@@ -26,8 +27,9 @@ import {
   useSearchParams,
 } from 'react-router'
 
-import type { UserDetail, UserStatusFilter } from '~/api/users'
+import type { UserDetail, UserRoleFilter, UserStatusFilter } from '~/api/users'
 import { getMe, getUsers } from '~/api/users'
+import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { Page } from '~/ui/page'
 import { emptyOr } from '~/ui/placeholders'
@@ -40,11 +42,22 @@ import {
 import { Button } from '~/ui/site-button'
 
 import { useUsersCopy } from '../copy'
-import { getUserStatus, parseUserStatusFilter, showValue } from '../utils/users'
+import {
+  hasPermission,
+  Permission,
+  ROLE_LABEL_KEYS,
+} from '../utils/permissions'
+import {
+  getUserStatus,
+  parseUserRoleFilter,
+  parseUserStatusFilter,
+  showValue,
+} from '../utils/users'
 import { CreateAuthorModal } from './CreateAuthorModal'
 import { InviteUserModal } from './InviteUserModal'
 import { PendingInvites } from './PendingInvites'
 import { UserAvatar } from './UserAvatar'
+import { UserRoleTag } from './UserRoleTag'
 import { UsersRouteContext } from './users-route-context'
 import { UserStatusTag } from './UserStatusTag'
 
@@ -84,6 +97,7 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
 
 export function UsersRouteViewContent() {
   const copy = useUsersCopy()
+  const { t } = useI18n()
   const table = useRecordTable()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -91,6 +105,7 @@ export function UsersRouteViewContent() {
   const [searchParams, setSearchParams] = useSearchParams()
   const q = searchParams.get('q') ?? ''
   const status = parseUserStatusFilter(searchParams.get('status'))
+  const role = parseUserRoleFilter(searchParams.get('role'))
   const search = searchParams.toString()
   const [draft, setDraft] = useState(q)
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -140,6 +155,18 @@ export function UsersRouteViewContent() {
     )
   }
 
+  const setRole = (value: UserRoleFilter | 'all') => {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        if (value === 'all') next.delete('role')
+        else next.set('role', value)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
   const clearFilters = () => {
     setDraft('')
     setSearchParams(new URLSearchParams(), { replace: true })
@@ -155,6 +182,7 @@ export function UsersRouteViewContent() {
   const ctxValue = useMemo(
     () => ({
       currentUserId: meQuery.data?.id ?? null,
+      currentUserPermissions: meQuery.data?.permissions ?? 0,
       onBack: () =>
         navigate({
           pathname: '/users',
@@ -165,7 +193,17 @@ export function UsersRouteViewContent() {
         await actionRef.current?.reload()
       },
     }),
-    [meQuery.data?.id, navigate, queryClient, search],
+    [
+      meQuery.data?.id,
+      meQuery.data?.permissions,
+      navigate,
+      queryClient,
+      search,
+    ],
+  )
+  const canManageUsers = hasPermission(
+    meQuery.data?.permissions,
+    Permission.ManageUsers,
   )
 
   const columns = useMemo<ProColumns<UserDetail>[]>(
@@ -210,6 +248,22 @@ export function UsersRouteViewContent() {
         width: 240,
       },
       {
+        dataIndex: 'permissions',
+        render: (_dom, user) =>
+          getUserStatus(user) === 'profileOnly' ? (
+            '--'
+          ) : (
+            <UserRoleTag permissions={user.permissions} />
+          ),
+        responsive: ['sm'],
+        title: (
+          <span className={styles.headerTitle}>
+            {t('users.filter.roleLabel')}
+          </span>
+        ),
+        width: 140,
+      },
+      {
         dataIndex: 'status',
         render: (_dom, user) => <UserStatusTag status={getUserStatus(user)} />,
         title: (
@@ -218,10 +272,10 @@ export function UsersRouteViewContent() {
         width: 160,
       },
     ],
-    [copy, meQuery.data?.id, search, table.pin],
+    [copy, meQuery.data?.id, search, t, table.pin],
   )
 
-  const filtered = status !== 'all' || q.trim().length > 0
+  const filtered = status !== 'all' || role !== 'all' || q.trim().length > 0
   const emptyNode =
     listError && !showStale ? (
       <Empty
@@ -240,7 +294,11 @@ export function UsersRouteViewContent() {
     ) : (
       <Empty
         action={
-          <Button onClick={() => setInviteOpen(true)}>{copy('invite')}</Button>
+          canManageUsers ? (
+            <Button onClick={() => setInviteOpen(true)}>
+              {copy('invite')}
+            </Button>
+          ) : undefined
         }
         description={copy('description')}
         title={copy('emptyTitle')}
@@ -251,18 +309,20 @@ export function UsersRouteViewContent() {
     <UsersRouteContext.Provider value={ctxValue}>
       <Page
         actions={
-          <>
-            <Button icon={UserRoundPen} onClick={() => setAuthorOpen(true)}>
-              {copy('addAuthor')}
-            </Button>
-            <Button
-              icon={UserPlus}
-              onClick={() => setInviteOpen(true)}
-              type="primary"
-            >
-              {copy('invite')}
-            </Button>
-          </>
+          canManageUsers ? (
+            <>
+              <Button icon={UserRoundPen} onClick={() => setAuthorOpen(true)}>
+                {copy('addAuthor')}
+              </Button>
+              <Button
+                icon={UserPlus}
+                onClick={() => setInviteOpen(true)}
+                type="primary"
+              >
+                {copy('invite')}
+              </Button>
+            </>
+          ) : undefined
         }
         count={total ?? undefined}
         description={copy('description')}
@@ -318,14 +378,20 @@ export function UsersRouteViewContent() {
               setting: false,
             }}
             pagination={{ hideOnSinglePage: true, pageSize: 20 }}
-            params={{ q, status }}
+            params={{ q, role, status }}
             request={async (requestParams) => {
               const keyword =
                 typeof requestParams.q === 'string'
                   ? requestParams.q.trim()
                   : ''
+              const roleFilter = parseUserRoleFilter(
+                typeof requestParams.role === 'string'
+                  ? requestParams.role
+                  : null,
+              )
               const result = await getUsers({
                 page: requestParams.current ?? 1,
+                role: roleFilter === 'all' ? undefined : roleFilter,
                 search: keyword || undefined,
                 size: Math.min(requestParams.pageSize ?? 20, 100),
                 status: parseUserStatusFilter(
@@ -370,6 +436,26 @@ export function UsersRouteViewContent() {
                     { label: copy('statusDeactivated'), value: 'deactivated' },
                   ]}
                   value={status}
+                />
+                <Select
+                  aria-label={t('users.filter.roleLabel')}
+                  onChange={(value) => setRole(value as UserRoleFilter | 'all')}
+                  options={[
+                    { label: t('users.filter.roleAll'), value: 'all' },
+                    ...(
+                      [
+                        'owner',
+                        'editor',
+                        'author',
+                        'translator',
+                        'custom',
+                      ] as const
+                    ).map((value) => ({
+                      label: t(ROLE_LABEL_KEYS[value]),
+                      value,
+                    })),
+                  ]}
+                  value={role}
                 />
               </div>,
             ]}

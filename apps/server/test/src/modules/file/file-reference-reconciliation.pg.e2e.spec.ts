@@ -80,7 +80,7 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
 
   beforeEach(async () => {
     await pool.query(
-      'TRUNCATE TABLE file_usages, file_references, posts, options, categories, users, ai_tts, ai_tts_blocks RESTART IDENTITY CASCADE',
+      'TRUNCATE TABLE file_usages, file_references, posts, options, categories, users, ai_tts, ai_tts_blocks, dynamic_components RESTART IDENTITY CASCADE',
     )
     await rm(root, { force: true, recursive: true })
     await mkdir(root, { recursive: true })
@@ -435,6 +435,97 @@ describe('File reference reconciliation (real PG and filesystem)', () => {
       .from(schema.fileReferences)
       .where(eq(schema.fileReferences.fileUrl, audioUrl))
     expect(reference?.status).toBe(FileReferenceStatus.Pending)
+  })
+
+  it('treats dynamic component modules in the catalog as referenced, including the previous version', async () => {
+    const currentUrl = `${serverUrl}/objects/file/versions/widget-v2.js`
+    const previousUrl = `${serverUrl}/objects/file/versions/widget-v1.js`
+    await putFile('file', 'versions/widget-v2.js')
+    await putFile('file', 'versions/widget-v1.js')
+
+    await db.insert(schema.dynamicComponents).values({
+      id: '9101',
+      name: 'Widget',
+      url: currentUrl,
+      initialHeight: 200,
+      parentUrl: previousUrl,
+    })
+    await db.insert(schema.fileReferences).values([
+      {
+        id: '9102',
+        fileName: 'widget-v2.js',
+        fileUrl: currentUrl,
+        status: FileReferenceStatus.Pending,
+      },
+      {
+        id: '9103',
+        fileName: 'widget-v1.js',
+        fileUrl: previousUrl,
+        status: FileReferenceStatus.Pending,
+      },
+    ])
+
+    await expect(fileReferenceService.listOrphanFiles(1, 24)).resolves.toEqual(
+      expect.objectContaining({ data: [] }),
+    )
+    await expect(
+      usageRepository.findReferencedUrls([currentUrl, previousUrl]),
+    ).resolves.toEqual(new Set([currentUrl, previousUrl]))
+    await expect(
+      usageRepository.findUsageMatches([currentUrl, previousUrl]),
+    ).resolves.toEqual(
+      expect.arrayContaining([
+        {
+          fileUrl: currentUrl,
+          sourceField: 'url',
+          sourceId: '9101',
+          sourceType: 'dynamic_component',
+        },
+        {
+          fileUrl: previousUrl,
+          sourceField: 'parentUrl',
+          sourceId: '9101',
+          sourceType: 'dynamic_component',
+        },
+      ]),
+    )
+  })
+
+  it('treats every earlier version of a catalog module as referenced', async () => {
+    const oldestUrl = `${serverUrl}/objects/file/versions/widget-v0.js`
+    await putFile('file', 'versions/widget-v0.js')
+
+    await db.insert(schema.dynamicComponents).values({
+      id: '9201',
+      name: 'Widget',
+      url: `${serverUrl}/objects/file/versions/widget-v2.js`,
+      initialHeight: 200,
+      parentUrl: `${serverUrl}/objects/file/versions/widget-v1.js`,
+      previousUrls: [oldestUrl],
+    })
+    await db.insert(schema.fileReferences).values({
+      id: '9202',
+      fileName: 'widget-v0.js',
+      fileUrl: oldestUrl,
+      status: FileReferenceStatus.Pending,
+    })
+
+    await expect(fileReferenceService.listOrphanFiles(1, 24)).resolves.toEqual(
+      expect.objectContaining({ data: [] }),
+    )
+    await expect(
+      usageRepository.findReferencedUrls([oldestUrl]),
+    ).resolves.toEqual(new Set([oldestUrl]))
+    await expect(
+      usageRepository.findUsageMatches([oldestUrl]),
+    ).resolves.toEqual([
+      {
+        fileUrl: oldestUrl,
+        sourceField: 'previousUrls',
+        sourceId: '9201',
+        sourceType: 'dynamic_component',
+      },
+    ])
   })
 
   it('rolls back usage replacement and status changes when an insert fails', async () => {

@@ -14,10 +14,12 @@ import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { CurrentReaderId } from '~/common/decorators/current-user.decorator'
 import { HTTPDecorators } from '~/common/decorators/http.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { HasAdminAccess } from '~/common/decorators/role.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { withMeta } from '~/common/response/envelope.types'
 import { MetaObjectBuilder } from '~/common/response/meta-builder'
+import { UserPermission } from '~/constants/permission.constant'
 import {
   type CreateSummaryTaskDto,
   CreateSummaryTaskSchema,
@@ -52,6 +54,7 @@ export class AiSummaryController {
 
   @Post('/task')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   createSummaryTask(
     @Body({ schema: CreateSummaryTaskSchema }) body: CreateSummaryTaskDto,
   ) {
@@ -60,6 +63,7 @@ export class AiSummaryController {
 
   @Post('/task/translate')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   async createSummaryTranslationTask(
     @Body({ schema: CreateSummaryTranslationTaskSchema })
     body: CreateSummaryTranslationTaskDto,
@@ -118,6 +122,7 @@ export class AiSummaryController {
 
   @Patch('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   updateSummary(
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: UpdateSummarySchema }) body: UpdateSummaryDto,
@@ -127,6 +132,7 @@ export class AiSummaryController {
 
   @Delete('/:id')
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   deleteSummary(@Param({ schema: EntityIdSchema }) params: EntityIdDto) {
     return this.service.deleteSummaryInDb(params.id)
   }

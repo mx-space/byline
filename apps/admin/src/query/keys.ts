@@ -145,6 +145,11 @@ export const adminQueryKeys = {
     tasksByGroup: adminTaskKeys.tasksByGroup,
     tasksRoot: adminTaskKeys.tasksRoot,
   },
+  dynamicComponents: {
+    list: () => ['dynamic-components', 'list'] as const,
+    root: ['dynamic-components'] as const,
+    source: (url: string) => ['dynamic-components', 'source', url] as const,
+  },
   webhooks: {
     dispatchesRoot: (webhookId: string) =>
       ['webhooks', 'dispatches', webhookId] as const,

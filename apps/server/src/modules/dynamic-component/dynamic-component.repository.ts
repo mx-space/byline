@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { asc, sql } from 'drizzle-orm'
+import { asc, eq, sql } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import { dynamicComponents } from '~/database/schema'
@@ -8,6 +8,7 @@ import type { AppDatabase } from '~/processors/database/postgres.provider'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 
 import type {
+  DynamicComponentPatch,
   DynamicComponentRow,
   DynamicComponentUpsertInput,
 } from './dynamic-component.types'
@@ -22,6 +23,7 @@ const mapRow = (
   initialHeight: row.initialHeight,
   propsSchema: row.propsSchema ?? {},
   parentUrl: row.parentUrl,
+  previousUrls: row.previousUrls ?? [],
   createdBy: row.createdBy,
   createdAt: row.createdAt,
 })
@@ -66,5 +68,38 @@ export class DynamicComponentRepository extends BaseRepository {
       })
       .returning()
     return mapRow(row)
+  }
+
+  async updateById(
+    id: string,
+    patch: DynamicComponentPatch,
+  ): Promise<DynamicComponentRow | null> {
+    if (Object.keys(patch).length === 0) {
+      const [row] = await this.db
+        .select()
+        .from(dynamicComponents)
+        .where(eq(dynamicComponents.id, id))
+      return row ? mapRow(row) : null
+    }
+    const previousUrls =
+      patch.url === undefined
+        ? undefined
+        : sql`CASE WHEN ${dynamicComponents.url} IS DISTINCT FROM ${patch.url}
+            THEN array_remove(array_append(array_remove(${dynamicComponents.previousUrls}, ${dynamicComponents.url}), ${dynamicComponents.url}), ${patch.url}::text)
+            ELSE ${dynamicComponents.previousUrls} END`
+    const [row] = await this.db
+      .update(dynamicComponents)
+      .set(previousUrls ? { ...patch, previousUrls } : patch)
+      .where(eq(dynamicComponents.id, id))
+      .returning()
+    return row ? mapRow(row) : null
+  }
+
+  async deleteById(id: string): Promise<boolean> {
+    const rows = await this.db
+      .delete(dynamicComponents)
+      .where(eq(dynamicComponents.id, id))
+      .returning({ id: dynamicComponents.id })
+    return rows.length > 0
   }
 }

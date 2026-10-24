@@ -7,7 +7,10 @@ import { AppErrorCode } from '~/common/errors'
 import { transformResponseCase } from '~/common/response/case-transform'
 import { users } from '~/database/schema'
 import { DynamicComponentRepository } from '~/modules/dynamic-component/dynamic-component.repository'
-import { RegisterDynamicComponentSchema } from '~/modules/dynamic-component/dynamic-component.schema'
+import {
+  RegisterDynamicComponentSchema,
+  UpdateDynamicComponentSchema,
+} from '~/modules/dynamic-component/dynamic-component.schema'
 import { DynamicComponentService } from '~/modules/dynamic-component/dynamic-component.service'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 
@@ -85,12 +88,14 @@ describe('dynamic component catalog (PostgreSQL)', () => {
       before.components.map((item) => item.url),
     )
     expect(after.components.find((item) => item.url === entry(3).url)).toEqual({
+      id: expect.any(String),
       name: 'widget-3-renamed',
       description: 'Widget 3',
       url: entry(3).url,
       initialHeight: 480,
       propsSchema: entry(3).propsSchema,
       parentUrl: entry(0).url,
+      previousUrls: [],
     })
   })
 
@@ -110,6 +115,85 @@ describe('dynamic component catalog (PostgreSQL)', () => {
       code: AppErrorCode.DYNAMIC_COMPONENT_NAME_CONFLICT,
     })
     expect(apiCache.invalidate).not.toHaveBeenCalled()
+  })
+
+  it('updates fields of an entry by id and keeps the rest', async () => {
+    const target = (await service.getCatalog()).components.find(
+      (item) => item.url === entry(5).url,
+    )!
+    apiCache.invalidate.mockClear()
+
+    const after = await service.update(
+      target.id,
+      UpdateDynamicComponentSchema.parse({
+        description: 'Edited',
+        propsSchema: { type: 'object' },
+        parentUrl: '',
+      }),
+    )
+
+    expect(after.components.find((item) => item.id === target.id)).toEqual({
+      ...target,
+      description: 'Edited',
+      propsSchema: { type: 'object' },
+    })
+    expect(apiCache.invalidate).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps every earlier url when the url changes more than once', async () => {
+    const target = (await service.getCatalog()).components.find(
+      (item) => item.url === entry(6).url,
+    )!
+    const v2 = 'https://cdn.example.test/objects/widget-6-v2.js'
+    const v3 = 'https://cdn.example.test/objects/widget-6-v3.js'
+
+    await service.update(target.id, { url: v2, parentUrl: entry(6).url })
+    await service.update(target.id, { description: 'no url change' })
+    const after = await service.update(target.id, { url: v3, parentUrl: v2 })
+
+    expect(
+      after.components.find((item) => item.id === target.id),
+    ).toMatchObject({
+      url: v3,
+      parentUrl: v2,
+      previousUrls: [entry(6).url, v2],
+    })
+  })
+
+  it('rejects an update that takes another entry name or url', async () => {
+    const [first, second] = (await service.getCatalog()).components
+
+    await expect(
+      service.update(second.id, { name: first.name }),
+    ).rejects.toMatchObject({
+      code: AppErrorCode.DYNAMIC_COMPONENT_NAME_CONFLICT,
+    })
+    await expect(
+      service.update(second.id, { url: first.url }),
+    ).rejects.toMatchObject({
+      code: AppErrorCode.DYNAMIC_COMPONENT_URL_CONFLICT,
+    })
+  })
+
+  it('reports a missing entry on update and delete', async () => {
+    await expect(
+      service.update('9999999999', { name: 'ghost' }),
+    ).rejects.toMatchObject({ code: AppErrorCode.DYNAMIC_COMPONENT_NOT_FOUND })
+    await expect(service.remove('9999999999')).rejects.toMatchObject({
+      code: AppErrorCode.DYNAMIC_COMPONENT_NOT_FOUND,
+    })
+  })
+
+  it('removes an entry by id', async () => {
+    const target = (await service.getCatalog()).components.find(
+      (item) => item.url === entry(7).url,
+    )!
+    apiCache.invalidate.mockClear()
+
+    const after = await service.remove(target.id)
+
+    expect(after.components.map((item) => item.id)).not.toContain(target.id)
+    expect(apiCache.invalidate).toHaveBeenCalledTimes(1)
   })
 
   it('serializes to the wire without rewriting propsSchema keys', async () => {

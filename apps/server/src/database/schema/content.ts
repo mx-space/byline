@@ -123,6 +123,9 @@ export const contentDocuments = pgTable(
     updatedAt: updatedAt(),
     refType: text('ref_type').notNull(),
     refId: refText('ref_id'),
+    createdBy: text('created_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
     publishedRevisionId: refText('published_revision_id').references(
       (): AnyPgColumn => contentRevisions.id,
       { onDelete: 'set null' },
@@ -263,6 +266,10 @@ export const dynamicComponents = pgTable(
       .notNull()
       .default(sql`'{}'::jsonb`),
     parentUrl: text('parent_url'),
+    previousUrls: text('previous_urls')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     createdBy: text('created_by').references((): AnyPgColumn => users.id, {
       onDelete: 'set null',
     }),

@@ -29,6 +29,8 @@ const catalog = {
 const service = {
   getCatalog: vi.fn(async () => catalog),
   register: vi.fn(async () => catalog),
+  update: vi.fn(async () => catalog),
+  remove: vi.fn(async () => catalog),
 }
 
 describe('DynamicComponentController contract (e2e)', () => {
@@ -133,4 +135,50 @@ describe('DynamicComponentController contract (e2e)', () => {
       expect(service.register).not.toHaveBeenCalled()
     },
   )
+
+  test.each([
+    ['PATCH', { name: 'x' }],
+    ['DELETE', undefined],
+  ] as const)(
+    '%s /dynamic-components/:id requires a signed-in user',
+    async (method, payload) => {
+      const res = await proxy.app.inject({
+        method,
+        url: `${apiRoutePrefix}/dynamic-components/1234567890`,
+        payload,
+      })
+
+      expect(res.statusCode).toBe(401)
+      expect(service.update).not.toHaveBeenCalled()
+      expect(service.remove).not.toHaveBeenCalled()
+    },
+  )
+
+  test('PATCH /dynamic-components/:id passes a partial entry and keeps propsSchema keys', async () => {
+    const res = await proxy.app.inject({
+      headers: authPassHeader,
+      method: 'PATCH',
+      url: `${apiRoutePrefix}/dynamic-components/1234567890`,
+      payload: { initial_height: 200, props_schema: propsSchema },
+    })
+
+    expect(res.statusCode).toBe(200)
+    expect(service.update).toHaveBeenCalledWith('1234567890', {
+      initialHeight: 200,
+      propsSchema,
+    })
+    expect(res.json().data.components[0].props_schema).toEqual(propsSchema)
+  })
+
+  test('DELETE /dynamic-components/:id removes the entry and returns the catalog', async () => {
+    const res = await proxy.app.inject({
+      headers: authPassHeader,
+      method: 'DELETE',
+      url: `${apiRoutePrefix}/dynamic-components/1234567890`,
+    })
+
+    expect(res.statusCode).toBe(200)
+    expect(service.remove).toHaveBeenCalledWith('1234567890')
+    expect(res.json().data.version).toBe(1)
+  })
 })

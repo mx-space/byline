@@ -55,6 +55,7 @@ import { posts as postsCollection } from '~/data/resources/post'
 import { publishPost } from '~/data/resources/post.mutations'
 import type { AIConfig } from '~/features/settings/types/settings'
 import { useTaskDetailSubscription } from '~/features/tasks/hooks/useTaskSubscription'
+import { hasPermission, Permission } from '~/features/users/utils/permissions'
 import { AgentPanel, useWriteAgent } from '~/features/write/components/agent'
 import { DraftConflictBanner } from '~/features/write/components/DraftConflictBanner'
 import { DraftConflictDialog } from '~/features/write/components/DraftConflictDialog'
@@ -732,6 +733,10 @@ function WritePage(props: { kind: WriteKind }) {
     queryKey: adminQueryKeys.users.me(),
     staleTime: 5 * 60_000,
   })
+  const canPublish = hasPermission(
+    meQuery.data?.permissions,
+    Permission.PublishPost,
+  )
   const authorsQuery = useQuery({
     queryFn: () => getUsers({ page: 1, size: 100, status: 'all' }),
     queryKey: adminQueryKeys.users.authors(),
@@ -1338,6 +1343,7 @@ function WritePage(props: { kind: WriteKind }) {
   }
 
   const publishDraftFromTree = async (draft: DraftModel) => {
+    if (!canPublish) return
     if (!(await confirmSourceSwitch(draft.id))) return
     applyDraft(draft)
     setRevisionsOpen(false)
@@ -1471,7 +1477,7 @@ function WritePage(props: { kind: WriteKind }) {
                     ? 'offline'
                     : 'fresh'
   const requestPublish = () => {
-    if (draftConflictResolving || saveMutation.isPending) return
+    if (!canPublish || draftConflictResolving || saveMutation.isPending) return
     if (draftConflict) {
       setDraftConflictDialogOpen(true)
       return
@@ -1586,6 +1592,7 @@ function WritePage(props: { kind: WriteKind }) {
         }}
         onSave={saveDraftNow}
         onUnpublish={() => {
+          if (!canPublish) return
           void confirmDialog({
             confirmText: t('write.publication.unpublishAction'),
             description: t('write.publication.unpublishDescription'),
@@ -1602,6 +1609,7 @@ function WritePage(props: { kind: WriteKind }) {
         phase={phase}
         publicPath={publicPath}
         publishDisabled={
+          !canPublish ||
           saveMutation.isPending ||
           detailLoading ||
           draftConflictResolving ||

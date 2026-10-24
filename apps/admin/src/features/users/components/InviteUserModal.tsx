@@ -6,11 +6,19 @@ import { z } from 'zod'
 
 import type { CreatedUserInvite, UserDetail } from '~/api/users'
 import { createInvite, getUsers, inviteExistingUser } from '~/api/users'
+import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { FormSkeleton } from '~/ui/placeholders'
 import { Button } from '~/ui/site-button'
 
 import { useUsersCopy } from '../copy'
+import type { InvitableRole } from '../utils/permissions'
+import {
+  INVITABLE_ROLES,
+  PERMISSION_ROLES,
+  ROLE_DESCRIPTION_KEYS,
+  ROLE_LABEL_KEYS,
+} from '../utils/permissions'
 import {
   buildInviteRequest,
   getUserDisplayName,
@@ -23,6 +31,7 @@ const inviteSchema = z.object({
   displayName: z.string(),
   email: z.string(),
   linkedAuthorId: z.string(),
+  role: z.enum(INVITABLE_ROLES),
 })
 
 const emailSchema = z.email()
@@ -59,6 +68,7 @@ function InviteBody(props: {
   user?: Pick<UserDetail, 'displayName' | 'email' | 'id' | 'username'>
 }) {
   const copy = useUsersCopy()
+  const { t } = useI18n()
   const queryClient = useQueryClient()
   const target = props.user
   const [created, setCreated] = useState<CreatedUserInvite | null>(null)
@@ -79,18 +89,24 @@ function InviteBody(props: {
       displayName: string
       email: string
       linkedAuthorId: string
+      role: InvitableRole
     }) => {
       const request = buildInviteRequest({
         displayName: values.displayName,
         email: values.email,
         linkedAuthorId:
           values.linkedAuthorId === NONE ? '' : values.linkedAuthorId,
+        permissions: PERMISSION_ROLES[values.role],
       })
       return request.kind === 'existing'
-        ? inviteExistingUser(request.userId, { email: request.email })
+        ? inviteExistingUser(request.userId, {
+            email: request.email,
+            permissions: request.permissions,
+          })
         : createInvite({
             displayName: request.displayName,
             email: request.email,
+            permissions: request.permissions,
           })
     },
     onError: (mutationError: unknown) => {
@@ -110,6 +126,7 @@ function InviteBody(props: {
       displayName: '',
       email: target?.email ?? '',
       linkedAuthorId: target?.id ?? NONE,
+      role: 'author' as InvitableRole,
     },
     onSubmit: async (values) => {
       const email = values.email.trim()
@@ -131,6 +148,7 @@ function InviteBody(props: {
     schema: inviteSchema,
   })
   const linkedAuthorId = useWatch(form, 'linkedAuthorId')
+  const role = useWatch(form, 'role')
 
   const copyLink = async () => {
     if (!created) return
@@ -222,6 +240,20 @@ function InviteBody(props: {
           <Input />
         </Form.Field>
       )}
+      <Flexbox gap={8}>
+        <Form.Field label={t('users.invite.role')} name="role">
+          <Select
+            options={INVITABLE_ROLES.map((value) => ({
+              label: t(ROLE_LABEL_KEYS[value]),
+              value,
+            }))}
+          />
+        </Form.Field>
+        <Text type="secondary">
+          {role ? t(ROLE_DESCRIPTION_KEYS[role]) : null}{' '}
+          {t('users.invite.roleHint')}
+        </Text>
+      </Flexbox>
       {error ? <Alert title={error} type="error" /> : null}
       <Flexbox gap={8} horizontal justify="flex-end">
         <Button htmlType="button" onClick={props.onClose}>

@@ -38,7 +38,7 @@ overrides:
   typescript: 6.0.3
   undici: ^8.10.2
   whatwg-url: 17.1.0
-  zod: 4.6.5
+  zod: 4.6.6
   'lodash-es@<4.18.0': 4.18.1
   'nanoid@<3.3.8': 5.1.16
   'nanoid@>=4.0.0 <5.0.9': 5.1.16
@@ -77,8 +77,8 @@ overrides:
   '@lexical/yjs': 0.52.0
   # The published @mx-space/editor and @mx-space/ai pin their own haklex
   # versions; keep one headless/litexml runtime across the workspace.
-  '@mx-space/ai>@haklex/rich-headless': 0.54.2
-  '@mx-space/editor>@haklex/rich-headless': 0.54.2
+  '@mx-space/ai>@haklex/rich-headless': 0.54.3
+  '@mx-space/editor>@haklex/rich-headless': 0.54.3
   '@mx-space/editor>@haklex/rich-litexml': 0.54.2
   '@esbuild-kit/core-utils>esbuild': 0.25.12
   '@cloudflare/workers-types': 5.20261005.1
@@ -86,7 +86,7 @@ overrides:
   'brace-expansion@<1.1.16': 1.1.21
   'brace-expansion@>=2.0.0 <2.1.2': 2.1.7
   'brace-expansion@>=3.0.0 <5.0.8': 5.0.12
-  dompurify: 3.4.16
+  dompurify: 3.4.17
   'fast-uri@>=3.0.0 <3.1.4': 3.1.8
   'fast-uri@>=4.0.0 <4.1.1': 4.1.5
   fast-xml-parser: 5.11.2

@@ -104,6 +104,7 @@ export class PublishService implements OnModuleInit {
         : Boolean(existing)
     const payload: PublishTaskPayload = {
       actorId,
+      defaultAuthorId: branch.document.createdBy ?? actorId,
       aiResources: normalizePublishAiResources(
         dto.aiResources ?? branch.document.publishAiResources ?? [],
       ),
@@ -256,7 +257,7 @@ export class PublishService implements OnModuleInit {
         } as Partial<PostModel>)
       : await this.posts.create(
           { ...(data as unknown as PostModel), isPublished: false },
-          payload.actorId,
+          payload.defaultAuthorId ?? payload.actorId,
         )
     if (!saved && existing) {
       saved = await this.findArticle(payload.refType, existing.id)

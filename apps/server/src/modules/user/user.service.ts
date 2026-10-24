@@ -4,8 +4,10 @@ import { hashPassword } from 'better-auth/crypto'
 
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { EventBusEvents } from '~/constants/event-bus.constant'
+import { UserPermission } from '~/constants/permission.constant'
 import { ApiCacheService } from '~/processors/redis/api-cache.service'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
+import { hasPermission } from '~/utils/permission.util'
 import { getAvatar } from '~/utils/tool.util'
 
 import { UserRepository } from './user.repository'
@@ -251,6 +253,7 @@ export class UserService {
     username: string
     displayName?: string
     password: string
+    permissions: number
     claimInviteId: string
   }) {
     const username = input.username.trim().toLowerCase()
@@ -264,6 +267,7 @@ export class UserService {
         email: input.email,
         username,
         displayName: input.displayName,
+        permissions: input.permissions,
         accountId: this.snowflakeService.nextId(),
         passwordHash: await hashPassword(input.password),
         claimInviteId: input.claimInviteId,
@@ -282,6 +286,25 @@ export class UserService {
     }
     await this.apiCache.invalidate()
     return result.row
+  }
+
+  async setPermissions(id: string, permissions: number, actorId: string) {
+    const existing = await this.userRepository.findById(id)
+    if (!existing) {
+      throw createAppException(AppErrorCode.USER_NOT_FOUND, { id })
+    }
+    if (
+      id === actorId &&
+      !hasPermission({ permissions }, UserPermission.ManageUsers)
+    ) {
+      throw createAppException(AppErrorCode.INVALID_PARAMETER, {
+        message: 'You cannot remove your own user management permission',
+      })
+    }
+    const row = await this.userRepository.setPermissions(id, permissions)
+    if (!row) throw createAppException(AppErrorCode.USER_NOT_FOUND, { id })
+    await this.apiCache.invalidate()
+    return this.toDetail(row)
   }
 
   async createFirstUser(dto: CreateFirstUserDto) {

@@ -1883,6 +1883,60 @@ export const enUS = {
   'users.invite.linkAuthorNone': 'None, create a new account',
   'users.invite.linkAuthorHint':
     'When the invite is accepted, this author becomes a sign-in account. Posts and bylines stay attached.',
+  'users.permission.title': 'Permissions',
+  'users.permission.role': 'Role',
+  'users.permission.roleOverwrites':
+    'Picking a role replaces the switches below.',
+  'users.permission.customHint': '{base}, plus: {added}.',
+  'users.permission.customHintNoBase': 'Custom: {added}.',
+  'users.permission.save': 'Save permissions',
+  'users.permission.saved': 'Permissions saved',
+  'users.permission.saveFailed': 'Could not save permissions',
+  'users.permission.selfLock':
+    'You cannot remove your own "Manage users" permission.',
+  'users.permission.readOnly':
+    'Only members who can manage users can change permissions.',
+  'users.permission.editPost': 'Edit posts',
+  'users.permission.editPost.description':
+    'Create posts and edit posts they are an author of',
+  'users.permission.editOthersPost': "Edit others' posts",
+  'users.permission.editOthersPost.description':
+    'Edit posts they are not an author of',
+  'users.permission.publishPost': 'Publish',
+  'users.permission.publishPost.description':
+    'Publish, unpublish and delete posts, and change live posts',
+  'users.permission.editTranslation': 'Edit translations',
+  'users.permission.editTranslation.description':
+    'Generate and edit translations; changes go live directly',
+  'users.permission.manageCategories': 'Manage categories',
+  'users.permission.manageCategories.description':
+    'Create, edit and delete categories',
+  'users.permission.manageFiles': 'Manage files',
+  'users.permission.manageFiles.description':
+    'Delete, rename and clean up files',
+  'users.permission.manageSettings': 'Manage settings',
+  'users.permission.manageSettings.description':
+    'Site, AI providers, webhooks and other settings',
+  'users.permission.manageUsers': 'Manage users',
+  'users.permission.manageUsers.description':
+    'Invite and deactivate members and set their permissions',
+  'users.role.owner': 'Owner',
+  'users.role.owner.description': 'Every permission',
+  'users.role.editor': 'Editor',
+  'users.role.editor.description':
+    'Write, edit and publish posts; manage categories and files',
+  'users.role.author': 'Author',
+  'users.role.author.description':
+    'Write and edit their own posts; cannot publish',
+  'users.role.translator': 'Translator',
+  'users.role.translator.description': 'Edit translations only',
+  'users.role.custom': 'Custom',
+  'users.invite.role': 'Role',
+  'users.invite.roleHint':
+    'You can fine-tune each permission on the user page after they join.',
+  'users.filter.roleLabel': 'Filter by role',
+  'users.filter.roleAll': 'All roles',
+  'users.error.permissionDenied': 'You do not have permission to do this.',
   'users.field.identityLocked':
     'Only the account holder can change the email or username of a sign-in account.',
   'users.error.identityLocked':
@@ -1932,6 +1986,64 @@ export const enUS = {
   'write.seo.imageFallback': 'Uses the cover when left empty',
   'write.publishAi.lockedTranslations':
     'Locked translations are kept as they are: {langs}.',
+  'routes.dynamicComponents.title': 'Dynamic components',
+  'routes.dynamicComponents.description':
+    'ES module widgets writers and the agent can insert into posts.',
+  'dynamicComponents.title': 'Dynamic components',
+  'dynamicComponents.count': '{count} total',
+  'dynamicComponents.add': 'Register',
+  'dynamicComponents.refreshAria': 'Refresh catalog',
+  'dynamicComponents.searchPlaceholder': 'Search name or URL',
+  'dynamicComponents.noMatch': 'No component matches the search',
+  'dynamicComponents.empty.title': 'No dynamic components',
+  'dynamicComponents.empty.description':
+    'Register an ES module, or publish one from the write agent.',
+  'dynamicComponents.detailEmpty.title': 'Choose a component',
+  'dynamicComponents.detailEmpty.description':
+    'Pick one from the left list to view',
+  'dynamicComponents.detail.backAria': 'Back to list',
+  'dynamicComponents.detail.edit': 'Edit',
+  'dynamicComponents.detail.delete': 'Delete',
+  'dynamicComponents.detail.preview': 'Preview',
+  'dynamicComponents.detail.propsSchema': 'Props schema',
+  'dynamicComponents.detail.samplePropsHint':
+    'Only used for this preview. Not saved.',
+  'dynamicComponents.detail.url': 'Module URL',
+  'dynamicComponents.detail.initialHeight': 'Initial height',
+  'dynamicComponents.detail.parentUrl': 'Previous version',
+  'dynamicComponents.detail.noDescription': 'No description',
+  'dynamicComponents.delete.title': 'Delete {name}?',
+  'dynamicComponents.delete.description':
+    'The component leaves the catalog, so writers and the agent can no longer insert it. Posts that already use it keep working.',
+  'dynamicComponents.editor.createTitle': 'Register component',
+  'dynamicComponents.editor.editTitle': 'Edit component',
+  'dynamicComponents.editor.name': 'Name',
+  'dynamicComponents.editor.url': 'Module URL',
+  'dynamicComponents.editor.urlHint':
+    'An ES module that exports mount(container, { host, props }).',
+  'dynamicComponents.editor.upload': 'Upload .js',
+  'dynamicComponents.editor.uploading': 'Uploading…',
+  'dynamicComponents.editor.uploadFailed': 'Upload failed',
+  'dynamicComponents.editor.initialHeight': 'Initial height (px)',
+  'dynamicComponents.editor.description': 'Description',
+  'dynamicComponents.editor.descriptionHint':
+    'The write agent reads this to decide when to use the component.',
+  'dynamicComponents.editor.propsSchema': 'Props schema (JSON Schema)',
+  'dynamicComponents.editor.saving': 'Saving…',
+  'dynamicComponents.editor.validate.nameRequired': 'Name is required',
+  'dynamicComponents.editor.validate.urlRequired': 'Module URL is required',
+  'dynamicComponents.editor.validate.heightInvalid':
+    'Initial height must be a whole number from 0 to 10000',
+  'dynamicComponents.editor.validate.schemaInvalid':
+    'Props schema must be a JSON object',
+  'dynamicComponents.editor.error.nameConflict':
+    'Another component already uses this name',
+  'dynamicComponents.editor.error.urlConflict':
+    'Another component already uses this URL',
+  'dynamicComponents.toast.created': 'Component registered',
+  'dynamicComponents.toast.updated': 'Component updated',
+  'dynamicComponents.toast.deleted': 'Component deleted',
+  'dynamicComponents.toast.deleteFailed': 'Delete failed',
   'write.publishAi.regenerateLocked':
     'Regenerate locked translations too (overwrites manual edits)',
   'ai.action.lock': 'Lock translation',
@@ -1946,4 +2058,42 @@ export const enUS = {
   'settings.schema.site.title': 'Content',
   'settings.schema.site.defaultSourceLang.title': 'Default source language',
   'settings.schema.site.description': 'Defaults for new posts.',
+  'dynamicProps.noFields':
+    "This component's props can't be edited as a form. Switch to JSON.",
+  'dynamicProps.form': 'Form',
+  'dynamicProps.jsonInvalid':
+    'Props must be a JSON object. The last valid value is kept.',
+  'dynamicComponents.detail.source': 'Source',
+  'dynamicComponents.source.title': 'Component source · ES module',
+  'dynamicComponents.source.saveFailed': 'Save failed',
+  'dynamicComponents.source.saved':
+    'Saved as a new version. Posts already using the old version are unchanged.',
+  'dynamicComponents.source.unavailable':
+    'The source of this module could not be loaded, so it cannot be edited here.',
+  'dynamicComponents.source.keptLastWorking':
+    'the preview keeps the last working version',
+  'dynamicComponents.source.revert': 'Revert',
+  'dynamicComponents.source.saveVersion': 'Save as new version',
+  'dynamicComponents.source.leaveTitle': 'Discard unsaved source changes?',
+  'dynamicComponents.source.leaveDescription':
+    'Your edits to the component source have not been saved.',
+  'dynamicNode.placeholder': 'Dynamic component · not chosen',
+  'dynamicNode.settings': 'Dynamic component settings',
+  'dynamicNode.search': 'Search registered components',
+  'dynamicNode.noMatch': 'No registered component matches',
+  'dynamicNode.fieldCount': '{count} fields',
+  'dynamicNode.pickerHint': '↑↓ choose · ↵ confirm · Esc cancel',
+  'dynamicNode.manualLink': 'Not registered? Enter a URL',
+  'dynamicNode.backToPicker': 'Back to registered components',
+  'dynamicNode.url': 'Module URL',
+  'dynamicNode.height': 'Initial height (px)',
+  'dynamicNode.manualHint': 'For modules that are not in the catalog.',
+  'dynamicNode.remove': 'Remove',
+  'dynamicNode.apply': 'Apply',
+  'dynamicNode.done': 'Done',
+  'dynamicNode.liveHint': 'Changes apply as you type',
+  'dynamicNode.outdated': 'Older version',
+  'dynamicNode.outdatedHint':
+    "This block uses an older version of the component. The form follows the current version's schema.",
+  'dynamicComponents.detail.previousUrls': 'Earlier versions',
 } satisfies Record<TranslationKey, string>

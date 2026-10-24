@@ -61,6 +61,7 @@ export const userInvites = pgTable(
     userId: text('user_id').references(() => users.id, {
       onDelete: 'cascade',
     }),
+    permissions: integer('permissions'),
   },
   (table) => [
     uniqueIndex('user_invites_token_hash_uniq').on(table.tokenHash),

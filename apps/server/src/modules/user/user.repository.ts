@@ -9,12 +9,14 @@ import {
   inArray,
   isNotNull,
   isNull,
+  notInArray,
   or,
   type SQL,
   sql,
   TransactionRollbackError,
 } from 'drizzle-orm'
 
+import { PERMISSION_PRESETS } from '~/constants/permission.constant'
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import {
   accounts,
@@ -68,6 +70,9 @@ const toInsertValues = (input: UserCreateInput): typeof users.$inferInsert => ({
   bio: input.bio ?? null,
   url: input.url ?? null,
   isProfileOnly: input.isProfileOnly ?? false,
+  ...(input.permissions === undefined
+    ? {}
+    : { permissions: input.permissions }),
 })
 
 const activeCondition = and(
@@ -132,6 +137,15 @@ export class UserRepository extends BaseRepository {
     return username && row.username === username ? 'username' : 'email'
   }
 
+  async setPermissions(id: string, permissions: number) {
+    const [row] = await this.db
+      .update(users)
+      .set({ permissions, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning()
+    return row ? mapRow(row) : null
+  }
+
   async countActive(): Promise<number> {
     const [row] = await this.db
       .select({ count: sql<number>`count(*)::int` })
@@ -163,6 +177,14 @@ export class UserRepository extends BaseRepository {
         conditions.push(eq(users.isProfileOnly, true))
         break
       }
+    }
+    if (params.role) {
+      conditions.push(eq(users.isProfileOnly, false))
+      conditions.push(
+        params.role === 'custom'
+          ? notInArray(users.permissions, Object.values(PERMISSION_PRESETS))
+          : eq(users.permissions, PERMISSION_PRESETS[params.role]),
+      )
     }
     const search = params.search?.trim()
     if (search) {
@@ -357,6 +379,7 @@ export class UserRepository extends BaseRepository {
     email: string
     username: string
     displayName?: string | null
+    permissions: number
     accountId: string
     passwordHash: string
     claimInviteId: string
@@ -386,6 +409,7 @@ export class UserRepository extends BaseRepository {
           username: input.username,
           handle: input.username,
           isProfileOnly: false,
+          permissions: input.permissions,
           updatedAt: new Date(),
         }
         if (input.displayName) {

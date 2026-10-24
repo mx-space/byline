@@ -161,10 +161,26 @@ See `apps/server/AGENTS.md` for the server-side wire-format invariants.
 
 `src/vendor/rich-editor/utils/dynamic-catalog.ts` keeps the editor-facing interface
 (`DynamicCatalogEntry`, `registerDynamicComponent`, `isAllowedDynamicUrl`, the agent system
-message). Storage goes through `src/api/dynamic-components.ts`: `GET /dynamic-components`
-returns `{ version, components }`, and `POST /dynamic-components` appends one entry on the
-server atomically and returns the updated catalog. Entry `propsSchema` is free-form JSON, so
-the module reads responses without the shared deep key camelizing.
+message, and the version helpers `currentCatalogEntries` / `resolveCatalogEntry`). Storage
+goes through `src/api/dynamic-components.ts`: `GET /dynamic-components` returns
+`{ version, components }`; `POST` appends one entry atomically; `PATCH /:id` and
+`DELETE /:id` edit or remove an entry. Every write returns the updated catalog. Entry
+`propsSchema` is free-form JSON, so the module reads responses without the shared deep key
+camelizing.
+
+- The catalog is managed at `#/dynamic-components` (`src/features/dynamic-components/`),
+  including a Source tab that saves edits as a new immutable file and keeps the previous URL
+  as `parentUrl`.
+- The editor registers `BylineDynamicEditNode` (`src/vendor/rich-editor/dynamic/`) in place of
+  haklex's `DynamicEditNode`, with the same `dynamic` type. Create dynamic nodes through
+  `$createBylineDynamicEditNode` or `INSERT_DYNAMIC_COMMAND`, never haklex's
+  `$createDynamicEditNode`, or Lexical rejects the class.
+- Props forms are generated from `propsSchema` by `src/lib/dynamic-props.ts` and
+  `src/ui/patterns/PropsEditor.tsx`.
+- The write agent's `preview_dynamic_component` drafts carry `description` and `propsSchema`.
+  Adopting a revision of a block on the current catalog version saves a new version of that
+  entry (`reviseDynamicComponent`); a new component or a revision of an older version
+  registers a new entry.
 
 ### Rich Editor Integration
 

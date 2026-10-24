@@ -1,8 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, desc, eq, inArray, lt, ne, notExists, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, lt, ne, notExists, or, sql } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
-import { aiTtsBlocks, fileReferences, fileUsages } from '~/database/schema'
+import {
+  aiTtsBlocks,
+  dynamicComponents,
+  fileReferences,
+  fileUsages,
+} from '~/database/schema'
 import {
   BaseRepository,
   type PaginationResult,
@@ -64,6 +69,20 @@ export class FileReferenceRepository extends BaseRepository {
           .select({ id: aiTtsBlocks.id })
           .from(aiTtsBlocks)
           .where(eq(aiTtsBlocks.url, fileReferences.fileUrl)),
+      ),
+      // Catalog modules are registered outside reconciliation as well, and a
+      // superseded version stays live for posts that still point at it.
+      notExists(
+        this.db
+          .select({ id: dynamicComponents.id })
+          .from(dynamicComponents)
+          .where(
+            or(
+              eq(dynamicComponents.url, fileReferences.fileUrl),
+              eq(dynamicComponents.parentUrl, fileReferences.fileUrl),
+              sql`${fileReferences.fileUrl} = ANY(${dynamicComponents.previousUrls})`,
+            ),
+          ),
       ),
     )!
   }

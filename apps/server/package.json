@@ -121,14 +121,14 @@
     "undici": "^8.11.2",
     "wildcard-match": "5.1.6",
     "ws": "8.22.0",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@nestjs/cli": "12.0.8",
     "@nestjs/schematics": "12.0.6",
     "@nestjs/testing": "12.1.2",
     "@swc/cli": "^0.8.1",
-    "@swc/core": "1.16.13",
+    "@swc/core": "1.16.20",
     "@testcontainers/postgresql": "^12.2.0",
     "@types/diff-match-patch": "^1.0.36",
     "@types/ejs": "3.1.5",

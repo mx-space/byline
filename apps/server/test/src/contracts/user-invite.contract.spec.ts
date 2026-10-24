@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 
 import { apiRoutePrefix } from '~/common/decorators/api-controller.decorator'
+import { UserPermission } from '~/constants/permission.constant'
 import { AuthService } from '~/modules/auth/auth.service'
 import { ConfigsService } from '~/modules/configs/configs.service'
 import { UserController } from '~/modules/user/user.controller'
@@ -77,6 +78,23 @@ describe('UserController invite contract (e2e)', () => {
     })
 
     expect(res.statusCode).toBe(401)
+    expect(inviteService.inviteExisting).not.toHaveBeenCalled()
+  })
+
+  test('POST /users/:id/invite refuses a member without ManageUsers', async () => {
+    inviteService.inviteExisting.mockClear()
+    const res = await proxy.app.inject({
+      headers: {
+        ...authPassHeader,
+        'test-permissions': String(UserPermission.EditPost),
+      },
+      method: 'POST',
+      url: `${apiRoutePrefix}/users/42/invite`,
+      payload: { email: 'guest@example.test' },
+    })
+
+    expect(res.statusCode).toBe(403)
+    expect(res.json().error.code).toBe('PERMISSION_DENIED')
     expect(inviteService.inviteExisting).not.toHaveBeenCalled()
   })
 })

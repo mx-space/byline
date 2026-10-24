@@ -29,6 +29,7 @@ import { EmptyValue, FormSkeleton } from '~/ui/placeholders'
 import { Button } from '~/ui/site-button'
 
 import { useUsersCopy } from '../copy'
+import { hasPermission, Permission } from '../utils/permissions'
 import {
   canEditSignInIdentity,
   formatAdminTime,
@@ -39,6 +40,7 @@ import {
 import { AuthoredPosts } from './AuthoredPosts'
 import { InviteUserModal } from './InviteUserModal'
 import { UserAvatar } from './UserAvatar'
+import { UserPermissionsCard } from './UserPermissionsCard'
 import { UserProfileForm } from './UserProfileForm'
 import { useUsersRouteContext } from './users-route-context'
 import { UserStatusTag } from './UserStatusTag'
@@ -104,6 +106,10 @@ export function UserDetailRoute() {
     userQuery.error instanceof ApiRequestError && userQuery.error.status === 404
   const status = user ? getUserStatus(user) : null
   const isSelf = user?.id === ctx.currentUserId
+  const canManageUsers = hasPermission(
+    ctx.currentUserPermissions,
+    Permission.ManageUsers,
+  )
   const name = user
     ? getUserDisplayName(user)
     : userQuery.isLoading
@@ -157,9 +163,11 @@ export function UserDetailRoute() {
           {status === 'profileOnly' ? (
             <Flexbox gap={8}>
               <Alert title={copy('profileOnlyHint')} type="info" />
-              <Button onClick={() => setInviteOpen(true)}>
-                {copy('inviteSignIn')}
-              </Button>
+              {canManageUsers ? (
+                <Button onClick={() => setInviteOpen(true)}>
+                  {copy('inviteSignIn')}
+                </Button>
+              ) : null}
             </Flexbox>
           ) : null}
           <UserProfileForm
@@ -175,6 +183,15 @@ export function UserDetailRoute() {
             submitLabel={copy('saveProfile')}
             user={user}
           />
+          {status === 'profileOnly' ? null : (
+            <UserPermissionsCard
+              canEdit={canManageUsers}
+              isSelf={isSelf}
+              key={`${user.id}:${user.permissions}`}
+              onSaved={ctx.onUserChanged}
+              user={user}
+            />
+          )}
           <Descriptions
             column={1}
             items={[
@@ -199,33 +216,37 @@ export function UserDetailRoute() {
             ]}
           />
           <AuthoredPosts userId={user.id} />
-          <Flexbox gap={8}>
-            {status === 'deactivated' ? (
-              <Button
-                loading={enable.isPending}
-                onClick={() => enable.mutate()}
-              >
-                {copy('enable')}
-              </Button>
-            ) : (
-              <Tooltip title={isSelf ? copy('deactivateSelf') : undefined}>
-                <span>
-                  <Button
-                    danger
-                    disabled={isSelf}
-                    loading={deactivate.isPending}
-                    onClick={() => {
-                      setError('')
-                      setConfirmOpen(true)
-                    }}
-                    title={isSelf ? copy('deactivateSelf') : copy('deactivate')}
-                  >
-                    {copy('deactivate')}
-                  </Button>
-                </span>
-              </Tooltip>
-            )}
-          </Flexbox>
+          {canManageUsers ? (
+            <Flexbox gap={8}>
+              {status === 'deactivated' ? (
+                <Button
+                  loading={enable.isPending}
+                  onClick={() => enable.mutate()}
+                >
+                  {copy('enable')}
+                </Button>
+              ) : (
+                <Tooltip title={isSelf ? copy('deactivateSelf') : undefined}>
+                  <span>
+                    <Button
+                      danger
+                      disabled={isSelf}
+                      loading={deactivate.isPending}
+                      onClick={() => {
+                        setError('')
+                        setConfirmOpen(true)
+                      }}
+                      title={
+                        isSelf ? copy('deactivateSelf') : copy('deactivate')
+                      }
+                    >
+                      {copy('deactivate')}
+                    </Button>
+                  </span>
+                </Tooltip>
+              )}
+            </Flexbox>
+          ) : null}
           <Modal
             cancelText={copy('cancel')}
             confirmLoading={deactivate.isPending}

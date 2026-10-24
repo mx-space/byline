@@ -1,5 +1,5 @@
 import { ApiRequestError } from '~/api/http'
-import type { UserDetail, UserStatusFilter } from '~/api/users'
+import type { UserDetail, UserRoleFilter, UserStatusFilter } from '~/api/users'
 import { translate } from '~/i18n/translate'
 import type { TranslationKey } from '~/i18n/types'
 
@@ -8,6 +8,7 @@ export const EMPTY_VALUE = '--'
 export type UserStatus = 'active' | 'deactivated' | 'profileOnly'
 
 const USER_ERROR_MESSAGE_KEYS: Record<string, TranslationKey> = {
+  PERMISSION_DENIED: 'users.error.permissionDenied',
   USER_CONFLICT: 'users.error.conflict',
   USER_IDENTITY_LOCKED: 'users.error.identityLocked',
 }
@@ -37,6 +38,21 @@ export function parseUserStatusFilter(value: string | null): UserStatusFilter {
     value === 'all' ||
     value === 'deactivated' ||
     value === 'profile_only'
+  ) {
+    return value
+  }
+  return 'all'
+}
+
+export function parseUserRoleFilter(
+  value: string | null,
+): UserRoleFilter | 'all' {
+  if (
+    value === 'author' ||
+    value === 'custom' ||
+    value === 'editor' ||
+    value === 'owner' ||
+    value === 'translator'
   ) {
     return value
   }
@@ -93,21 +109,34 @@ export function getUserErrorMessage(error: unknown, fallback: string) {
 }
 
 export type InviteRequest =
-  | { email: string; kind: 'existing'; userId: string }
-  | { displayName: string | undefined; email: string; kind: 'new' }
+  | { email: string; kind: 'existing'; permissions: number; userId: string }
+  | {
+      displayName: string | undefined
+      email: string
+      kind: 'new'
+      permissions: number
+    }
 
 export function buildInviteRequest(input: {
   displayName: string
   email: string
   linkedAuthorId: string
+  permissions: number
 }): InviteRequest {
   const email = input.email.trim()
+  const { permissions } = input
   if (input.linkedAuthorId) {
-    return { email, kind: 'existing', userId: input.linkedAuthorId }
+    return {
+      email,
+      kind: 'existing',
+      permissions,
+      userId: input.linkedAuthorId,
+    }
   }
   return {
     displayName: input.displayName.trim() || undefined,
     email,
     kind: 'new',
+    permissions,
   }
 }

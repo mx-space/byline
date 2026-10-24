@@ -199,6 +199,30 @@ describe('PublishService tree selection', () => {
     expect(posts.updateById).not.toHaveBeenCalled()
   })
 
+  it('credits the member who started a new post, not the publisher', async () => {
+    const { branch, posts, run, service } = harness()
+    branch.document = {
+      ...branch.document,
+      createdBy: 'writer',
+      publishedRevisionId: null,
+      refId: null,
+    } as never
+    posts.create.mockResolvedValue({ id: 'post-new', isPublished: false })
+    await service.create(
+      {
+        branchId: branch.id,
+        confirmDiverged: true,
+        expectedPublishedRevisionId: null,
+        revisionId: branch.headRevisionId,
+      } as never,
+      'boss',
+    )
+
+    await run().catch(() => {})
+
+    expect(posts.create).toHaveBeenCalledWith(expect.anything(), 'writer')
+  })
+
   it('reuses the document-linked article when retrying a first publish', async () => {
     const { create, payload, posts, run } = harness()
     await create()

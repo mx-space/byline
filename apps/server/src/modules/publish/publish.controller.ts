@@ -3,6 +3,8 @@ import { Body, Post } from '@nestjs/common'
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { CurrentUser } from '~/common/decorators/current-user.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
+import { UserPermission } from '~/constants/permission.constant'
 import type { SessionUser } from '~/modules/auth/auth.types'
 
 import {
@@ -17,6 +19,7 @@ export class PublishController {
   constructor(private readonly publishService: PublishService) {}
 
   @Post('/')
+  @RequirePermissions(UserPermission.PublishPost)
   create(
     @CurrentUser() user: SessionUser,
     @Body({ schema: CreatePublishJobSchema }) body: CreatePublishJobDto,

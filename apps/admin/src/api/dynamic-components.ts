@@ -3,7 +3,9 @@ import { API_URL } from '~/constants/env'
 import { ApiRequestError, buildAdminRequestHeaders } from './http'
 
 export interface DynamicCatalogEntry {
+  id?: string
   parentUrl?: string
+  previousUrls?: string[]
   description: string
   initialHeight: number
   name: string
@@ -36,10 +38,40 @@ export async function registerDynamicComponentEntry(
   })
 }
 
+export type DynamicCatalogEntryPatch = Partial<
+  Omit<DynamicCatalogEntry, 'id' | 'parentUrl' | 'previousUrls'>
+> & { parentUrl?: string | null }
+
+export async function updateDynamicComponentEntry(
+  id: string,
+  patch: DynamicCatalogEntryPatch,
+): Promise<DynamicCatalog> {
+  return requestCatalog(
+    {
+      body: JSON.stringify(patch),
+      headers: { 'content-type': 'application/json' },
+      method: 'PATCH',
+    },
+    id,
+  )
+}
+
+export async function deleteDynamicComponentEntry(
+  id: string,
+): Promise<DynamicCatalog> {
+  return requestCatalog({ method: 'DELETE' }, id)
+}
+
 // Bypasses the shared JSON helpers: their deep key camelizing would rewrite
 // the property names inside each entry's free-form propsSchema.
-async function requestCatalog(init: RequestInit): Promise<DynamicCatalog> {
-  const response = await fetch(getDynamicComponentsUrl(), {
+async function requestCatalog(
+  init: RequestInit,
+  id?: string,
+): Promise<DynamicCatalog> {
+  const url = id
+    ? `${getDynamicComponentsUrl()}/${encodeURIComponent(id)}`
+    : getDynamicComponentsUrl()
+  const response = await fetch(url, {
     credentials: 'include',
     ...init,
     headers: buildAdminRequestHeaders(init.headers),
@@ -79,8 +111,13 @@ function parseCatalog(value: unknown): DynamicCatalog {
 function parseEntry(value: unknown): DynamicCatalogEntry {
   const record = asRecord(value)
   const parentUrl = record.parentUrl ?? record.parent_url
+  const previousUrls = record.previousUrls ?? record.previous_urls
   return {
+    ...(typeof record.id === 'string' ? { id: record.id } : {}),
     ...(typeof parentUrl === 'string' ? { parentUrl } : {}),
+    ...(Array.isArray(previousUrls)
+      ? { previousUrls: previousUrls.map(String) }
+      : {}),
     description: String(record.description ?? ''),
     initialHeight: Number(record.initialHeight ?? record.initial_height ?? 0),
     name: String(record.name ?? ''),

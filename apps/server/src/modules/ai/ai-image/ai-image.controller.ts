@@ -4,6 +4,8 @@ import { Body, Get, HttpCode, Post } from '@nestjs/common'
 
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
+import { RequirePermissions } from '~/common/decorators/permission.decorator'
+import { UserPermission } from '~/constants/permission.constant'
 import { DatabaseService } from '~/processors/database/database.service'
 
 import { ConfigsService } from '../../configs/configs.service'
@@ -34,6 +36,7 @@ export class AiImageController {
   @Post('draft-prompt')
   @HttpCode(200)
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   async draftPrompt(
     @Body({ schema: DraftImagePromptSchema }) body: DraftImagePromptDto,
   ) {
@@ -58,6 +61,7 @@ export class AiImageController {
   @Post('generate')
   @HttpCode(200)
   @Auth()
+  @RequirePermissions(UserPermission.EditPost)
   async generate(
     @Body({ schema: GenerateImageSchema }) body: GenerateImageDto,
   ) {
