@@ -179,6 +179,7 @@ const TITLE_LIMIT = 60
 const DESCRIPTION_LIMIT = 145
 
 export function SeoFields(props: {
+  aiDescription?: string
   coverImage?: string
   fallbackDescription?: string
   onChange: (key: keyof SeoFieldsValue, value: string) => void
@@ -191,8 +192,14 @@ export function SeoFields(props: {
   const seoImage = props.value.seoImage.trim()
   const image = seoImage || cover
   const title = props.value.seoTitle || props.titlePlaceholder || ''
+  const aiDescription = props.value.seoDescription
+    ? ''
+    : (props.aiDescription ?? '')
   const description =
-    props.value.seoDescription || props.fallbackDescription || ''
+    props.value.seoDescription ||
+    aiDescription ||
+    props.fallbackDescription ||
+    ''
 
   return (
     <>
@@ -217,8 +224,12 @@ export function SeoFields(props: {
         labelClassName={lobeStyles.ucd6c15f2}
         maxLength={1000}
         onChange={(value) => props.onChange('seoDescription', value)}
+        placeholder={aiDescription || undefined}
         value={props.value.seoDescription}
       />
+      {aiDescription ? (
+        <p className={lobeStyles.u59d40084}>{t('write.seo.aiDescription')}</p>
+      ) : null}
       <CountHint
         label={t('write.seo.descriptionCount', { max: DESCRIPTION_LIMIT })}
         max={DESCRIPTION_LIMIT}

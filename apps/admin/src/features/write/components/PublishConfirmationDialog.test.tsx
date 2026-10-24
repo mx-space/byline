@@ -185,4 +185,58 @@ describe('PublishConfirmationDialog', () => {
       { regenerateLockedTranslations: true },
     )
   })
+
+  it('asks AI for an SEO description only while the field is empty', async () => {
+    const onConfirm = vi.fn()
+    const render = (seoDescriptionEmpty: boolean) =>
+      act(() => {
+        root.render(
+          withUi(
+            createElement(PublishConfirmationDialog, {
+              aiConfig: { providers: [{ enabled: true }] } as any,
+              diverged: false,
+              onClose: vi.fn(),
+              onConfirm,
+              otherBranchCount: 0,
+              open: true,
+              operation: 'online-update',
+              pending: false,
+              seoDescriptionEmpty,
+              validationError: null,
+            }),
+          ),
+        )
+      })
+    const submit = () =>
+      act(() => {
+        ;[...document.querySelectorAll('button')]
+          .find((button) => button.textContent?.trim() === '更新线上文章')
+          ?.click()
+      })
+    const seoCheckbox = () =>
+      document.querySelector<HTMLInputElement>('input[type="checkbox"]')
+
+    render(true)
+    submit()
+    expect(onConfirm).toHaveBeenLastCalledWith(
+      [{ mode: 'sync', resource: 'seo' }],
+      { regenerateLockedTranslations: false },
+    )
+
+    await act(async () => {
+      seoCheckbox()!.click()
+      await Promise.resolve()
+    })
+    submit()
+    expect(onConfirm).toHaveBeenLastCalledWith([], {
+      regenerateLockedTranslations: false,
+    })
+
+    render(false)
+    expect(seoCheckbox()).toBeNull()
+    submit()
+    expect(onConfirm).toHaveBeenLastCalledWith([], {
+      regenerateLockedTranslations: false,
+    })
+  })
 })

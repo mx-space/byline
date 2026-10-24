@@ -27,6 +27,7 @@ export interface ContentRevision extends RevisionSnapshot {
 }
 
 export interface ContentDocument {
+  aiSeo?: { description: string; sourceHash: string } | null
   createdAt: string
   id: string
   publishAiResources?: PublishAiResourceRequest[] | null

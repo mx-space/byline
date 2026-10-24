@@ -1,7 +1,8 @@
 import { postJson } from './http'
 import type { AITask } from './tasks'
 
-export type PublishAiResource = 'insights' | 'summary' | 'translation' | 'tts'
+export type PublishAiResource =
+  'insights' | 'seo' | 'summary' | 'translation' | 'tts'
 export type PublishAiMode = 'sync' | 'async'
 
 export interface PublishAiResourceRequest {

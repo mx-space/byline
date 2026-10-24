@@ -1496,6 +1496,7 @@ function WritePage(props: { kind: WriteKind }) {
     <>
       <WriteChrome
         aiOpen={agentOpen}
+        aiSeoDescription={versionContextQuery.data?.document.aiSeo?.description}
         authorCandidates={authorCandidates}
         categories={categories}
         categoriesFailed={categoriesQuery.isError}
@@ -1722,6 +1723,7 @@ function WritePage(props: { kind: WriteKind }) {
         rememberedResources={
           versionContextQuery.data?.document.publishAiResources
         }
+        seoDescriptionEmpty={!state.seoDescription.trim()}
         savedAt={
           latestDraftCandidate
             ? formatRelativeTime(latestDraftCandidate.updatedAt)

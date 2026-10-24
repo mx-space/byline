@@ -53,6 +53,7 @@ export interface WriteRailValues {
 }
 
 export interface WriteMetaFieldsProps {
+  aiSeoDescription?: string
   authorCandidates: Parameters<typeof AuthorsPicker>[0]['candidates']
   categories: CategoryEntity[]
   categoriesFailed: boolean
@@ -134,6 +135,7 @@ export function WriteMetaFields(props: WriteMetaFieldsProps) {
         ) : props.view === 'seo' ? (
           <div className={styles.section}>
             <SeoFields
+              aiDescription={props.aiSeoDescription}
               coverImage={props.values.image}
               fallbackDescription={props.values.summary}
               onChange={(key, value) => props.updateField(key, value)}

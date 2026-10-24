@@ -186,6 +186,9 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     line-height: 0.875rem;
     color: ${cssVar.colorTextSecondary};
   `,
+  seoOption: css`
+    margin-top: 0.75rem;
+  `,
   ucb0b7b94: css`
     margin-top: 0.75rem;
     display: grid;
@@ -255,6 +258,7 @@ export function PublishConfirmationDialog(props: {
   pending: boolean
   rememberedResources?: PublishAiResourceRequest[] | null
   savedAt?: string
+  seoDescriptionEmpty?: boolean
   validationError: string | null
 }) {
   const { t } = useI18n()
@@ -263,16 +267,24 @@ export function PublishConfirmationDialog(props: {
   )
 
   const [regenerateLocked, setRegenerateLocked] = useState(false)
+  const [generateSeo, setGenerateSeo] = useState(true)
 
   useEffect(() => {
     if (!props.open) return
     setChoices(choicesFromRequests(props.rememberedResources))
     setRegenerateLocked(false)
+    setGenerateSeo(true)
   }, [props.open, props.rememberedResources])
 
   const isAvailable = (resource: PublishAiResource) =>
     !getUnavailableKey(resource, props.aiConfig)
-  const requests = toPublishAiRequests(choices, isAvailable)
+  const seoOptionVisible =
+    Boolean(props.seoDescriptionEmpty) && isAvailable('seo')
+  const requests = toPublishAiRequests(
+    choices,
+    isAvailable,
+    seoOptionVisible && generateSeo,
+  )
   const lockedLangs = props.lockedTranslationLangs ?? []
   const translationSelected = requests.some(
     (request) => request.resource === 'translation',
@@ -400,6 +412,15 @@ export function PublishConfirmationDialog(props: {
               )
             })}
           </div>
+          {seoOptionVisible ? (
+            <div className={lobeStyles.seoOption}>
+              <Checkbox
+                checked={generateSeo}
+                label={t('write.publishAi.seoGenerate')}
+                onCheckedChange={setGenerateSeo}
+              />
+            </div>
+          ) : null}
           {translationSelected && lockedLangs.length > 0 ? (
             <div className={lobeStyles.ucb0b7b94}>
               <p className={lobeStyles.u7a2110d1}>
@@ -472,6 +493,12 @@ function getUnavailableKey(
   config: AIConfig | undefined,
 ): TranslationKey | undefined {
   if (!config) return 'write.publishAi.unavailable'
+  if (
+    resource === 'seo' &&
+    !config.providers?.some((provider) => provider.enabled)
+  ) {
+    return 'write.publishAi.unavailable'
+  }
   if (resource === 'summary' && !config.enableSummary) {
     return 'write.publishAi.unavailable'
   }

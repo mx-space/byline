@@ -1425,6 +1425,9 @@ export const enUS = {
   'write.publishAi.translationRequiresLanguages':
     'Configure translation target languages first',
   'write.publishAi.unavailable': 'This is not enabled yet',
+  'write.publishAi.seo': 'SEO description',
+  'write.publishAi.seoGenerate':
+    'No SEO description yet. Have AI write one before publishing',
   'write.publishAi.modeAsync': 'After',
   'write.publishAi.modeNone': 'Skip',
   'write.publishAi.modeSync': 'Before',
@@ -1989,6 +1992,8 @@ export const enUS = {
   'write.seo.searchPreview': 'Search',
   'write.seo.cardPreview': 'Card',
   'write.seo.imageFallback': 'Uses the cover when left empty',
+  'write.seo.aiDescription':
+    'Written by AI and used on publish. Anything you type here takes its place.',
   'write.publishAi.lockedTranslations':
     'These translations stay as they are: {langs}.',
   'routes.dynamicComponents.title': 'Dynamic components',
