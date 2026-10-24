@@ -81,7 +81,7 @@ overrides:
   '@lexical/yjs': 0.52.0
   # The published @mx-space/editor and @mx-space/ai pin their own haklex
   # versions; keep one headless/litexml runtime across the workspace.
-  '@mx-space/ai>@haklex/rich-headless': 0.54.2
+  '@mx-space/ai>@haklex/rich-headless': 0.54.3
   '@mx-space/editor>@haklex/rich-headless': 0.54.2
   '@mx-space/editor>@haklex/rich-litexml': 0.54.2
   '@esbuild-kit/core-utils>esbuild': 0.25.12
