@@ -32,20 +32,20 @@ overrides:
   '@better-auth/passkey': 1.6.27
   kysely: 0.29.6
   pino: ./external/pino
-  rolldown: 1.2.12
+  rolldown: 1.2.15
   'tsdown@0.22.8>rolldown-plugin-dts': 0.27.14
   semver: 7.8.5
   typescript: 6.0.3
   undici: ^8.10.2
   whatwg-url: 17.1.0
-  zod: 4.6.6
+  zod: 4.6.7
   'lodash-es@<4.18.0': 4.18.1
   'nanoid@<3.3.8': 5.1.16
   'nanoid@>=4.0.0 <5.0.9': 5.1.16
   'tmp@<0.2.6': 0.2.7
   'uuid@<11.1.1': 11.1.1
-  jose: 6.2.12
-  lucide-react: 1.58.0
+  jose: 6.2.13
+  lucide-react: 1.61.0
   # Keep the Markdown code plugin and editor on one Shiki runtime.
   shiki: ^4.5.0
   # Editor stack tracks a single lexical runtime copy; keep in lockstep with
@@ -79,10 +79,10 @@ overrides:
   # versions; keep one headless/litexml runtime across the workspace.
   '@mx-space/ai>@haklex/rich-headless': 0.54.3
   '@mx-space/editor>@haklex/rich-headless': 0.54.3
-  '@mx-space/editor>@haklex/rich-litexml': 0.54.2
+  '@mx-space/editor>@haklex/rich-litexml': 0.54.3
   '@esbuild-kit/core-utils>esbuild': 0.25.12
   '@cloudflare/workers-types': 5.20261005.1
-  '@fastify/static': 10.1.5
+  '@fastify/static': 10.1.7
   'brace-expansion@<1.1.16': 1.1.21
   'brace-expansion@>=2.0.0 <2.1.2': 2.1.7
   'brace-expansion@>=3.0.0 <5.0.8': 5.0.12
