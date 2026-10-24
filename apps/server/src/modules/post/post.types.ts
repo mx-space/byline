@@ -18,7 +18,7 @@ export interface PostRow {
   slug: string
   text: string
   content: string | null
-  contentFormat: string
+  contentFormat: 'lexical'
   summary: string | null
   images: unknown[] | null
   meta: Record<string, unknown> | null
@@ -40,7 +40,7 @@ export interface PostRow {
 export interface PostCreateInput {
   title: string
   slug: string
-  contentFormat: string
+  contentFormat: 'lexical'
   createdAt?: Date
   text?: string | null
   content?: string | null

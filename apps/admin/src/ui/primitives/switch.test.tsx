@@ -80,13 +80,17 @@ describe('Switch', () => {
 })
 
 describe('FormSwitch', () => {
-  it('toggles from the labeled row', () => {
+  it.each(['label', '[role="switch"]'])('toggles once from %s', (selector) => {
+    const onCheckedChange = vi.fn()
     function Probe() {
       const [checked, setChecked] = useState(false)
       return createElement(FormSwitch, {
         checked,
         label: 'Public',
-        onCheckedChange: setChecked,
+        onCheckedChange: (value) => {
+          onCheckedChange(value)
+          setChecked(value)
+        },
       })
     }
 
@@ -98,7 +102,7 @@ describe('FormSwitch', () => {
     expect(control?.getAttribute('aria-checked')).toBe('false')
 
     act(() => {
-      harness.container.querySelector('label')?.click()
+      harness.container.querySelector<HTMLElement>(selector)?.click()
     })
 
     expect(
@@ -106,5 +110,29 @@ describe('FormSwitch', () => {
         .querySelector('[role="switch"]')
         ?.getAttribute('aria-checked'),
     ).toBe('true')
+    expect(onCheckedChange).toHaveBeenCalledExactlyOnceWith(true)
+  })
+
+  it('keeps a disabled switch unchanged when its label is clicked', () => {
+    const onCheckedChange = vi.fn()
+    act(() => {
+      harness.root.render(
+        createElement(FormSwitch, {
+          checked: false,
+          disabled: true,
+          label: 'Public',
+          onCheckedChange,
+        }),
+      )
+    })
+
+    act(() => harness.container.querySelector('label')?.click())
+
+    expect(
+      harness.container
+        .querySelector('[role="switch"]')
+        ?.getAttribute('aria-checked'),
+    ).toBe('false')
+    expect(onCheckedChange).not.toHaveBeenCalled()
   })
 })

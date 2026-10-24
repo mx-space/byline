@@ -29,7 +29,7 @@ const revision = (
   title: string,
 ): ContentRevision => ({
   content: null,
-  contentFormat: 'markdown',
+  contentFormat: 'lexical',
   createdAt: at,
   documentId: 'document-1',
   id,

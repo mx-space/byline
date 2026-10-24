@@ -433,9 +433,8 @@ export const zhCN = {
   'drafts.detail.edit': '编辑',
   'drafts.detail.empty': '选择一个草稿查看详情。',
   'drafts.diff.empty': '无正文内容。',
-  'drafts.diff.failed': 'Markdown 差异渲染失败。',
+  'drafts.diff.failed': '正文差异渲染失败。',
   'drafts.diff.loading': '加载差异视图...',
-  'drafts.diff.markdown.title': 'Markdown 差异',
   'drafts.diff.rich.title': '富文本差异',
   'drafts.diff.richFailed': '富文本内容解析失败。',
   'drafts.diff.sameContent': '与当前版本内容相同',
@@ -646,7 +645,7 @@ export const zhCN = {
   'routes.webhooks.description':
     '内容变化时通知你的其他服务，并查看每次投递的结果。',
   'routes.webhooks.title': 'Webhooks',
-  'routes.writePost.description': '在 React markdown 写作界面创建与编辑文章。',
+  'routes.writePost.description': '在 富文本编辑器创建与编辑文章。',
   'routes.writePost.title': '写文章',
 
   'settings.account.entry.passkeyDescription':

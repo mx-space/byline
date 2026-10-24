@@ -36,14 +36,10 @@ import { AiTranslationEventHandlerService } from './ai-translation/ai-translatio
 import { LexicalPartialTranslationBuilder } from './ai-translation/lexical-partial-translation.builder'
 import { TranslationReviewerService } from './ai-translation/reviewer.service'
 import { LexicalTranslationStrategy } from './ai-translation/strategies/lexical-translation.strategy'
-import { MarkdownTranslationStrategy } from './ai-translation/strategies/markdown-translation.strategy'
 import { TranslationConsistencyService } from './ai-translation/translation-consistency.service'
 import { TranslationEntryController } from './ai-translation/translation-entry.controller'
 import { TranslationEntryService } from './ai-translation/translation-entry.service'
-import {
-  LEXICAL_TRANSLATION_STRATEGY,
-  MARKDOWN_TRANSLATION_STRATEGY,
-} from './ai-translation/translation-strategy.interface'
+import { LEXICAL_TRANSLATION_STRATEGY } from './ai-translation/translation-strategy.interface'
 import { AiTtsController } from './ai-tts/ai-tts.controller'
 import { AiTtsRepository } from './ai-tts/ai-tts.repository'
 import { AiTtsService } from './ai-tts/ai-tts.service'
@@ -74,10 +70,6 @@ import { AiWriterService } from './ai-writer/ai-writer.service'
     {
       provide: LEXICAL_TRANSLATION_STRATEGY,
       useClass: LexicalTranslationStrategy,
-    },
-    {
-      provide: MARKDOWN_TRANSLATION_STRATEGY,
-      useClass: MarkdownTranslationStrategy,
     },
     TranslationConsistencyService,
     TranslationReviewerService,

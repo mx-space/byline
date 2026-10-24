@@ -213,10 +213,9 @@ export function DraftHistory(props: { draft: DraftModel }) {
         <DraftDiffPreview
           comparisonLabel={copy('diffHistoryDirection')}
           currentDraft={head}
-          currentLabel={copy('diffDraftFile')}
+
           diffStats={selectedStats}
           selectedDraft={selected}
-          selectedLabel={copy('diffHistoryFile')}
         />
       ) : null}
     </div>

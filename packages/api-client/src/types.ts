@@ -189,7 +189,7 @@ export interface Post {
   slug: string
   text: string
   content: string | null
-  contentFormat: string
+  contentFormat: 'lexical'
   summary: string | null
   images: PostImage[] | null
   meta: Record<string, unknown> | null
@@ -257,7 +257,7 @@ export type RevisionRelation = 'same' | 'ancestor' | 'descendant' | 'diverged'
 
 export interface RevisionSnapshot {
   content: string | null
-  contentFormat: string
+  contentFormat: 'lexical'
   images: unknown[] | null
   meta: Record<string, unknown> | null
   text: string
@@ -383,7 +383,7 @@ export interface Translation {
   summary: string | null
   tags: string[]
   content: string | null
-  contentFormat: string | null
+  contentFormat: 'lexical' | null
   isLocked: boolean
   aiModel: string | null
   aiProvider: string | null

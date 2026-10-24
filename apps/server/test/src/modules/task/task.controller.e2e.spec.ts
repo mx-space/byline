@@ -284,7 +284,6 @@ describe('TaskController (e2e)', () => {
         lexicalService: {},
         aiTaskService: {},
         lexicalStrategy: {},
-        markdownStrategy: {},
       }
       const aiTranslationService = new AiTranslationService(
         repository as any,
@@ -299,8 +298,8 @@ describe('TaskController (e2e)', () => {
         service,
         stubs.lexicalService as any,
         stubs.aiTaskService as any,
+        {} as any,
         stubs.lexicalStrategy as any,
-        stubs.markdownStrategy as any,
       )
       aiTranslationService.onModuleInit()
     }

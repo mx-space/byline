@@ -127,37 +127,13 @@ export const draftCopy = createFeatureCopy({
     'en-US': 'Published to current draft',
     'zh-CN': '已发布版 → 当前草稿',
   },
-  diffDraftFile: {
-    'en-US': 'Current draft',
-    'zh-CN': '当前草稿',
-  },
-  diffEmpty: {
-    'en-US': 'Both sides have no body.',
-    'zh-CN': '两边都没有正文。',
-  },
-  diffFailed: {
-    'en-US': 'The diff did not render. You can still continue this draft.',
-    'zh-CN': '正文差异没有显示。可继续编辑这篇草稿。',
-  },
   diffHistoryDirection: {
     'en-US': 'Selected version to current draft',
     'zh-CN': '所选版本 → 当前草稿',
   },
-  diffHistoryFile: {
-    'en-US': 'Selected version',
-    'zh-CN': '所选版本',
-  },
   diffLoading: {
     'en-US': 'Comparing the body',
     'zh-CN': '正在对比正文',
-  },
-  diffMarkdownTitle: {
-    'en-US': 'Body diff',
-    'zh-CN': '正文差异',
-  },
-  diffPublishedFile: {
-    'en-US': 'Published',
-    'zh-CN': '已发布版',
   },
   diffRichFailed: {
     'en-US': 'The rich text did not parse. You can still continue this draft.',

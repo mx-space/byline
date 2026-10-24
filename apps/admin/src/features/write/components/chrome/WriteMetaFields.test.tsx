@@ -42,6 +42,7 @@ describe('scheduled publishing settings', () => {
                       meta: {},
                       pin: false,
                       pinOrder: '1',
+                      publishedAt: '',
                       slug: '',
                       summary: '',
                       tags: '',
@@ -56,15 +57,19 @@ describe('scheduled publishing settings', () => {
                     categoriesFailed={false}
                     authorCandidates={[]}
                     coverImages={[]}
+                    deletePending={false}
                     generatePending={false}
                     siteDefaultLang="en"
                     slugPrefix="/"
                     tags={[]}
                     unpublishPending={false}
+                    view="main"
                     updateField={() => {}}
+                    onDelete={() => {}}
                     onGenerate={() => {}}
                     onRetryCategories={() => {}}
                     onUnpublish={() => {}}
+                    onViewChange={() => {}}
                   />
                 </AppTheme>
               </MemoryRouter>

@@ -2010,17 +2010,13 @@ function buildDraftRecoveryReviewData(
 
   return {
     ancestorContent: ancestorState?.content,
-    ancestorText: ancestorState?.text,
     bodyChanged,
     currentContent: current.content,
-    currentText: current.text,
     draftContent: next.content,
-    draftText: next.text,
     fields,
     diverged:
       draft.relationToPublished === 'diverged' ||
       draft.relationToPublished === 'descendant',
-    rich: true,
     savedAt: formatRelativeTime(draft.updatedAt ?? draft.createdAt),
   }
 }

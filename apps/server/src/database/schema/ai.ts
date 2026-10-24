@@ -37,7 +37,7 @@ export const aiTranslations = pgTable(
     sourceModifiedAt: tsCol('source_modified_at'),
     aiModel: text('ai_model'),
     aiProvider: text('ai_provider'),
-    contentFormat: text('content_format'),
+    contentFormat: text('content_format').$type<'lexical'>(),
     content: text('content'),
     sourceBlockSnapshots: jsonb('source_block_snapshots').$type<unknown>(),
     sourceMetaHashes: jsonb('source_meta_hashes').$type<unknown>(),

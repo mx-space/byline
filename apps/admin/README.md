@@ -10,7 +10,7 @@ Admin dashboard for Byline, a React 19 SPA served by the Byline server.
 | Routing   | react-router 8 (HashRouter, routes generated from `src/views`) |
 | State     | Jotai + Zustand + TanStack Query                               |
 | UI        | Base UI primitives + Tailwind CSS v4                           |
-| Editor    | Lexical (`@haklex/rich-*`), CodeMirror, Monaco, Excalidraw     |
+| Editor    | Lexical (`@haklex/rich-*`), Monaco, Excalidraw     |
 | Auth      | Better Auth + passkeys                                         |
 | Realtime  | @mx-space/ws-client                                            |
 

@@ -10,13 +10,10 @@ export function computeDiffStats(
   const currentText = getDraftTextForDiff(current)
   return {
     delta: currentText.length - selectedText.length,
-    isSame: selectedText === currentText,
+    isSame: selected.content === current.content,
   }
 }
 
 export function getDraftTextForDiff(revision: RevisionSnapshot) {
-  if (revision.contentFormat === 'lexical' && revision.content) {
-    return revision.text || revision.content
-  }
-  return revision.text || revision.content || ''
+  return revision.text || ''
 }

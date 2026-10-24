@@ -34,7 +34,7 @@ const row = (overrides: Partial<AiTranslationRow> = {}): AiTranslationRow => ({
   sourceModifiedAt: null,
   aiModel: null,
   aiProvider: null,
-  contentFormat: ContentFormat.Markdown,
+  contentFormat: ContentFormat.Lexical,
   content: null,
   sourceBlockSnapshots: null,
   sourceMetaHashes: null,
@@ -95,7 +95,7 @@ const createService = () => {
   }
   const generationMetrics = createAiGenerationMetricsMock()
   const lexicalStrategy = createPgRepositoryMock<ITranslationStrategy>()
-  const markdownStrategy = createPgRepositoryMock<ITranslationStrategy>()
+
   const service = new AiTranslationService(
     repository as any,
     databaseService as any,
@@ -111,7 +111,6 @@ const createService = () => {
     aiTaskService as any,
     generationMetrics as any,
     lexicalStrategy as any,
-    markdownStrategy as any,
   )
   return {
     aiInFlightService,
@@ -123,7 +122,7 @@ const createService = () => {
     generationMetrics,
     lexicalService,
     lexicalStrategy,
-    markdownStrategy,
+
     partialBuilder,
     repository,
     service,

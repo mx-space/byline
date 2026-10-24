@@ -46,7 +46,7 @@ export const posts = pgTable(
     slug: text('slug').notNull(),
     text: text('text'),
     content: text('content'),
-    contentFormat: text('content_format').notNull(),
+    contentFormat: text('content_format').$type<'lexical'>().notNull(),
     summary: text('summary'),
     images: jsonb('images').$type<unknown[]>(),
     meta: jsonb('meta').$type<Record<string, unknown>>(),
@@ -156,7 +156,7 @@ export const contentRevisions = pgTable(
     title: text('title').notNull().default(''),
     text: text('text').notNull().default(''),
     content: text('content'),
-    contentFormat: text('content_format').notNull(),
+    contentFormat: text('content_format').$type<'lexical'>().notNull(),
     images: jsonb('images').$type<unknown[]>(),
     meta: jsonb('meta').$type<Record<string, unknown>>(),
     typeSpecificData: jsonb('type_specific_data').$type<Record<

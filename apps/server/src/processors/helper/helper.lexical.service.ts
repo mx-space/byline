@@ -7,7 +7,6 @@ import {
   BLOCK_ID_STATE_KEY,
   NODE_STATE_KEY,
 } from '~/constants/lexical.constant'
-import { ContentFormat } from '~/shared/types/content-format.type'
 import { truncateAtBoundary } from '~/utils/text-summary.util'
 import { md5 } from '~/utils/tool.util'
 
@@ -341,11 +340,11 @@ export class LexicalService {
 
   normalizeContentForStorage<
     T extends {
-      contentFormat?: ContentFormat | string | null
+      contentFormat?: string | null
       content?: string | null
     },
   >(doc: T): boolean {
-    if (doc.contentFormat === ContentFormat.Lexical && doc.content) {
+    if (doc.content) {
       const normalized = this.normalizeBlockIds(doc.content)
       if (normalized.changed) {
         doc.content = normalized.content

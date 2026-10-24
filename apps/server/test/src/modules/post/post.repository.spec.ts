@@ -24,7 +24,7 @@ const postRow = (index: number, categoryId: EntityId) => ({
   id: `${1000 + index}`,
   categoryId,
   content: null,
-  contentFormat: ContentFormat.Markdown,
+  contentFormat: ContentFormat.Lexical,
   copyright: true,
   createdAt: new Date(`2026-01-${String(index).padStart(2, '0')}T00:00:00Z`),
   images: null,

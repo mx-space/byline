@@ -11,7 +11,7 @@ export type RevisionRelation = 'same' | 'ancestor' | 'descendant' | 'diverged'
 
 export interface RevisionSnapshot {
   content: string | null
-  contentFormat: 'lexical' | 'markdown'
+  contentFormat: 'lexical'
   images: Image[] | null
   meta: Record<string, unknown> | null
   text: string

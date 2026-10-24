@@ -111,7 +111,7 @@ export interface InsightsByRefResponse {
   insights: AIInsights[]
 }
 
-export type AIContentFormat = 'lexical' | 'markdown' | string
+export type AIContentFormat = 'lexical'
 
 export interface AITranslation {
   aiModel?: string

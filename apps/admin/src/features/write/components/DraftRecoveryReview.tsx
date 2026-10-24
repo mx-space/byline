@@ -1,7 +1,6 @@
 import { createStaticStyles } from '@lobehub/ui'
 import { GitCompare, Trash2 } from 'lucide-react'
 
-import { MarkdownDraftDiffPanel } from '~/features/drafts/components/MarkdownDraftDiffPanel'
 import { RichDraftDiffPanel } from '~/features/drafts/components/RichDraftDiffPanel'
 import { useI18n } from '~/i18n'
 import { Drawer } from '~/ui/feedback/drawer'
@@ -180,15 +179,11 @@ export interface DraftRecoveryField {
 
 export interface DraftRecoveryReviewData {
   ancestorContent?: string
-  ancestorText?: string
   bodyChanged: boolean
-  currentContent?: string
-  currentText: string
-  draftContent?: string
-  draftText: string
+  currentContent: string
+  draftContent: string
   fields: DraftRecoveryField[]
   diverged: boolean
-  rich: boolean
   savedAt: string
 }
 
@@ -298,68 +293,28 @@ export function DraftRecoveryReview(props: {
                 <h3 className={lobeStyles.u22f13c98}>
                   {t('write.recovery.review.bodyTitle')}
                 </h3>
-                {data.diverged && data.ancestorText !== undefined ? (
+                {data.diverged && data.ancestorContent !== undefined ? (
                   <div className={lobeStyles.u440b6d1a}>
-                    {data.rich &&
-                    data.ancestorContent &&
-                    data.currentContent &&
-                    data.draftContent ? (
-                      <>
-                        <RichDraftDiffPanel
-                          comparisonLabel={t(
-                            'write.recovery.review.ancestorToOnline',
-                          )}
-                          currentContent={data.currentContent}
-                          selectedContent={data.ancestorContent}
-                        />
-                        <RichDraftDiffPanel
-                          comparisonLabel={t(
-                            'write.recovery.review.ancestorToDraft',
-                          )}
-                          currentContent={data.draftContent}
-                          selectedContent={data.ancestorContent}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <MarkdownDraftDiffPanel
-                          comparisonLabel={t(
-                            'write.recovery.review.ancestorToOnline',
-                          )}
-                          currentLabel={t('write.recovery.review.currentFile')}
-                          currentText={data.currentText}
-                          selectedLabel={t(
-                            'write.recovery.review.ancestorFile',
-                          )}
-                          selectedText={data.ancestorText}
-                        />
-                        <MarkdownDraftDiffPanel
-                          comparisonLabel={t(
-                            'write.recovery.review.ancestorToDraft',
-                          )}
-                          currentLabel={t('write.recovery.review.draftFile')}
-                          currentText={data.draftText}
-                          selectedLabel={t(
-                            'write.recovery.review.ancestorFile',
-                          )}
-                          selectedText={data.ancestorText}
-                        />
-                      </>
-                    )}
+                    <RichDraftDiffPanel
+                      comparisonLabel={t(
+                        'write.recovery.review.ancestorToOnline',
+                      )}
+                      currentContent={data.currentContent}
+                      selectedContent={data.ancestorContent}
+                    />
+                    <RichDraftDiffPanel
+                      comparisonLabel={t(
+                        'write.recovery.review.ancestorToDraft',
+                      )}
+                      currentContent={data.draftContent}
+                      selectedContent={data.ancestorContent}
+                    />
                   </div>
-                ) : data.rich && data.currentContent && data.draftContent ? (
+                ) : (
                   <RichDraftDiffPanel
                     comparisonLabel={t('write.recovery.review.direction')}
                     currentContent={data.draftContent}
                     selectedContent={data.currentContent}
-                  />
-                ) : (
-                  <MarkdownDraftDiffPanel
-                    comparisonLabel={t('write.recovery.review.direction')}
-                    currentLabel={t('write.recovery.review.draftFile')}
-                    currentText={data.draftText}
-                    selectedLabel={t('write.recovery.review.currentFile')}
-                    selectedText={data.currentText}
                   />
                 )}
               </section>

@@ -1,8 +1,17 @@
-import { createStaticStyles, Markdown } from '@lobehub/ui'
+import { createStaticStyles } from '@lobehub/ui'
+import { lazy, Suspense, useMemo } from 'react'
 
 import type { RevisionSnapshot } from '~/models/draft'
 
 import { useDraftCopy } from '../copy'
+import { parseSerializedDraftContent } from '../utils/rich-diff'
+
+const RichRenderer = lazy(async () => {
+  await import('~/vendor/rich-editor/core/style')
+  return import('~/vendor/rich-editor/core/RichRenderer').then(
+    ({ RichRenderer }) => ({ default: RichRenderer }),
+  )
+})
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
   empty: css`
@@ -21,14 +30,19 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
 
 export function DraftPreview(props: { revision: RevisionSnapshot }) {
   const { copy } = useDraftCopy()
-  const text = props.revision.text?.trim() ?? ''
+  const content = useMemo(
+    () => parseSerializedDraftContent(props.revision.content ?? ''),
+    [props.revision.content],
+  )
 
   return (
     <div className={styles.frame}>
-      {text ? (
-        <Markdown enableImageGallery={false} variant="default">
-          {text}
-        </Markdown>
+      {content ? (
+        <Suspense
+          fallback={<p className={styles.empty}>{copy('diffLoading')}</p>}
+        >
+          <RichRenderer value={content} variant="article" />
+        </Suspense>
       ) : (
         <p className={styles.empty}>{copy('noBody')}</p>
       )}

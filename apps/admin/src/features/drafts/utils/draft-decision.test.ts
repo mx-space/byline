@@ -20,7 +20,7 @@ function draft(patch: Partial<DraftModel> = {}): DraftModel {
   return {
     baseRevision: {
       content: null,
-      contentFormat: 'markdown',
+      contentFormat: 'lexical',
       createdAt: '2026-10-01T00:00:00.000Z',
       documentId: 'doc',
       id: 'base',
@@ -45,7 +45,7 @@ function draft(patch: Partial<DraftModel> = {}): DraftModel {
     documentId: 'doc',
     headRevision: {
       content: null,
-      contentFormat: 'markdown',
+      contentFormat: 'lexical',
       createdAt: '2026-10-02T00:00:00.000Z',
       documentId: 'doc',
       id: 'head',
@@ -92,7 +92,7 @@ describe('draft decision', () => {
       },
       publishedRevision: {
         content: null,
-        contentFormat: 'markdown',
+        contentFormat: 'lexical',
         createdAt: '2026-10-01T00:00:00.000Z',
         documentId: 'doc',
         id: 'pub',

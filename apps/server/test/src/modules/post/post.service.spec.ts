@@ -140,7 +140,7 @@ describe('PostService', () => {
     await expect(
       service.updateById('post-1', {
         text: 'body',
-        contentFormat: ContentFormat.Markdown,
+        contentFormat: 'markdown' as any,
       }),
     ).rejects.toThrow(AppException)
     await expect(
@@ -148,7 +148,7 @@ describe('PostService', () => {
         title: 'Post',
         text: 'body',
         categoryId: 'cat-1',
-        contentFormat: ContentFormat.Markdown,
+        contentFormat: 'markdown' as any,
       } as any),
     ).rejects.toThrow(AppException)
     expect(repository.update).not.toHaveBeenCalled()

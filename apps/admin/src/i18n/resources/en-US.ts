@@ -452,9 +452,8 @@ export const enUS = {
   'drafts.detail.edit': 'Edit',
   'drafts.detail.empty': 'Select a draft to view details.',
   'drafts.diff.empty': 'No content body.',
-  'drafts.diff.failed': 'Failed to render Markdown diff.',
+  'drafts.diff.failed': 'Failed to render body diff.',
   'drafts.diff.loading': 'Loading diff view...',
-  'drafts.diff.markdown.title': 'Markdown diff',
   'drafts.diff.rich.title': 'Rich text diff',
   'drafts.diff.richFailed': 'Failed to parse rich text content.',
   'drafts.diff.sameContent': 'Same as the current version',
@@ -678,7 +677,7 @@ export const enUS = {
     'Notify your other services when content changes, and check each delivery.',
   'routes.webhooks.title': 'Webhooks',
   'routes.writePost.description':
-    'Create and edit posts in the React markdown writing surface.',
+    'Create and edit posts in the rich text editor.',
   'routes.writePost.title': 'Write Post',
 
   'settings.account.entry.passkeyDescription':

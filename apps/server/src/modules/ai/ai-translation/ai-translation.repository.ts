@@ -3,14 +3,12 @@ import { and, desc, eq, inArray, or, type SQL, sql } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import { aiTranslations, posts, translationEntries } from '~/database/schema'
-import { DraftRefType } from '~/modules/draft/draft.enum'
 import {
   BaseRepository,
   type PaginationResult,
   toEntityId,
 } from '~/processors/database/base.repository'
 import type { AppDatabase } from '~/processors/database/postgres.provider'
-import { acquireContentFormatTransitionLock } from '~/shared/content-format-transition-lock'
 import { type EntityId, parseEntityId } from '~/shared/id/entity-id'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 import { ContentFormat } from '~/shared/types/content-format.type'
@@ -304,28 +302,8 @@ export class AiTranslationRepository extends BaseRepository {
       updatedAt: new Date(),
     }
     return this.db.transaction(async (tx) => {
-      await acquireContentFormatTransitionLock(tx, {
-        refId: String(input.refId),
-        refType: input.refType,
-      })
-
-      let sourceFormat: string | undefined
-      if (input.refType === DraftRefType.Post) {
-        const [source] = await tx
-          .select({ contentFormat: posts.contentFormat })
-          .from(posts)
-          .where(eq(posts.id, refBig))
-          .limit(1)
-        sourceFormat = source?.contentFormat
-      }
-
-      if (
-        sourceFormat === ContentFormat.Lexical &&
-        input.contentFormat !== ContentFormat.Lexical
-      ) {
-        throw new ConflictException(
-          'A Markdown translation cannot be persisted for a Lexical source',
-        )
+      if (input.contentFormat !== ContentFormat.Lexical) {
+        throw new ConflictException('Translations must use Lexical content')
       }
 
       const [row] = await tx

@@ -28,7 +28,7 @@ export interface PostModel {
   modifiedAt: string | null
   createdAt: string
   category: Category
-  contentFormat?: 'markdown' | 'lexical'
+  contentFormat?: 'lexical'
   content?: string
   summary?: string | null
   pinAt?: string | null

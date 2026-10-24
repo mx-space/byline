@@ -404,7 +404,6 @@ export function TasksRouteView() {
         }
         rowKey="id"
         search={false}
-        tableLayout="fixed"
         tableRender={(_props, dom) =>
           initialLoading ? <TableSkeleton rows={8} /> : dom
         }

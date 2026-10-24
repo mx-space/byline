@@ -115,12 +115,6 @@ export default ({ mode }) => {
         '@better-auth/passkey/client',
       ],
       include: [
-        '@base-ui/react/button',
-        '@base-ui/react/checkbox',
-        '@base-ui/react/field',
-        '@base-ui/react/input',
-        '@base-ui/react/popover',
-        '@base-ui/react/switch',
         '@haklex/rich-agent-core',
         '@haklex/rich-editor',
         '@haklex/rich-editor-ui',

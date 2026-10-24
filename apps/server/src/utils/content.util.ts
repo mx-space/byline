@@ -4,16 +4,13 @@ import {
   NODE_STATE_KEY,
 } from '@mx-space/ai/translation'
 
-import { ContentFormat } from '~/shared/types/content-format.type'
-
-import { pickFilesFromMarkdown } from './pic.util'
 import { md5 } from './tool.util'
 
 interface ContentDoc {
   text: string | null
   title: string
   subtitle?: string | null
-  contentFormat?: ContentFormat | string | null
+  contentFormat?: string | null
   content?: string | null
   images?: unknown[] | null
   summary?: string | null
@@ -21,17 +18,9 @@ interface ContentDoc {
   meta?: Record<string, any> | string | null
 }
 
-export function isLexical(doc: Pick<ContentDoc, 'contentFormat'>): boolean {
-  return doc.contentFormat === ContentFormat.Lexical
-}
-
 export function extractTextFromContent(
   doc: Pick<ContentDoc, 'text' | 'contentFormat' | 'content'>,
 ): string {
-  if (!isLexical(doc)) {
-    return doc.text || ''
-  }
-
   if (!doc.content) {
     return doc.text || ''
   }
@@ -60,14 +49,6 @@ export function extractFileUrlsFromContent(
     doc.images,
     parseMeta(doc.meta),
   ])
-
-  if (!isLexical(doc)) {
-    return dedupeFileUrls([
-      ...pickFilesFromMarkdown(doc.text ?? ''),
-      ...collectFileUrls(doc.text),
-      ...documentMetadataUrls,
-    ])
-  }
 
   if (!doc.content) {
     return dedupeFileUrls(documentMetadataUrls)
@@ -174,9 +155,9 @@ export function computeContentHash(
   doc: ContentDoc,
   sourceLang: string,
 ): string {
-  const sourceOfTruth = isLexical(doc)
-    ? canonicalizeLexicalContentForHash(doc.content ?? undefined)
-    : doc.text
+  const sourceOfTruth = canonicalizeLexicalContentForHash(
+    doc.content ?? undefined,
+  )
 
   return md5(
     JSON.stringify({

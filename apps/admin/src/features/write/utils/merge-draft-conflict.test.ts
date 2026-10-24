@@ -46,8 +46,8 @@ const createDraft = (
 ): DraftModel => {
   const { version = 1, ...snapshot } = overrides
   const revision = {
-    content: null,
-    contentFormat: 'markdown' as const,
+    content: lexical(paragraph('a', 'base text')),
+    contentFormat: 'lexical' as const,
     createdAt,
     documentId: 'document-1',
     id: `revision-${version}`,
@@ -134,30 +134,6 @@ describe('mergeDraftConflict', () => {
     expect(result.data.meta).toEqual({
       seo: { description: 'local', keywords: ['one', 'two'] },
     })
-  })
-
-  it('merges non-overlapping markdown edits', () => {
-    const base = createDraft({ text: 'hello world' })
-    const local = { ...toLocal(base), text: 'hello brave world' }
-    const remote = createDraft({ text: 'hello world!', version: 2 })
-
-    const result = mergeDraftConflict({ base, local, remote })
-
-    expect(result.conflicts).toEqual([])
-    expect(result.data.text).toBe('hello brave world!')
-  })
-
-  it('reports overlapping markdown edits and preserves the local value', () => {
-    const base = createDraft({ text: 'hello world' })
-    const local = { ...toLocal(base), text: 'hello local' }
-    const remote = createDraft({ text: 'hello remote', version: 2 })
-
-    const result = mergeDraftConflict({ base, local, remote })
-
-    expect(result.data.text).toBe('hello local')
-    expect(result.conflicts).toEqual([
-      expect.objectContaining({ kind: 'text', path: 'text' }),
-    ])
   })
 
   it('merges changes to different Lexical blocks', () => {

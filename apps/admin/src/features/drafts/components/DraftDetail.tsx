@@ -199,11 +199,10 @@ export function DraftDetail(props: {
             <DraftDiffPreview
               comparisonLabel={copy('diffDirectionPublished')}
               currentDraft={head}
-              currentLabel={copy('diffDraftFile')}
+
               diffStats={null}
               hideTitle
               selectedDraft={published}
-              selectedLabel={copy('diffPublishedFile')}
             />
           ) : (
             <DraftPreview revision={head} />

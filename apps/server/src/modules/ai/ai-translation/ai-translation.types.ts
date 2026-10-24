@@ -35,7 +35,7 @@ export interface AiTranslationRow {
   sourceModifiedAt: Date | null
   aiModel: string | null
   aiProvider: string | null
-  contentFormat: string | null
+  contentFormat: 'lexical' | null
   content: string | null
   sourceBlockSnapshots: unknown
   sourceMetaHashes: unknown

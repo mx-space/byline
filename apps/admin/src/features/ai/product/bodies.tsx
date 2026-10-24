@@ -1,4 +1,5 @@
 import { Input, TextArea } from '@lobehub/ui'
+import { mxLexicalToMarkdown } from '@mx-space/editor'
 import type { SerializedEditorState } from 'lexical'
 import { lazy, Suspense, useMemo, useState } from 'react'
 
@@ -36,13 +37,11 @@ export function TranslationBody(props: ProductBodyProps<AITranslation>) {
   const [title, setTitle] = useState(item.title)
   const [subtitle, setSubtitle] = useState(item.subtitle ?? '')
   const [summary, setSummary] = useState(item.summary ?? '')
-  const [text, setText] = useState(item.text)
   const [seo, setSeo] = useState(() => seoToFields(item.seo))
   const initialLexical = useMemo(
     () => parseLexical(item.content),
     [item.content],
   )
-  const useLexical = item.contentFormat === 'lexical' && Boolean(initialLexical)
   const [lexicalContent, setLexicalContent] = useState<string | undefined>(
     item.content ?? undefined,
   )
@@ -53,7 +52,7 @@ export function TranslationBody(props: ProductBodyProps<AITranslation>) {
       setError(copy('titleRequired'))
       return
     }
-    if (!useLexical && !text.trim()) {
+    if (!parseLexical(lexicalContent)) {
       setError(copy('bodyRequired'))
       return
     }
@@ -63,10 +62,10 @@ export function TranslationBody(props: ProductBodyProps<AITranslation>) {
       seo: seoFromFields(seo),
       subtitle: subtitle || undefined,
       summary: summary || undefined,
-      text,
+      text: mxLexicalToMarkdown(lexicalContent!),
       title,
+      content: lexicalContent,
     }
-    if (useLexical && lexicalContent) next.content = lexicalContent
     void props.onSubmit(next)
   }
 
@@ -114,7 +113,7 @@ export function TranslationBody(props: ProductBodyProps<AITranslation>) {
           </div>
           <div className={aiStyles.field}>
             <span className={aiStyles.label}>{copy('fieldBody')}</span>
-            {useLexical && initialLexical ? (
+            {initialLexical ? (
               <Suspense
                 fallback={
                   <p className={aiStyles.meta}>{copy('loadingPost')}</p>
@@ -127,11 +126,7 @@ export function TranslationBody(props: ProductBodyProps<AITranslation>) {
                 />
               </Suspense>
             ) : (
-              <TextArea
-                onChange={(event) => setText(event.target.value)}
-                rows={16}
-                value={text}
-              />
+              <p className={aiStyles.meta}>{copy('bodyRequired')}</p>
             )}
           </div>
           {error ? <p className={aiStyles.meta}>{error}</p> : null}
@@ -151,7 +146,7 @@ export function TranslationBody(props: ProductBodyProps<AITranslation>) {
           {item.summary ? (
             <p className={aiStyles.prose}>{item.summary}</p>
           ) : null}
-          {useLexical && initialLexical ? (
+          {initialLexical ? (
             <Suspense
               fallback={<p className={aiStyles.meta}>{copy('loadingPost')}</p>}
             >
@@ -161,7 +156,7 @@ export function TranslationBody(props: ProductBodyProps<AITranslation>) {
               />
             </Suspense>
           ) : (
-            <p className={aiStyles.prose}>{emptyOr(item.text)}</p>
+            <p className={aiStyles.prose}>{copy('bodyRequired')}</p>
           )}
         </>
       )}

@@ -81,10 +81,7 @@ import {
   readSeoSourceHash,
 } from './translation-seo.util'
 import type { ITranslationStrategy } from './translation-strategy.interface'
-import {
-  LEXICAL_TRANSLATION_STRATEGY,
-  MARKDOWN_TRANSLATION_STRATEGY,
-} from './translation-strategy.interface'
+import { LEXICAL_TRANSLATION_STRATEGY } from './translation-strategy.interface'
 
 function isDataEvent(event: ArticleEventPayload): event is { data: string } {
   return 'data' in event
@@ -123,16 +120,8 @@ export class AiTranslationService
     private readonly generationMetrics: AiGenerationMetricsService,
     @Inject(LEXICAL_TRANSLATION_STRATEGY)
     private readonly lexicalStrategy: ITranslationStrategy,
-    @Inject(MARKDOWN_TRANSLATION_STRATEGY)
-    private readonly markdownStrategy: ITranslationStrategy,
   ) {
     super()
-  }
-
-  private getStrategy(contentFormat?: string | null): ITranslationStrategy {
-    return contentFormat === ContentFormat.Lexical
-      ? this.lexicalStrategy
-      : this.markdownStrategy
   }
 
   onModuleInit() {
@@ -691,7 +680,7 @@ export class AiTranslationService
   private buildSourceSnapshots(
     content: ArticleContent,
   ): AITranslationModel['sourceBlockSnapshots'] {
-    if (content.contentFormat !== ContentFormat.Lexical || !content.content) {
+    if (!content.content) {
       return undefined
     }
     return this.lexicalService.extractRootBlocks(content.content).map((b) => ({
@@ -730,7 +719,6 @@ export class AiTranslationService
     refType?: CollectionRefTypes,
   ) {
     const { runtime, info } = await this.aiService.getTranslationModelWithInfo()
-    const strategy = this.getStrategy(content.contentFormat)
     const aiConfig = await this.configService.get('ai')
 
     let reviewerRuntime: IModelRuntime | undefined
@@ -744,7 +732,7 @@ export class AiTranslationService
       }
     }
 
-    return strategy.translate(content, targetLang, runtime, info, {
+    return this.lexicalStrategy.translate(content, targetLang, runtime, info, {
       push,
       onToken,
       onCost,
@@ -920,7 +908,7 @@ export class AiTranslationService
             sourceModified ?? existing?.sourceModifiedAt ?? null,
           aiModel: translated.aiModel,
           aiProvider: translated.aiProvider,
-          contentFormat: translated.contentFormat ?? null,
+          contentFormat: ContentFormat.Lexical,
           content: translated.content ?? null,
           sourceBlockSnapshots: sourceSnapshots,
           sourceMetaHashes,
