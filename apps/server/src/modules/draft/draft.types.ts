@@ -11,7 +11,7 @@ export type RevisionRelation = 'same' | 'ancestor' | 'descendant' | 'diverged'
 
 export interface RevisionSnapshot {
   content: string | null
-  contentFormat: string
+  contentFormat: 'lexical'
   images: unknown[] | null
   meta: Record<string, unknown> | null
   text: string
@@ -122,7 +122,7 @@ export interface DocumentShareRow {
 
 export interface SharedRevisionSnapshot {
   content: string | null
-  contentFormat: string
+  contentFormat: 'lexical'
   createdAt: Date
   images: unknown[] | null
   refType: DraftRefType

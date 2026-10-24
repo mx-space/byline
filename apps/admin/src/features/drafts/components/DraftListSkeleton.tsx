@@ -1,12 +1,51 @@
+import {
+  createStaticStyles,
+  Flexbox,
+  Skeleton,
+  SkeletonText,
+} from '@lobehub/ui'
+
+import { DetailPane } from '~/ui/page'
+
+const styles = createStaticStyles(({ css }) => ({
+  row: css`
+    margin-inline: 8px;
+    padding-block: 12px;
+    padding-inline: 8px 12px;
+  `,
+}))
+
 export function DraftListSkeleton() {
   return (
-    <div className="divide-y divide-neutral-100 dark:divide-neutral-900">
-      {Array.from({ length: 8 }).map((_, index) => (
-        <div className="px-4 py-3" key={index}>
-          <div className="h-4 w-1/2 animate-pulse rounded bg-neutral-100 dark:bg-neutral-900" />
-          <div className="mt-3 h-3 w-2/3 animate-pulse rounded bg-neutral-100 dark:bg-neutral-900" />
+    <div aria-hidden>
+      {Array.from({ length: 8 }, (_, index) => (
+        <div className={styles.row} key={index}>
+          <Flexbox align="center" gap={12} horizontal>
+            <Skeleton height={40} width={64} />
+            <Flexbox flex={1} gap={8}>
+              <Flexbox gap={12} horizontal justify="space-between">
+                <Skeleton height={16} width="60%" />
+                <Skeleton height={12} width={48} />
+              </Flexbox>
+              <Skeleton height={12} width="40%" />
+            </Flexbox>
+          </Flexbox>
         </div>
       ))}
     </div>
+  )
+}
+
+export function DraftDetailSkeleton() {
+  return (
+    <DetailPane
+      contentWidth="article"
+      title={<Skeleton height={20} width={240} />}
+    >
+      <Flexbox gap={32}>
+        <SkeletonText rows={3} />
+        <SkeletonText rows={8} />
+      </Flexbox>
+    </DetailPane>
   )
 }

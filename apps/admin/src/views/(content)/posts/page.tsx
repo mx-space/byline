@@ -6,7 +6,7 @@ export const metadata = defineMetadata({
   titleKey: 'routes.posts.title',
   descriptionKey: 'routes.posts.description',
   icon: FileText,
-  order: 1,
+  order: 3,
 })
 
 export { PostsRouteView as default } from '~/features/posts/routes/PostsRouteView'

@@ -1,6 +1,7 @@
 import { CollectionRefTypes } from '~/constants/db.constant'
 
 import type { PostModel } from '../post/post.types'
+import { isPostPublic } from '../post/post-visibility'
 
 type VisibilityArticle = { type: CollectionRefTypes; document: unknown }
 
@@ -14,7 +15,7 @@ export function isArticleVisibleToViewer(
 ): boolean {
   if (article.type !== CollectionRefTypes.Post) return false
   if (viewer.isOwner) return true
-  return (article.document as PostModel).isPublished !== false
+  return isPostPublic(article.document as PostModel)
 }
 
 export function isGlobalArticleVisible(article: VisibilityArticle): boolean {

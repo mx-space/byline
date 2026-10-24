@@ -46,7 +46,7 @@ export const posts = pgTable(
     slug: text('slug').notNull(),
     text: text('text'),
     content: text('content'),
-    contentFormat: text('content_format').notNull(),
+    contentFormat: text('content_format').$type<'lexical'>().notNull(),
     summary: text('summary'),
     images: jsonb('images').$type<unknown[]>(),
     meta: jsonb('meta').$type<Record<string, unknown>>(),
@@ -59,6 +59,8 @@ export const posts = pgTable(
       .notNull()
       .references(() => categories.id, { onDelete: 'restrict' }),
     isPublished: boolean('is_published').notNull().default(true),
+    publicAt: tsCol('public_at'),
+    publicNotifiedAt: tsCol('public_notified_at'),
     sourceLang: text('source_lang'),
     image: text('image'),
     seo: jsonb('seo').$type<PostSeo | null>(),
@@ -68,6 +70,12 @@ export const posts = pgTable(
   (table) => [
     uniqueIndex('posts_slug_uniq').on(table.slug),
     index('posts_modified_at_idx').on(table.modifiedAt),
+    index('posts_pending_public_idx')
+      .on(table.publicAt)
+      .where(
+        sql`${table.isPublished} = true and ${table.publicAt} is not null and ${table.publicNotifiedAt} is null`,
+      )
+      .concurrently(),
     index('posts_created_at_idx').on(table.createdAt),
     index('posts_category_id_idx').on(table.categoryId),
     index('posts_published_created_at_idx')
@@ -151,7 +159,7 @@ export const contentRevisions = pgTable(
     title: text('title').notNull().default(''),
     text: text('text').notNull().default(''),
     content: text('content'),
-    contentFormat: text('content_format').notNull(),
+    contentFormat: text('content_format').$type<'lexical'>().notNull(),
     images: jsonb('images').$type<unknown[]>(),
     meta: jsonb('meta').$type<Record<string, unknown>>(),
     typeSpecificData: jsonb('type_specific_data').$type<Record<

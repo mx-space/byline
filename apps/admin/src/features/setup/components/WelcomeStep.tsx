@@ -1,26 +1,25 @@
+import { Alert, Skeleton } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
-import { CircleAlert, CircleCheck } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { getAppInfo } from '~/api/system'
 import { API_URL } from '~/constants/env'
-import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { Button } from '~/ui/primitives/button'
-import { cn } from '~/utils/cn'
+import { Button } from '~/ui/site-button'
 
+import { useSetupCopy } from '../copy'
 import {
-  OnboardingAsideTitle,
   OnboardingCard,
   OnboardingFooter,
   OnboardingShell,
 } from './OnboardingShell'
+import { wizardStyles } from './wizard-styles'
 
 export function WelcomeStep(props: {
   connected: boolean
   onFresh: () => void
 }) {
-  const { t } = useI18n()
+  const copy = useSetupCopy()
   const infoQuery = useQuery({
     enabled: props.connected,
     queryFn: getAppInfo,
@@ -28,78 +27,67 @@ export function WelcomeStep(props: {
     retry: false,
   })
   const apiLabel = API_URL || location.origin
-
-  const asideRows = [
-    [
-      t('setup.onboarding.rail.account'),
-      t('setup.onboarding.welcome.asideAccount'),
-    ],
-    [t('setup.onboarding.rail.site'), t('setup.onboarding.welcome.asideSite')],
-    [t('setup.onboarding.rail.ai'), t('setup.onboarding.welcome.asideAi')],
-  ]
+  const version = infoQuery.data?.version
 
   return (
-    <OnboardingShell
-      aside={
-        <>
-          <OnboardingAsideTitle>
-            {t('setup.onboarding.welcome.asideTitle')}
-          </OnboardingAsideTitle>
-          <div className="flex flex-col gap-3 text-sm">
-            {asideRows.map(([title, description]) => (
-              <div key={title}>
-                <div className="font-medium text-fg">{title}</div>
-                <div className="text-fg-muted">{description}</div>
-              </div>
-            ))}
-          </div>
-        </>
-      }
-      step="welcome"
-    >
+    <OnboardingShell step="welcome">
       <OnboardingCard
-        description={t('setup.onboarding.welcome.description')}
+        description={copy('welcomeDescription')}
         footer={
-          <OnboardingFooter meta={t('setup.onboarding.welcome.duration')}>
+          <OnboardingFooter>
             <Button
               data-testid="onboarding-submit"
               disabled={!props.connected}
+              htmlType="button"
               onClick={props.onFresh}
-              type="button"
+              title={props.connected ? undefined : copy('welcomeBlocked')}
+              type="primary"
             >
-              {t('setup.onboarding.action.continue')}
+              {copy('welcomeContinue')}
             </Button>
           </OnboardingFooter>
         }
-        title={t('setup.onboarding.welcome.title')}
+        title={copy('welcomeTitle')}
       >
-        <div
-          className={cn(
-            'flex items-center gap-2 rounded-sm px-3 py-2 text-sm',
-            props.connected
-              ? 'bg-surface-inset text-fg'
-              : 'bg-red-50 text-red-700',
-          )}
-        >
-          {props.connected ? (
-            <CircleCheck
-              aria-hidden="true"
-              className="size-4 shrink-0 text-green-600"
+        <div className={wizardStyles.stack}>
+          <Alert
+            className={wizardStyles.break}
+            description={
+              props.connected
+                ? version
+                  ? copy('welcomeVersion', { version })
+                  : undefined
+                : copy('welcomeDisconnectedDetail')
+            }
+            showIcon
+            title={
+              props.connected
+                ? copy('welcomeConnected', { url: apiLabel })
+                : copy('welcomeDisconnected', { url: apiLabel })
+            }
+            type={props.connected ? 'success' : 'error'}
+          />
+          {props.connected && infoQuery.isPending ? (
+            <Skeleton.Text
+              aria-label={copy('welcomeLoading')}
+              rows={1}
+              width="42%"
             />
-          ) : (
-            <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
-          )}
-          <span className="min-w-0 truncate">
-            {props.connected
-              ? t('setup.onboarding.welcome.connected', { url: apiLabel })
-              : t('setup.onboarding.welcome.disconnected', { url: apiLabel })}
-            {infoQuery.data?.version ? ` · v${infoQuery.data.version}` : ''}
-          </span>
-          <Link
-            className="ml-auto shrink-0 text-accent hover:text-accent-hover"
-            to="/setup-api"
-          >
-            {t('setup.onboarding.welcome.change')}
+          ) : null}
+          {props.connected && infoQuery.isError ? (
+            <Alert showIcon title={copy('welcomeLoadError')} type="warning" />
+          ) : null}
+          {props.connected && infoQuery.isError ? (
+            <Button
+              htmlType="button"
+              onClick={() => void infoQuery.refetch()}
+              type="text"
+            >
+              {copy('retry')}
+            </Button>
+          ) : null}
+          <Link className={wizardStyles.link} to="/setup-api">
+            {copy('welcomeChange')}
           </Link>
         </div>
       </OnboardingCard>

@@ -38,7 +38,7 @@ function createService(
 
   const documents = overrides.documents ?? {}
   const databaseService = {
-    findAllArticlesForTranslation: vi.fn(async () => ARTICLES),
+    findArticlesForProductLists: vi.fn(async () => ARTICLES),
     findArticleIdsByTitle: vi.fn(async () => []),
     findGlobalByIds: vi.fn(async (ids: string[]) => ({
       posts: ARTICLES.posts
@@ -95,7 +95,7 @@ function createService(
 }
 
 describe('AiOverviewService.getOverviewGrouped', () => {
-  it('lists every article newest first and counts the full set', async () => {
+  it('lists every article and counts the full set', async () => {
     const { service } = createService()
 
     const result = await service.getOverviewGrouped({ page: 1, size: 20 })
@@ -107,6 +107,67 @@ describe('AiOverviewService.getOverviewGrouped', () => {
       '100',
     ])
     expect(result.pagination.total).toBe(4)
+  })
+
+  it('puts unpublished posts first and public posts by publish time', async () => {
+    const { service, databaseService } = createService()
+    databaseService.findArticlesForProductLists.mockResolvedValue({
+      posts: [
+        {
+          id: '100',
+          title: 'Old',
+          isPublished: true,
+          createdAt: '2020-01-01T00:00:00.000Z',
+        },
+        {
+          id: '200',
+          title: 'Draft',
+          isPublished: false,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
+        {
+          id: '300',
+          title: 'New',
+          isPublished: true,
+          publicAt: '2024-06-01T00:00:00.000Z',
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
+      ],
+    })
+
+    const result = await service.getOverviewGrouped({ page: 1, size: 20 })
+
+    expect(result.data.map((row) => row.article.id)).toEqual([
+      '200',
+      '300',
+      '100',
+    ])
+  })
+
+  it('includes a never-published draft and keeps its draft id', async () => {
+    const { service, databaseService } = createService()
+    databaseService.findArticlesForProductLists.mockResolvedValue({
+      posts: [
+        {
+          id: '100',
+          title: 'Published',
+          isPublished: true,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'draft-1',
+          title: 'Draft only',
+          isPublished: false,
+          createdAt: '2024-08-01T00:00:00.000Z',
+          draftId: 'draft-1',
+        },
+      ],
+    })
+
+    const result = await service.getOverviewGrouped({ page: 1, size: 20 })
+
+    expect(result.data.map((row) => row.article.id)).toEqual(['draft-1', '100'])
+    expect(result.data[0].article.draftId).toBe('draft-1')
   })
 
   it('paginates the ordered set', async () => {

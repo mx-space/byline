@@ -1,7 +1,7 @@
+import { toast } from '@lobehub/ui'
 import { useMutation } from '@tanstack/react-query'
 import { Loader2, Save } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import type { UserDetail } from '~/api/users'
 import { setUserPermissions } from '~/api/users'

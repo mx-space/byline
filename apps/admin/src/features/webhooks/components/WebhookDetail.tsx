@@ -1,190 +1,223 @@
-import {
-  ArrowLeft,
-  ExternalLink,
-  Globe,
-  Pencil,
-  Play,
-  Shield,
-  Trash2,
-  Webhook,
-} from 'lucide-react'
-import { useState } from 'react'
+import { confirmModal, Flexbox, Switch, Tabs, Text, toast } from '@lobehub/ui'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Send, Trash2 } from 'lucide-react'
+import { useSearchParams } from 'react-router'
 
 import type { WebhookModel } from '~/api/webhooks'
-import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
+import { deleteWebhook, updateWebhook } from '~/api/webhooks'
 import { useI18n } from '~/i18n'
-import { MobileHeaderAffordance } from '~/ui/layout/mobile-header-affordance'
-import { Badge } from '~/ui/primitives/badge'
-import { Button } from '~/ui/primitives/button'
-import { Scroll } from '~/ui/primitives/scroll'
-import { cn } from '~/utils/cn'
+import { adminQueryKeys } from '~/query/keys'
+import { DetailPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
-import { getScopeText } from '../utils/webhooks'
-import { EventBadge, InfoCard, StatusDot } from './WebhookPrimitives'
+import { webhooksQueryKey } from '../constants'
+import { useWebhookCopy } from '../copy'
+import {
+  describeDelivery,
+  endpointUrl,
+  errorText,
+  scopeText,
+} from '../utils/webhooks'
+import { styles } from './styles'
+import { WebhookConfigTab } from './WebhookConfigTab'
+import { WebhookDeliveries } from './WebhookDeliveries'
+import { useLatestDelivery } from './WebhookListPane'
+
+type DetailTab = 'config' | 'deliveries'
 
 export function WebhookDetail(props: {
   onBack: () => void
-  onDelete: () => void
-  onEdit: () => void
-  onTest: (event: string) => void
-  showBack: boolean
+  onDeleted: () => void
   webhook: WebhookModel
 }) {
-  const { t } = useI18n()
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
-  const targetUrl = props.webhook.payloadUrl || props.webhook.url
+  const text = useWebhookCopy()
+  const { format } = useI18n()
+  const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab: DetailTab =
+    searchParams.get('tab') === 'deliveries' ? 'deliveries' : 'config'
+  const webhook = props.webhook
+  const url = endpointUrl(webhook) || text('emptyMark')
+  const latest = useLatestDelivery(webhook.id).data
+  const latestFailed = latest
+    ? describeDelivery(latest).type !== 'success'
+    : false
+
+  const setTab = (next: DetailTab) => {
+    setSearchParams(
+      (current) => {
+        const params = new URLSearchParams(current)
+        if (next === 'config') params.delete('tab')
+        else params.set('tab', next)
+        return params
+      },
+      { replace: true },
+    )
+  }
+
+  const invalidateDeliveries = () =>
+    queryClient.invalidateQueries({
+      queryKey: adminQueryKeys.webhooks.dispatchesRoot(webhook.id),
+    })
+
+  const enableMutation = useMutation({
+    mutationFn: (enabled: boolean) => updateWebhook(webhook.id, { enabled }),
+    onError: (error: unknown, _enabled, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          adminQueryKeys.webhooks.list(),
+          context.previous,
+        )
+      }
+      toast.error(
+        text('enableFailed', { message: errorText(error, text('retryLater')) }),
+      )
+    },
+    onMutate: async (enabled: boolean) => {
+      await queryClient.cancelQueries({
+        queryKey: adminQueryKeys.webhooks.list(),
+      })
+      const previous = queryClient.getQueryData<WebhookModel[]>(
+        adminQueryKeys.webhooks.list(),
+      )
+      queryClient.setQueryData<WebhookModel[]>(
+        adminQueryKeys.webhooks.list(),
+        (current) =>
+          current?.map((item) =>
+            item.id === webhook.id ? { ...item, enabled } : item,
+          ),
+      )
+      return { previous }
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: webhooksQueryKey })
+    },
+    onSuccess: (_result, enabled) => {
+      toast.success(enabled ? text('turnedOn') : text('turnedOff'))
+    },
+  })
+
+  // The server has no test route; any PATCH sends a health_check delivery.
+  const testMutation = useMutation({
+    mutationFn: () => updateWebhook(webhook.id, { enabled: webhook.enabled }),
+    onError: (error: unknown) => {
+      toast.error(
+        text('testFailed', { message: errorText(error, text('retryLater')) }),
+      )
+    },
+    onSuccess: async () => {
+      toast.success(text('testSent'))
+      setTab('deliveries')
+      await invalidateDeliveries()
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteWebhook(webhook.id),
+    onSuccess: async () => {
+      toast.success(text('deleted'))
+      await queryClient.invalidateQueries({ queryKey: webhooksQueryKey })
+      props.onDeleted()
+    },
+  })
+
+  const askDelete = () => {
+    confirmModal({
+      cancelText: text('cancel'),
+      content: text('deleteBody', { url }),
+      okButtonProps: { danger: true },
+      okText: text('delete'),
+      onOk: async () => {
+        try {
+          await deleteMutation.mutateAsync()
+        } catch (error) {
+          toast.error(
+            text('deleteFailed', {
+              message: errorText(error, text('retryLater')),
+            }),
+          )
+        }
+      },
+      title: text('deleteTitle'),
+    })
+  }
+
+  const eventsLabel = webhook.events.includes('all')
+    ? text('allEvents')
+    : text('eventCount', { count: webhook.events.length })
 
   return (
-    <section className="flex min-h-0 flex-col border-b border-neutral-200 dark:border-neutral-800">
-      <div
-        className={cn(
-          'flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800',
-          APP_SHELL_HEADER_HEIGHT_CLASS,
-        )}
-      >
-        <div className="flex min-w-0 items-center gap-2">
-          <MobileHeaderAffordance />
-          {props.showBack ? (
-            <Button
-              aria-label={t('webhooks.detail.backAria')}
-              className="h-8 px-2 lg:hidden"
-              onClick={props.onBack}
-              type="button"
-              variant="subtle"
-            >
-              <ArrowLeft aria-hidden="true" className="size-4" />
-            </Button>
-          ) : null}
-          <h2 className="truncate text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-            {t('webhooks.detail.title')}
-          </h2>
-        </div>
-
-        <div className="flex shrink-0 gap-2">
+    <DetailPane
+      actions={
+        <Flexbox align="center" gap={8} horizontal>
+          <Flexbox align="center" as="label" gap={6} horizontal>
+            <Switch
+              aria-label={text('enable')}
+              checked={webhook.enabled}
+              loading={enableMutation.isPending}
+              onChange={(checked) => enableMutation.mutate(checked)}
+              size="small"
+            />
+            <Text type="secondary">{text('enable')}</Text>
+          </Flexbox>
           <Button
-            className="h-8 px-2"
-            onClick={props.onEdit}
-            type="button"
-            variant="subtle"
+            icon={Send}
+            loading={testMutation.isPending}
+            onClick={() => testMutation.mutate()}
           >
-            <Pencil aria-hidden="true" className="size-3.5" />
-            {t('webhooks.detail.edit')}
+            {text('sendTest')}
           </Button>
           <Button
-            className="h-8 px-2 text-red-600 dark:text-red-400"
-            onClick={() => {
-              if (isConfirmingDelete) {
-                props.onDelete()
-                setIsConfirmingDelete(false)
-              } else {
-                setIsConfirmingDelete(true)
-              }
-            }}
-            onMouseLeave={() => setIsConfirmingDelete(false)}
-            type="button"
-            variant="subtle"
-          >
-            <Trash2 aria-hidden="true" className="size-3.5" />
-            {isConfirmingDelete
-              ? t('webhooks.detail.confirm')
-              : t('webhooks.detail.delete')}
-          </Button>
+            aria-label={text('delete')}
+            danger
+            icon={Trash2}
+            onClick={askDelete}
+            title={text('delete')}
+            type="text"
+          />
+        </Flexbox>
+      }
+      backLabel={text('backToList')}
+      contentWidth={tab === 'deliveries' ? 'full' : 'default'}
+      meta={
+        <>
+          <span>{eventsLabel}</span>
+          <span>
+            {text('scopeLine', { value: scopeText(webhook.scope, text) })}
+          </span>
+          {latest ? (
+            <span>
+              {latestFailed ? text('lastFailed') : text('lastSucceeded')}
+              {' · '}
+              {format.relativeTime(latest.timestamp)}
+            </span>
+          ) : (
+            <span>{text('lastNone')}</span>
+          )}
+        </>
+      }
+      onBack={props.onBack}
+      tabs={
+        <div className={styles.tabs}>
+          <Tabs
+            activeKey={tab}
+            items={[
+              { key: 'config', label: text('tabConfig') },
+              { key: 'deliveries', label: text('tabDeliveries') },
+            ]}
+            onChange={(key) => setTab(key as DetailTab)}
+            variant="square"
+          />
         </div>
+      }
+      title={<span title={url}>{url}</span>}
+    >
+      <div hidden={tab !== 'config'}>
+        <WebhookConfigTab key={webhook.id} webhook={webhook} />
       </div>
-
-      <Scroll className="flex-1">
-        <div className="mx-auto max-w-4xl space-y-6 p-6">
-          <div className="flex items-start gap-4">
-            <div className="relative shrink-0">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-                <Webhook
-                  aria-hidden="true"
-                  className="size-7 text-neutral-500 dark:text-neutral-400"
-                />
-              </div>
-              <div className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full border-2 border-white bg-white dark:border-neutral-950 dark:bg-neutral-950">
-                <StatusDot enabled={props.webhook.enabled} />
-              </div>
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="truncate text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                  {targetUrl}
-                </h2>
-                {targetUrl ? (
-                  <a
-                    className="shrink-0 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-                    href={targetUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    <ExternalLink aria-hidden="true" className="size-4" />
-                  </a>
-                ) : null}
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-                <Badge pill size="sm" variant="soft">
-                  {props.webhook.enabled
-                    ? t('webhooks.detail.enabled')
-                    : t('webhooks.detail.disabled')}
-                </Badge>
-                <span>{getScopeText(props.webhook.scope, t)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <InfoCard
-              icon={Globe}
-              label={t('webhooks.detail.scope')}
-              value={getScopeText(props.webhook.scope, t)}
-            />
-            <InfoCard
-              icon={Shield}
-              label={t('webhooks.detail.secret')}
-              value={
-                props.webhook.secret
-                  ? t('webhooks.detail.secretConfigured')
-                  : t('webhooks.detail.secretNone')
-              }
-            />
-          </div>
-
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              {t('webhooks.detail.eventsCount', {
-                count: props.webhook.events.length,
-              })}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {props.webhook.events.map((event) => (
-                <EventBadge event={event} key={event} />
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              {t('webhooks.detail.testTitle')}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {props.webhook.events.map((event) => (
-                <Button
-                  className="h-8 px-2"
-                  key={event}
-                  onClick={() => props.onTest(event)}
-                  type="button"
-                  variant="subtle"
-                >
-                  <Play aria-hidden="true" className="size-3.5" />
-                  {event}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Scroll>
-    </section>
+      {tab === 'deliveries' ? (
+        <WebhookDeliveries key={webhook.id} webhook={webhook} />
+      ) : null}
+    </DetailPane>
   )
 }

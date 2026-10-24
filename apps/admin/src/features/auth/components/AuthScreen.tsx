@@ -1,55 +1,86 @@
-import type { ReactNode } from 'react'
+import { createStaticStyles } from '@lobehub/ui'
+import { AuthLayout } from '@lobehub/ui/dashboard'
+import { lazy, type ReactNode, Suspense } from 'react'
 
-import {
-  authBackdropClassName,
-  authBackdropStyle,
-  authCardClassName,
-  authDescriptionClassName,
-  authIconTileClassName,
-  authTitleClassName,
-} from '~/lib/auth-backdrop'
-import { cn } from '~/utils/cn'
+import { useI18n } from '~/i18n'
 
 import faviconUrl from '../../../../favicon.png'
+import { AuthTools } from './auth-tools'
+
+const Grainient = lazy(() =>
+  import('@lobehub/ui/awesome').then((module) => ({
+    default: module.Grainient,
+  })),
+)
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  form: css`
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    width: 100%;
+  `,
+  link: css`
+    font-size: 12px;
+    line-height: 18px;
+    color: ${cssVar.colorPrimary};
+
+    &:hover {
+      color: ${cssVar.colorPrimaryHover};
+    }
+
+    &:focus-visible {
+      text-decoration: underline;
+    }
+  `,
+  logo: css`
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+
+    object-fit: cover;
+  `,
+}))
 
 export function AuthScreen(props: {
-  children: ReactNode
+  alert?: ReactNode
+  children?: ReactNode
+  footer?: ReactNode
+  loading?: boolean
   subtitle?: ReactNode
   title: ReactNode
 }) {
+  const { t } = useI18n()
+
   return (
-    <main
-      className={cn(authBackdropClassName, 'flex items-center justify-center')}
-      style={authBackdropStyle}
+    <AuthLayout
+      alert={props.alert}
+      aside={
+        <AuthLayout.Aside
+          kicker="Byline"
+          line={t('auth.login.asideLine')}
+          background={
+            <Suspense fallback={null}>
+              <Grainient lightMode="auto" />
+            </Suspense>
+          }
+        />
+      }
+      background="grid"
+      description={props.subtitle}
+      footer={props.footer}
+      loading={props.loading}
+      logo={<img alt="" className={styles.logo} src={faviconUrl} />}
+      title={props.title}
+      tools={<AuthTools />}
+      variant="elevated"
     >
-      <section
-        className={cn(authCardClassName, 'flex max-w-sm flex-col items-center')}
-      >
-        <div className={authIconTileClassName}>
-          <img
-            alt=""
-            className="size-full object-cover"
-            decoding="async"
-            src={faviconUrl}
-          />
-        </div>
-        <h1 className={cn(authTitleClassName, 'mt-4 text-center')}>
-          {props.title}
-        </h1>
-        {props.subtitle ? (
-          <p className={cn(authDescriptionClassName, 'mt-1 text-center')}>
-            {props.subtitle}
-          </p>
-        ) : null}
-        <div className="mt-6 flex w-full flex-col items-center">
-          {props.children}
-        </div>
-      </section>
-    </main>
+      {props.children}
+    </AuthLayout>
   )
 }
 
-export const authFormClassName = 'flex w-full flex-col gap-3'
-
-export const authLinkClassName =
-  'text-sm text-accent transition-colors hover:text-accent-hover focus-visible:outline-hidden focus-visible:underline'
+export const authFormClassName = styles.form
+export const authLinkClassName = styles.link

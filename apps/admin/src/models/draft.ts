@@ -11,7 +11,7 @@ export type RevisionRelation = 'same' | 'ancestor' | 'descendant' | 'diverged'
 
 export interface RevisionSnapshot {
   content: string | null
-  contentFormat: 'lexical' | 'markdown'
+  contentFormat: 'lexical'
   images: Image[] | null
   meta: Record<string, unknown> | null
   text: string
@@ -94,8 +94,10 @@ export interface DraftResponse {
 }
 
 export interface PostSpecificData {
+  publicAt?: string | null
   authors?: Array<string | { id: string }>
   categoryId?: string
+  created?: string
   image?: string | null
   pin?: boolean | string | null
   pinOrder?: number

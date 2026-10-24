@@ -1,19 +1,17 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { Check, Copy, Loader2, UserPlus } from 'lucide-react'
-import type { FormEvent } from 'react'
+import { Alert, Flexbox, Input, Modal, Select, Text, toast } from '@lobehub/ui'
+import { Form, useForm, useWatch } from '@lobehub/ui/form'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { z } from 'zod'
 
 import type { CreatedUserInvite, UserDetail } from '~/api/users'
 import { createInvite, getUsers, inviteExistingUser } from '~/api/users'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { ModalFooter, ModalHeader } from '~/ui/feedback/modal'
-import { present, useModal } from '~/ui/feedback/modal-imperative'
-import { Button } from '~/ui/primitives/button'
-import { SelectField } from '~/ui/primitives/select'
-import { TextInput } from '~/ui/primitives/text-field'
-import { cn } from '~/utils/cn'
+import { FormSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
+import { useUsersCopy } from '../copy'
 import type { InvitableRole } from '../utils/permissions'
 import {
   INVITABLE_ROLES,
@@ -27,21 +25,55 @@ import {
   getUserErrorMessage,
 } from '../utils/users'
 
-interface InviteUserModalProps {
+const NONE = 'none'
+
+const inviteSchema = z.object({
+  displayName: z.string(),
+  email: z.string(),
+  linkedAuthorId: z.string(),
+  role: z.enum(INVITABLE_ROLES),
+})
+
+const emailSchema = z.email()
+
+export function InviteUserModal(props: {
+  onClose: () => void
+  onCreated: () => void
+  open: boolean
   user?: Pick<UserDetail, 'displayName' | 'email' | 'id' | 'username'>
+}) {
+  return (
+    <Modal
+      footer={false}
+      maskClosable
+      onCancel={props.onClose}
+      open={props.open}
+      title={false}
+      width="min(400px, 100%)"
+    >
+      {props.open ? (
+        <InviteBody
+          onClose={props.onClose}
+          onCreated={props.onCreated}
+          user={props.user}
+        />
+      ) : null}
+    </Modal>
+  )
 }
 
-function InviteUserModal(props: InviteUserModalProps) {
+function InviteBody(props: {
+  onClose: () => void
+  onCreated: () => void
+  user?: Pick<UserDetail, 'displayName' | 'email' | 'id' | 'username'>
+}) {
+  const copy = useUsersCopy()
   const { t } = useI18n()
-  const modal = useModal<CreatedUserInvite>()
+  const queryClient = useQueryClient()
   const target = props.user
-  const [email, setEmail] = useState(target?.email ?? '')
-  const [displayName, setDisplayName] = useState('')
-  const [linkedAuthorId, setLinkedAuthorId] = useState('')
-  const [role, setRole] = useState<InvitableRole>('author')
-  const [error, setError] = useState('')
   const [created, setCreated] = useState<CreatedUserInvite | null>(null)
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState('')
 
   const authorsQuery = useQuery({
     enabled: !target,
@@ -52,13 +84,19 @@ function InviteUserModal(props: InviteUserModalProps) {
     (author) => !author.deactivatedAt,
   )
 
-  const mutation = useMutation({
-    mutationFn: () => {
+  const invite = useMutation({
+    mutationFn: async (values: {
+      displayName: string
+      email: string
+      linkedAuthorId: string
+      role: InvitableRole
+    }) => {
       const request = buildInviteRequest({
-        displayName,
-        email,
-        linkedAuthorId: target?.id ?? linkedAuthorId,
-        permissions: PERMISSION_ROLES[role],
+        displayName: values.displayName,
+        email: values.email,
+        linkedAuthorId:
+          values.linkedAuthorId === NONE ? '' : values.linkedAuthorId,
+        permissions: PERMISSION_ROLES[values.role],
       })
       return request.kind === 'existing'
         ? inviteExistingUser(request.userId, {
@@ -71,176 +109,160 @@ function InviteUserModal(props: InviteUserModalProps) {
             permissions: request.permissions,
           })
     },
-    onError: (mutationError: unknown) =>
-      setError(getUserErrorMessage(mutationError, t('users.invite.failed'))),
-    onSuccess: setCreated,
+    onError: (mutationError: unknown) => {
+      setError(getUserErrorMessage(mutationError, copy('inviteFailed')))
+    },
+    onSuccess: async (result) => {
+      setCreated(result)
+      props.onCreated()
+      await queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.users.invites(),
+      })
+    },
   })
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault()
-    if (!email.trim()) {
-      setError(t('users.invite.emailRequired'))
-      return
-    }
-    setError('')
-    mutation.mutate()
-  }
+  const form = useForm({
+    initialValues: {
+      displayName: '',
+      email: target?.email ?? '',
+      linkedAuthorId: target?.id ?? NONE,
+      role: 'author' as InvitableRole,
+    },
+    onSubmit: async (values) => {
+      const email = values.email.trim()
+      if (!email) {
+        form.setErrors({ email: copy('emailRequired') })
+        return
+      }
+      if (!emailSchema.safeParse(email).success) {
+        form.setErrors({ email: copy('emailInvalid') })
+        return
+      }
+      setError('')
+      try {
+        await invite.mutateAsync({ ...values, email })
+      } catch {
+        return
+      }
+    },
+    schema: inviteSchema,
+  })
+  const linkedAuthorId = useWatch(form, 'linkedAuthorId')
+  const role = useWatch(form, 'role')
 
   const copyLink = async () => {
     if (!created) return
-    await navigator.clipboard.writeText(created.acceptUrl)
-    setCopied(true)
+    try {
+      await navigator.clipboard.writeText(created.acceptUrl)
+      setCopied(true)
+    } catch (copyError) {
+      toast.error(getUserErrorMessage(copyError, copy('inviteFailed')))
+    }
   }
 
   if (created) {
     return (
-      <div className="flex min-h-0 flex-col">
-        <ModalHeader icon={UserPlus} title={t('users.invite.createdTitle')} />
-        <div className="grid gap-3 px-5 py-5 text-sm">
-          <p className="text-fg-muted">
-            {created.emailQueued
-              ? t('users.invite.emailQueued', { email: created.email })
-              : t('users.invite.emailNotQueued')}
-          </p>
-          <div className="flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-sm border border-border bg-surface-inset px-2 py-1.5 font-mono text-xs text-fg">
-              {created.acceptUrl}
-            </code>
-            <Button onClick={copyLink} type="button" variant="subtle">
-              {copied ? (
-                <Check aria-hidden="true" className="size-4" />
-              ) : (
-                <Copy aria-hidden="true" className="size-4" />
-              )}
-              {t('users.invite.copyLink')}
-            </Button>
-          </div>
-        </div>
-        <ModalFooter>
-          <Button onClick={() => modal.close(created)} type="button">
-            {t('users.invite.done')}
+      <Flexbox gap={16}>
+        <Text as="h2" weight="bold">
+          {copy('inviteCreated')}
+        </Text>
+        <Text>
+          {created.emailQueued
+            ? copy('emailQueued', { email: created.email })
+            : copy('emailNotQueued')}
+        </Text>
+        <Text ellipsis={{ tooltip: created.acceptUrl }}>
+          {created.acceptUrl}
+        </Text>
+        <Flexbox gap={8} horizontal justify="flex-end">
+          <Button htmlType="button" onClick={() => void copyLink()}>
+            {copied ? copy('copied') : copy('copyLink')}
           </Button>
-        </ModalFooter>
-      </div>
+          <Button htmlType="button" onClick={props.onClose}>
+            {copy('done')}
+          </Button>
+        </Flexbox>
+      </Flexbox>
     )
   }
 
+  const title = target
+    ? copy('inviteExistingTitle', { name: getUserDisplayName(target) })
+    : copy('invite')
+
   return (
-    <form className="flex min-h-0 flex-col" onSubmit={submit}>
-      <ModalHeader
-        icon={UserPlus}
-        subtitle={target ? t('users.invite.existingDescription') : undefined}
-        title={
-          target
-            ? t('users.invite.existingTitle', {
-                name: getUserDisplayName(target),
-              })
-            : t('users.invite.title')
-        }
-      />
-      <div className="grid gap-4 px-5 py-5">
-        <TextInput
-          autoFocus
-          label={t('users.field.email')}
-          onChange={(value) => {
-            setError('')
-            setEmail(value)
-          }}
-          required
-          type="email"
-          value={email}
+    <Form form={form} gap={16} layout="vertical">
+      <Text as="h2" weight="bold">
+        {title}
+      </Text>
+      <Form.Field
+        label={copy('email')}
+        name="email"
+        required={copy('emailRequired')}
+      >
+        <Input type="email" />
+      </Form.Field>
+      {target ? null : authorsQuery.isLoading ? (
+        <FormSkeleton label={copy('loadingAuthors')} rows={1} />
+      ) : authorsQuery.isError ? (
+        <Alert
+          action={
+            <Button
+              htmlType="button"
+              onClick={() => void authorsQuery.refetch()}
+            >
+              {copy('retry')}
+            </Button>
+          }
+          title={copy('authorsError')}
+          type="error"
         />
-        {target || linkableAuthors.length === 0 ? null : (
-          <div className="grid gap-1.5 text-sm">
-            <span className="font-medium text-fg">
-              {t('users.invite.linkAuthor')}
-            </span>
-            <SelectField
-              aria-label={t('users.invite.linkAuthor')}
-              onValueChange={setLinkedAuthorId}
+      ) : linkableAuthors.length === 0 ? null : (
+        <Flexbox gap={8}>
+          <Form.Field label={copy('linkAuthor')} name="linkedAuthorId">
+            <Select
               options={[
-                { label: t('users.invite.linkAuthorNone'), value: '' },
+                { label: copy('linkAuthorNone'), value: NONE },
                 ...linkableAuthors.map((author) => ({
                   label: getUserDisplayName(author),
                   value: author.id,
                 })),
               ]}
-              value={linkedAuthorId}
             />
-            {linkedAuthorId ? (
-              <p className="text-xs text-fg-muted">
-                {t('users.invite.linkAuthorHint')}
-              </p>
-            ) : null}
-          </div>
-        )}
-        {target || linkedAuthorId ? null : (
-          <TextInput
-            label={t('users.field.displayName')}
-            onChange={setDisplayName}
-            value={displayName}
-          />
-        )}
-        <fieldset className="grid gap-2 text-sm">
-          <legend className="mb-1.5 font-medium text-fg">
-            {t('users.invite.role')}
-          </legend>
-          {INVITABLE_ROLES.map((value) => (
-            <label
-              className={cn(
-                'flex cursor-pointer items-start gap-2.5 rounded-md border px-3 py-2.5',
-                role === value
-                  ? 'border-accent bg-accent-soft'
-                  : 'border-border hover:bg-surface-inset',
-              )}
-              key={value}
-            >
-              <input
-                checked={role === value}
-                className="mt-0.5 accent-accent"
-                name="invite-role"
-                onChange={() => setRole(value)}
-                type="radio"
-              />
-              <span className="grid gap-0.5">
-                <span className="font-medium text-fg">
-                  {t(ROLE_LABEL_KEYS[value])}
-                </span>
-                <span className="text-xs text-fg-muted">
-                  {t(ROLE_DESCRIPTION_KEYS[value])}
-                </span>
-              </span>
-            </label>
-          ))}
-          <span className="text-xs text-fg-muted">
-            {t('users.invite.roleHint')}
-          </span>
-        </fieldset>
-        {error ? (
-          <p className="text-xs text-red-600 dark:text-red-400" role="alert">
-            {error}
-          </p>
-        ) : null}
-      </div>
-      <ModalFooter>
-        <Button onClick={() => modal.dismiss()} type="button" variant="subtle">
-          {t('common.cancel')}
-        </Button>
-        <Button disabled={mutation.isPending} type="submit">
-          {mutation.isPending ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+          </Form.Field>
+          {linkedAuthorId && linkedAuthorId !== NONE ? (
+            <Text type="secondary">{copy('linkAuthorHint')}</Text>
           ) : null}
-          {t('users.invite.submit')}
+        </Flexbox>
+      )}
+      {target || (linkedAuthorId && linkedAuthorId !== NONE) ? null : (
+        <Form.Field label={copy('displayName')} name="displayName">
+          <Input />
+        </Form.Field>
+      )}
+      <Flexbox gap={8}>
+        <Form.Field label={t('users.invite.role')} name="role">
+          <Select
+            options={INVITABLE_ROLES.map((value) => ({
+              label: t(ROLE_LABEL_KEYS[value]),
+              value,
+            }))}
+          />
+        </Form.Field>
+        <Text type="secondary">
+          {role ? t(ROLE_DESCRIPTION_KEYS[role]) : null}{' '}
+          {t('users.invite.roleHint')}
+        </Text>
+      </Flexbox>
+      {error ? <Alert title={error} type="error" /> : null}
+      <Flexbox gap={8} horizontal justify="flex-end">
+        <Button htmlType="button" onClick={props.onClose}>
+          {copy('cancel')}
         </Button>
-      </ModalFooter>
-    </form>
-  )
-}
-
-export async function presentInviteUser(user?: InviteUserModalProps['user']) {
-  return await present<InviteUserModalProps, CreatedUserInvite>(
-    InviteUserModal,
-    { user },
-    { modalProps: { popupStyle: { width: 'min(94vw, 32rem)' } } },
+        <Button htmlType="submit" loading={invite.isPending} type="primary">
+          {copy('inviteSubmit')}
+        </Button>
+      </Flexbox>
+    </Form>
   )
 }

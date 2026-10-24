@@ -190,11 +190,7 @@ export class AiTtsQueryService {
         search: query.search,
         databaseService: this.databaseService,
         fetchCandidateArticles: () =>
-          this.databaseService.findAllArticlesForAIText(),
-        fetchRecordsPage: (page, size, refIds) =>
-          this.repository.groupedByRef(page, size, refIds),
-        fetchRecordsDistinctRefIds: (refIds) =>
-          this.repository.findDistinctRefIds(refIds),
+          this.databaseService.findArticlesForProductLists(),
         fetchItemsByRefIds: async (refIds) =>
           this.toDetails(await this.repository.listByRefIds(refIds)),
         getItemRefId: (item) => item.refId,

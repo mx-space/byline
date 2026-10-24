@@ -1,4 +1,6 @@
+import { ConfigProvider } from '@lobehub/ui'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import * as motion from 'motion/react-m'
 import type { ReactNode } from 'react'
 import { act } from 'react'
 import type { Root } from 'react-dom/client'
@@ -77,7 +79,9 @@ async function render(node: ReactNode) {
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={queryClient}>
-          <I18nProvider>{node}</I18nProvider>
+          <ConfigProvider motion={motion}>
+            <I18nProvider>{node}</I18nProvider>
+          </ConfigProvider>
         </QueryClientProvider>
       </MemoryRouter>,
     )
@@ -90,12 +94,14 @@ async function renderAtSetup(node: ReactNode) {
     root.render(
       <MemoryRouter initialEntries={['/setup']}>
         <QueryClientProvider client={queryClient}>
-          <I18nProvider>
-            <Routes>
-              <Route element={node} path="/setup" />
-              <Route element={<p>login page</p>} path="/login" />
-            </Routes>
-          </I18nProvider>
+          <ConfigProvider motion={motion}>
+            <I18nProvider>
+              <Routes>
+                <Route element={node} path="/setup" />
+                <Route element={<p>login page</p>} path="/login" />
+              </Routes>
+            </I18nProvider>
+          </ConfigProvider>
         </QueryClientProvider>
       </MemoryRouter>,
     )

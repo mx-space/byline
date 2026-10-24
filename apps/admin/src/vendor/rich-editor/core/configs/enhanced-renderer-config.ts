@@ -15,7 +15,6 @@ import { KaTeXRenderer } from '@haklex/rich-editor/renderers'
 import { CHAT_NODE_KEY } from '@haklex/rich-ext-chat/node'
 import { ChatRenderer } from '@haklex/rich-ext-chat/renderer'
 import { CODE_SNIPPET_NODE_KEY } from '@haklex/rich-ext-code-snippet/node'
-import { CodeSnippetRenderer } from '@haklex/rich-ext-code-snippet/renderer'
 import { DYNAMIC_NODE_KEY } from '@haklex/rich-ext-dynamic/static'
 import { GALLERY_NODE_KEY } from '@haklex/rich-ext-gallery/node'
 import { GalleryRenderer } from '@haklex/rich-ext-gallery/renderer'
@@ -23,7 +22,6 @@ import { STEPS_NODE_KEY } from '@haklex/rich-ext-steps/node'
 import { StepsRenderer } from '@haklex/rich-ext-steps/renderer'
 import { AlertRenderer } from '@haklex/rich-renderer-alert/static'
 import { BannerRenderer } from '@haklex/rich-renderer-banner/static'
-import { CodeBlockRenderer } from '@haklex/rich-renderer-codeblock/static'
 import { FileRenderer } from '@haklex/rich-renderer-file/static'
 import { ImageRenderer } from '@haklex/rich-renderer-image/static'
 import { LinkCardRenderer } from '@haklex/rich-renderer-linkcard/static'
@@ -33,14 +31,16 @@ import { RubyRenderer } from '@haklex/rich-renderer-ruby/static'
 import { VideoRenderer } from '@haklex/rich-renderer-video/static'
 
 import { MxDynamicRenderer } from './DynamicRenderer'
+import { LobeCodeBlockRenderer } from './LobeCodeBlock'
+import { LobeCodeSnippetRenderer } from './LobeCodeSnippet'
 
 export const enhancedRendererConfig: RendererConfig = {
   [ALERT_NODE_KEY]: AlertRenderer,
   [BANNER_NODE_KEY]: BannerRenderer,
   [CHAT_NODE_KEY]: ChatRenderer,
   [STEPS_NODE_KEY]: StepsRenderer,
-  [CODE_BLOCK_NODE_KEY]: CodeBlockRenderer,
-  [CODE_SNIPPET_NODE_KEY]: CodeSnippetRenderer,
+  [CODE_BLOCK_NODE_KEY]: LobeCodeBlockRenderer,
+  [CODE_SNIPPET_NODE_KEY]: LobeCodeSnippetRenderer,
   [DYNAMIC_NODE_KEY]: MxDynamicRenderer,
   [GALLERY_NODE_KEY]: GalleryRenderer,
   [IMAGE_NODE_KEY]: ImageRenderer,

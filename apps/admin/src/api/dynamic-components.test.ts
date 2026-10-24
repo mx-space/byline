@@ -1,6 +1,6 @@
-// @vitest-environment node
-
 import { afterEach, expect, it, vi } from 'vitest'
+
+import { AUTH_BEARER_TOKEN_KEY } from '~/constants/keys'
 
 import {
   deleteDynamicComponentEntry,
@@ -14,7 +14,10 @@ vi.mock('~/constants/env', () => ({ API_URL: 'https://api.example' }))
 const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)
 
-afterEach(() => fetchMock.mockReset())
+afterEach(() => {
+  fetchMock.mockReset()
+  localStorage.clear()
+})
 
 const respond = (status: number, body: unknown) =>
   fetchMock.mockResolvedValueOnce(
@@ -155,4 +158,16 @@ it('surfaces the server error envelope', async () => {
     message: 'Duplicate url',
     status: 409,
   })
+})
+
+it('includes the current session bearer token in catalog requests', async () => {
+  localStorage.setItem(AUTH_BEARER_TOKEN_KEY, 'session-token')
+  respond(200, { data: { version: 1, components: [] } })
+
+  await getDynamicComponents()
+
+  const [, init] = fetchMock.mock.calls[0]
+  expect(new Headers(init.headers).get('authorization')).toBe(
+    'Bearer session-token',
+  )
 })

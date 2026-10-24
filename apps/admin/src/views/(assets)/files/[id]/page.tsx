@@ -4,4 +4,4 @@ export const metadata = defineMetadata({
   hidden: true,
 })
 
-export { FilesByTypeDetailRoute as default } from '~/features/files/components/FilesByTypeDetailRoute'
+export { FileDetailRoute as default } from '~/features/files/components/FileDetailRoute'

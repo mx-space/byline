@@ -1,12 +1,137 @@
 import zeroperlWasmUrl from '@6over3/zeroperl-ts/zeroperl.wasm?url'
+import { createStaticStyles, toast } from '@lobehub/ui'
 import { gps } from 'exifr'
 import { ExternalLink, MapPin, ShieldCheck } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { translate } from '~/i18n/translate'
 import { ModalFooter, ModalHeader } from '~/ui/feedback/modal'
 import { present, useModal } from '~/ui/feedback/modal-imperative'
 import { Button } from '~/ui/primitives/button'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ued384759: css`
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+  `,
+  uc7317dd6: css`
+    display: grid;
+    gap: 1rem;
+    padding-inline: 1.25rem;
+    padding-block: 1rem;
+  `,
+  uf59d50f5: css`
+    display: grid;
+    gap: 0.375rem;
+  `,
+  uf1d3f85e: css`
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    line-height: 1.5rem;
+    color: ${cssVar.colorText};
+  `,
+  ud10f4996: css`
+    word-break: break-all;
+    border-radius: 10px;
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 0.75rem;
+    padding-block: 0.5rem;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u534ec33a: css`
+    display: grid;
+    gap: 0.5rem;
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorBgContainer};
+    padding-inline: 0.75rem;
+    padding-block: 0.625rem;
+  `,
+  u34d63445: css`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  `,
+  u7e0b7cdf: css`
+    min-width: 0px;
+  `,
+  u15bc8269: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  uc539837b: css`
+    margin-top: 0.25rem;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u510f41ee: css`
+    display: inline-flex;
+    height: 2rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorBgContainer};
+    padding-inline: 0.625rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+    box-shadow: ${cssVar.boxShadowTertiary};
+    outline: none;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, ${cssVar.colorPrimary} 15%, transparent);
+    }
+  `,
+  u783b0d9d: css`
+    width: 0.875rem;
+    height: 0.875rem;
+  `,
+  u734f95fa: css`
+    border-radius: 10px;
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 0.75rem;
+    padding-block: 0.625rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.25rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u3830042a: css`
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+}))
 
 type GpsPrivacyDecision = 'keep' | 'strip'
 
@@ -26,47 +151,46 @@ function ImageGpsPrivacyDialog(props: ImageGpsPrivacyDialogProps) {
   const mapUrl = getMapUrl(props.location)
 
   return (
-    <div className="flex w-full flex-col">
+    <div className={lobeStyles.ued384759}>
       <ModalHeader
         icon={MapPin}
         title={translate('imageUploadPrivacy.dialog.title')}
       />
 
-      <div className="grid gap-4 px-5 py-4">
-        <div className="grid gap-1.5">
-          <p className="text-sm leading-6 text-fg">
+      <div className={lobeStyles.uc7317dd6}>
+        <div className={lobeStyles.uf59d50f5}>
+          <p className={lobeStyles.uf1d3f85e}>
             {translate('imageUploadPrivacy.dialog.description')}
           </p>
-          <p className="break-all rounded-md bg-surface-inset px-3 py-2 font-mono text-xs text-fg-muted">
-            {props.fileName}
-          </p>
+          <p className={lobeStyles.ud10f4996}>{props.fileName}</p>
         </div>
 
-        <div className="grid gap-2 rounded-md border border-border bg-surface-card px-3 py-2.5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-xs font-medium text-fg">
+        <div className={lobeStyles.u534ec33a}>
+          <div className={lobeStyles.u34d63445}>
+            <div className={lobeStyles.u7e0b7cdf}>
+              <div className={lobeStyles.u15bc8269}>
                 {translate('imageUploadPrivacy.dialog.coordinatesTitle')}
               </div>
-              <div className="mt-1 font-mono text-xs tabular-nums text-fg-muted">
-                {coordinates}
-              </div>
+              <div className={lobeStyles.uc539837b}>{coordinates}</div>
             </div>
             <a
-              className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-sm border border-border bg-surface-card px-2.5 text-xs font-medium text-fg shadow-xs outline-hidden transition-colors hover:bg-surface-inset focus-visible:ring-[3px] focus-visible:ring-accent/15"
+              className={lobeStyles.u510f41ee}
               href={mapUrl}
               rel="noreferrer"
               target="_blank"
             >
-              <ExternalLink aria-hidden="true" className="size-3.5" />
+              <ExternalLink
+                aria-hidden="true"
+                className={lobeStyles.u783b0d9d}
+              />
               {translate('imageUploadPrivacy.dialog.openMap')}
             </a>
           </div>
         </div>
 
-        <div className="rounded-md bg-surface-inset px-3 py-2.5 text-xs leading-5 text-fg-muted">
-          <div className="mb-1 flex items-center gap-1.5 font-medium text-fg">
-            <ShieldCheck aria-hidden="true" className="size-3.5" />
+        <div className={lobeStyles.u734f95fa}>
+          <div className={lobeStyles.u3830042a}>
+            <ShieldCheck aria-hidden="true" className={lobeStyles.u783b0d9d} />
             {translate('imageUploadPrivacy.dialog.safetyTitle')}
           </div>
           {translate('imageUploadPrivacy.dialog.safetyDescription')}

@@ -1,12 +1,12 @@
 import type { DynamicNode } from '@haklex/rich-ext-dynamic'
 import { $isDynamicNode, DynamicHostRenderer } from '@haklex/rich-ext-dynamic'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
+import { Popover } from '@lobehub/ui'
 import { $getNodeByKey, HISTORY_MERGE_TAG } from 'lexical'
 import { ArrowLeft, Boxes, Settings2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { useI18n } from '~/i18n'
-import { Popover } from '~/ui/overlay/popover'
 import { PropsEditor } from '~/ui/patterns/PropsEditor'
 import { Button } from '~/ui/primitives/button'
 import { cn } from '~/utils/cn'
@@ -81,8 +81,106 @@ export function DynamicNodeEditor(props: {
           {t('dynamicNode.placeholder')}
         </div>
       )}
-      <Popover onOpenChange={openPanel} open={open}>
-        <Popover.Trigger
+      <Popover
+        content={
+          <div
+            onKeyDown={(event) => {
+              if (event.key === 'Escape' && !props.url) {
+                event.preventDefault()
+                removeNode()
+              }
+            }}
+            style={{ width: 'min(92vw, 32rem)' }}
+          >
+            {view === 'picker' ? (
+              <CatalogPicker
+                entries={
+                  catalog ? currentCatalogEntries(catalog.components) : null
+                }
+                onManual={() => setView('manual')}
+                onPick={(picked) => {
+                  updateNode((node) => $applyCatalogEntry(node, picked))
+                  setView('props')
+                }}
+              />
+            ) : view === 'manual' || !entry ? (
+              <ManualDynamicForm
+                initialHeight={props.initialHeight}
+                onApply={(value) => {
+                  updateNode((node) => {
+                    node.setUrl(value.url)
+                    node.setInitialHeight(value.initialHeight)
+                    node.setProps(value.props)
+                  })
+                  openPanel(false)
+                }}
+                onBack={() => setView('picker')}
+                onRemove={removeNode}
+                props={props.componentProps}
+                url={props.url}
+              />
+            ) : (
+              <div className="grid">
+                <div className="flex items-center gap-2 border-b border-border px-2 py-2">
+                  <Button
+                    aria-label={t('dynamicNode.backToPicker')}
+                    className="h-7 px-1.5"
+                    onClick={() => setView('picker')}
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ArrowLeft aria-hidden="true" className="size-4" />
+                  </Button>
+                  <span className="truncate text-sm font-medium text-fg">
+                    {entry.name}
+                  </span>
+                  {resolved.outdated ? (
+                    <span
+                      className="rounded-full bg-surface-inset px-2 py-0.5 text-xs text-fg-muted"
+                      title={t('dynamicNode.outdatedHint')}
+                    >
+                      {t('dynamicNode.outdated')}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="max-h-[60vh] overflow-y-auto p-3">
+                  <PropsEditor
+                    key={entry.url}
+                    onChange={(next) =>
+                      updateNode((node) => node.setProps(next))
+                    }
+                    schema={entry.propsSchema}
+                    value={props.componentProps}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
+                  <span className="text-xs text-fg-muted">
+                    {t('dynamicNode.liveHint')}
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      className="text-red-600 dark:text-red-400"
+                      onClick={removeNode}
+                      type="button"
+                      variant="subtle"
+                    >
+                      {t('dynamicNode.remove')}
+                    </Button>
+                    <Button onClick={() => openPanel(false)} type="button">
+                      {t('dynamicNode.done')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        }
+        onOpenChange={openPanel}
+        open={open}
+        placement="bottomRight"
+        trigger="click"
+      >
+        <button
           aria-label={t('dynamicNode.settings')}
           className={cn(
             'absolute right-2 top-2 flex size-7 items-center justify-center rounded-sm border border-border bg-surface-overlay text-fg-muted shadow-xs transition-opacity hover:text-fg focus-visible:opacity-100',
@@ -91,97 +189,7 @@ export function DynamicNodeEditor(props: {
           type="button"
         >
           <Settings2 aria-hidden="true" className="size-3.5" />
-        </Popover.Trigger>
-        <Popover.Content
-          align="end"
-          onKeyDown={(event) => {
-            if (event.key === 'Escape' && !props.url) {
-              event.preventDefault()
-              removeNode()
-            }
-          }}
-          width="xl"
-        >
-          {view === 'picker' ? (
-            <CatalogPicker
-              entries={
-                catalog ? currentCatalogEntries(catalog.components) : null
-              }
-              onManual={() => setView('manual')}
-              onPick={(picked) => {
-                updateNode((node) => $applyCatalogEntry(node, picked))
-                setView('props')
-              }}
-            />
-          ) : view === 'manual' || !entry ? (
-            <ManualDynamicForm
-              initialHeight={props.initialHeight}
-              onApply={(value) => {
-                updateNode((node) => {
-                  node.setUrl(value.url)
-                  node.setInitialHeight(value.initialHeight)
-                  node.setProps(value.props)
-                })
-                openPanel(false)
-              }}
-              onBack={() => setView('picker')}
-              onRemove={removeNode}
-              props={props.componentProps}
-              url={props.url}
-            />
-          ) : (
-            <div className="grid">
-              <div className="flex items-center gap-2 border-b border-border px-2 py-2">
-                <Button
-                  aria-label={t('dynamicNode.backToPicker')}
-                  className="h-7 px-1.5"
-                  onClick={() => setView('picker')}
-                  type="button"
-                  variant="ghost"
-                >
-                  <ArrowLeft aria-hidden="true" className="size-4" />
-                </Button>
-                <span className="truncate text-sm font-medium text-fg">
-                  {entry.name}
-                </span>
-                {resolved.outdated ? (
-                  <span
-                    className="rounded-full bg-surface-inset px-2 py-0.5 text-xs text-fg-muted"
-                    title={t('dynamicNode.outdatedHint')}
-                  >
-                    {t('dynamicNode.outdated')}
-                  </span>
-                ) : null}
-              </div>
-              <div className="max-h-[60vh] overflow-y-auto p-3">
-                <PropsEditor
-                  key={entry.url}
-                  onChange={(next) => updateNode((node) => node.setProps(next))}
-                  schema={entry.propsSchema}
-                  value={props.componentProps}
-                />
-              </div>
-              <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
-                <span className="text-xs text-fg-muted">
-                  {t('dynamicNode.liveHint')}
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    className="text-red-600 dark:text-red-400"
-                    onClick={removeNode}
-                    type="button"
-                    variant="subtle"
-                  >
-                    {t('dynamicNode.remove')}
-                  </Button>
-                  <Button onClick={() => openPanel(false)} type="button">
-                    {t('dynamicNode.done')}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </Popover.Content>
+        </button>
       </Popover>
     </div>
   )

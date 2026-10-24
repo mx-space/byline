@@ -11,7 +11,7 @@ import { buildGraphRows, laneCount } from './layout'
 
 const revision = (id: string, minutesAgo: number): ContentRevision => ({
   content: null,
-  contentFormat: 'markdown',
+  contentFormat: 'lexical',
   createdAt: new Date(
     Date.UTC(2026, 7, 31, 12) - minutesAgo * 60_000,
   ).toISOString(),

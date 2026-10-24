@@ -5,7 +5,6 @@ import type { ArticleGroupedConfig } from './types'
 export interface ArticleGroupedRouteContextValue<TItem = unknown> {
   basePath: string
   config: ArticleGroupedConfig<TItem>
-  onBack: () => void
   invalidate: () => Promise<void>
 }
 

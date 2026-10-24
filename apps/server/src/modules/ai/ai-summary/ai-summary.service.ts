@@ -259,11 +259,7 @@ export class AiSummaryService implements OnModuleInit {
       search: query.search,
       databaseService: this.databaseService,
       fetchCandidateArticles: () =>
-        this.databaseService.findAllArticlesForAIText(),
-      fetchRecordsPage: (page, size, refIds) =>
-        this.aiSummaryRepository.groupedByRef(page, size, refIds),
-      fetchRecordsDistinctRefIds: (refIds) =>
-        this.aiSummaryRepository.findDistinctRefIds(refIds),
+        this.databaseService.findArticlesForProductLists(),
       fetchItemsByRefIds: async (refIds) =>
         this.generationMetrics.attachLatest(
           'summary',

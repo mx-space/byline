@@ -3,23 +3,18 @@ import type { Root } from 'react-dom/client'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { I18nProvider } from '~/i18n'
-
 import { DraftRecoveryReview } from './DraftRecoveryReview'
-
-vi.mock('~/features/drafts/components/MarkdownDraftDiffPanel', () => ({
-  MarkdownDraftDiffPanel: (props: {
-    currentText: string
-    selectedText: string
-  }) => (
-    <div data-testid="markdown-recovery-diff">
-      {props.selectedText} → {props.currentText}
-    </div>
-  ),
-}))
+import { withUi } from './test-providers'
 
 vi.mock('~/features/drafts/components/RichDraftDiffPanel', () => ({
-  RichDraftDiffPanel: () => <div data-testid="rich-recovery-diff" />,
+  RichDraftDiffPanel: (props: {
+    currentContent: string
+    selectedContent: string
+  }) => (
+    <div data-testid="rich-recovery-diff">
+      {props.selectedContent} → {props.currentContent}
+    </div>
+  ),
 }))
 
 let container: HTMLDivElement
@@ -43,15 +38,13 @@ describe('DraftRecoveryReview', () => {
 
     act(() => {
       root.render(
-        createElement(
-          I18nProvider,
-          null,
+        withUi(
           createElement(DraftRecoveryReview, {
             data: {
               bodyChanged: true,
               diverged: false,
-              currentText: 'current article body',
-              draftText: 'latest draft body',
+              currentContent: 'current article body',
+              draftContent: 'latest draft body',
               fields: [
                 {
                   current: 'Current title',
@@ -59,7 +52,6 @@ describe('DraftRecoveryReview', () => {
                   label: '标题',
                 },
               ],
-              rich: false,
               savedAt: '刚刚',
             },
             onClose: vi.fn(),
@@ -74,8 +66,7 @@ describe('DraftRecoveryReview', () => {
     expect(document.body.textContent).toContain('Current title')
     expect(document.body.textContent).toContain('Draft title')
     expect(
-      document.querySelector('[data-testid="markdown-recovery-diff"]')
-        ?.textContent,
+      document.querySelector('[data-testid="rich-recovery-diff"]')?.textContent,
     ).toContain('current article body → latest draft body')
     expect(document.body.textContent).not.toMatch(/v\d+/)
 
@@ -96,16 +87,14 @@ describe('DraftRecoveryReview', () => {
   it('shows separate ancestor-to-online and ancestor-to-draft diffs', () => {
     act(() => {
       root.render(
-        createElement(
-          I18nProvider,
-          null,
+        withUi(
           createElement(DraftRecoveryReview, {
             data: {
-              ancestorText: 'shared ancestor',
+              ancestorContent: 'shared ancestor',
               bodyChanged: true,
-              currentText: 'online change',
+              currentContent: 'online change',
               diverged: true,
-              draftText: 'branch change',
+              draftContent: 'branch change',
               fields: [
                 {
                   ancestor: 'Ancestor title',
@@ -114,7 +103,6 @@ describe('DraftRecoveryReview', () => {
                   label: '标题',
                 },
               ],
-              rich: false,
               savedAt: '刚刚',
             },
             onClose: vi.fn(),
@@ -127,7 +115,7 @@ describe('DraftRecoveryReview', () => {
     })
 
     const diffs = [
-      ...document.querySelectorAll('[data-testid="markdown-recovery-diff"]'),
+      ...document.querySelectorAll('[data-testid="rich-recovery-diff"]'),
     ].map((node) => node.textContent)
     expect(diffs).toEqual([
       'shared ancestor → online change',

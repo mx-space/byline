@@ -6,7 +6,8 @@ export const metadata = defineMetadata({
   titleKey: 'routes.writePost.title',
   descriptionKey: 'routes.writePost.description',
   icon: Pencil,
-  order: 1,
+  order: 2,
+  hidden: true,
 })
 
 export { PostWritePage as default } from '~/features/write/routes/WriteRouteViews'

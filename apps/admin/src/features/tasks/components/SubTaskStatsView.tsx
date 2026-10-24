@@ -1,8 +1,28 @@
+import { createStaticStyles, Progress } from '@lobehub/ui'
+
 import type { AITask } from '~/api/tasks'
 import { useI18n } from '~/i18n'
-import { cn } from '~/utils/cn'
 
 import { SmallBadge } from './TaskPrimitives'
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  root: css`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-block-end: 12px;
+  `,
+  count: css`
+    color: ${cssVar.colorTextSecondary};
+    font-size: ${cssVar.fontSizeSM};
+    font-variant-numeric: tabular-nums;
+  `,
+  badges: css`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  `,
+}))
 
 export function SubTaskStatsView(props: { task: AITask }) {
   const { t } = useI18n()
@@ -13,34 +33,28 @@ export function SubTaskStatsView(props: { task: AITask }) {
   const progress = (completeOrFailed / stats.total) * 100
 
   return (
-    <div className="mb-5">
-      <div className="mb-2 flex items-center justify-between text-xs text-fg-muted">
-        <span>{t('tasks.task.subProgress')}</span>
-        <span className="tabular-nums">
-          {completeOrFailed} / {stats.total}
-        </span>
+    <div className={styles.root}>
+      <div className={styles.count}>
+        {t('tasks.task.subProgress')} {completeOrFailed}/{stats.total}
       </div>
-      <div className="h-2 overflow-hidden rounded bg-surface-inset">
-        <div
-          className={cn(
-            'h-full rounded transition-[width]',
-            stats.failed > 0 ? 'bg-red-500' : 'bg-blue-500',
-          )}
-          style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
-        />
-      </div>
-      <div className="mt-2 flex flex-wrap gap-2 text-xs tabular-nums">
-        <SmallBadge tone="success">
+      <Progress
+        percent={Math.max(0, Math.min(100, progress))}
+        showInfo={false}
+        size="small"
+        status={stats.failed > 0 ? 'exception' : 'normal'}
+      />
+      <div className={styles.badges}>
+        <SmallBadge size="sm" tone="success">
           {t('tasks.task.subStats.completed', { count: stats.completed })}
         </SmallBadge>
-        <SmallBadge tone="info">
+        <SmallBadge size="sm" tone="info">
           {t('tasks.task.subStats.running', { count: stats.running })}
         </SmallBadge>
-        <SmallBadge>
+        <SmallBadge size="sm">
           {t('tasks.task.subStats.pending', { count: stats.pending })}
         </SmallBadge>
         {stats.failed > 0 ? (
-          <SmallBadge tone="danger">
+          <SmallBadge size="sm" tone="danger">
             {t('tasks.task.subStats.failed', { count: stats.failed })}
           </SmallBadge>
         ) : null}

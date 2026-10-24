@@ -13,32 +13,6 @@ import type {
 export const settingsQueryKey = adminQueryKeys.settings.root
 export const accountQueryKey = adminQueryKeys.settings.accountRoot
 
-export const systemGroupTranslationKeys: Record<
-  string,
-  { descriptionKey: TranslationKey; titleKey: TranslationKey }
-> = {
-  ai: {
-    descriptionKey: 'settings.group.ai.description',
-    titleKey: 'settings.group.ai.title',
-  },
-  notification: {
-    descriptionKey: 'settings.group.notification.description',
-    titleKey: 'settings.group.notification.title',
-  },
-  site: {
-    descriptionKey: 'settings.group.site.description',
-    titleKey: 'settings.group.site.title',
-  },
-  storage: {
-    descriptionKey: 'settings.group.storage.description',
-    titleKey: 'settings.group.storage.title',
-  },
-  system: {
-    descriptionKey: 'settings.group.system.description',
-    titleKey: 'settings.group.system.title',
-  },
-}
-
 export const aiProviderTypeOptions: Array<{
   labelKey: TranslationKey
   value: AIProviderType
@@ -53,24 +27,9 @@ export const aiProviderTypeOptions: Array<{
   { labelKey: 'settings.ai.providerType.generic', value: 'generic' },
 ]
 
-export const staticGroupsBefore: SettingsGroupSummary[] = [
-  {
-    descriptionKey: 'settings.group.user.description',
-    icon: User,
-    key: 'user',
-    titleKey: 'settings.group.user.title',
-    type: 'user',
-  },
-]
-
-export const staticGroupsAfter: SettingsGroupSummary[] = [
-  {
-    descriptionKey: 'settings.group.account.description',
-    icon: Shield,
-    key: 'account',
-    titleKey: 'settings.group.account.title',
-    type: 'account',
-  },
+export const accountGroups: SettingsGroupSummary[] = [
+  { icon: User, key: 'user', type: 'user' },
+  { icon: Shield, key: 'account', type: 'account' },
 ]
 
 const clientCredentialFields: OauthProviderField[] = [

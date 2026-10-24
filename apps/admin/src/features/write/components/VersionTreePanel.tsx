@@ -1,20 +1,43 @@
+import { createStaticStyles, toast } from '@lobehub/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { GitBranch } from 'lucide-react'
 import { useMemo } from 'react'
-import { toast } from 'sonner'
 
 import type { SetDraftShareData } from '~/api/drafts'
 import { deleteDraftShare, getDraftShare, setDraftShare } from '~/api/drafts'
 import { useI18n } from '~/i18n'
 import type { DraftModel, DraftShare, VersionTreeNode } from '~/models/draft'
 import { adminQueryKeys } from '~/query/keys'
-import { AsidePanel } from '~/ui/layout/content-layout'
 import { EmptyState } from '~/ui/patterns/EmptyState'
 import { Scroll } from '~/ui/primitives/scroll'
 
 import { buildGraphRows } from './version-tree/layout'
 import { ShareBar } from './version-tree/ShareBar'
 import { VersionTreeGraph } from './version-tree/VersionTreeGraph'
+
+const lobeStyles = createStaticStyles(({ css }) => ({
+  uRoot: css`
+    display: flex;
+    min-height: 0px;
+    height: 100%;
+    flex-direction: column;
+  `,
+  u79840771: css`
+    display: flex;
+    min-height: 0px;
+    flex: 1 1 0%;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  `,
+  u2b5fa9a9: css`
+    min-height: 0px;
+    flex: 1 1 0%;
+  `,
+  u44bd673a: css`
+    padding-block: 4px 12px;
+  `,
+}))
 
 export interface VersionTreePanelProps {
   currentDraftId: string
@@ -23,7 +46,6 @@ export interface VersionTreePanelProps {
   documentId: string | null
   drafts: DraftModel[]
   nodes: VersionTreeNode[]
-  onClose: () => void
   onCompare: (draft: DraftModel) => void
   onContinue: (draft: DraftModel) => void
   onDelete: (draft: DraftModel) => void
@@ -76,11 +98,7 @@ export function VersionTreePanel(props: VersionTreePanelProps) {
     setShareMutation.isPending || revokeShareMutation.isPending
 
   return (
-    <AsidePanel
-      icon={GitBranch}
-      onClose={props.onClose}
-      title={t('write.versionTree.title')}
-    >
+    <div className={lobeStyles.uRoot}>
       {documentId ? (
         <ShareBar
           canFollowCurrentDraft={Boolean(props.currentDraftId)}
@@ -101,7 +119,7 @@ export function VersionTreePanel(props: VersionTreePanelProps) {
         />
       ) : null}
       {rows.length === 0 ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+        <div className={lobeStyles.u79840771}>
           <EmptyState
             description={t('write.versionTree.emptyDescription')}
             icon={GitBranch}
@@ -109,7 +127,10 @@ export function VersionTreePanel(props: VersionTreePanelProps) {
           />
         </div>
       ) : (
-        <Scroll className="min-h-0 flex-1" innerClassName="px-3 py-4">
+        <Scroll
+          className={lobeStyles.u2b5fa9a9}
+          innerClassName={lobeStyles.u44bd673a}
+        >
           <VersionTreeGraph
             currentDraftId={props.currentDraftId}
             deletingDraftId={props.deletingDraftId}
@@ -134,6 +155,6 @@ export function VersionTreePanel(props: VersionTreePanelProps) {
           />
         </Scroll>
       )}
-    </AsidePanel>
+    </div>
   )
 }

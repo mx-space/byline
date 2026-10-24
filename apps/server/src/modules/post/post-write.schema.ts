@@ -45,7 +45,18 @@ export const PostSourceLangSchema = z.preprocess(
     .nullable(),
 )
 
+export const PostPublicAtSchema = z.preprocess(
+  (value) => (value === '' ? null : value),
+  z
+    .union([
+      z.iso.datetime({ offset: true }).transform((value) => new Date(value)),
+      z.date(),
+    ])
+    .nullable(),
+)
+
 export const PostExtrasSchema = z.object({
+  publicAt: PostPublicAtSchema.optional(),
   authors: PostAuthorIdsSchema.optional(),
   sourceLang: PostSourceLangSchema.optional(),
   image: zNullableUrl.optional(),

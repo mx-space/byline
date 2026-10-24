@@ -1,6 +1,8 @@
+import { createStaticStyles } from '@lobehub/ui'
+
 import { useI18n } from '~/i18n'
 import type { DraftModel, VersionTreeNode } from '~/models/draft'
-import { Button } from '~/ui/primitives/button'
+import { Button } from '~/ui/site-button'
 
 import { DraftNode } from './DraftNode'
 import type { GraphRow } from './layout'
@@ -9,8 +11,63 @@ import { DraftLine, RevisionLine } from './RevisionLine'
 import type { RailTone } from './VersionRail'
 import { railWidth, VersionRail } from './VersionRail'
 
-const CARD_DOT_Y = 21
-const LINE_DOT_Y = 18
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ub301630e: css`
+    display: flex;
+    flex-direction: column;
+
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+  `,
+  u90dd1311: css`
+    display: grid;
+    align-items: stretch;
+    column-gap: 0.5rem;
+  `,
+  ue32056b8: css`
+    min-width: 0px;
+    padding-bottom: 0.25rem;
+  `,
+  u28c4a725: css`
+    border-radius: ${cssVar.borderRadius};
+    background: ${cssVar.colorFillTertiary};
+    padding-inline: 12px;
+    padding-block: 8px;
+  `,
+  u6cfc7e6a: css`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  `,
+  u5e33fcc4: css`
+    flex-shrink: 0;
+    color: ${cssVar.colorSuccess};
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+  `,
+  u789b22f9: css`
+    overflow: hidden;
+    margin: 2px 0 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
+    color: ${cssVar.colorText};
+  `,
+  ud756d144: css`
+    margin: 0;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextTertiary};
+  `,
+}))
+
+const CARD_DOT_Y = 22
+const LINE_DOT_Y = 20
 
 const toneOf = (row: GraphRow, currentDraftId: string): RailTone => {
   if (row.kind !== 'draft') return row.kind
@@ -39,7 +96,7 @@ export function VersionTreeGraph(props: {
   return (
     <ol
       aria-label={t('write.versionTree.graphLabel')}
-      className="flex flex-col"
+      className={lobeStyles.ub301630e}
     >
       {props.rows.map((row) => {
         const { draft } = row
@@ -49,7 +106,7 @@ export function VersionTreeGraph(props: {
           : row.node.revision.id === props.sharedRevisionId
         return (
           <li
-            className="grid items-stretch gap-x-2"
+            className={lobeStyles.u90dd1311}
             key={row.node.revision.id}
             style={{ gridTemplateColumns: `${gutter}px minmax(0, 1fr)` }}
           >
@@ -58,7 +115,7 @@ export function VersionTreeGraph(props: {
               row={row}
               tone={toneOf(row, props.currentDraftId)}
             />
-            <div className="min-w-0 pb-1">
+            <div className={lobeStyles.ue32056b8}>
               {draft ? (
                 current ? (
                   <DraftNode
@@ -114,24 +171,19 @@ function OnlineCard(props: {
   const { format, t } = useI18n()
 
   return (
-    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/[0.035] px-3 py-2">
-      <div className="flex items-center gap-2">
-        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+    <div className={lobeStyles.u28c4a725}>
+      <div className={lobeStyles.u6cfc7e6a}>
+        <span className={lobeStyles.u5e33fcc4}>
           {t('write.versionTree.currentOnline')}
         </span>
-        <Button
-          className="ml-auto h-7 px-2 text-xs"
-          onClick={props.onViewOnline}
-          type="button"
-          variant="ghost"
-        >
+        <Button onClick={props.onViewOnline} type="text">
           {t('write.branch.viewOnline')}
         </Button>
       </div>
-      <p className="truncate text-sm font-medium text-fg">
+      <p className={lobeStyles.u789b22f9}>
         {props.node.revision.title || t('write.editor.untitled')}
       </p>
-      <p className="text-xs tabular-nums text-fg-muted">
+      <p className={lobeStyles.ud756d144}>
         {t('write.versionTree.publishedAt', {
           time: format.relativeTime(
             props.node.publishedAt ?? props.node.revision.createdAt,

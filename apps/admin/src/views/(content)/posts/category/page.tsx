@@ -6,7 +6,7 @@ export const metadata = defineMetadata({
   titleKey: 'routes.categories.title',
   descriptionKey: 'routes.categories.description',
   icon: FolderOpen,
-  order: 2,
+  order: 4,
 })
 
 export { CategoriesRouteView as default } from '~/features/categories/routes/CategoriesRouteView'

@@ -1,22 +1,22 @@
+import { Empty, Flexbox, Skeleton, Text, Tooltip } from '@lobehub/ui'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 
 import type { OrphanFile } from '~/api/files'
 import { findInListCache } from '~/api/list-cache'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { useI18n } from '~/i18n'
-import { relativeTimeFromNow } from '~/utils/time'
+import { EmptyValue } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { filesQueryKey } from '../constants'
-import { adaptOrphanFile } from '../utils/adapters'
-import { formatBytes } from '../utils/format'
-import { isImageByName } from '../utils/isImageMime'
-import { FileDetailEmpty } from './FileDetailEmpty'
-import { FileDetailPane } from './FileDetailPane'
+import { useFileCopy } from '../copy'
+import { mimeOf } from '../utils/file-kind'
+import { formatBytes, formatUploadedAt } from '../utils/format'
+import { FileDetail, FileDetailState } from './FileDetail'
 import { useOrphanFilesRouteContext } from './orphan-files-route-context'
-import { MetadataGrid } from './sections/MetadataGrid'
-import { PaletteSwatches } from './sections/PaletteSwatches'
+import { OrphanStatusTag, wasReferenced } from './OrphanStatusTag'
 
 const LIST_PREFIX = [...filesQueryKey, 'orphans'] as const
 
@@ -26,159 +26,133 @@ function extractOrphans(value: unknown): OrphanFile[] | undefined {
   return Array.isArray(data) ? (data as OrphanFile[]) : undefined
 }
 
+function sourceHref(file: OrphanFile) {
+  if (!file.refId) return null
+  if (file.refType === 'post')
+    return `/posts/edit?id=${encodeURIComponent(file.refId)}`
+  if (file.refType === 'draft')
+    return `/drafts/${encodeURIComponent(file.refId)}`
+  return null
+}
+
+function OrphanReferences(props: { file: OrphanFile }) {
+  const copy = useFileCopy()
+  const { format } = useI18n()
+  const href = sourceHref(props.file)
+  if (!wasReferenced(props.file)) {
+    return <Text type="secondary">{copy('referencesNever')}</Text>
+  }
+  const source =
+    props.file.refType === 'draft' ? copy('sourceDraft') : copy('sourcePost')
+  return (
+    <Flexbox gap={4}>
+      <Text type="secondary">
+        {props.file.detachedAt
+          ? copy('referencesDetachedAt', {
+              source,
+              time: format.relativeTime(props.file.detachedAt),
+            })
+          : copy('referencesDetached', { source })}
+      </Text>
+      {href ? <Link to={href}>{copy('openSource', { source })}</Link> : null}
+    </Flexbox>
+  )
+}
+
 export function OrphanFileDetailRoute() {
   const { id } = useParams<{ id: string }>()
-  const { t } = useI18n()
+  const copy = useFileCopy()
+  const { format } = useI18n()
   const queryClient = useQueryClient()
   const ctx = useOrphanFilesRouteContext()
 
-  // The list cache is read imperatively; listUpdatedAt re-reads it after a refetch.
   const raw = useMemo(() => {
     if (!id) return undefined
     return findInListCache<OrphanFile>(queryClient, LIST_PREFIX, id, {
       extractItems: extractOrphans,
     })
-  }, [id, queryClient, ctx.listUpdatedAt])
+  }, [ctx.listUpdatedAt, id, queryClient])
 
   useDocumentTitle(raw?.fileName)
 
-  if (!id || !raw) return <FileDetailEmpty />
-
-  const item = adaptOrphanFile(raw, t)
-  const sections = buildSections({ item, t })
-
-  return (
-    <section className="h-full min-h-0">
-      <FileDetailPane
-        thumbhash={item.thumbhash}
+  let body
+  if (!raw && ctx.listStatus === 'pending') {
+    body = (
+      <FileDetailState onClose={ctx.onBack} title={copy('loading')}>
+        <Flexbox gap={16}>
+          <Skeleton height={240} />
+          <Skeleton.Text rows={4} />
+        </Flexbox>
+      </FileDetailState>
+    )
+  } else if (!raw && ctx.listStatus === 'error') {
+    body = (
+      <FileDetailState onClose={ctx.onBack} title={copy('missingOrphanTitle')}>
+        <Empty
+          action={<Button onClick={ctx.onRetry}>{copy('retry')}</Button>}
+          description={copy('loadOrphansFailedBody')}
+          title={copy('loadOrphansFailedTitle')}
+        />
+      </FileDetailState>
+    )
+  } else if (!id || !raw) {
+    body = (
+      <FileDetailState onClose={ctx.onBack} title={copy('missingOrphanTitle')}>
+        <Empty
+          action={<Button onClick={ctx.onBack}>{copy('backToList')}</Button>}
+          description={copy('missingOrphanBody')}
+          title={copy('missingOrphanTitle')}
+        />
+      </FileDetailState>
+    )
+  } else {
+    const uploaded = formatUploadedAt(raw.createdAt)
+    body = (
+      <FileDetail
         deleteDisabled={ctx.deleteDisabled}
-        dominantColor={item.palette?.dominant}
-        isMobile
-        name={item.name}
-        onBack={ctx.onBack}
-        onDelete={() => ctx.onDelete(item)}
-        onOpenPreview={() =>
-          ctx.onOpenPreview({ name: item.name, url: item.url })
+        facts={[
+          {
+            key: 'size',
+            label: copy('fieldSize'),
+            value:
+              raw.byteSize == null ? <EmptyValue /> : formatBytes(raw.byteSize),
+          },
+          {
+            key: 'mime',
+            label: copy('fieldMime'),
+            value: mimeOf(raw.fileName, raw.mimeType) ?? <EmptyValue />,
+          },
+          {
+            key: 'uploaded',
+            label: copy('fieldUploaded'),
+            value: raw.createdAt ? uploaded : <EmptyValue />,
+          },
+        ]}
+        key={raw.id}
+        meta={
+          <>
+            <span>{formatBytes(raw.byteSize)}</span>
+            <Tooltip title={uploaded}>
+              <span>
+                {copy('uploadedRelative', {
+                  time: format.relativeTime(raw.createdAt),
+                })}
+              </span>
+            </Tooltip>
+          </>
         }
-        sections={sections}
-        url={item.url}
+        mime={raw.mimeType}
+        name={raw.fileName}
+        onClose={ctx.onBack}
+        onDelete={() => ctx.onDelete(raw)}
+        references={<OrphanReferences file={raw} />}
+        status={<OrphanStatusTag file={raw} />}
+        url={raw.fileUrl}
       />
-    </section>
-  )
+    )
+  }
+
+  return body
 }
 
 export default OrphanFileDetailRoute
-
-type Translator = ReturnType<typeof useI18n>['t']
-
-function buildSections(args: {
-  item: ReturnType<typeof adaptOrphanFile>
-  t: Translator
-}) {
-  const { item, t } = args
-  const raw = item.raw
-  const unknown = t('files.detail.value.unknown')
-  const isImage = isImageByName(item.name)
-  const ref =
-    raw.refType && raw.refId
-      ? `${raw.refType}/${raw.refId}`
-      : t('files.detail.value.unbound')
-
-  return [
-    {
-      key: 'status',
-      title: t('files.detail.section.status'),
-      body: (
-        <MetadataGrid
-          entries={[
-            {
-              key: 'status',
-              label: t('files.detail.field.status'),
-              value: raw.status ?? unknown,
-            },
-            {
-              key: 'detachedAt',
-              label: t('files.detail.field.detachedAt'),
-              value: raw.detachedAt
-                ? relativeTimeFromNow(raw.detachedAt)
-                : unknown,
-            },
-          ]}
-        />
-      ),
-    },
-    {
-      key: 'reference',
-      title: t('files.detail.section.reference'),
-      body: (
-        <MetadataGrid
-          entries={[
-            {
-              key: 'ref',
-              label: t('files.detail.field.refType'),
-              value: ref,
-            },
-          ]}
-        />
-      ),
-    },
-    {
-      key: 'file',
-      title: t(
-        isImage ? 'files.detail.section.image' : 'files.detail.section.file',
-      ),
-      body: (
-        <MetadataGrid
-          entries={[
-            {
-              key: 'url',
-              label: t('files.detail.field.url'),
-              mono: true,
-              value: raw.fileUrl,
-            },
-            {
-              key: 'size',
-              label: t('files.detail.field.size'),
-              value: formatBytes(raw.byteSize),
-            },
-            {
-              key: 'mime',
-              label: t('files.detail.field.mime'),
-              value: raw.mimeType ?? unknown,
-            },
-            {
-              key: 'created',
-              label: t('files.detail.field.created'),
-              value: relativeTimeFromNow(raw.createdAt),
-            },
-          ]}
-        />
-      ),
-    },
-    ...(isImage
-      ? [
-          {
-            key: 'appearance',
-            title: t('files.detail.section.appearance'),
-            body: (
-              <MetadataGrid
-                entries={[
-                  {
-                    key: 'palette',
-                    label: t('files.detail.field.palette'),
-                    value: <PaletteSwatches palette={raw.palette} />,
-                  },
-                  {
-                    key: 'thumbhash',
-                    label: t('files.detail.field.thumbhash'),
-                    mono: true,
-                    value: raw.thumbhash ?? unknown,
-                  },
-                ]}
-              />
-            ),
-          },
-        ]
-      : []),
-  ]
-}

@@ -236,6 +236,35 @@ describe('PublishService tree selection', () => {
 })
 
 describe('PublishService AI resource modes', () => {
+  it.each([
+    { before: null, after: '2999-01-01T12:00:00Z' },
+    { before: '2999-01-01T12:00:00Z', after: null },
+  ])(
+    'prepares sync resources before applying a schedule change: $before -> $after',
+    async ({ before, after }) => {
+      const { aiTasks, branch, create, posts, run } = harness()
+      let article: Record<string, unknown> = {
+        id: 'post-1',
+        contentFormat: 'markdown',
+        isPublished: true,
+        publicAt: before,
+      }
+      posts.findById.mockImplementation(async () => article as any)
+      posts.updateById.mockImplementation(async (_id, patch) => {
+        article = { ...article, ...patch }
+        return article as any
+      })
+      Object.assign(branch.headRevision.typeSpecificData, { publicAt: after })
+      aiTasks.createSummaryTask.mockImplementation(async () => {
+        expect(article.isPublished).toBe(false)
+        return { taskId: 'task-summary' }
+      })
+      await create(false, [{ mode: 'sync', resource: 'summary' }])
+      await run()
+      expect(article).toMatchObject({ isPublished: true, publicAt: after })
+    },
+  )
+
   it('waits for sync resources before publishing and starts async ones after', async () => {
     const { create, order, run } = harness({ online: false })
     await create(false, [

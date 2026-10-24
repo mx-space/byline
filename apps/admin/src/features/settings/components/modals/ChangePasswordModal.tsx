@@ -1,7 +1,7 @@
+import { createStaticStyles, toast } from '@lobehub/ui'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { toast } from 'sonner'
 
 import { resetAllCollections } from '~/data/resource/collection'
 import { useI18n } from '~/i18n'
@@ -9,9 +9,29 @@ import { ModalHeader } from '~/ui/feedback/modal'
 import { present, useModal } from '~/ui/feedback/modal-imperative'
 import { Button } from '~/ui/primitives/button'
 import { TextInput } from '~/ui/primitives/text-field'
-import { authClient } from '~/utils/authjs/auth'
+import { authClient, clearAuthBearerToken } from '~/utils/authjs/auth'
 
 import { getErrorMessage } from '../../utils/settings'
+
+const lobeStyles = createStaticStyles(({ css }) => ({
+  ued384759: css`
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+  `,
+  u9064cfd6: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 1rem;
+    }
+    padding-inline: 1.25rem;
+    padding-block: 1rem;
+  `,
+  u6efbbc71: css`
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  `,
+}))
 
 function ChangePasswordModal() {
   const { t } = useI18n()
@@ -43,16 +63,17 @@ function ChangePasswordModal() {
       toast.success(t('settings.password.success'))
       modal.close(true)
       await authClient.signOut()
+      clearAuthBearerToken()
       resetAllCollections()
       navigate('/login')
     },
   })
 
   return (
-    <div className="flex w-full flex-col">
+    <div className={lobeStyles.ued384759}>
       <ModalHeader title={t('settings.password.title')} />
       <form
-        className="space-y-4 px-5 py-4"
+        className={lobeStyles.u9064cfd6}
         onSubmit={(event) => {
           event.preventDefault()
           mutation.mutate()
@@ -76,7 +97,7 @@ function ChangePasswordModal() {
           type="password"
           value={confirmPassword}
         />
-        <div className="flex justify-end gap-2">
+        <div className={lobeStyles.u6efbbc71}>
           <Button
             onClick={() => modal.dismiss()}
             type="button"

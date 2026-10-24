@@ -8,7 +8,7 @@ const revision = (
   overrides: Partial<ContentRevision> = {},
 ): ContentRevision => ({
   content: null,
-  contentFormat: 'markdown',
+  contentFormat: 'lexical',
   createdAt: '2026-08-31T00:00:00.000Z',
   documentId: 'document-1',
   id: 'revision-1',

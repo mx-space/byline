@@ -1,5 +1,38 @@
+import { createStaticStyles } from '@lobehub/ui'
+
 import { useI18n } from '~/i18n'
 import { TextArea } from '~/ui/primitives/text-field'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u5a250822: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.375rem;
+    }
+  `,
+  ud27e9536: css`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  `,
+  ucd6c15f2: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    font-weight: 500;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u9679fd27: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorPrimary};
+    &:hover {
+      text-decoration: underline;
+    }
+  `,
+  uc3fb2b24: css`
+    min-height: 8rem;
+    line-height: 1.5rem;
+  `,
+}))
 
 interface CoverPromptEditorProps {
   onUsePreset: () => void
@@ -11,13 +44,13 @@ export function CoverPromptEditor(props: CoverPromptEditorProps) {
   const { t } = useI18n()
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-fg-muted">
+    <div className={lobeStyles.u5a250822}>
+      <div className={lobeStyles.ud27e9536}>
+        <span className={lobeStyles.ucd6c15f2}>
           {t('write.coverGeneration.promptLabel')}
         </span>
         <button
-          className="text-xs text-accent hover:underline"
+          className={lobeStyles.u9679fd27}
           onClick={props.onUsePreset}
           type="button"
         >
@@ -25,7 +58,7 @@ export function CoverPromptEditor(props: CoverPromptEditorProps) {
         </button>
       </div>
       <TextArea
-        controlClassName="min-h-32 leading-6"
+        controlClassName={lobeStyles.uc3fb2b24}
         onChange={props.setPromptText}
         placeholder={t('write.coverGeneration.promptPlaceholder')}
         value={props.promptText}

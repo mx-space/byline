@@ -1,7 +1,7 @@
+import { createStaticStyles, toast } from '@lobehub/ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Copy } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { createToken } from '~/api/auth'
 import { useI18n } from '~/i18n'
@@ -19,6 +19,131 @@ import {
   formatDateTimeInputValue,
   getErrorMessage,
 } from '../../utils/settings'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  ued384759: css`
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+  `,
+  u9064cfd6: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 1rem;
+    }
+    padding-inline: 1.25rem;
+    padding-block: 1rem;
+  `,
+  u6efbbc71: css`
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  `,
+  u1880b83a: css`
+    border-radius: 0.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorSuccessBg};
+    background-color: ${cssVar.colorSuccessBg};
+    padding-inline: 0.75rem;
+    padding-block: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorSuccess};
+    :where(.dark, .dark *) & {
+      border-color: color-mix(in srgb, ${cssVar.colorSuccess} 60%, transparent);
+    }
+    :where(.dark, .dark *) & {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorSuccess} 30%,
+        transparent
+      );
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorSuccess};
+    }
+  `,
+  udf2bf02a: css`
+    border-radius: 0.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 0.75rem;
+    padding-block: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      background-color: ${cssVar.colorText};
+    }
+  `,
+  u622ab10e: css`
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u2689f395: css`
+    font-weight: 500;
+  `,
+  uc8b83ca7: css`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+    padding: 0.75rem;
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      background-color: ${cssVar.colorText};
+    }
+  `,
+  u31b73105: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+    word-break: break-all;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+  u6bd7f10a: css`
+    border-radius: 0.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorWarningBg};
+    background-color: ${cssVar.colorWarningBg};
+    padding-inline: 0.75rem;
+    padding-block: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorWarning};
+    :where(.dark, .dark *) & {
+      border-color: color-mix(in srgb, ${cssVar.colorWarning} 60%, transparent);
+    }
+    :where(.dark, .dark *) & {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorWarning} 30%,
+        transparent
+      );
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorWarning};
+    }
+  `,
+  ub75f6e07: css`
+    display: flex;
+    justify-content: flex-end;
+  `,
+}))
 
 function CreateTokenModal() {
   const { t } = useI18n()
@@ -49,10 +174,10 @@ function CreateTokenModal() {
   })
 
   return (
-    <div className="flex w-full flex-col">
+    <div className={lobeStyles.ued384759}>
       <ModalHeader title={t('settings.token.modal.create')} />
       <form
-        className="space-y-4 px-5 py-4"
+        className={lobeStyles.u9064cfd6}
         onSubmit={(event) => {
           event.preventDefault()
           if (!name.trim()) {
@@ -85,7 +210,7 @@ function CreateTokenModal() {
           placeholder={t('settings.token.expirePlaceholder')}
           value={expires}
         />
-        <div className="flex justify-end gap-2">
+        <div className={lobeStyles.u6efbbc71}>
           <Button
             onClick={() => modal.dismiss()}
             type="button"
@@ -108,22 +233,20 @@ function CreatedTokenModal(props: { token: TokenModel }) {
   const token = props.token
 
   return (
-    <div className="flex w-full flex-col">
+    <div className={lobeStyles.ued384759}>
       <ModalHeader title={t('settings.token.modal.createdTitle')} />
-      <div className="space-y-4 px-5 py-4">
-        <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+      <div className={lobeStyles.u9064cfd6}>
+        <div className={lobeStyles.u1880b83a}>
           {t('settings.token.created.success')}
         </div>
-        <div className="rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-900">
-          <span className="text-neutral-500">
+        <div className={lobeStyles.udf2bf02a}>
+          <span className={lobeStyles.u622ab10e}>
             {t('settings.token.created.nameLabel')}
           </span>
-          <span className="font-medium">{token.name}</span>
+          <span className={lobeStyles.u2689f395}>{token.name}</span>
         </div>
-        <div className="flex items-center gap-2 rounded border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
-          <code className="min-w-0 flex-1 break-all text-xs">
-            {token.token}
-          </code>
+        <div className={lobeStyles.uc8b83ca7}>
+          <code className={lobeStyles.u31b73105}>{token.token}</code>
           <Button
             onClick={() => {
               void navigator.clipboard.writeText(token.token)
@@ -132,23 +255,23 @@ function CreatedTokenModal(props: { token: TokenModel }) {
             type="button"
             variant="subtle"
           >
-            <Copy aria-hidden="true" className="size-4" />
+            <Copy aria-hidden="true" className={lobeStyles.uf7b5fa97} />
           </Button>
         </div>
         {token.expired ? (
-          <div className="rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-900">
-            <span className="text-neutral-500">
+          <div className={lobeStyles.udf2bf02a}>
+            <span className={lobeStyles.u622ab10e}>
               {t('settings.token.created.expireAt')}
             </span>
-            <span className="font-medium">
+            <span className={lobeStyles.u2689f395}>
               {formatDateTime(String(token.expired))}
             </span>
           </div>
         ) : null}
-        <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
+        <p className={lobeStyles.u6bd7f10a}>
           {t('settings.token.created.hiddenWarning')}
         </p>
-        <div className="flex justify-end">
+        <div className={lobeStyles.ub75f6e07}>
           <Button onClick={() => modal.close()} type="button">
             {t('common.close')}
           </Button>

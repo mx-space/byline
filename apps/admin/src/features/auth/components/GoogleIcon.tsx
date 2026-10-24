@@ -1,8 +1,17 @@
+import { createStaticStyles } from '@lobehub/ui'
+
+const lobeStyles = createStaticStyles(({ css }) => ({
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+}))
+
 export function GoogleIcon() {
   return (
     <svg
       aria-hidden="true"
-      className="size-4"
+      className={lobeStyles.uf7b5fa97}
       fill="currentColor"
       viewBox="0 0 24 24"
     >

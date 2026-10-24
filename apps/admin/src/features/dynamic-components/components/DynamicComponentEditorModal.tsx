@@ -1,8 +1,8 @@
+import { toast } from '@lobehub/ui'
 import { useMutation } from '@tanstack/react-query'
 import { CircleAlert, Loader2, Upload } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 import type { DynamicCatalog } from '~/api/dynamic-components'
 import {

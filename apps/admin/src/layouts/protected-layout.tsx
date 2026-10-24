@@ -6,10 +6,10 @@ import { checkLogged } from '~/api/users'
 import { loggedStatusQueryKey } from '~/features/auth/constants'
 import { PublishProcessDock } from '~/features/write/components/PublishProcessDock'
 import { useI18n } from '~/i18n'
-import { AdminShell } from '~/shell'
+import { AdminShell, LayoutLoading } from '~/shell'
 import { SocketBridge } from '~/socket/SocketBridge'
-import { CommandPaletteProvider } from '~/ui/command-palette'
 import { KeyboardShortcutsProvider } from '~/ui/keyboard-shortcut-overlay'
+import { PageLoadingFrame } from '~/ui/page'
 
 export function ProtectedLayout() {
   const location = useLocation()
@@ -23,11 +23,7 @@ export function ProtectedLayout() {
   const from = `${location.pathname}${location.search}`
 
   if (loggedQuery.isLoading) {
-    return (
-      <main className="flex h-dvh items-center justify-center bg-white text-sm text-neutral-500 dark:bg-neutral-950 dark:text-neutral-400">
-        {t('app.loading.auth')}
-      </main>
-    )
+    return <LayoutLoading label={t('app.loading.auth')} />
   }
 
   if (!loggedQuery.data?.ok) {
@@ -41,23 +37,18 @@ export function ProtectedLayout() {
 
   return (
     <KeyboardShortcutsProvider>
-      <CommandPaletteProvider>
-        <AdminShell>
-          <SocketBridge />
-          <Suspense fallback={<ShellContentLoader />}>
-            <Outlet />
-          </Suspense>
-          <PublishProcessDock />
-        </AdminShell>
-      </CommandPaletteProvider>
+      <AdminShell>
+        <SocketBridge />
+        <Suspense fallback={<ShellContentLoader />}>
+          <Outlet />
+        </Suspense>
+        <PublishProcessDock />
+      </AdminShell>
     </KeyboardShortcutsProvider>
   )
 }
 
 function ShellContentLoader() {
-  return (
-    <div className="flex h-full min-h-0 items-center justify-center bg-white text-sm text-neutral-500 dark:bg-neutral-950 dark:text-neutral-400">
-      Loading...
-    </div>
-  )
+  const { t } = useI18n()
+  return <PageLoadingFrame label={t('common.loading')} />
 }

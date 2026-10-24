@@ -11,6 +11,7 @@ import type { AppDatabase } from '~/processors/database/postgres.provider'
 import { type EntityId, parseEntityId } from '~/shared/id/entity-id'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 
+import { publicPostCondition } from '../post/post-visibility'
 import {
   type CategoryCreateInput,
   type CategoryPatchInput,
@@ -41,7 +42,7 @@ export class CategoryRepository extends BaseRepository {
     options: { publishedOnly?: boolean } = {},
   ): Promise<CategoryWithCount[]> {
     const postJoinCondition = options.publishedOnly
-      ? and(eq(posts.categoryId, categories.id), eq(posts.isPublished, true))
+      ? and(eq(posts.categoryId, categories.id), publicPostCondition())
       : eq(posts.categoryId, categories.id)
     const rows = await this.db
       .select({
@@ -80,7 +81,7 @@ export class CategoryRepository extends BaseRepository {
     if (ids.length === 0) return []
     const idBigs = ids.map((id) => parseEntityId(id))
     const postJoinCondition = options.publishedOnly
-      ? and(eq(posts.categoryId, categories.id), eq(posts.isPublished, true))
+      ? and(eq(posts.categoryId, categories.id), publicPostCondition())
       : eq(posts.categoryId, categories.id)
     const rows = await this.db
       .select({

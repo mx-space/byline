@@ -33,6 +33,7 @@ import {
 } from '~/processors/database/base.repository'
 import type { AppDatabase } from '~/processors/database/postgres.provider'
 
+import { publicPostCondition } from '../post/post-visibility'
 import type {
   UserCreateInput,
   UserListParams,
@@ -240,10 +241,7 @@ export class UserRepository extends BaseRepository {
             .from(postAuthors)
             .innerJoin(posts, eq(posts.id, postAuthors.postId))
             .where(
-              and(
-                eq(postAuthors.userId, users.id),
-                eq(posts.isPublished, true),
-              ),
+              and(eq(postAuthors.userId, users.id), publicPostCondition()),
             ),
         ),
       ),

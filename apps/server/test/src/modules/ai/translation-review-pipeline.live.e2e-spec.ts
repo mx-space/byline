@@ -6,7 +6,6 @@ import { createModelRuntime } from '@mx-space/ai/runtime'
 import {
   parseLexicalForTranslation,
   restoreLexicalTranslation,
-  splitMarkdownIntoParagraphs,
 } from '@mx-space/ai/translation'
 import { config as loadEnv } from 'dotenv'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -14,7 +13,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { AIProviderType } from '~/modules/ai/ai.types'
 import { TranslationReviewerService } from '~/modules/ai/ai-translation/reviewer.service'
 import { LexicalTranslationStrategy } from '~/modules/ai/ai-translation/strategies/lexical-translation.strategy'
-import { MarkdownTranslationStrategy } from '~/modules/ai/ai-translation/strategies/markdown-translation.strategy'
 import type { PipelineMetrics } from '~/modules/ai/ai-translation/translation-strategy.interface'
 import { LexicalService } from '~/processors/helper/helper.lexical.service'
 import { ContentFormat } from '~/shared/types/content-format.type'
@@ -112,11 +110,6 @@ type CaseReport = {
       outputSegmentCount: number
       roundTripParses: boolean
     }
-    markdown?: {
-      paragraphCountSource: number
-      paragraphCountOutput: number
-      fencedCodeBlocksPreserved: boolean
-    }
   }
 }
 
@@ -191,37 +184,6 @@ async function runLexicalQualityProbe(
   if (result.tags?.length) fullTranslations.__tags__ = result.tags.join('|||')
   for (const seg of parsed.segments) {
     if (seg.translatable && seg.text) fullTranslations[seg.id] = seg.text
-  }
-  const allowedIds = Object.keys(fullTranslations)
-  const probe = await reviewerService.callReviewer(
-    reviewerRuntime,
-    targetLang,
-    { allowedIds, segments: toTargetSegments(fullTranslations) },
-  )
-  if (!probe) return null
-  return { issuesCount: probe.issues.length }
-}
-
-async function runMarkdownQualityProbe(
-  reviewerService: TranslationReviewerService,
-  reviewerRuntime: IModelRuntime,
-  targetLang: string,
-  result: {
-    title: string
-    text: string
-    subtitle: string | null
-    summary: string | null
-    tags: string[] | null
-  },
-): Promise<{ issuesCount: number } | null> {
-  const fullTranslations: Record<string, string> = {
-    __title__: result.title,
-  }
-  if (result.subtitle) fullTranslations.__subtitle__ = result.subtitle
-  if (result.summary) fullTranslations.__summary__ = result.summary
-  if (result.tags?.length) fullTranslations.__tags__ = result.tags.join('|||')
-  for (const paragraph of splitMarkdownIntoParagraphs(result.text)) {
-    fullTranslations[paragraph.id] = paragraph.text
   }
   const allowedIds = Object.keys(fullTranslations)
   const probe = await reviewerService.callReviewer(
@@ -424,14 +386,6 @@ function writeReport(): void {
         `- segment count source/output: ${s.sourceSegmentCount} / ${s.outputSegmentCount}`,
       )
       lines.push(`- round-trip parse: ${s.roundTripParses ? 'ok' : 'FAILED'}`)
-    } else if (r.structure.markdown) {
-      const s = r.structure.markdown
-      lines.push(
-        `- paragraph count source/output: ${s.paragraphCountSource} / ${s.paragraphCountOutput}`,
-      )
-      lines.push(
-        `- fenced code blocks preserved: ${s.fencedCodeBlocksPreserved ? 'yes' : 'NO'}`,
-      )
     }
     lines.push(``)
   }
@@ -448,7 +402,6 @@ describe.skipIf(!LIVE_ENABLED || !TOKEN)(
     let reviewerService: TranslationReviewerService
     let lexicalService: LexicalService
     let lexicalStrategy: LexicalTranslationStrategy
-    let markdownStrategy: MarkdownTranslationStrategy
 
     beforeAll(() => {
       translatorRuntime = makeRuntime(TRANSLATOR_ENV)
@@ -459,7 +412,6 @@ describe.skipIf(!LIVE_ENABLED || !TOKEN)(
         lexicalService,
         reviewerService,
       )
-      markdownStrategy = new MarkdownTranslationStrategy(reviewerService)
     })
 
     afterAll(() => {
@@ -650,210 +602,6 @@ describe.skipIf(!LIVE_ENABLED || !TOKEN)(
         expect(result.text).not.toContain('undefined')
         expect(result.text).not.toContain('[object Object]')
         expect(parseBefore.segments.length).toBe(parseAfter.segments.length)
-      },
-    )
-
-    it(
-      'Case 3 — Markdown en → ja with code fence',
-      { timeout: 600_000 },
-      async () => {
-        const report = blankReport('Case 3 — Markdown en → ja', {
-          source: 'en',
-          target: 'ja',
-        })
-        const sourceText = [
-          'I have been working on this side project for three months now.',
-          '',
-          'The hardest part was not the technical implementation; it was deciding what NOT to build.',
-          '',
-          '```ts',
-          'function add(a: number, b: number) {',
-          '  return a + b',
-          '}',
-          '```',
-          '',
-          'Looking back, I would do many things differently.',
-          '',
-          '- Ship early',
-          '- Cut scope ruthlessly',
-          '- Talk to users',
-        ].join('\n')
-        const sourceParas = splitMarkdownIntoParagraphs(sourceText)
-
-        const metrics: PipelineMetrics = {}
-        const result = await markdownStrategy.translate(
-          {
-            title: 'Three Months of Side Project',
-            text: sourceText,
-            subtitle: 'A retrospective on what I learned',
-            summary: null,
-            tags: ['side-project', 'reflection'],
-            contentFormat: ContentFormat.Markdown,
-          },
-          'ja',
-          translatorRuntime,
-          { model: TRANSLATOR_MODEL, provider: 'openrouter' },
-          {
-            reviewerRuntime,
-            metrics,
-          },
-        )
-        consumeMetrics(report, metrics)
-
-        const probe = await runMarkdownQualityProbe(
-          reviewerService,
-          reviewerRuntime,
-          'ja',
-          {
-            title: result.title,
-            text: result.text,
-            subtitle: result.subtitle,
-            summary: result.summary,
-            tags: result.tags,
-          },
-        )
-        if (probe && metrics.reviewer) {
-          report.quality = {
-            rereviewIssuesCount: probe.issuesCount,
-            issuesDelta: probe.issuesCount - metrics.reviewer.issuesCount,
-          }
-        }
-
-        const outParas = splitMarkdownIntoParagraphs(result.text)
-        const codeFencesPreserved = result.text.includes('```')
-        report.structure.markdown = {
-          paragraphCountSource: sourceParas.length,
-          paragraphCountOutput: outParas.length,
-          fencedCodeBlocksPreserved: codeFencesPreserved,
-        }
-        report.writer.detectedSourceLang = result.sourceLang
-        report.writer.segmentCount = outParas.length + 1
-        report.writer.nonEmptyCount =
-          outParas.filter((p) => p.text.trim().length > 0).length +
-          (result.title ? 1 : 0)
-        report.writer.targetLangCharRatio = targetLangCharRatio(
-          result.text,
-          'ja',
-        )
-        report.writer.sampleSegments = [
-          {
-            id: '__title__',
-            source: 'Three Months of Side Project',
-            output: result.title,
-          },
-          ...sourceParas.slice(0, 3).map((p, i) => ({
-            id: p.id,
-            source: p.text,
-            output: outParas[i]?.text ?? '',
-          })),
-        ]
-
-        reports.push(report)
-
-        expect(result.title).toBeTruthy()
-        expect(result.text).toBeTruthy()
-        expect(codeFencesPreserved).toBe(true)
-        expect(result.text).toContain('function add')
-        expect(report.writer.targetLangCharRatio).toBeGreaterThan(0.3)
-        expect(sourceParas.length).toBe(outParas.length)
-        expect(result.text).not.toContain('undefined')
-        expect(result.text).not.toContain('[object Object]')
-      },
-    )
-
-    it(
-      'Case 5 — Reviewer skipped on threshold (deterministic)',
-      { timeout: 180_000 },
-      async () => {
-        const report = blankReport('Case 5 — Threshold skip', {
-          source: 'en',
-          target: 'ja',
-        })
-
-        const sourceText = 'A very short test paragraph.'
-        const metrics: PipelineMetrics = {}
-        const result = await markdownStrategy.translate(
-          {
-            title: 'Threshold test',
-            text: sourceText,
-            subtitle: null,
-            summary: null,
-            tags: null,
-            contentFormat: ContentFormat.Markdown,
-          },
-          'ja',
-          translatorRuntime,
-          { model: TRANSLATOR_MODEL, provider: 'openrouter' },
-          {
-            reviewerRuntime,
-            metrics,
-          },
-        )
-        consumeMetrics(report, metrics)
-        report.writer.detectedSourceLang = result.sourceLang
-        const outParas = splitMarkdownIntoParagraphs(result.text)
-        report.structure.markdown = {
-          paragraphCountSource: 1,
-          paragraphCountOutput: outParas.length,
-          fencedCodeBlocksPreserved: true,
-        }
-        report.writer.segmentCount = outParas.length + 1
-        report.writer.nonEmptyCount = outParas.length + 1
-        report.writer.targetLangCharRatio = targetLangCharRatio(
-          result.text,
-          'ja',
-        )
-
-        reports.push(report)
-
-        expect(result.text).toBeTruthy()
-        expect(result.title).toBeTruthy()
-      },
-    )
-
-    it(
-      'Case 6 — Review disabled (no reviewer runtime)',
-      { timeout: 180_000 },
-      async () => {
-        const report = blankReport('Case 6 — Review disabled', {
-          source: 'en',
-          target: 'ja',
-        })
-
-        const sourceText =
-          'Another short paragraph for the disabled-review path.'
-        const metrics: PipelineMetrics = {}
-        const result = await markdownStrategy.translate(
-          {
-            title: 'Disabled test',
-            text: sourceText,
-            subtitle: null,
-            summary: null,
-            tags: null,
-            contentFormat: ContentFormat.Markdown,
-          },
-          'ja',
-          translatorRuntime,
-          { model: TRANSLATOR_MODEL, provider: 'openrouter' },
-          { metrics },
-        )
-        consumeMetrics(report, metrics)
-        report.writer.detectedSourceLang = result.sourceLang
-        report.writer.segmentCount = 1
-        report.writer.nonEmptyCount = result.text ? 1 : 0
-        report.writer.targetLangCharRatio = targetLangCharRatio(
-          result.text,
-          'ja',
-        )
-        report.structure.markdown = {
-          paragraphCountSource: 1,
-          paragraphCountOutput: splitMarkdownIntoParagraphs(result.text).length,
-          fencedCodeBlocksPreserved: true,
-        }
-
-        reports.push(report)
-
-        expect(result.text).toBeTruthy()
       },
     )
   },

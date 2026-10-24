@@ -20,6 +20,7 @@ export interface AIWriterGenerateResponse {
 }
 
 export interface ArticleInfo {
+  draftId?: string | null
   id: string
   title: string
   type: 'Post'
@@ -33,6 +34,7 @@ export interface PaginationInfo {
   size: number
   total: number
   totalPage?: number
+  totalPages?: number
 }
 
 export interface GenerationMetrics {
@@ -110,7 +112,7 @@ export interface InsightsByRefResponse {
   insights: AIInsights[]
 }
 
-export type AIContentFormat = 'lexical' | 'markdown' | string
+export type AIContentFormat = 'lexical'
 
 export interface AITranslation {
   aiModel?: string

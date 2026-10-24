@@ -1,29 +1,59 @@
-import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, GitCompare, Loader2, Pencil, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Alert, createStaticStyles, Segmented, Tag, Tooltip } from '@lobehub/ui'
+import { Surface } from '@lobehub/ui/dashboard'
+import { Pencil, Trash2, Undo2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 
-import { getDraftRevisions } from '~/api/drafts'
-import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
-import { useI18n } from '~/i18n'
 import type { DraftModel } from '~/models/draft'
-import { adminQueryKeys } from '~/query/keys'
-import { FocusScope, useScopeArrowNav } from '~/ui/focus-scope'
-import { MobileHeaderAffordance } from '~/ui/layout/mobile-header-affordance'
-import { Button } from '~/ui/primitives/button'
-import { Scroll } from '~/ui/primitives/scroll'
-import { cn } from '~/utils/cn'
-import { relativeTimeFromNow } from '~/utils/time'
+import { DetailPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
-import { refTypeMeta } from '../constants'
-import { buildVersionItems, computeDiffStats } from '../utils/draft-diff'
+import { useDraftCopy } from '../copy'
 import {
-  getEditPathForDraft,
-  getEditPathForRevision,
-} from '../utils/draft-edit-path'
-import { DraftDetailEmpty } from './DraftDetailEmpty'
+  draftAuthorIds,
+  draftChangeKind,
+  draftHasConflict,
+  draftRevertsChanges,
+  draftSavedAt,
+  draftSlug,
+  draftTitle,
+  relativeDraftTime,
+} from '../utils/draft-decision'
+import { computeDiffStats } from '../utils/draft-diff'
+import { getEditPathForDraft } from '../utils/draft-edit-path'
+import { DraftChanges, DraftOverview } from './DraftChanges'
+import { DraftChecks } from './DraftChecks'
 import { DraftDiffPreview } from './DraftDiffPreview'
-import { VersionRow } from './VersionRow'
+import { DraftHistory } from './DraftHistory'
+import { DraftKindTag } from './DraftKindTag'
+import { DraftPreview } from './DraftPreview'
+import { useDraftAuthors } from './use-draft-authors'
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  body: css`
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  `,
+  bodyBlock: css`
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  `,
+  bodySwitch: css`
+    display: flex;
+    justify-content: flex-end;
+  `,
+  slug: css`
+    font-family: ${cssVar.fontFamilyCode};
+    color: ${cssVar.colorTextTertiary};
+  `,
+  time: css`
+    font-variant-numeric: tabular-nums;
+  `,
+}))
+
+type BodyView = 'diff' | 'preview'
 
 export function DraftDetail(props: {
   deleting: boolean
@@ -31,190 +61,137 @@ export function DraftDetail(props: {
   onBack: () => void
   onDelete: (draft: DraftModel) => void
 }) {
-  const { t } = useI18n()
+  const { copy, format } = useDraftCopy()
+  const authorNames = useDraftAuthors()
   const navigate = useNavigate()
-  const revisionsQuery = useQuery({
-    enabled: Boolean(props.draft.id),
-    queryFn: () => getDraftRevisions(props.draft.id),
-    queryKey: adminQueryKeys.drafts.history(props.draft.id),
-  })
-  const meta = refTypeMeta[props.draft.document.refType]
-  const versionItems = useMemo(
-    () => buildVersionItems(props.draft.headRevisionId, revisionsQuery.data),
-    [props.draft.headRevisionId, revisionsQuery.data],
+  const { draft } = props
+  const head = draft.headRevision
+  const published = draft.publishedRevision
+  const kind = draftChangeKind(draft)
+  const savedAt = draftSavedAt(draft)
+  const slug = draftSlug(draft)
+  const authorIds = draftAuthorIds(draft)
+  const bodyDiffers = published
+    ? !computeDiffStats(published, head).isSame
+    : false
+  const [bodyView, setBodyView] = useState<BodyView>(
+    bodyDiffers ? 'diff' : 'preview',
   )
-  const [selectedRevisionId, setSelectedRevisionId] = useState<string | null>(
-    null,
-  )
-  const versionsScopeId = `draft-versions-${props.draft.id}`
-
-  useScopeArrowNav({
-    itemSelector: '[data-scope-item="row"]',
-    onItemFocus: (element) => {
-      const revisionId = element.getAttribute('data-id')
-      if (revisionId) setSelectedRevisionId(revisionId)
-    },
-    scopeId: versionsScopeId,
-  })
 
   useEffect(() => {
-    setSelectedRevisionId(
-      versionItems.find((item) => !item.isCurrent)?.id ??
-        versionItems[0]?.id ??
-        null,
-    )
-  }, [props.draft.id, versionItems])
+    setBodyView(bodyDiffers ? 'diff' : 'preview')
+  }, [bodyDiffers, draft.id])
 
-  const selectedItem = versionItems.find(
-    (item) => item.id === selectedRevisionId,
-  )
-  const selectedRevision = revisionsQuery.data?.find(
-    (revision) => revision.id === selectedRevisionId,
-  )
-  const diffStats = selectedRevision
-    ? computeDiffStats(selectedRevision, props.draft.headRevision)
-    : null
+  const reverts = draftRevertsChanges(draft)
+  const notice = draftHasConflict(draft) ? (
+    <Alert
+      description={copy('conflictDetail')}
+      showIcon
+      title={copy('conflict')}
+      type="warning"
+    />
+  ) : kind === 'behind' ? (
+    <Alert description={copy('behindDetail')} showIcon type="info" />
+  ) : null
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div
-        className={cn(
-          'flex shrink-0 items-center justify-between gap-3 border-b border-neutral-200 px-4 dark:border-neutral-800',
-          APP_SHELL_HEADER_HEIGHT_CLASS,
-        )}
-      >
-        <div className="flex min-w-0 items-center gap-3">
-          <MobileHeaderAffordance />
+    <DetailPane
+      actions={
+        <>
           <Button
-            aria-label={t('drafts.detail.backAria')}
-            className="h-8 px-2 lg:hidden"
-            onClick={props.onBack}
-            type="button"
-            variant="subtle"
+            danger={!reverts}
+            icon={reverts ? Undo2 : Trash2}
+            loading={props.deleting}
+            onClick={() => props.onDelete(draft)}
+            type="text"
           >
-            <ChevronLeft aria-hidden="true" className="size-4" />
-          </Button>
-          <div className="min-w-0">
-            <h2 className="truncate text-lg font-semibold text-neutral-950 dark:text-neutral-50">
-              {props.draft.headRevision.title || t('drafts.row.untitled')}
-            </h2>
-            <div className="mt-0.5 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-              <span>{t(meta.labelKey)}</span>
-              <time dateTime={props.draft.updatedAt ?? props.draft.createdAt}>
-                {relativeTimeFromNow(
-                  props.draft.updatedAt ?? props.draft.createdAt,
-                )}
-              </time>
-            </div>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            className="h-8 px-2.5"
-            onClick={() => navigate(getEditPathForDraft(props.draft))}
-            type="button"
-            variant="subtle"
-          >
-            <Pencil aria-hidden="true" className="size-4" />
-            {t('drafts.detail.edit')}
+            {copy(reverts ? 'revertChanges' : 'deleteDraft')}
           </Button>
           <Button
-            className="h-8 border-red-200 px-2.5 text-red-600 hover:bg-red-50 dark:border-red-950 dark:text-red-400 dark:hover:bg-red-950/30"
-            disabled={props.deleting}
-            onClick={() => props.onDelete(props.draft)}
-            type="button"
-            variant="subtle"
+            icon={Pencil}
+            onClick={() => navigate(getEditPathForDraft(draft))}
+            type="primary"
           >
-            {props.deleting ? (
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-            ) : (
-              <Trash2 aria-hidden="true" className="size-4" />
-            )}
-            {t('drafts.detail.delete')}
+            {copy('continueWriting')}
           </Button>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-hidden">
-        {revisionsQuery.isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="size-5 animate-spin text-neutral-400" />
-          </div>
-        ) : versionItems.length === 0 ? (
-          <DraftDetailEmpty />
+        </>
+      }
+      backLabel={copy('title')}
+      meta={
+        <>
+          <Tooltip title={format.dateTime(savedAt)}>
+            <time className={styles.time} dateTime={savedAt}>
+              {copy('savedAt', {
+                time: relativeDraftTime(
+                  savedAt,
+                  format.relativeTime,
+                  copy('emptyValue'),
+                ),
+              })}
+            </time>
+          </Tooltip>
+          {authorIds.length > 0 ? <span>{authorNames(authorIds)}</span> : null}
+          {slug ? <span className={styles.slug}>/{slug}</span> : null}
+        </>
+      }
+      contentWidth="article"
+      onBack={props.onBack}
+      status={
+        <>
+          <DraftKindTag draft={draft} />
+          {draftHasConflict(draft) ? (
+            <Tag color="error">{copy('conflict')}</Tag>
+          ) : null}
+        </>
+      }
+      title={draftTitle(draft, copy('untitled'))}
+    >
+      <div className={styles.body}>
+        {notice}
+        <Surface bleed title={copy('checkSectionTitle')}>
+          <DraftChecks draft={draft} />
+        </Surface>
+        {published ? (
+          <Surface bleed title={copy('changesTitle')}>
+            <DraftChanges head={head} published={published} />
+          </Surface>
         ) : (
-          <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)]">
-            <FocusScope
-              className="outline-hidden min-h-0 border-b border-neutral-200 lg:border-b-0 lg:border-r dark:border-neutral-800"
-              id={versionsScopeId}
-            >
-              <div className="flex h-10 items-center gap-2 border-b border-neutral-200 px-4 text-sm font-medium text-neutral-700 dark:border-neutral-800 dark:text-neutral-300">
-                <GitCompare aria-hidden="true" className="size-4" />
-                {t('drafts.history.title')}
-                <span className="text-xs font-normal text-neutral-400">
-                  ({versionItems.length})
-                </span>
-              </div>
-              <Scroll className="max-h-72 lg:h-[calc(100%-2.5rem)] lg:max-h-none">
-                {versionItems.map((item) => (
-                  <VersionRow
-                    diffStats={
-                      item.id === selectedRevisionId ? diffStats : null
-                    }
-                    item={item}
-                    key={item.id}
-                    onRestore={() =>
-                      navigate(getEditPathForRevision(props.draft, item.id))
-                    }
-                    onSelect={() => setSelectedRevisionId(item.id)}
-                    restorePending={false}
-                    selected={selectedRevisionId === item.id}
-                  />
-                ))}
-              </Scroll>
-            </FocusScope>
-
-            <div className="flex min-h-0 flex-col bg-neutral-50 dark:bg-neutral-950">
-              <div className="flex h-10 shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800">
-                <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                  {selectedItem ? (
-                    <>
-                      <span>{relativeTimeFromNow(selectedItem.savedAt)}</span>
-                      <span className="text-neutral-400">→</span>
-                      <span>{t('drafts.history.current')}</span>
-                    </>
-                  ) : (
-                    <span>{t('drafts.history.pickVersion')}</span>
-                  )}
-                </div>
-                {diffStats && !diffStats.isSame ? (
-                  <span className="text-xs tabular-nums text-neutral-500">
-                    {t('drafts.history.deltaChars', {
-                      delta:
-                        diffStats.delta > 0
-                          ? `+${diffStats.delta}`
-                          : diffStats.delta,
-                    })}
-                  </span>
-                ) : null}
-              </div>
-              <Scroll className="flex-1" innerClassName="p-4">
-                {selectedRevision ? (
-                  <DraftDiffPreview
-                    currentDraft={props.draft.headRevision}
-                    diffStats={diffStats}
-                    selectedDraft={selectedRevision}
-                  />
-                ) : (
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {t('drafts.history.cannotLoad')}
-                  </p>
-                )}
-              </Scroll>
-            </div>
-          </div>
+          <Surface bleed title={copy('overviewTitle')}>
+            <DraftOverview draft={draft} />
+          </Surface>
         )}
+        <div className={styles.bodyBlock}>
+          {published && bodyDiffers ? (
+            <div className={styles.bodySwitch}>
+              <Segmented
+                onChange={(value) => setBodyView(value as BodyView)}
+                options={[
+                  { label: copy('tabDiff'), value: 'diff' },
+                  { label: copy('tabPreview'), value: 'preview' },
+                ]}
+                size="small"
+                value={bodyView}
+              />
+            </div>
+          ) : null}
+          {published && bodyDiffers && bodyView === 'diff' ? (
+            <DraftDiffPreview
+              bare
+              comparisonLabel={copy('diffDirectionPublished')}
+              currentDraft={head}
+
+              diffStats={null}
+              hideTitle
+              selectedDraft={published}
+            />
+          ) : (
+            <DraftPreview revision={head} />
+          )}
+        </div>
+        <Surface bleed title={copy('historyTitle')}>
+          <DraftHistory draft={draft} />
+        </Surface>
       </div>
-    </div>
+    </DetailPane>
   )
 }

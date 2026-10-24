@@ -3,8 +3,9 @@ import type { PostModel } from '~/models/post'
 
 import { deleteJson, getJson, patchJson } from './http'
 
-export type PostSortKey = 'createdAt' | 'modifiedAt' | 'pinAt'
+export type PostSortKey = 'createdAt' | 'modifiedAt' | 'pinAt' | 'publicAt'
 export type PostSortOrder = 'asc' | 'desc'
+export type PostVisibility = 'scheduled'
 
 export interface GetPostsParams {
   categoryIds?: string[]
@@ -12,12 +13,15 @@ export interface GetPostsParams {
   size: number
   sort_by?: PostSortKey
   sort_order?: PostSortOrder
+  truncate?: number
+  visibility?: PostVisibility
 }
 
 export interface SearchPostsParams {
   keyword: string
   page: number
   size: number
+  visibility?: PostVisibility
 }
 
 export interface PatchPostData {
@@ -30,16 +34,19 @@ export function getPosts(params: GetPostsParams) {
     categoryIds: params.categoryIds,
     page: params.page,
     size: params.size,
+    truncate: params.truncate,
     sort_by: params.sort_by,
     sort_order: params.sort_order,
+    visibility: params.visibility,
   })
 }
 
 export function searchPosts(params: SearchPostsParams) {
-  return getJson<PaginateResult<PostModel>>('/search/post', {
+  return getJson<PaginateResult<PostModel>>('/posts/search', {
     keyword: params.keyword,
     page: params.page,
     size: params.size,
+    visibility: params.visibility,
   })
 }
 

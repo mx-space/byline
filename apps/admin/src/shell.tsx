@@ -1,140 +1,377 @@
-import type { CSSProperties, PropsWithChildren } from 'react'
-import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
-
-import { Drawer } from '~/ui/feedback/drawer'
+import { createStaticStyles, css, cssVar, cx, Flexbox } from '@lobehub/ui'
 import {
-  FOCUS_SCOPES,
-  FocusScope,
-  useScopeArrowNav,
-  useScopeSwitcher,
-} from '~/ui/focus-scope'
-import { ShellNavProvider } from '~/ui/layout/shell-nav-context'
-import { SidebarBody } from '~/ui/layout/sidebar-body'
-import { useSidebarExpandStore } from '~/ui/layout/sidebar-expand-store'
+  Breadcrumb,
+  ConsoleBrand,
+  ConsoleNav,
+  ConsoleShell,
+  SurfaceLinkProvider,
+  type SurfaceRenderLink,
+  useConsoleShell,
+} from '@lobehub/ui/dashboard'
+import { useQuery } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
+import type { PropsWithChildren, ReactNode } from 'react'
+import { useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
+import type { SidebarNode, SidebarSection } from 'virtual:admin-routes'
+import { sidebarTree } from 'virtual:admin-routes'
+
+import { getAppInfo } from '~/api/system'
+import { failedTasksQuery } from '~/features/dashboard/queries'
+import { useDocumentTitleOverride } from '~/hooks/use-document-title'
+import { useI18n } from '~/i18n'
+import { Combine, LogoColor } from '~/ui/brand'
+import { GlobalSearch } from '~/ui/global-search'
+import { filterSidebarNode } from '~/ui/layout/filter-sidebar-node'
+import { PageLoadingFrame } from '~/ui/page'
+import { Button } from '~/ui/site-button'
+
+import { ConsoleFooter } from './layouts/console-footer'
 import {
-  SidebarResizeHandle,
-  useSidebarLayout,
-} from '~/ui/layout/sidebar-layout'
-import { cn } from '~/utils/cn'
+  artefactWriteBreadcrumb,
+  productDetailBreadcrumb,
+  toBreadcrumbItems,
+  toConsoleNavigation,
+  withDetailCrumb,
+  withParentCrumb,
+} from './layouts/console-nav'
+import {
+  type WriteTopbarSlots,
+  WriteTopbarSlotsContext,
+} from './layouts/write-topbar-slots'
 
-import { useI18n } from './i18n'
+const styles = createStaticStyles(({ css }) => ({
+  content: css`
+    display: flex;
+    flex-direction: column;
 
-export function AdminShell(props: PropsWithChildren) {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { t } = useI18n()
-  const [navOpen, setNavOpen] = useState(false)
-  const sidebar = useSidebarLayout()
-  // Defer enabling grid-template-columns transitions until after the first
-  // paint so a page refresh never animates the sidebar in from a stale value.
-  const [sidebarTransitionsEnabled, setSidebarTransitionsEnabled] =
-    useState(false)
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setSidebarTransitionsEnabled(true))
-    return () => cancelAnimationFrame(id)
-  }, [])
-  // Sidebar HJKL / arrow-key navigation. One binding is enough — the hook
-  // looks up the scope's DOM element at fire time, so whichever sidebar
-  // (desktop aside or mobile Drawer) is currently mounted handles the keys.
-  // Focus = router navigate (mirrors the list-pane "focus = open detail" model);
-  // parent items auto-expand on focus; Z / Space toggle fold on parent items.
-  useScopeArrowNav({
-    itemSelector: '[data-scope-item="nav"]',
-    scopeId: FOCUS_SCOPES.sidebar,
-    onItemFocus: (el) => {
-      const path = el.getAttribute('data-nav-path')
-      if (path) {
-        if (location.pathname !== path) navigate(path)
-        if (el.getAttribute('data-has-children') === 'true') {
-          useSidebarExpandStore.getState().expand(path)
-        }
-      }
-    },
-    extra: {
-      z: (event) => toggleFocusedNavItem(event),
-      Space: (event) => toggleFocusedNavItem(event),
-    },
-  })
+    height: 100%;
+    min-height: 0;
 
-  // h/l/←/→ switch the active scope sibling. Mounted once globally; topology
-  // = visible `[data-focus-scope]` in DOM order.
-  useScopeSwitcher()
+    overflow: hidden;
+  `,
+  loading: css`
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+  `,
+  navigation: css`
+    display: flex;
+    flex: 1;
+    flex-direction: column;
 
-  useEffect(() => {
-    setNavOpen(false)
-  }, [location.pathname])
+    min-block-size: 0;
+  `,
+  shell: css`
+    width: 100%;
+    height: 100%;
+    min-height: 0;
 
-  useEffect(() => {
-    const mql = window.matchMedia('(min-width: 1024px)')
-    const handle = (event: MediaQueryListEvent) => {
-      if (event.matches) {
-        setNavOpen(false)
-      }
+    .lobe-dashboard-console-shell__main {
+      overflow: hidden;
+      padding: 0;
     }
-    mql.addEventListener('change', handle)
-    return () => mql.removeEventListener('change', handle)
-  }, [])
+  `,
+  shellWriting: css`
+    .lobe-dashboard-console-shell__topbar-main {
+      min-width: 0;
+    }
+  `,
+  writeIdentity: css`
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+  `,
+  writeTrail: css`
+    display: flex;
+    align-items: center;
+    gap: 8px;
 
-  const mainStyle: CSSProperties = {
-    '--sidebar-width': sidebar.collapsed ? '0px' : `${sidebar.widthPx}px`,
-  } as CSSProperties
+    min-width: 0;
+    max-width: 100%;
+
+    > nav {
+      flex: 0 1 auto;
+      width: auto;
+      min-width: 0;
+    }
+
+    > nav > span:last-child {
+      min-width: 0;
+    }
+
+    > nav [aria-current='page'] {
+      overflow: hidden;
+      display: block;
+
+      max-width: 240px;
+      min-width: 0;
+
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  `,
+}))
+
+const WRITE_PATH = '/posts/edit'
+
+const WRITE_BUTTON_PATHS = new Set(['/dashboard', '/posts', '/posts/scheduled'])
+
+function ShellTools(props: {
+  pathname: string
+  sections: readonly SidebarSection[]
+}) {
+  const { t } = useI18n()
+  const navigate = useNavigate()
+  const showWrite = WRITE_BUTTON_PATHS.has(props.pathname)
 
   return (
-    <ShellNavProvider open={navOpen} setOpen={setNavOpen}>
-      <main
-        className={cn(
-          'grid h-dvh min-h-0 grid-cols-[minmax(0,1fr)] overflow-hidden bg-surface-page text-fg lg:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]',
-          sidebarTransitionsEnabled &&
-            'transition-[grid-template-columns] duration-200 ease-out',
-        )}
-        data-sidebar-collapsed={sidebar.collapsed ? 'true' : 'false'}
-        style={mainStyle}
-      >
-        <aside className="relative hidden h-dvh min-h-0 flex-col overflow-hidden bg-surface-page lg:flex">
-          <FocusScope
-            className="flex min-h-0 flex-1 flex-col"
-            id={FOCUS_SCOPES.sidebar}
-          >
-            <SidebarBody onCollapseSidebar={sidebar.toggle} />
-          </FocusScope>
-          <SidebarResizeHandle />
-        </aside>
-
-        <section className="relative flex h-dvh min-h-0 min-w-0 flex-col bg-background pb-[env(safe-area-inset-bottom)]">
-          <div className="relative min-h-0 flex-1 overflow-hidden">
-            {props.children}
-          </div>
-        </section>
-
-        <Drawer
-          onClose={() => setNavOpen(false)}
-          open={navOpen}
-          showHeader={false}
-          side="left"
-          title={t('common.primaryNavigation')}
-          widthClassName="w-[min(85vw,18rem)]"
+    <Flexbox align="center" gap={8} horizontal>
+      <GlobalSearch sections={props.sections} />
+      {showWrite ? (
+        <Button
+          icon={Plus}
+          onClick={() => navigate(WRITE_PATH)}
+          shape="round"
+          type="primary"
         >
-          <FocusScope
-            className="flex min-h-0 flex-1 flex-col"
-            id={FOCUS_SCOPES.sidebar}
-          >
-            <SidebarBody />
-          </FocusScope>
-        </Drawer>
-      </main>
-    </ShellNavProvider>
+          {t('routes.writePost.title')}
+        </Button>
+      ) : null}
+    </Flexbox>
   )
 }
 
-function toggleFocusedNavItem(event: KeyboardEvent) {
-  const active = document.activeElement
-  if (!(active instanceof HTMLElement)) return
-  const item = active.closest<HTMLElement>('[data-nav-path]')
-  if (!item) return
-  if (item.getAttribute('data-has-children') !== 'true') return
-  const path = item.getAttribute('data-nav-path')
-  if (!path) return
-  event.preventDefault()
-  useSidebarExpandStore.getState().toggle(path)
+function navSectionDividerClass(childIndexes: number[]) {
+  if (childIndexes.length === 0) return undefined
+
+  return css`
+    ${childIndexes
+      .map(
+        (index) => `
+          & nav > :nth-child(${index})[data-level='0'][data-icon='true'] {
+            margin-block-start: 6px;
+            padding-block-start: 8px;
+            border-block-start: 1px solid ${cssVar.colorBorderSecondary};
+          }
+        `,
+      )
+      .join('')}
+  `
+}
+
+const SHELL_STORAGE_KEY = 'byline-console-shell'
+
+const BRAND_RAIL_SIZE = 24
+const BRAND_LOCKUP_SIZE = 40
+const BRAND_WORDMARK_SIZE = 20
+
+export function ShellBrand() {
+  const { collapsed } = useConsoleShell()
+
+  return (
+    <ConsoleBrand
+      href="/dashboard"
+      label="Byline"
+      logo={
+        collapsed ? (
+          <LogoColor aria-hidden size={BRAND_RAIL_SIZE} />
+        ) : (
+          <Combine
+            aria-hidden
+            size={BRAND_LOCKUP_SIZE}
+            textSize={BRAND_WORDMARK_SIZE}
+          />
+        )
+      }
+      renderLink={renderRouterLink}
+    />
+  )
+}
+
+export function LayoutLoading(props: { label: string }) {
+  return (
+    <ConsoleShell
+      loading
+      brand={<ShellBrand />}
+      className={styles.loading}
+      storageKey={SHELL_STORAGE_KEY}
+      loadingContent={
+        <div className={styles.content}>
+          <PageLoadingFrame label={props.label} />
+        </div>
+      }
+    />
+  )
+}
+
+const renderSurfaceLink: SurfaceRenderLink = ({ children, href, ...rest }) => (
+  <Link to={href} {...rest}>
+    {children}
+  </Link>
+)
+
+function renderRouterLink({
+  children,
+  className,
+  href,
+  onClick,
+  ...rest
+}: {
+  children: ReactNode
+  className: string
+  href: string
+  onClick?: () => void
+}) {
+  return (
+    <Link className={className} onClick={onClick} to={href} {...rest}>
+      {children}
+    </Link>
+  )
+}
+
+function visibleSections(
+  sections: SidebarSection[],
+  includeDebug: boolean,
+): SidebarSection[] {
+  if (includeDebug) return sections
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.flatMap((node) => {
+        const visible: SidebarNode | null = filterSidebarNode(node)
+        return visible ? [visible] : []
+      }),
+    }))
+    .filter((section) => section.items.length > 0)
+}
+
+export function AdminShell(props: PropsWithChildren) {
+  const location = useLocation()
+  const { t } = useI18n()
+  const writing = location.pathname === WRITE_PATH
+  const [identitySlot, setIdentitySlot] = useState<HTMLDivElement | null>(null)
+  const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null)
+  const [pageTitle, setPageTitle] = useState<string | null>(null)
+  const topbarSlots = useMemo<WriteTopbarSlots>(
+    () => ({
+      actions: actionsSlot,
+      identity: identitySlot,
+      setPageTitle,
+    }),
+    [actionsSlot, identitySlot],
+  )
+  const appInfoQuery = useQuery({
+    queryFn: getAppInfo,
+    queryKey: ['shell', 'app-info'],
+    retry: false,
+  })
+  const includeDebug =
+    window.injectData.PAGE_PROXY || appInfoQuery.data?.version === 'dev'
+  const sections = useMemo(
+    () => visibleSections(sidebarTree, includeDebug),
+    [includeDebug],
+  )
+  const failedTasks = useQuery(failedTasksQuery)
+  const failedCount = failedTasks.data?.total ?? 0
+  const navigation = useMemo(
+    () =>
+      toConsoleNavigation(
+        sections,
+        t,
+        failedCount ? { '/tasks': failedCount } : {},
+      ),
+    [failedCount, sections, t],
+  )
+  const detailTitle = useDocumentTitleOverride()
+  const breadcrumbItems = useMemo(() => {
+    const items = toBreadcrumbItems(sections, location.pathname, t)
+    if (/^\/users\/[^/]+$/.test(location.pathname)) {
+      return withDetailCrumb(
+        items,
+        `/users${location.search}`,
+        t('routes.users.detail'),
+      )
+    }
+    const product = productDetailBreadcrumb(
+      location.pathname,
+      location.search,
+      detailTitle || t('routes.ai.detail'),
+      t,
+    )
+    if (product) return product
+    if (location.pathname !== WRITE_PATH) return items
+    const translationTrail = artefactWriteBreadcrumb(
+      location.search,
+      pageTitle || t('routes.ai.detail'),
+      t,
+    )
+    if (translationTrail) return translationTrail
+    const trail = withParentCrumb(items, {
+      href: '/posts',
+      label: t('routes.posts.title'),
+    })
+    if (!pageTitle) return trail
+    return trail.map((item, index) =>
+      index === trail.length - 1 ? { ...item, label: pageTitle } : item,
+    )
+  }, [detailTitle, location.pathname, location.search, pageTitle, sections, t])
+  const sectionDividerClass = navSectionDividerClass(
+    navigation.dividerBefore.flatMap((key) => {
+      const index = navigation.groups.findIndex((group) => group.key === key)
+      if (index < 0) return []
+      return [index + 1 + (navigation.items.length > 0 ? 1 : 0)]
+    }),
+  )
+
+  return (
+    <ConsoleShell
+      className={cx(styles.shell, writing && styles.shellWriting)}
+      closeNavigationLabel={t('common.closeNavigation')}
+      collapseLabel={t('ui.layout.collapseSidebar')}
+      expandLabel={t('ui.layout.expandSidebar')}
+      footer={<ConsoleFooter />}
+      openNavigationLabel={t('common.openNavigation')}
+      skipToContentLabel={t('common.skipToContent')}
+      storageKey={SHELL_STORAGE_KEY}
+      tools={
+        writing ? (
+          <div ref={setActionsSlot} />
+        ) : (
+          <ShellTools pathname={location.pathname} sections={sections} />
+        )
+      }
+      brand={<ShellBrand />}
+      breadcrumb={
+        writing ? (
+          <div className={styles.writeTrail}>
+            <Breadcrumb items={breadcrumbItems} renderLink={renderRouterLink} />
+            <div className={styles.writeIdentity} ref={setIdentitySlot} />
+          </div>
+        ) : (
+          <Breadcrumb items={breadcrumbItems} renderLink={renderRouterLink} />
+        )
+      }
+      navigation={
+        <div className={cx(styles.navigation, sectionDividerClass)}>
+          <ConsoleNav
+            defaultExpanded="all"
+            groups={navigation.groups}
+            items={navigation.items}
+            label={t('common.primaryNavigation')}
+            pathname={location.pathname}
+            renderLink={renderRouterLink}
+            storageKey="byline-console-nav"
+          />
+        </div>
+      }
+    >
+      <WriteTopbarSlotsContext.Provider value={topbarSlots}>
+        <SurfaceLinkProvider renderLink={renderSurfaceLink}>
+          <div className={styles.content}>{props.children}</div>
+        </SurfaceLinkProvider>
+      </WriteTopbarSlotsContext.Provider>
+    </ConsoleShell>
+  )
 }

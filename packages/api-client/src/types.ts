@@ -183,12 +183,13 @@ export interface PostImage {
 }
 
 export interface Post {
+  publicAt?: string | null
   id: string
   title: string
   slug: string
   text: string
   content: string | null
-  contentFormat: string
+  contentFormat: 'lexical'
   summary: string | null
   images: PostImage[] | null
   meta: Record<string, unknown> | null
@@ -207,7 +208,7 @@ export interface Post {
   [key: string]: unknown
 }
 
-export type PostSortKey = 'createdAt' | 'modifiedAt' | 'pinAt'
+export type PostSortKey = 'createdAt' | 'modifiedAt' | 'pinAt' | 'publicAt'
 
 export interface PostListQuery {
   page?: number
@@ -222,6 +223,7 @@ export interface PostListQuery {
 }
 
 export interface PostPatch {
+  publicAt?: string | null
   categoryId?: string
   pinAt?: string | null
   authors?: string[]
@@ -231,6 +233,7 @@ export interface PostPatch {
 }
 
 export interface PostWriteInput {
+  publicAt?: string | null
   title: string
   content: string | LexicalEditorState
   text?: string
@@ -254,7 +257,7 @@ export type RevisionRelation = 'same' | 'ancestor' | 'descendant' | 'diverged'
 
 export interface RevisionSnapshot {
   content: string | null
-  contentFormat: string
+  contentFormat: 'lexical'
   images: unknown[] | null
   meta: Record<string, unknown> | null
   text: string
@@ -380,7 +383,7 @@ export interface Translation {
   summary: string | null
   tags: string[]
   content: string | null
-  contentFormat: string | null
+  contentFormat: 'lexical' | null
   isLocked: boolean
   aiModel: string | null
   aiProvider: string | null

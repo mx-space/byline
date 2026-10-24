@@ -72,7 +72,6 @@ function buildService(
   const lexicalService = { lexicalToMarkdown: vi.fn(() => 'markdown') }
   const aiTaskService = { createTranslationTask: vi.fn() }
   const lexicalStrategy = {}
-  const markdownStrategy = {}
 
   const service = new AiTranslationService(
     repository as any,
@@ -87,8 +86,8 @@ function buildService(
     taskQueueService as any,
     lexicalService as any,
     aiTaskService as any,
+    {} as any,
     lexicalStrategy as any,
-    markdownStrategy as any,
   )
 
   // Wire up handlers so we have a reference path; the tests below invoke the

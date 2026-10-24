@@ -1,46 +1,126 @@
-import { FileText, Plus, Trash2 } from 'lucide-react'
-import type { FormEvent } from 'react'
-import { useMemo, useRef } from 'react'
-
-import { WEB_URL } from '~/constants/env'
 import {
-  ContentListRefreshButton,
-  ContentListToolbar,
-  SortMenu,
-} from '~/features/_shared/components/content-list-toolbar'
+  Alert,
+  confirmModal,
+  SearchBar,
+  Select,
+  showContextMenu,
+  Text,
+  Tooltip,
+} from '@lobehub/ui'
+import { TableSkeleton } from '@lobehub/ui/dashboard'
+import { type ProColumns, ProTable } from '@lobehub/ui/pro-table'
+import {
+  type HTMLAttributes,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+import { useNavigate } from 'react-router'
+
+import { useAiQuickActionsBuilder } from '~/features/ai/hooks/use-ai-quick-actions'
 import { useI18n } from '~/i18n'
 import type { PostModel } from '~/models/post'
-import { CompactPagination } from '~/ui/data/compact-pagination'
-import { confirmDialog } from '~/ui/feedback/confirm'
-import { FocusScope } from '~/ui/focus-scope'
-import { PageHeader } from '~/ui/layout/page-layout'
-import { useListKeyboard } from '~/ui/list-actions'
-import { ButtonLink } from '~/ui/primitives/button'
-import { Scroll } from '~/ui/primitives/scroll'
-import { SelectField } from '~/ui/primitives/select'
-
 import {
-  allCategoriesValue,
-  postSortOptionDefinitions,
-  postsPageSize,
-} from '../constants'
+  alphaFirst,
+  newestFirst,
+  readSingleFilter,
+} from '~/ui/data/table-header'
+import { FocusScope } from '~/ui/focus-scope'
+import { type ListSelectionAPI, useListKeyboard } from '~/ui/list-actions'
+import { Page } from '~/ui/page'
+import {
+  pinEnd,
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
+
+import { allCategoriesValue, postsPageSize } from '../constants'
+import { usePostCopy } from '../copy'
 import { usePostMutations } from '../hooks/use-post-mutations'
 import { usePostsList } from '../hooks/use-posts-list'
-import type { PostSortKey } from '../types/posts'
+import type { PostSortKey, SortOrder } from '../types/posts'
 import { buildPostActions } from './buildPostActions'
-import { PostRow } from './PostRow'
+import { buildPostMenuItems } from './buildPostMenuItems'
+import { formatUpdatedAt, postExternalHref, postTitle } from './post-format'
+import {
+  PostBylineCell,
+  PostRowActions,
+  PostStatusCell,
+  PostTitleCell,
+} from './PostCells'
 import { PostsEmpty } from './PostsEmpty'
 import { PostsError } from './PostsError'
-import { PostsSkeleton } from './PostsSkeleton'
+import { styles } from './styles'
 
 const FOCUS_SCOPE_ID = 'posts-list'
 
-export function PostsRouteViewContent() {
-  const { t } = useI18n()
-  const list = usePostsList()
+const sortChoices: Array<{
+  copyKey:
+    | 'sortCreatedAsc'
+    | 'sortCreatedDesc'
+    | 'sortModifiedAsc'
+    | 'sortModifiedDesc'
+    | 'sortPinnedAsc'
+    | 'sortPinnedDesc'
+    | 'sortPublicAsc'
+    | 'sortPublicDesc'
+  order: SortOrder
+  sortKey: PostSortKey
+}> = [
+  { copyKey: 'sortModifiedDesc', order: 'desc', sortKey: 'modifiedAt' },
+  { copyKey: 'sortModifiedAsc', order: 'asc', sortKey: 'modifiedAt' },
+  { copyKey: 'sortCreatedDesc', order: 'desc', sortKey: 'createdAt' },
+  { copyKey: 'sortCreatedAsc', order: 'asc', sortKey: 'createdAt' },
+  { copyKey: 'sortPinnedDesc', order: 'desc', sortKey: 'pinAt' },
+  { copyKey: 'sortPinnedAsc', order: 'asc', sortKey: 'pinAt' },
+  { copyKey: 'sortPublicAsc', order: 'asc', sortKey: 'publicAt' },
+  { copyKey: 'sortPublicDesc', order: 'desc', sortKey: 'publicAt' },
+]
+
+function sortValue(sortKey: PostSortKey, order: SortOrder) {
+  return `${sortKey}:${order}`
+}
+
+function useAfter(active: boolean, delayMs: number) {
+  const [due, setDue] = useState(false)
+  useEffect(() => {
+    if (!active) {
+      setDue(false)
+      return
+    }
+    const timer = window.setTimeout(() => setDue(true), delayMs)
+    return () => window.clearTimeout(timer)
+  }, [active, delayMs])
+  return due
+}
+
+function isInteractiveTarget(target: EventTarget) {
+  return (
+    target instanceof Element &&
+    Boolean(
+      target.closest(
+        'a,button,input,label,[role="menuitem"],[data-row-actions]',
+      ),
+    )
+  )
+}
+
+export function PostsRouteViewContent(props: { scheduled?: boolean } = {}) {
+  const scheduled = props.scheduled ?? false
+  const copy = usePostCopy()
+  const table = useRecordTable()
+  const { format, t } = useI18n()
+  const navigate = useNavigate()
+  const buildAiItems = useAiQuickActionsBuilder()
   const {
     categories,
+    categoriesQuery,
     categoryId,
+    clearSearch,
     keyword,
     keywordInput,
     page,
@@ -54,11 +134,10 @@ export function PostsRouteViewContent() {
     sortKey,
     sortOrder,
     submitSearch,
-  } = list
+  } = usePostsList(scheduled ? 'scheduled' : 'all')
 
-  // selection is created by useListKeyboard below, after `actions` is built.
-  // mutations that fire `selection.clear()` go through this ref to avoid TDZ.
-  const selectionClearRef = useRef<(() => void) | null>(null)
+  const selectionRef = useRef<ListSelectionAPI<PostModel> | null>(null)
+  const [failedDeleteIds, setFailedDeleteIds] = useState<string[]>([])
 
   const {
     batchDeleteMutation,
@@ -67,47 +146,61 @@ export function PostsRouteViewContent() {
     pinMutation,
     publishMutation,
   } = usePostMutations({
-    onBatchSuccess: () => selectionClearRef.current?.(),
+    onBatchPartial: setFailedDeleteIds,
+    onBatchSuccess: () => selectionRef.current?.clear(),
   })
 
-  const externalHrefFor = (post: PostModel) =>
-    `${WEB_URL}/posts/${post.category?.slug ?? post.categoryId}/${post.slug}`
-
-  const confirmAndDelete = async (targets: PostModel[]) => {
-    if (targets.length === 0) return
-    const title =
-      targets.length === 1
-        ? t('posts.confirmDelete.single', {
-            title: targets[0].title || t('posts.row.untitled'),
-          })
-        : t('posts.confirmDelete.batch', { count: targets.length })
-    const confirmed = await confirmDialog({
-      destructive: true,
-      title,
-    })
-    if (!confirmed) return
-    if (targets.length === 1) {
-      deleteMutation.mutate(targets[0].id)
-    } else {
-      batchDeleteMutation.mutate(targets.map((target) => target.id))
+  const openEdit = (post?: PostModel) => {
+    if (!post) {
+      navigate('/posts/edit')
+      return
     }
+    navigate(`/posts/edit?id=${encodeURIComponent(post.id)}`)
   }
 
-  const actions = useMemo(
-    () =>
-      buildPostActions(
-        {
-          deleteMany: confirmAndDelete,
-          navigateToEdit: (post) => {
-            window.location.hash = `#/posts/edit?id=${encodeURIComponent(post.id)}`
-          },
-          openExternal: (post) => {
-            window.open(externalHrefFor(post), '_blank', 'noopener,noreferrer')
-          },
-        },
-        t,
-      ),
-    [t],
+  const confirmAndDelete = (targets: Array<{ id: string; title: string }>) => {
+    if (targets.length === 0) return
+    const single = targets.length === 1 ? targets[0] : null
+    confirmModal({
+      cancelText: copy('cancel'),
+      content: copy('deleteBody'),
+      okButtonProps: { danger: true },
+      okText: single
+        ? copy('deleteOk')
+        : copy('deleteBatchOk', { count: targets.length }),
+      onOk: async () => {
+        if (single) {
+          const wasSelected =
+            selectionRef.current?.isSelected(single.id) ?? false
+          await deleteMutation.mutateAsync(single.id)
+          if (wasSelected) selectionRef.current?.toggle(single.id)
+          return
+        }
+        await batchDeleteMutation.mutateAsync(
+          targets.map((target) => target.id),
+        )
+      },
+      title: single
+        ? copy('deleteTitle', { title: single.title || copy('untitled') })
+        : copy('deleteBatchTitle', { count: targets.length }),
+    })
+  }
+
+  const toDeleteTargets = (targets: PostModel[]) =>
+    targets.map((post) => ({
+      id: post.id,
+      title: postTitle(post, copy('untitled')),
+    }))
+
+  const actions = buildPostActions(
+    {
+      deleteMany: (targets) => confirmAndDelete(toDeleteTargets(targets)),
+      navigateToEdit: (post) => openEdit(post),
+      openExternal: (post) => {
+        window.open(postExternalHref(post), '_blank', 'noopener,noreferrer')
+      },
+    },
+    copy,
   )
 
   const { selection } = useListKeyboard<PostModel>({
@@ -117,183 +210,366 @@ export function PostsRouteViewContent() {
     resetOn: [categoryId, keyword, page, sortKey, sortOrder],
     scopeId: FOCUS_SCOPE_ID,
   })
-  selectionClearRef.current = selection.clear
+  selectionRef.current = selection
 
-  const count = useMemo(() => {
-    if (!pagination) return null
-    return t('posts.list.count', { count: pagination.total })
-  }, [pagination, t])
+  const rowCategories = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+  }))
 
-  const sortOptions = useMemo(
-    () =>
-      postSortOptionDefinitions.map((option) => ({
-        label: t(option.labelKey),
-        value: option.value,
-      })),
-    [t],
+  const menuItemsFor = (post: PostModel) =>
+    buildPostMenuItems(post, {
+      actions,
+      aiLabel: t('ai.menu.label'),
+      aiMenuItems: buildAiItems(post.id),
+      categories: rowCategories,
+      categoryDisabled: categoryMutation.isPending,
+      copy,
+      externalHref: postExternalHref(post),
+      onCategoryChange: (nextCategoryId) =>
+        categoryMutation.mutate({ categoryId: nextCategoryId, id: post.id }),
+      onPinToggle: (isPinned) => pinMutation.mutate({ id: post.id, isPinned }),
+      onPublishToggle: (isPublished) =>
+        publishMutation.mutate({ id: post.id, isPublished }),
+      pinDisabled: pinMutation.isPending,
+      publishDisabled: publishMutation.isPending,
+    })
+
+  const initialLoading = postsQuery.isLoading && posts.length === 0
+  const showSlow = useAfter(initialLoading, 10_000)
+  const filtered = Boolean(keyword) || categoryId !== allCategoriesValue
+  const emptyKind = filtered ? 'filter' : page > 1 ? 'page' : 'first'
+  const searchActive = Boolean(keyword)
+  const timeField: PostSortKey = scheduled ? 'publicAt' : 'createdAt'
+  const defaultTimeOrder: SortOrder = scheduled ? 'asc' : 'desc'
+  const [timeSortOn, setTimeSortOn] = useState(
+    () => sortKey === timeField && sortOrder !== defaultTimeOrder,
   )
+  const visibleSortChoices = scheduled
+    ? sortChoices
+    : sortChoices.filter((choice) => choice.sortKey !== 'publicAt')
 
-  const categoryOptions = useMemo(
-    () => [
-      { label: t('posts.filter.allCategories'), value: allCategoriesValue },
-      ...categories.map((category) => ({
-        label: category.name,
-        value: category.id,
-      })),
-    ],
-    [categories, t],
-  )
+  const columns: ProColumns<PostModel>[] = [
+    {
+      dataIndex: 'title',
+      render: (_dom, post) => <PostTitleCell post={post} />,
+      title: copy('columnTitle'),
+      ...pinStart(table.pin),
+    },
+    {
+      dataIndex: 'authors',
+      render: (_dom, post) => <PostBylineCell post={post} />,
+      responsive: ['lg'],
+      title: copy('byline'),
+      width: 168,
+    },
+    {
+      dataIndex: 'category',
+      ellipsis: true,
+      ...(searchActive || categories.length === 0
+        ? {}
+        : {
+            filterMultiple: false as const,
+            filterSearch: categories.length > 7,
+            filteredValue:
+              categoryId === allCategoriesValue ? null : [categoryId],
+            filters: categories.map((category) => ({
+              text: category.name,
+              value: category.id,
+            })),
+            onFilter: false as const,
+          }),
+      render: (_dom, post) => (
+        <Text type="secondary">
+          {post.category?.name ?? copy('uncategorized')}
+        </Text>
+      ),
+      responsive: ['lg'],
+      title: copy('categoryLabel'),
+      width: 128,
+    },
+    {
+      dataIndex: 'isPublished',
+      render: (_dom, post) => <PostStatusCell post={post} />,
+      responsive: ['md'],
+      title: copy('status'),
+      width: 96,
+    },
+    {
+      dataIndex: timeField,
+      ...(searchActive
+        ? {}
+        : {
+            sortDirections: scheduled ? alphaFirst : newestFirst,
+            sortOrder:
+              timeSortOn && sortKey === timeField
+                ? sortOrder === 'asc'
+                  ? ('ascend' as const)
+                  : ('descend' as const)
+                : null,
+            sorter: true,
+          }),
+      render: (_dom, post) => {
+        const value = scheduled ? post.publicAt : post.createdAt
+        return (
+          <Tooltip
+            title={
+              scheduled
+                ? value
+                  ? format.dateTime(value)
+                  : undefined
+                : formatUpdatedAt(post.createdAt, copy('emptyValue'))
+            }
+          >
+            <span className={styles.time}>
+              {value ? format.relativeTime(value) : copy('emptyValue')}
+            </span>
+          </Tooltip>
+        )
+      },
+      responsive: ['md'],
+      title: copy(scheduled ? 'publicAt' : 'publishedAt'),
+      width: 132,
+    },
+    {
+      align: 'right',
+      key: 'actions',
+      render: (_dom, post) => (
+        <PostRowActions
+          menuItems={() => menuItemsFor(post)}
+          onEdit={() => openEdit(post)}
+          post={post}
+        />
+      ),
+      title: '',
+      width: 112,
+      ...pinEnd(table.pin),
+    },
+  ]
 
-  const rowCategoryOptions = useMemo(
-    () =>
-      categories.map((category) => ({
-        id: category.id,
-        name: category.name,
-      })),
-    [categories],
-  )
-
-  const selectedCount = selection.size
-  const visibleIds = posts.map((post) => post.id)
-  const allVisibleSelected =
-    visibleIds.length > 0 && visibleIds.every((id) => selection.isSelected(id))
-
-  const onSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    submitSearch()
+  let emptyNode: ReactNode
+  if (postsQuery.isError) {
+    emptyNode = (
+      <PostsError kind="failed" onRetry={() => void postsQuery.refetch()} />
+    )
+  } else {
+    emptyNode = (
+      <PostsEmpty
+        kind={emptyKind}
+        onBack={() => setPage(1)}
+        onClear={() => {
+          clearSearch()
+          setCategoryId(allCategoriesValue)
+        }}
+        onWrite={() => openEdit()}
+        scheduled={scheduled}
+      />
+    )
   }
 
-  const toggleAllVisible = (checked: boolean) => {
-    if (checked) selection.selectAll()
-    else selection.clear()
-  }
+  const showStale = postsQuery.isError && posts.length > 0
+  const showCategoryAlert = categoriesQuery.isError
+  const showPartial = failedDeleteIds.length > 0
+
+  const filters = (
+    <div className={styles.filters} key="filters">
+      <SearchBar
+        allowClear
+        aria-label={copy('searchLabel')}
+        className={styles.search}
+        onInputChange={(value) => {
+          setKeywordInput(value)
+          if (!value && keyword) clearSearch()
+        }}
+        onSearch={(value) => {
+          setKeywordInput(value)
+          submitSearch(value)
+        }}
+        placeholder={copy('searchPlaceholder')}
+        value={keywordInput}
+      />
+      <Tooltip title={searchActive ? copy('filterDisabled') : undefined}>
+        <span>
+          <Select
+            aria-label={copy('sortLabel')}
+            disabled={searchActive}
+            onChange={(value) => {
+              if (typeof value !== 'string') return
+              const next = visibleSortChoices.find(
+                (choice) => sortValue(choice.sortKey, choice.order) === value,
+              )
+              if (!next) return
+              setTimeSortOn(next.sortKey === timeField)
+              setSort({ field: next.sortKey, order: next.order })
+            }}
+            options={visibleSortChoices.map((choice) => ({
+              label: copy(choice.copyKey),
+              value: sortValue(choice.sortKey, choice.order),
+            }))}
+            popupMatchSelectWidth={false}
+            value={sortValue(sortKey, sortOrder)}
+          />
+        </span>
+      </Tooltip>
+    </div>
+  )
 
   return (
-    <FocusScope
-      className="outline-hidden flex h-full min-h-0 flex-col bg-background"
-      id={FOCUS_SCOPE_ID}
-    >
-      <PageHeader
-        actions={
-          <ButtonLink className="text-xs" to="/posts/edit">
-            <Plus aria-hidden="true" className="size-3.5" />
-            {t('posts.action.newPost')}
-          </ButtonLink>
-        }
-        count={count}
-        icon={<FileText aria-hidden="true" className="size-4" />}
-        title={t('posts.title')}
-      />
-
-      <ContentListToolbar
-        extraActions={
-          <ContentListRefreshButton
-            isFetching={postsQuery.isFetching}
-            label={t('posts.list.refreshAria')}
-            onRefresh={() => void postsQuery.refetch()}
-          />
-        }
-        filters={
-          <SelectField
-            aria-label={t('posts.filter.byCategoryAria')}
-            disabled={Boolean(keyword)}
-            onValueChange={(value) => {
-              setCategoryId(value)
-              setPage(1)
-            }}
-            options={categoryOptions}
-            triggerClassName="w-32 !h-7 !border-transparent !bg-transparent text-xs hover:!bg-neutral-100 dark:hover:!bg-neutral-900"
-            value={categoryId}
-          />
-        }
-        sortMenu={
-          <SortMenu<PostSortKey>
-            disabled={Boolean(keyword)}
-            field={sortKey}
-            onChange={setSort}
-            options={sortOptions}
-            order={sortOrder}
-          />
-        }
-        hasSearch={Boolean(keyword)}
-        onClearSearch={list.clearSearch}
-        onSearch={onSearch}
-        onSearchValueChange={setKeywordInput}
-        searchPlaceholder={t('posts.list.searchPlaceholder')}
-        searchValue={keywordInput}
-        selection={{
-          allVisibleSelected,
-          bulkActionDisabled:
-            selectedCount === 0 || batchDeleteMutation.isPending,
-          bulkActionIcon: <Trash2 aria-hidden="true" className="size-4" />,
-          bulkActionLabel: t('posts.action.bulkDelete'),
-          hasVisibleItems: posts.length > 0,
-          indeterminate: selectedCount > 0 && !allVisibleSelected,
-          onBulkAction: () => {
-            void confirmAndDelete(selection.getSelectedTargets())
-          },
-          onToggleAllVisible: toggleAllVisible,
-          selectAllLabel: t('posts.list.selectAllVisible'),
-          selectedCount,
-          selectedLabel: t('posts.list.selectedCount', {
-            count: selectedCount,
-          }),
-        }}
-      />
-
-      <Scroll className="min-h-0 flex-1">
-        {postsQuery.isLoading && posts.length === 0 ? (
-          <PostsSkeleton />
-        ) : postsQuery.isError ? (
-          <PostsError onRetry={() => void postsQuery.refetch()} />
-        ) : posts.length === 0 ? (
-          <PostsEmpty keyword={keyword} />
-        ) : (
-          <div className="divide-y divide-neutral-100 dark:divide-neutral-900">
-            {posts.map((post) => (
-              <PostRow
-                actions={actions}
-                categories={rowCategoryOptions}
-                cursor={selection.isCursor(post.id)}
-                key={post.id}
-                onCategoryChange={(id, nextCategoryId) =>
-                  categoryMutation.mutate({ categoryId: nextCategoryId, id })
+    <FocusScope className={styles.root} id={FOCUS_SCOPE_ID}>
+      <Page
+        count={pagination ? pagination.total : undefined}
+        title={copy(scheduled ? 'scheduledTitle' : 'title')}
+        width="wide"
+      >
+        {showStale || showCategoryAlert || showPartial ? (
+          <div className={styles.alerts}>
+            {showStale ? (
+              <Alert
+                action={
+                  <Button
+                    htmlType="button"
+                    onClick={() => void postsQuery.refetch()}
+                  >
+                    {copy('retry')}
+                  </Button>
                 }
-                onPinToggle={(id, isPinned) =>
-                  pinMutation.mutate({ id, isPinned })
-                }
-                onPublishChange={(id, isPublished) =>
-                  publishMutation.mutate({ id, isPublished })
-                }
-                onSelect={(id, mode) => {
-                  if (mode === 'range') selection.selectRange(id)
-                  else if (mode === 'toggle') selection.toggleWithAnchor(id)
-                  else selection.setCursor(id)
-                }}
-                onSelectedChange={() => selection.toggleWithAnchor(post.id)}
-                post={post}
-                selected={selection.isSelected(post.id)}
+                description={copy('staleDescription')}
+                title={copy('staleTitle')}
+                type="warning"
               />
-            ))}
+            ) : null}
+            {showCategoryAlert ? (
+              <Alert
+                action={
+                  <Button
+                    htmlType="button"
+                    onClick={() => void categoriesQuery.refetch()}
+                  >
+                    {copy('retry')}
+                  </Button>
+                }
+                description={copy('categoriesFailedDescription')}
+                title={copy('categoriesFailedTitle')}
+                type="warning"
+              />
+            ) : null}
+            {showPartial ? (
+              <Alert
+                action={
+                  <Button
+                    htmlType="button"
+                    onClick={() =>
+                      confirmAndDelete(
+                        failedDeleteIds.map((id) => {
+                          const post = posts.find((item) => item.id === id)
+                          return {
+                            id,
+                            title: post
+                              ? postTitle(post, copy('untitled'))
+                              : copy('untitled'),
+                          }
+                        }),
+                      )
+                    }
+                  >
+                    {copy('retryFailed')}
+                  </Button>
+                }
+                closable={{ onClose: () => setFailedDeleteIds([]) }}
+                description={copy('batchPartialDescription')}
+                title={
+                  failedDeleteIds.length === 1
+                    ? copy('batchPartialTitleOne')
+                    : copy('batchPartialTitle', {
+                        failed: failedDeleteIds.length,
+                      })
+                }
+                type="warning"
+              />
+            ) : null}
           </div>
-        )}
-      </Scroll>
-
-      {pagination && pagination.totalPages > 1 ? (
-        <div className="flex shrink-0 items-center justify-between border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
-          <span className="text-xs text-neutral-500 dark:text-neutral-400">
-            {t('posts.list.pageIndicator', { page: pagination.page })}
-          </span>
-          <CompactPagination
-            onPageChange={setPage}
-            onPageSizeChange={() => undefined}
-            page={page}
-            pageCount={pagination.totalPages}
-            pageSize={postsPageSize}
-            pageSizes={[postsPageSize]}
-          />
-        </div>
-      ) : null}
+        ) : null}
+        <ProTable<PostModel>
+          className={recordTableStyles.root}
+          columnEmptyText={copy('emptyValue')}
+          columns={columns}
+          scroll={recordTableScroll(columns, table)}
+          tableLayout="fixed"
+          dataSource={posts}
+          onChange={(_pagination, filters, sorter, extra) => {
+            if (extra.action === 'filter') {
+              setCategoryId(
+                readSingleFilter(filters, 'category') ?? allCategoriesValue,
+              )
+              return
+            }
+            if (extra.action !== 'sort' || searchActive) return
+            const info = Array.isArray(sorter) ? sorter[0] : sorter
+            if (
+              info?.columnKey != null &&
+              String(info.columnKey) !== timeField
+            ) {
+              return
+            }
+            setTimeSortOn(true)
+            setSort({
+              field: timeField,
+              order: info?.order === 'ascend' ? 'asc' : 'desc',
+            })
+          }}
+          loading={postsQuery.isFetching && postsQuery.isPlaceholderData}
+          locale={{ emptyText: emptyNode }}
+          onRow={(post) =>
+            ({
+              'data-cursor': selection.isCursor(post.id) ? '' : undefined,
+              'data-id': post.id,
+              'data-scope-item': 'row',
+              onClick: (event) => {
+                if (isInteractiveTarget(event.target)) return
+                selection.setCursor(post.id)
+                openEdit(post)
+              },
+              onContextMenu: (event) => {
+                event.preventDefault()
+                selection.setCursor(post.id)
+                showContextMenu(menuItemsFor(post))
+              },
+              tabIndex: -1,
+            }) as HTMLAttributes<HTMLElement>
+          }
+          options={{
+            density: false,
+            fullScreen: false,
+            reload: () => void postsQuery.refetch(),
+            search: false,
+            setting: false,
+          }}
+          pagination={{
+            current: page,
+            hideOnSinglePage: true,
+            onChange: (nextPage) => setPage(nextPage),
+            pageSize: postsPageSize,
+            showSizeChanger: false,
+            total: pagination?.total ?? 0,
+          }}
+          rowClassName={() => styles.row}
+          rowKey="id"
+          search={false}
+          tableRender={(_props, dom) => {
+            if (initialLoading && showSlow) {
+              return (
+                <PostsError
+                  kind="slow"
+                  onRetry={() => void postsQuery.refetch()}
+                />
+              )
+            }
+            return initialLoading ? <TableSkeleton rows={8} /> : dom
+          }}
+          toolBarRender={() => [filters]}
+          variant="outlined"
+        />
+      </Page>
     </FocusScope>
   )
 }

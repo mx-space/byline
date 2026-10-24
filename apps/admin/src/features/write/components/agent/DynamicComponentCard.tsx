@@ -1,8 +1,8 @@
 import type { ToolCallGroupItem } from '@haklex/rich-agent-core'
 import { ColorSchemeProvider } from '@haklex/rich-editor/static'
 import { DynamicHostRenderer } from '@haklex/rich-ext-dynamic'
+import { createStaticStyles, Highlighter, toast } from '@lobehub/ui'
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 
 import { useI18n } from '~/i18n'
 import { useThemeMode } from '~/theme'
@@ -13,6 +13,61 @@ import {
   readDynamicDraft,
   readDynamicReceipt,
 } from '~/vendor/rich-editor/utils/dynamic-tools'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u8a292509: css`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  `,
+  u86fb216c: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.5rem;
+    }
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+    background-color: ${cssVar.colorFillSecondary};
+    padding: 0.75rem;
+  `,
+  ufa2251b6: css`
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    font-weight: 500;
+    color: ${cssVar.colorText};
+  `,
+  u846e6b39: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u1cb24f07: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorError};
+  `,
+  uf8d0139d: css`
+    width: min(960px, calc(100vw - 2rem));
+    max-width: none;
+  `,
+  u4074ef4d: css`
+    max-height: 75vh;
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 1rem;
+    }
+    overflow: auto;
+    padding: 1rem;
+  `,
+  u34516836: css`
+    cursor: pointer;
+  `,
+  u611864a2: css`
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: ${cssVar.colorError};
+  `,
+}))
 
 function ComponentPreview({ draft }: { draft: DynamicDraft }) {
   const { isDark } = useThemeMode()
@@ -73,7 +128,7 @@ export function DynamicComponentCard({
   }
 
   const actions = (
-    <div className="flex flex-wrap gap-2">
+    <div className={lobeStyles.u8a292509}>
       {!open ? (
         <Button type="button" variant="subtle" onClick={() => setOpen(true)}>
           {t('write.agent.dynamic.preview')}
@@ -103,9 +158,9 @@ export function DynamicComponentCard({
 
   return (
     <>
-      <div className="space-y-2 rounded-md border border-border bg-surface-inset p-3">
-        <div className="text-sm font-medium text-fg">{draft.name}</div>
-        <p className="text-xs text-fg-muted">
+      <div className={lobeStyles.u86fb216c}>
+        <div className={lobeStyles.ufa2251b6}>{draft.name}</div>
+        <p className={lobeStyles.u846e6b39}>
           {t(
             draft.target
               ? 'write.agent.dynamic.versionHint'
@@ -114,7 +169,7 @@ export function DynamicComponentCard({
         </p>
         {actions}
         {error ? (
-          <p role="alert" className="text-xs text-red-600">
+          <p role="alert" className={lobeStyles.u1cb24f07}>
             {error}
           </p>
         ) : null}
@@ -122,22 +177,26 @@ export function DynamicComponentCard({
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        className="w-[min(960px,calc(100vw-2rem))] max-w-none"
+        className={lobeStyles.uf8d0139d}
       >
         <ModalHeader title={draft.name} />
-        <div className="max-h-[75vh] space-y-4 overflow-auto p-4">
+        <div className={lobeStyles.u4074ef4d}>
           {open ? <ComponentPreview draft={draft} /> : null}
-          <details className="text-xs text-fg-muted">
-            <summary className="cursor-pointer">
+          <details className={lobeStyles.u846e6b39}>
+            <summary className={lobeStyles.u34516836}>
               {t('write.agent.dynamic.source')}
             </summary>
-            <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded bg-surface-inset p-3">
+            <Highlighter
+              language="tsx"
+              style={{ maxHeight: '16rem', overflow: 'auto' }}
+              variant="filled"
+            >
               {draft.source}
-            </pre>
+            </Highlighter>
           </details>
           {actions}
           {error ? (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className={lobeStyles.u611864a2}>
               {error}
             </p>
           ) : null}

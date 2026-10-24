@@ -1,5 +1,6 @@
 import type { AgentStore, AgentStoreStatus } from '@haklex/rich-agent-core'
 import { agentStoreSelectors } from '@haklex/rich-agent-core'
+import { createStaticStyles } from '@lobehub/ui'
 import { ArrowUp, Square, X } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
@@ -11,6 +12,181 @@ import { cn } from '~/utils/cn'
 
 import { ModelSelector } from './ModelSelector'
 import type { SelectedAgentModel } from './types'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u5c524c77: css`
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    border-top-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorBorderSecondary};
+  `,
+  u372da0ea: css`
+    margin-inline: 0;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 0.25rem;
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 0.625rem;
+    padding-block: 0.375rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u67bab313: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  u68a8c6d0: css`
+    display: inline-flex;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    color: ${cssVar.colorTextTertiary};
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+  `,
+  uef2d6f74: css`
+    width: 0.75rem;
+    height: 0.75rem;
+  `,
+  ua71b422a: css`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-inline: 0;
+    padding-block: 8px;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u283e42fb: css`
+    position: relative;
+    display: flex;
+    width: 0.375rem;
+    height: 0.375rem;
+    flex-shrink: 0;
+  `,
+  u7f47b1f4: css`
+    position: absolute;
+    display: inline-flex;
+    width: 100%;
+    height: 100%;
+    animation: byline-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+    border-radius: 999px;
+    background-color: ${cssVar.colorSuccess};
+    opacity: 0.75;
+  `,
+  u8b55ff52: css`
+    position: relative;
+    display: inline-flex;
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 999px;
+    background-color: ${cssVar.colorSuccess};
+  `,
+  u1e764368: css`
+    outline: none;
+    min-height: 44px;
+    width: 100%;
+    resize: none;
+    background-color: transparent;
+    padding: 12px 0 4px;
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
+    color: ${cssVar.colorText};
+    &::placeholder {
+      color: ${cssVar.colorTextTertiary};
+    }
+  `,
+  u45e76de4: css`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-inline: 0;
+    padding-block: 8px 12px;
+  `,
+  u6cfc7e6a: css`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  `,
+  u59d40084: css`
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u1ee5d488: css`
+    &:focus-visible {
+      outline: none;
+    }
+    display: inline-flex;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background-color: ${cssVar.colorText};
+    color: ${cssVar.colorBgLayout};
+    transition: opacity 0.15s ease;
+    &:hover {
+      opacity: 0.9;
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, ${cssVar.colorText} 20%, transparent);
+    }
+  `,
+  u6b3d5699: css`
+    display: inline-flex;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  `,
+  u5e6da983: css`
+    background-color: ${cssVar.colorText};
+    color: ${cssVar.colorBgLayout};
+    &:hover {
+      opacity: 0.9;
+    }
+  `,
+  u679a8946: css`
+    &:disabled {
+      pointer-events: none;
+    }
+    &:disabled {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:disabled {
+      color: ${cssVar.colorTextTertiary};
+    }
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+}))
 
 interface ChatComposerProps {
   store: AgentStore
@@ -78,10 +254,10 @@ export function ChatComposer({
   }
 
   return (
-    <div className="flex shrink-0 flex-col border-t border-border">
+    <div className={lobeStyles.u5c524c77}>
       {pinnedSelection && (
-        <div className="mx-2 mt-2 flex items-center gap-1.5 rounded bg-surface-inset px-2.5 py-1.5 text-xs text-fg-muted">
-          <span className="min-w-0 flex-1 truncate">
+        <div className={lobeStyles.u372da0ea}>
+          <span className={lobeStyles.u67bab313}>
             {pinnedSelection.type === 'text'
               ? `"${
                   pinnedSelection.text.length > 60
@@ -95,19 +271,19 @@ export function ChatComposer({
           <button
             type="button"
             aria-label={t('write.agent.selection.dismiss')}
-            className="inline-flex size-4 shrink-0 items-center justify-center text-fg-subtle hover:text-fg"
+            className={lobeStyles.u68a8c6d0}
             onClick={() => store.getState().clearPinnedSelection()}
           >
-            <X aria-hidden="true" className="size-3" />
+            <X aria-hidden="true" className={lobeStyles.uef2d6f74} />
           </button>
         </div>
       )}
 
       {isRunning && (
-        <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-fg-subtle">
-          <span className="relative flex size-1.5 shrink-0">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-400 opacity-75" />
-            <span className="relative inline-flex size-1.5 rounded-full bg-green-500" />
+        <div className={lobeStyles.ua71b422a}>
+          <span className={lobeStyles.u283e42fb}>
+            <span className={lobeStyles.u7f47b1f4} />
+            <span className={lobeStyles.u8b55ff52} />
           </span>
           <span>{t(resolveStatusKey(status))}</span>
         </div>
@@ -118,7 +294,7 @@ export function ChatComposer({
         rows={1}
         value={value}
         placeholder={t('write.agent.input.placeholder')}
-        className="outline-hidden min-h-20 w-full resize-none bg-transparent px-3 pb-1 pt-2.5 text-sm leading-relaxed text-fg placeholder:text-fg-subtle"
+        className={lobeStyles.u1e764368}
         onChange={(e) => {
           onChange(e.target.value)
           grow(e.target)
@@ -128,8 +304,8 @@ export function ChatComposer({
         onCompositionEnd={() => setIsComposing(false)}
       />
 
-      <div className="flex items-center justify-between gap-2 px-2 pb-2">
-        <div className="flex items-center gap-2">
+      <div className={lobeStyles.u45e76de4}>
+        <div className={lobeStyles.u6cfc7e6a}>
           <ModelSelector
             providerGroups={providerGroups}
             selectedModel={selectedModel}
@@ -137,7 +313,7 @@ export function ChatComposer({
             onSelect={onSelectModel}
           />
           {!isRunning && (
-            <span className="text-xs text-fg-subtle">
+            <span className={lobeStyles.u59d40084}>
               {t('write.agent.input.hintSend')}
             </span>
           )}
@@ -147,10 +323,14 @@ export function ChatComposer({
           <button
             type="button"
             aria-label={t('write.agent.aborting')}
-            className="focus-visible:outline-hidden inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-fg text-background transition-opacity hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-fg/20"
+            className={lobeStyles.u1ee5d488}
             onClick={onAbort}
           >
-            <Square aria-hidden="true" className="size-3" fill="currentColor" />
+            <Square
+              aria-hidden="true"
+              className={lobeStyles.uef2d6f74}
+              fill="currentColor"
+            />
           </button>
         ) : (
           <button
@@ -158,13 +338,17 @@ export function ChatComposer({
             aria-label={t('write.agent.button.send')}
             disabled={!canSend}
             className={cn(
-              'inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors',
-              'bg-fg text-background hover:opacity-90',
-              'disabled:pointer-events-none disabled:bg-surface-inset disabled:text-fg-subtle',
+              lobeStyles.u6b3d5699,
+              lobeStyles.u5e6da983,
+              lobeStyles.u679a8946,
             )}
             onClick={handleSend}
           >
-            <ArrowUp aria-hidden="true" className="size-4" strokeWidth={2.5} />
+            <ArrowUp
+              aria-hidden="true"
+              className={lobeStyles.uf7b5fa97}
+              strokeWidth={2.5}
+            />
           </button>
         )}
       </div>

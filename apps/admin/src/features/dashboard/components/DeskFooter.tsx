@@ -1,28 +1,41 @@
+import { Flexbox, Text } from '@lobehub/ui'
+import { useQuery } from '@tanstack/react-query'
+
 import { useI18n } from '~/i18n'
-import { cn } from '~/utils/cn'
+import { Button } from '~/ui/site-button'
 
-import { formatVersionLabel } from '../utils/desk'
+import { useDashboardCopy } from '../copy'
+import { appInfoQuery } from '../queries'
+import { versionLabel } from '../utils/desk'
 
-export function DeskFooter(props: {
-  adminVersion: string
-  className?: string
-  systemVersion: string
-}) {
+export function DeskFooter() {
   const { t } = useI18n()
+  const copy = useDashboardCopy()
+  const query = useQuery(appInfoQuery)
+  const adminVersion = versionLabel(__DEV__ ? 'dev mode' : window.version)
+
+  if (query.isError && !query.data) {
+    return (
+      <Flexbox align="center" gap={8} horizontal>
+        <Text type="secondary">{copy('versionError')}</Text>
+        <Button
+          loading={query.isFetching}
+          onClick={() => void query.refetch()}
+          size="small"
+          type="text"
+        >
+          {t('common.retry')}
+        </Button>
+      </Flexbox>
+    )
+  }
 
   return (
-    <footer
-      className={cn(
-        'mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-5 text-xs text-fg-subtle',
-        props.className,
-      )}
-    >
-      <span>
-        {t('dashboard.footer.versions', {
-          admin: formatVersionLabel(props.adminVersion),
-          system: formatVersionLabel(props.systemVersion),
-        })}
-      </span>
-    </footer>
+    <Text type="secondary">
+      {t('dashboard.footer.versions', {
+        admin: adminVersion,
+        system: query.data ? versionLabel(query.data.version) : '--',
+      })}
+    </Text>
   )
 }

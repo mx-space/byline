@@ -251,11 +251,7 @@ export class AiInsightsService implements OnModuleInit {
         search: query.search,
         databaseService: this.databaseService,
         fetchCandidateArticles: () =>
-          this.databaseService.findAllArticlesForAIText(),
-        fetchRecordsPage: (page, size, refIds) =>
-          this.aiInsightsRepository.groupedByRef(page, size, refIds),
-        fetchRecordsDistinctRefIds: (refIds) =>
-          this.aiInsightsRepository.findDistinctRefIds(refIds),
+          this.databaseService.findArticlesForProductLists(),
         fetchItemsByRefIds: async (refIds) =>
           this.generationMetrics.attachLatest(
             'insights',

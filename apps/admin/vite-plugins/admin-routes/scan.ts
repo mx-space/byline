@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import type { ParsedRouteMetadata, ParsedSectionMeta } from './meta-parser'
 
+import type { ParsedRouteMetadata, ParsedSectionMeta } from './meta-parser'
 import {
   MetaParseError,
   parsePageMetadata,
@@ -14,7 +14,7 @@ const META_FILE = 'meta.ts'
 const REDIRECTS_FILE = 'redirects.ts'
 const GROUP_RE = /^\(([^)]+)\)$/
 const DYNAMIC_RE = /^\[(.+)\]$/
-const CATCH_ALL_RE = /^\[\.\.\.(.+)\]$/
+const CATCH_ALL_RE = /^\[\.\.\..+\]$/
 
 export interface ScannedPage {
   filePath: string

@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { Link2 } from 'lucide-react'
 
 import { useI18n } from '~/i18n'
@@ -8,15 +9,170 @@ import { ChangeSummary } from './ChangeSummary'
 import type { DraftActionHandlers } from './DraftActions'
 import { DraftActions } from './DraftActions'
 
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u2fcf7dfc: css`
+    display: inline-flex;
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background-color: color-mix(
+      in srgb,
+      ${cssVar.colorSuccess} 10%,
+      transparent
+    );
+    color: ${cssVar.colorSuccess};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorSuccess};
+    }
+  `,
+  uef2d6f74: css`
+    width: 0.75rem;
+    height: 0.75rem;
+  `,
+  u2b4c7bfc: css`
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    gap: 8px;
+    border-radius: ${cssVar.borderRadius};
+    padding-inline: 4px;
+
+    &:hover {
+      background: ${cssVar.colorFillTertiary};
+    }
+  `,
+  u81f6cdce: css`
+    pointer-events: none;
+    opacity: 0.5;
+  `,
+  u085fd750: css`
+    margin-block: 0.375rem;
+    width: 0.125rem;
+    flex-shrink: 0;
+    align-self: stretch;
+    border-radius: 999px;
+    background-color: ${cssVar.colorWarning};
+  `,
+  u5351433b: css`
+    display: flex;
+    min-width: 0px;
+    flex: 1 1 0%;
+    align-items: center;
+    gap: 0.375rem;
+    padding-block: 0.375rem;
+    text-align: left;
+    &:focus-visible {
+      outline: none;
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, ${cssVar.colorPrimary} 15%, transparent);
+    }
+  `,
+  ud91a43b0: css`
+    flex-shrink: 0;
+    color: ${cssVar.colorWarning};
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+  `,
+  u1d6ed899: css`
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: 0;
+    border-radius: ${cssVar.borderRadius};
+    padding-inline: 4px;
+
+    &:hover {
+      background: ${cssVar.colorFillTertiary};
+    }
+  `,
+  titleRow: css`
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  `,
+  u5ca20d2d: css`
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
+    color: ${cssVar.colorText};
+  `,
+  uae1b9f6e: css`
+    flex-shrink: 0;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  ubf4fc73f: css`
+    display: none;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.125rem;
+    .group:focus-within & {
+      display: flex;
+    }
+    .group:hover & {
+      display: flex;
+    }
+    .group:has([data-popup-open]) & {
+      display: flex;
+    }
+    @media (pointer: coarse) {
+      display: flex;
+    }
+  `,
+  ub4707f16: css`
+    flex-shrink: 0;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  uf5c139e2: css`
+    display: inline-flex;
+    align-self: flex-start;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 4px;
+    margin-block: 0 4px;
+    border-radius: ${cssVar.borderRadius};
+    padding-inline: 8px;
+    padding-block: 4px;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+    color: ${cssVar.colorTextSecondary};
+
+    &:hover {
+      background: ${cssVar.colorFillSecondary};
+      color: ${cssVar.colorText};
+    }
+  `,
+}))
+
 export function ShareMark() {
   const { t } = useI18n()
 
   return (
-    <span
-      className="inline-flex size-4.5 shrink-0 items-center justify-center rounded-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-      title={t('write.share.linkedHere')}
-    >
-      <Link2 aria-label={t('write.share.linkedHere')} className="size-3" />
+    <span className={lobeStyles.u2fcf7dfc} title={t('write.share.linkedHere')}>
+      <Link2
+        aria-label={t('write.share.linkedHere')}
+        className={lobeStyles.uef2d6f74}
+      />
     </span>
   )
 }
@@ -33,24 +189,21 @@ export function DraftLine(props: {
   return (
     <div
       className={cn(
-        'group flex min-h-9 items-center gap-2 rounded-md px-2 transition-colors hover:bg-surface-inset focus-within:bg-surface-inset',
-        props.deleting && 'pointer-events-none opacity-50',
+        `${lobeStyles.u2b4c7bfc} group`,
+        props.deleting && lobeStyles.u81f6cdce,
       )}
     >
       {diverged ? (
-        <span
-          aria-hidden="true"
-          className="my-1.5 w-0.5 shrink-0 self-stretch rounded-full bg-amber-500"
-        />
+        <span aria-hidden="true" className={lobeStyles.u085fd750} />
       ) : null}
       {props.shared ? <ShareMark /> : null}
       <button
-        className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 text-left focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-accent/15"
+        className={lobeStyles.u5351433b}
         onClick={props.handlers.onCompare}
         type="button"
       >
         {diverged ? (
-          <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+          <span className={lobeStyles.ud91a43b0}>
             {t('write.branch.relation.diverged')}
           </span>
         ) : null}
@@ -59,10 +212,10 @@ export function DraftLine(props: {
           head={props.draft.headRevision}
         />
       </button>
-      <span className="shrink-0 text-xs tabular-nums text-fg-subtle group-focus-within:hidden group-hover:hidden group-has-[[data-popup-open]]:hidden">
+      <span className={lobeStyles.uae1b9f6e}>
         {format.relativeTime(props.draft.updatedAt ?? props.draft.createdAt)}
       </span>
-      <span className="hidden shrink-0 items-center gap-0.5 group-focus-within:flex group-hover:flex group-has-[[data-popup-open]]:flex [@media(pointer:coarse)]:flex">
+      <span className={lobeStyles.ubf4fc73f}>
         <DraftActions
           deleting={props.deleting}
           draft={props.draft}
@@ -82,24 +235,26 @@ export function RevisionLine(props: {
   const { format, t } = useI18n()
 
   return (
-    <div className="group flex min-h-9 items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-inset focus-within:bg-surface-inset">
-      {props.shared ? <ShareMark /> : null}
-      <span className="min-w-0 flex-1 truncate text-sm text-fg-muted">
-        {props.node.revision.title || t('write.editor.untitled')}
-      </span>
-      <span className="shrink-0 text-xs tabular-nums text-fg-subtle group-focus-within:hidden group-hover:hidden">
-        {props.node.publishedAt
-          ? t('write.versionTree.publishedAt', {
-              time: format.relativeTime(props.node.publishedAt),
-            })
-          : format.relativeTime(props.node.revision.createdAt)}
-      </span>
+    <div className={`${lobeStyles.u1d6ed899} group`}>
+      <div className={lobeStyles.titleRow}>
+        {props.shared ? <ShareMark /> : null}
+        <span className={lobeStyles.u5ca20d2d}>
+          {props.node.revision.title || t('write.editor.untitled')}
+        </span>
+        <span className={lobeStyles.ub4707f16}>
+          {props.node.publishedAt
+            ? t('write.versionTree.publishedAt', {
+                time: format.relativeTime(props.node.publishedAt),
+              })
+            : format.relativeTime(props.node.revision.createdAt)}
+        </span>
+      </div>
       <button
-        className="hidden shrink-0 items-center gap-1 rounded-sm px-1.5 py-0.5 text-xs text-accent transition-colors hover:bg-accent-soft focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-accent/15 group-focus-within:flex group-hover:flex [@media(pointer:coarse)]:flex"
+        className={lobeStyles.uf5c139e2}
         onClick={props.onShare}
         type="button"
       >
-        <Link2 aria-hidden="true" className="size-3" />
+        <Link2 aria-hidden="true" className={lobeStyles.uef2d6f74} />
         {t('write.share.shareRevision')}
       </button>
     </div>

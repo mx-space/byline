@@ -24,7 +24,7 @@ const postRow = (index: number, categoryId: EntityId) => ({
   id: `${1000 + index}`,
   categoryId,
   content: null,
-  contentFormat: ContentFormat.Markdown,
+  contentFormat: ContentFormat.Lexical,
   copyright: true,
   createdAt: new Date(`2026-01-${String(index).padStart(2, '0')}T00:00:00Z`),
   images: null,
@@ -85,5 +85,38 @@ describe('PostRepository', () => {
     expect(result.data.every((row) => row.category?.slug)).toBe(true)
     expect(result.data[0].category?.slug).toBe('category-1')
     expect(result.data[1].category?.slug).toBe('category-2')
+  })
+
+  it('searches title, slug, summary, and text without loading the body', async () => {
+    const categoryId = '2001' as EntityId
+    const row = postRow(1, categoryId)
+    const listed = createThenableQuery([row])
+    const counted = createThenableQuery([{ count: 1 }])
+    const db = {
+      select: vi
+        .fn()
+        .mockReturnValueOnce(listed)
+        .mockReturnValueOnce(counted)
+        .mockReturnValueOnce(
+          createThenableQuery([
+            { id: categoryId, name: 'Notes', slug: 'notes', type: 0 },
+          ]),
+        )
+        .mockReturnValueOnce(createThenableQuery([])),
+    }
+    const repository = new PostRepository(db as any, {} as any)
+
+    const result = await repository.list({
+      keyword: '100%_done',
+      metaOnly: true,
+      page: 1,
+      size: 8,
+    })
+
+    expect(result.data).toHaveLength(1)
+    expect(listed.where).toHaveBeenCalledOnce()
+    expect(counted.where).toHaveBeenCalledOnce()
+    expect(db.select.mock.calls[0]?.[0]).not.toHaveProperty('text')
+    expect(db.select.mock.calls[0]?.[0]).not.toHaveProperty('content')
   })
 })

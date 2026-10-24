@@ -1,14 +1,24 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Loader2,
-  MoreHorizontal,
-  RefreshCw,
-  ScanSearch,
-  Trash2,
-} from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
-import { toast } from 'sonner'
+  ActionIcon,
+  Alert,
+  confirmModal,
+  createStaticStyles,
+  Empty,
+  Flexbox,
+  SearchBar,
+  showContextMenu,
+  Tag,
+  Text,
+  toast,
+  Tooltip,
+} from '@lobehub/ui'
+import { TableSkeleton } from '@lobehub/ui/dashboard'
+import { type ProColumns, ProTable } from '@lobehub/ui/pro-table'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Copy, ExternalLink, ScanSearch, Trash2, X } from 'lucide-react'
+import type { HTMLAttributes, ReactNode } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { Outlet, useNavigate, useParams } from 'react-router'
 
 import type { OrphanFile } from '~/api/files'
 import {
@@ -16,127 +26,198 @@ import {
   cleanupOrphanFiles,
   reconcileFileReferences,
 } from '~/api/files'
-import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
 import { useI18n } from '~/i18n'
-import { CompactPagination } from '~/ui/data/compact-pagination'
 import { confirmDialog } from '~/ui/feedback/confirm'
 import { FocusScope } from '~/ui/focus-scope'
-import { MasterDetailShell } from '~/ui/layout/master-detail-shell'
-import { MobileHeaderAffordance } from '~/ui/layout/mobile-header-affordance'
 import type { ListAction } from '~/ui/list-actions'
 import { useListKeyboard } from '~/ui/list-actions'
-import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
-import { Button } from '~/ui/primitives/button'
-import { Checkbox } from '~/ui/primitives/checkbox'
-import { Scroll } from '~/ui/primitives/scroll'
-import { cn } from '~/utils/cn'
+import { Page } from '~/ui/page'
+import {
+  pinEnd,
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  SELECTION_COLUMN_WIDTH,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
-import { FILES_PAGE_SIZE, filesQueryKey } from '../constants'
+import {
+  FILES_PAGE_SIZE,
+  filesQueryKey,
+  ORPHAN_CLEANUP_MAX_AGE_MINUTES,
+} from '../constants'
+import { useFileCopy } from '../copy'
 import { useFileSearch } from '../hooks/useFileSearch'
 import { useOrphanFilesList } from '../hooks/useOrphanFilesList'
-import type { FileRowItem } from '../utils/adapters'
-import { adaptOrphanFile } from '../utils/adapters'
-import { getErrorMessage } from '../utils/format'
-import { FileDetailEmpty } from './FileDetailEmpty'
-import { FileListEmpty } from './FileListEmpty'
-import { FileListRow } from './FileListRow'
-import { FileListSkeleton } from './FileListSkeleton'
-import { FilePreviewLightbox } from './FilePreviewLightbox'
+import { extensionOf, pathOf } from '../utils/file-kind'
+import {
+  deletionCounts,
+  formatBytes,
+  formatUploadedAt,
+  getErrorMessage,
+} from '../utils/format'
+import { buildFileMenuItems } from '../utils/menu'
+import { copyFileLink } from './FileDetail'
+import { FilesTabs } from './FilesTabs'
+import { FileThumb } from './FileThumb'
 import { OrphanFilesRouteContext } from './orphan-files-route-context'
+import { OrphanStatusTag } from './OrphanStatusTag'
 import {
   ReferenceReconcilePreview,
   runReferenceReconcileFlow,
 } from './ReferenceReconcilePreview'
-import { SearchRow } from './SearchRow'
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  actions: css`
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+  `,
+  nameCell: css`
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  `,
+  nameText: css`
+    font-weight: 500;
+  `,
+  numeric: css`
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextSecondary};
+    white-space: nowrap;
+  `,
+  path: css`
+    overflow: hidden;
+
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: ${cssVar.fontSizeSM};
+    color: ${cssVar.colorTextTertiary};
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  root: css`
+    height: 100%;
+    min-height: 0;
+  `,
+  row: css`
+    cursor: pointer;
+
+    &[data-cursor] > td {
+      background: ${cssVar.colorFillTertiary};
+    }
+  `,
+  rowOpen: css`
+    & > td {
+      background: ${cssVar.colorPrimaryBg};
+    }
+  `,
+  search: css`
+    flex: 1 1 14rem;
+    min-width: 10rem;
+    max-width: 24rem;
+  `,
+  selectionBar: css`
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  `,
+}))
 
 const FOCUS_SCOPE_ID = 'orphan-files-list'
 
+type DeleteInput = { all: true } | { ids: string[]; name?: string }
+
+function isInteractiveTarget(target: EventTarget) {
+  return (
+    target instanceof Element &&
+    Boolean(
+      target.closest(
+        'a,button,input,label,[role="menuitem"],[data-row-actions]',
+      ),
+    )
+  )
+}
+
+function sumBytes(items: OrphanFile[]) {
+  let total = 0
+  for (const item of items) {
+    if (item.byteSize == null) return null
+    total += item.byteSize
+  }
+  return total
+}
+
 export function OrphanFilesPage() {
-  const { t } = useI18n()
+  const copy = useFileCopy()
+  const table = useRecordTable()
+  const { format } = useI18n()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const params = useParams<{ id?: string }>()
-  const detailId = params.id ?? null
+  const openId = params.id ?? null
+  const openIdRef = useRef(openId)
+  openIdRef.current = openId
   const { orphans, orphansQuery, page, pageCount, setPage, total } =
     useOrphanFilesList()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [preview, setPreview] = useState<null | { name: string; url: string }>(
-    null,
-  )
   const [selectAllAcross, setSelectAllAcross] = useState(false)
   const [reconcileFlowActive, setReconcileFlowActive] = useState(false)
   const selectionClearRef = useRef<(() => void) | null>(null)
 
-  const adapted = useMemo(
-    () => orphans.map((item) => adaptOrphanFile(item, t)),
-    [orphans, t],
-  )
-  const fileSearch = useFileSearch(adapted)
+  const getName = useMemo(() => (item: OrphanFile) => item.fileName, [])
+  const fileSearch = useFileSearch(orphans, getName)
   const filtered = fileSearch.items
+  const firstLoad = orphansQuery.isPending && orphans.length === 0
+  const failedEmpty = orphansQuery.isError && orphans.length === 0
+  const showStale = orphansQuery.isError && orphans.length > 0
 
-  useEffect(() => {
-    if (fileSearch.query !== searchQuery) fileSearch.setQuery(searchQuery)
-  }, [searchQuery])
-
-  const buildListPath = useCallback(() => {
-    const sp = new URLSearchParams()
-    if (page > 1) sp.set('page', String(page))
-    const qs = sp.toString()
-    return `/files/orphans${qs ? `?${qs}` : ''}`
-  }, [page])
-
-  const closeDetail = useCallback(() => {
-    navigate(buildListPath())
-  }, [buildListPath, navigate])
-
-  const openItem = useCallback(
-    (item: FileRowItem<OrphanFile>) => {
-      const sp = new URLSearchParams()
-      if (page > 1) sp.set('page', String(page))
-      const qs = sp.toString()
-      navigate(
-        `/files/orphans/${encodeURIComponent(item.id)}${qs ? `?${qs}` : ''}`,
-      )
-    },
-    [navigate, page],
-  )
+  const pageQuery = page > 1 ? `?page=${page}` : ''
+  const closeDetail = () => navigate(`/files/orphans${pageQuery}`)
+  const openItem = (item: OrphanFile) =>
+    navigate(`/files/orphans/${encodeURIComponent(item.id)}${pageQuery}`)
+  const copyLink = (item: OrphanFile) =>
+    void copyFileLink(item.fileUrl, {
+      failed: copy('copyFailed'),
+      success: copy('copied'),
+    })
 
   const deleteMutation = useMutation({
-    mutationFn: (item: OrphanFile) =>
-      batchDeleteOrphanFiles({ ids: [item.id] }),
-    onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('files.toast.deleteFailed'))),
-    onSuccess: async () => {
-      toast.success(t('files.toast.orphanDeleted'))
-      closeDetail()
+    mutationFn: (input: DeleteInput) =>
+      batchDeleteOrphanFiles(
+        'all' in input ? { all: true } : { ids: input.ids },
+      ),
+    onError: (_error: unknown, input) => {
+      if (!('all' in input) && input.name && input.ids.length === 1) {
+        toast.error(copy('deleteFailedNamed', { name: input.name }))
+        return
+      }
+      const failed = 'all' in input ? total : input.ids.length
+      toast.error(copy('deleteFailedBatch', { failed }))
+    },
+    onSuccess: async (result, input) => {
+      const attempted = 'all' in input ? total : input.ids.length
+      toast.success(
+        copy('deleteResult', deletionCounts(attempted, result.deletedCount)),
+      )
+      selectionClearRef.current?.()
+      setSelectAllAcross(false)
+      const removedOpen =
+        'all' in input ||
+        (openIdRef.current != null && input.ids.includes(openIdRef.current))
+      if (removedOpen) navigate(`/files/orphans${pageQuery}`)
       await queryClient.invalidateQueries({ queryKey: filesQueryKey })
     },
   })
 
   const cleanupMutation = useMutation({
-    mutationFn: () => cleanupOrphanFiles(60),
-    onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('files.toast.cleanupFailed'))),
+    mutationFn: () => cleanupOrphanFiles(ORPHAN_CLEANUP_MAX_AGE_MINUTES),
+    onError: () => toast.error(copy('cleanupFailed')),
     onSuccess: async (result) => {
-      toast.success(
-        t('files.toast.orphansCleaned', { count: result.deletedCount }),
-      )
+      toast.success(copy('cleanupResult', { count: result.deletedCount }))
       setPage(1)
-      await queryClient.invalidateQueries({ queryKey: filesQueryKey })
-    },
-  })
-
-  const batchDeleteMutation = useMutation({
-    mutationFn: (input: { all: true } | { ids: string[] }) =>
-      batchDeleteOrphanFiles(input),
-    onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('files.toast.batchDeleteFailed'))),
-    onSuccess: async (result) => {
-      toast.success(
-        t('files.toast.orphansDeleted', { count: result.deletedCount }),
-      )
-      selectionClearRef.current?.()
-      setSelectAllAcross(false)
       await queryClient.invalidateQueries({ queryKey: filesQueryKey })
     },
   })
@@ -145,82 +226,85 @@ export function OrphanFilesPage() {
     mutationFn: (apply: boolean) => reconcileFileReferences(apply),
   })
 
-  const confirmAndDelete = useCallback(
-    async (item: FileRowItem<OrphanFile>) => {
-      const ok = await confirmDialog({
-        destructive: true,
-        title: t('files.confirmDeleteNamed', { name: item.name }),
-      })
-      if (!ok) return
-      deleteMutation.mutate(item.raw)
-    },
-    [deleteMutation, t],
-  )
-
-  const actions = useMemo<ListAction<FileRowItem<OrphanFile>>[]>(
-    () => [
-      {
-        key: 'open',
-        label: t('files.action.open'),
-        run: (targets) => openItem(targets[0]),
-        shortcut: 'Enter',
-        shortcutLabel: '↵',
-      },
-      {
-        danger: true,
-        key: 'delete',
-        label: t('common.delete'),
-        run: (targets) => void confirmAndDelete(targets[0]),
-        shortcut: 'Backspace',
-        shortcutLabel: '⌫',
-      },
-    ],
-    [t, openItem, confirmAndDelete],
-  )
-
-  const { selection } = useListKeyboard<FileRowItem<OrphanFile>>({
-    actions,
-    getId: (item) => item.id,
-    items: filtered,
-    onBeforeSelectionReset: () => setSelectAllAcross(false),
-    onItemFocus: (id) => {
-      const item = filtered.find((entry) => entry.id === id)
-      if (item) openItem(item)
-    },
-    resetOn: [page, searchQuery],
-    scopeId: FOCUS_SCOPE_ID,
-  })
-  selectionClearRef.current = selection.clear
-
-  const selectedCount = selection.size
-  const visibleIds = filtered.map((item) => item.id)
-  const allVisibleSelected =
-    visibleIds.length > 0 && visibleIds.every((id) => selection.isSelected(id))
-  const indeterminate = selectedCount > 0 && !allVisibleSelected
-
-  const confirmBatchDelete = async () => {
-    const scope = selectAllAcross
-      ? t('files.orphans.scope.all', { count: total })
-      : t('files.orphans.scope.selected', { count: selectedCount })
-    const ok = await confirmDialog({
-      destructive: true,
-      title: t('files.orphans.confirmBatchDelete', { scope }),
-    })
-    if (!ok) return
-    batchDeleteMutation.mutate(
-      selectAllAcross
-        ? { all: true }
-        : { ids: selection.getSelectedTargets().map((item) => item.id) },
+  const runDelete = (input: DeleteInput) =>
+    deleteMutation.mutateAsync(input).then(
+      () => undefined,
+      () => undefined,
     )
+
+  const confirmAndDelete = (item: OrphanFile) => {
+    confirmModal({
+      cancelText: copy('cancel'),
+      content: copy('deleteOneBody'),
+      okButtonProps: { danger: true },
+      okText: copy('delete'),
+      onOk: () => runDelete({ ids: [item.id], name: item.fileName }),
+      title: copy('deleteFileTitle', { name: item.fileName }),
+    })
   }
 
-  const confirmCleanup = async () => {
-    const ok = await confirmDialog({
-      destructive: true,
-      title: t('files.orphans.confirmCleanup'),
+  const sizeSuffix = (bytes: null | number) =>
+    bytes == null ? '' : copy('sizeSuffix', { size: formatBytes(bytes) })
+
+  const confirmBatchDelete = (targets: OrphanFile[]) => {
+    const count = selectAllAcross ? total : targets.length
+    if (count === 0) return
+    const bytes = selectAllAcross
+      ? pageCount === 1
+        ? sumBytes(orphans)
+        : null
+      : sumBytes(targets)
+    confirmModal({
+      cancelText: copy('cancel'),
+      content: copy('deleteBatchBody'),
+      okButtonProps: { danger: true },
+      okText: copy('deleteBatchConfirm', { count }),
+      onOk: () =>
+        runDelete(
+          selectAllAcross
+            ? { all: true }
+            : { ids: targets.map((item) => item.id) },
+        ),
+      title: copy('deleteBatchTitle', { count, size: sizeSuffix(bytes) }),
     })
-    if (!ok) return
-    cleanupMutation.mutate()
+  }
+
+  const confirmCleanup = () => {
+    const cutoff = Date.now() - ORPHAN_CLEANUP_MAX_AGE_MINUTES * 60 * 1000
+    const allLoaded = pageCount === 1 && !orphansQuery.isError
+    const eligible = orphans.filter(
+      (item) => new Date(item.createdAt).getTime() < cutoff,
+    )
+    const content = allLoaded
+      ? copy('cleanupBodyExact', {
+          kept: orphans.length - eligible.length,
+          minutes: ORPHAN_CLEANUP_MAX_AGE_MINUTES,
+        })
+      : copy('cleanupBody', { minutes: ORPHAN_CLEANUP_MAX_AGE_MINUTES })
+    const title = allLoaded
+      ? copy('cleanupTitleExact', {
+          count: eligible.length,
+          size: sizeSuffix(sumBytes(eligible)),
+        })
+      : copy('cleanupTitle', { count: total })
+    if (allLoaded && eligible.length === 0) {
+      toast.info(
+        copy('cleanupNothing', { minutes: ORPHAN_CLEANUP_MAX_AGE_MINUTES }),
+      )
+      return
+    }
+    confirmModal({
+      cancelText: copy('cancel'),
+      content,
+      okButtonProps: { danger: true },
+      okText: copy('cleanupConfirm'),
+      onOk: () =>
+        cleanupMutation.mutateAsync().then(
+          () => undefined,
+          () => undefined,
+        ),
+      title,
+    })
   }
 
   const reconcileReferences = async () => {
@@ -230,33 +314,30 @@ export function OrphanFilesPage() {
       const appliedResult = await runReferenceReconcileFlow({
         confirm: (previewResult) =>
           confirmDialog({
-            confirmText: t('files.orphans.reconcileApply'),
+            cancelText: copy('cancel'),
+            confirmText: copy('reconcileApply'),
             description: <ReferenceReconcilePreview result={previewResult} />,
-            title: t('files.orphans.reconcileConfirm'),
+            title: copy('reconcileTitle'),
           }),
         onUpToDate: async () => {
-          toast.success(t('files.toast.referencesUpToDate'))
+          toast.success(copy('reconcileUpToDate'))
           setPage(1)
           await queryClient.invalidateQueries({ queryKey: filesQueryKey })
         },
         scan: async (apply) => {
-          const toastId = toast.loading(
-            t(
-              apply
-                ? 'files.toast.referencesApplying'
-                : 'files.toast.referencesScanning',
-            ),
+          const pending = toast.loading(
+            copy(apply ? 'reconcileApplying' : 'reconcileScanning'),
           )
           try {
             return await reconcileMutation.mutateAsync(apply)
           } finally {
-            toast.dismiss(toastId)
+            toast.dismiss(pending.id)
           }
         },
       })
       if (!appliedResult) return
       toast.success(
-        t('files.toast.referencesReconciled', {
+        copy('reconcileDone', {
           active: appliedResult.referencedFiles,
           isolated: appliedResult.isolatedFiles,
           usages: appliedResult.usages,
@@ -265,287 +346,377 @@ export function OrphanFilesPage() {
       setPage(1)
       await queryClient.invalidateQueries({ queryKey: filesQueryKey })
     } catch (error) {
-      toast.error(
-        getErrorMessage(error, t('files.toast.referencesReconcileFailed')),
-      )
+      toast.error(getErrorMessage(error, copy('reconcileFailed')))
     } finally {
       setReconcileFlowActive(false)
     }
   }
 
-  const refreshing = orphansQuery.isFetching
-  const maintenanceRunning = reconcileFlowActive || cleanupMutation.isPending
-  const maintenanceBusy = maintenanceRunning || refreshing
-  const hasSelection = selectedCount > 0 || selectAllAcross
+  const actions: ListAction<OrphanFile>[] = [
+    {
+      icon: ExternalLink,
+      key: 'open',
+      label: copy('openDetails'),
+      run: (targets) => openItem(targets[0]),
+      shortcut: 'Enter',
+      shortcutLabel: '↵',
+    },
+    {
+      icon: Copy,
+      key: 'copy',
+      label: copy('copyLink'),
+      run: (targets) => copyLink(targets[0]),
+    },
+    {
+      danger: true,
+      icon: Trash2,
+      key: 'delete',
+      label: copy('deleteFile'),
+      multi: true,
+      run: (targets) =>
+        targets.length === 1
+          ? confirmAndDelete(targets[0])
+          : confirmBatchDelete(targets),
+      shortcut: 'Backspace',
+      shortcutLabel: '⌫',
+    },
+  ]
 
-  const ctxValue = useMemo(
-    () => ({
-      page,
-      listUpdatedAt: orphansQuery.dataUpdatedAt,
-      deleteDisabled: deleteMutation.isPending,
-      onBack: closeDetail,
-      onDelete: (item: FileRowItem<OrphanFile>) => void confirmAndDelete(item),
-      onOpenPreview: (next: { name: string; url: string }) => setPreview(next),
-    }),
-    [
-      page,
-      orphansQuery.dataUpdatedAt,
-      deleteMutation.isPending,
-      closeDetail,
-      confirmAndDelete,
-    ],
+  const { selection } = useListKeyboard<OrphanFile>({
+    actions,
+    getId: (item) => item.id,
+    items: filtered,
+    onBeforeSelectionReset: () => setSelectAllAcross(false),
+    resetOn: [page, fileSearch.query],
+    scopeId: FOCUS_SCOPE_ID,
+  })
+  selectionClearRef.current = selection.clear
+
+  const selectedCount = selection.size
+  const allVisibleSelected =
+    filtered.length > 0 &&
+    filtered.every((item) => selection.isSelected(item.id))
+  const maintenanceBusy =
+    reconcileFlowActive || cleanupMutation.isPending || orphansQuery.isFetching
+
+  const listStatus: 'error' | 'pending' | 'success' = orphansQuery.isError
+    ? 'error'
+    : orphansQuery.isPending
+      ? 'pending'
+      : 'success'
+
+  const ctxValue = {
+    deleteDisabled: deleteMutation.isPending,
+    listStatus,
+    listUpdatedAt: orphansQuery.dataUpdatedAt,
+    onBack: closeDetail,
+    onDelete: confirmAndDelete,
+    onRetry: () => void orphansQuery.refetch(),
+  }
+
+  const columns: ProColumns<OrphanFile>[] = [
+    {
+      dataIndex: 'fileName',
+      render: (_dom, item) => (
+        <Flexbox align="center" gap={12} horizontal style={{ minWidth: 0 }}>
+          <FileThumb
+            mime={item.mimeType}
+            name={item.fileName}
+            url={item.fileUrl}
+          />
+          <div className={styles.nameCell}>
+            <Text
+              className={styles.nameText}
+              ellipsis={{ tooltip: item.fileName, tooltipWhenOverflow: true }}
+            >
+              {item.fileName}
+            </Text>
+            <span className={styles.path}>{pathOf(item.fileUrl)}</span>
+          </div>
+        </Flexbox>
+      ),
+      title: copy('columnName'),
+      ...pinStart(table.pin),
+    },
+    {
+      dataIndex: 'status',
+      render: (_dom, item) => <OrphanStatusTag file={item} />,
+      responsive: ['lg'],
+      title: copy('columnState'),
+      width: 120,
+    },
+    {
+      dataIndex: 'mimeType',
+      render: (_dom, item) => {
+        const ext = extensionOf(item.fileName)
+        return ext ? <Tag>{ext.toUpperCase()}</Tag> : '--'
+      },
+      responsive: ['lg'],
+      title: copy('fieldType'),
+      width: 112,
+    },
+    {
+      align: 'right',
+      dataIndex: 'byteSize',
+      render: (_dom, item) => (
+        <span className={styles.numeric}>{formatBytes(item.byteSize)}</span>
+      ),
+      responsive: ['md'],
+      title: copy('fieldSize'),
+      width: 104,
+    },
+    {
+      dataIndex: 'createdAt',
+      render: (_dom, item) => (
+        <Tooltip title={formatUploadedAt(item.createdAt)}>
+          <span className={styles.numeric}>
+            {format.relativeTime(item.createdAt)}
+          </span>
+        </Tooltip>
+      ),
+      responsive: ['md'],
+      title: copy('fieldUploaded'),
+      width: 140,
+    },
+    {
+      align: 'right',
+      key: 'actions',
+      render: (_dom, item) => (
+        <div className={styles.actions} data-row-actions="">
+          <ActionIcon
+            aria-label={copy('copyLink')}
+            icon={Copy}
+            onClick={() => copyLink(item)}
+            size="small"
+            title={copy('copyLink')}
+          />
+          <ActionIcon
+            aria-label={copy('deleteFile')}
+            icon={Trash2}
+            onClick={() => confirmAndDelete(item)}
+            size="small"
+            title={copy('deleteFile')}
+          />
+        </div>
+      ),
+      title: '',
+      width: 96,
+      ...pinEnd(table.pin),
+    },
+  ]
+
+  const emptyNode: ReactNode = failedEmpty ? (
+    <Empty
+      action={
+        <Button onClick={() => void orphansQuery.refetch()}>
+          {copy('retry')}
+        </Button>
+      }
+      description={copy('loadOrphansFailedBody')}
+      title={copy('loadOrphansFailedTitle')}
+    />
+  ) : fileSearch.query ? (
+    <Empty
+      action={
+        <Button onClick={() => fileSearch.setQuery('')}>
+          {copy('clearSearch')}
+        </Button>
+      }
+      description={copy('emptyOrphanSearchBody')}
+      title={copy('emptySearchTitle')}
+    />
+  ) : (
+    <Empty
+      action={
+        <Button
+          disabled={maintenanceBusy}
+          icon={ScanSearch}
+          loading={reconcileFlowActive}
+          onClick={() => void reconcileReferences()}
+        >
+          {copy('checkReferences')}
+        </Button>
+      }
+      description={copy('emptyOrphansBody')}
+      title={copy('emptyOrphansTitle')}
+    />
   )
 
   return (
     <OrphanFilesRouteContext.Provider value={ctxValue}>
-      <MasterDetailShell
-        detailScopeId={`${FOCUS_SCOPE_ID}-detail`}
-        emptyDetail={<FileDetailEmpty />}
-        list={
-          <FocusScope
-            className="outline-hidden flex h-full min-h-0 flex-col"
-            id={FOCUS_SCOPE_ID}
-          >
-            <header
-              className={cn(
-                'flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface-page px-4',
-                APP_SHELL_HEADER_HEIGHT_CLASS,
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <MobileHeaderAffordance />
-                <h2 className="flex min-w-0 items-baseline gap-2 text-base font-semibold text-fg">
-                  <span className="truncate">{t('files.source.orphans')}</span>
-                  <span className="text-xs font-normal tabular-nums text-fg-muted">
-                    {total}
-                  </span>
-                </h2>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <Button
-                  aria-label={t('files.action.refresh')}
-                  disabled={maintenanceBusy}
-                  iconOnly
-                  onClick={() => void orphansQuery.refetch()}
-                  title={t('files.action.refresh')}
-                  type="button"
-                  variant="ghost"
-                >
-                  <RefreshCw
-                    aria-hidden="true"
-                    className={cn('size-4', refreshing && 'animate-spin')}
-                  />
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenu.Trigger
-                    aria-label={t('files.orphans.maintenance')}
-                    className="inline-flex size-8 items-center justify-center rounded-sm text-fg-muted outline-hidden transition-colors hover:bg-surface-inset hover:text-fg focus-visible:ring-[3px] focus-visible:ring-accent/15 data-[popup-open]:bg-surface-inset"
-                    title={t('files.orphans.maintenance')}
-                    type="button"
-                  >
-                    {maintenanceRunning ? (
-                      <Loader2
-                        aria-hidden="true"
-                        className="size-4 animate-spin"
-                      />
-                    ) : (
-                      <MoreHorizontal aria-hidden="true" className="size-4" />
-                    )}
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content align="end" className="w-56">
-                    <DropdownMenu.Item
-                      disabled={maintenanceBusy}
-                      onClick={() => void reconcileReferences()}
-                    >
-                      {reconcileFlowActive ? (
-                        <Loader2
-                          aria-hidden="true"
-                          className="size-4 animate-spin"
-                        />
-                      ) : (
-                        <ScanSearch aria-hidden="true" className="size-4" />
-                      )}
-                      <span>{t('files.orphans.reconcile')}</span>
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Separator />
-                    <DropdownMenu.Item
-                      danger
-                      disabled={maintenanceBusy}
-                      onClick={() => void confirmCleanup()}
-                    >
-                      {cleanupMutation.isPending ? (
-                        <Loader2
-                          aria-hidden="true"
-                          className="size-4 animate-spin"
-                        />
-                      ) : (
-                        <Trash2 aria-hidden="true" className="size-4" />
-                      )}
-                      <span>{t('files.orphans.cleanup')}</span>
-                    </DropdownMenu.Item>
-                  </DropdownMenu.Content>
-                </DropdownMenu>
-              </div>
-            </header>
-
-            <SearchRow
-              onChange={setSearchQuery}
-              placeholder={t('files.search.placeholder')}
-              value={searchQuery}
-            />
-
-            {filtered.length > 0 ? (
-              <div
-                className="grid min-h-12 shrink-0 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-1 border-b border-border bg-surface-inset px-2 py-1 text-xs"
-                data-testid="orphan-files-selection-bar"
+      <FocusScope className={styles.root} id={FOCUS_SCOPE_ID}>
+        <Page
+          actions={
+            <>
+              <Button
+                disabled={maintenanceBusy}
+                icon={ScanSearch}
+                loading={reconcileFlowActive}
+                onClick={() => void reconcileReferences()}
               >
-                <label
-                  aria-label={t('files.orphans.selectCurrentPage')}
-                  className="inline-flex size-10 cursor-pointer items-center justify-center"
-                  title={t('files.orphans.selectCurrentPage')}
-                >
-                  <Checkbox
-                    aria-label={t('files.orphans.selectCurrentPage')}
-                    checked={allVisibleSelected || selectAllAcross}
-                    indeterminate={indeterminate}
-                    onCheckedChange={(checked) => {
-                      setSelectAllAcross(false)
-                      if (checked) selection.selectAll()
-                      else selection.clear()
-                    }}
-                  />
-                </label>
-                <span className="min-w-0 truncate whitespace-nowrap tabular-nums text-fg-muted">
-                  {selectAllAcross
-                    ? t('files.orphans.allSelected', { count: total })
-                    : selectedCount > 0
-                      ? t('files.orphans.selectedCount', {
-                          count: selectedCount,
-                        })
-                      : t('files.orphans.selectCurrentPage')}
-                </span>
-                <button
-                  aria-hidden={!hasSelection}
-                  className={cn(
-                    'inline-flex h-10 shrink-0 items-center gap-1 rounded px-2 text-xs text-red-600 transition-colors hover:bg-red-50 disabled:pointer-events-none disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/40',
-                    !hasSelection && 'pointer-events-none invisible',
-                  )}
-                  disabled={!hasSelection || batchDeleteMutation.isPending}
-                  onClick={() => void confirmBatchDelete()}
-                  tabIndex={hasSelection ? undefined : -1}
-                  type="button"
-                >
-                  <Trash2 aria-hidden="true" className="size-3.5" />
-                  <span className="whitespace-nowrap tabular-nums">
-                    {selectAllAcross
-                      ? t('files.orphans.deleteAll', { count: total })
-                      : t('files.orphans.deleteSelected', {
-                          count: selectedCount,
-                        })}
-                  </span>
-                </button>
+                {copy('checkReferences')}
+              </Button>
+              <Button
+                danger
+                disabled={maintenanceBusy || total === 0}
+                icon={Trash2}
+                loading={cleanupMutation.isPending}
+                onClick={confirmCleanup}
+                type="primary"
+              >
+                {copy('cleanupAll')}
+              </Button>
+            </>
+          }
+          description={copy('orphanExplain', {
+            minutes: ORPHAN_CLEANUP_MAX_AGE_MINUTES,
+          })}
+          tabs={<FilesTabs />}
+          title={copy('libraryTitle')}
+          width="wide"
+        >
+          {showStale ? (
+            <Alert
+              action={
+                <Button onClick={() => void orphansQuery.refetch()}>
+                  {copy('retry')}
+                </Button>
+              }
+              description={copy('loadOrphansFailedBody')}
+              title={copy('loadOrphansFailedTitle')}
+              type="warning"
+            />
+          ) : null}
+          <ProTable<OrphanFile>
+            className={recordTableStyles.root}
+            columnEmptyText="--"
+            columns={columns}
+            scroll={recordTableScroll(columns, table, SELECTION_COLUMN_WIDTH)}
+            tableLayout="fixed"
+            dataSource={filtered}
+            loading={orphansQuery.isFetching && orphansQuery.isPlaceholderData}
+            locale={{ emptyText: emptyNode }}
+            onRow={(item) =>
+              ({
+                'data-cursor': selection.isCursor(item.id) ? '' : undefined,
+                'data-id': item.id,
+                'data-scope-item': 'row',
+                onClick: (event) => {
+                  if (isInteractiveTarget(event.target)) return
+                  selection.setCursor(item.id)
+                  if (event.shiftKey) selection.selectRange(item.id)
+                  else if (event.metaKey || event.ctrlKey)
+                    selection.toggleWithAnchor(item.id)
+                  else openItem(item)
+                },
+                onContextMenu: (event) => {
+                  event.preventDefault()
+                  selection.setCursor(item.id)
+                  showContextMenu(buildFileMenuItems(actions, item))
+                },
+                tabIndex: -1,
+              }) as HTMLAttributes<HTMLElement>
+            }
+            options={{
+              density: false,
+              fullScreen: false,
+              reload: () => void orphansQuery.refetch(),
+              search: false,
+              setting: false,
+            }}
+            pagination={{
+              current: page,
+              hideOnSinglePage: true,
+              onChange: (nextPage) => setPage(nextPage),
+              pageSize: FILES_PAGE_SIZE,
+              showSizeChanger: false,
+              total,
+            }}
+            rowClassName={(item) =>
+              item.id === openId
+                ? `${styles.row} ${styles.rowOpen}`
+                : styles.row
+            }
+            rowKey="id"
+            rowSelection={{
+              columnWidth: SELECTION_COLUMN_WIDTH,
+              onChange: (keys) => {
+                setSelectAllAcross(false)
+                const next = new Set(keys.map(String))
+                for (const item of filtered) {
+                  if (next.has(item.id) !== selection.isSelected(item.id)) {
+                    selection.toggle(item.id)
+                  }
+                }
+              },
+              selectedRowKeys: [...selection.selectedIds],
+            }}
+            search={false}
+            tableAlertOptionRender={() => (
+              <div className={styles.selectionBar}>
                 {allVisibleSelected && pageCount > 1 && !selectAllAcross ? (
-                  <button
-                    className="col-start-2 col-end-4 inline-flex min-h-10 min-w-0 items-center self-stretch text-left leading-tight text-fg underline-offset-2 hover:underline"
+                  <Button
+                    htmlType="button"
                     onClick={() => setSelectAllAcross(true)}
-                    type="button"
+                    size="small"
+                    type="text"
                   >
-                    {t('files.orphans.selectEvery', { count: total })}
-                  </button>
+                    {copy('selectEvery', { count: total })}
+                  </Button>
                 ) : null}
-                {selectAllAcross ? (
-                  <button
-                    className="col-start-2 col-end-4 inline-flex min-h-10 min-w-0 items-center self-stretch text-left leading-tight text-fg underline-offset-2 hover:underline"
-                    onClick={() => {
-                      setSelectAllAcross(false)
-                      selection.clear()
-                    }}
-                    type="button"
-                  >
-                    {t('files.orphans.deselectAll')}
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-
-            <Scroll className="flex-1">
-              {orphansQuery.isLoading && adapted.length === 0 ? (
-                <FileListSkeleton />
-              ) : filtered.length === 0 ? (
-                <FileListEmpty
-                  action={
-                    searchQuery ? undefined : (
-                      <Button
-                        disabled={maintenanceBusy}
-                        onClick={() => void reconcileReferences()}
-                        type="button"
-                        variant="secondary"
-                      >
-                        {reconcileFlowActive ? (
-                          <Loader2
-                            aria-hidden="true"
-                            className="size-4 animate-spin"
-                          />
-                        ) : (
-                          <ScanSearch aria-hidden="true" className="size-4" />
-                        )}
-                        {t('files.orphans.reconcile')}
-                      </Button>
-                    )
+                <Button
+                  danger
+                  htmlType="button"
+                  icon={Trash2}
+                  loading={deleteMutation.isPending}
+                  onClick={() =>
+                    confirmBatchDelete(selection.getSelectedTargets())
                   }
-                  hint={t('files.orphans.cleanupNote')}
-                  label={
-                    searchQuery
-                      ? t('files.search.noMatches')
-                      : t('files.empty.orphans')
-                  }
-                />
-              ) : (
-                filtered.map((item) => (
-                  <FileListRow<OrphanFile>
-                    actions={actions}
-                    checked={selectAllAcross || selection.isSelected(item.id)}
-                    cursor={selection.isCursor(item.id)}
-                    isDetailTarget={detailId === item.id}
-                    item={item}
-                    key={item.id}
-                    onCheck={(_id, checked) => {
-                      setSelectAllAcross(false)
-                      if (checked) selection.toggleWithAnchor(item.id)
-                      else selection.toggle(item.id)
-                    }}
-                    onSelect={(mode) => {
-                      if (mode === 'range') selection.selectRange(item.id)
-                      else if (mode === 'toggle')
-                        selection.toggleWithAnchor(item.id)
-                      else {
-                        selection.setCursor(item.id)
-                        openItem(item)
-                      }
-                    }}
-                    selectable
-                    selected={selection.isSelected(item.id)}
-                  />
-                ))
-              )}
-            </Scroll>
-
-            {pageCount > 1 ? (
-              <div className="flex shrink-0 items-center justify-end border-t border-border px-4 py-2">
-                <CompactPagination
-                  onPageChange={setPage}
-                  onPageSizeChange={() => undefined}
-                  page={page}
-                  pageCount={pageCount}
-                  pageSize={FILES_PAGE_SIZE}
-                  pageSizes={[FILES_PAGE_SIZE]}
-                />
+                  size="small"
+                >
+                  {copy('deleteSelected')}
+                </Button>
+                <Button
+                  htmlType="button"
+                  icon={X}
+                  onClick={() => {
+                    setSelectAllAcross(false)
+                    selection.clear()
+                  }}
+                  size="small"
+                  type="text"
+                >
+                  {copy('clearSelection')}
+                </Button>
               </div>
-            ) : null}
-          </FocusScope>
-        }
-      />
-      <FilePreviewLightbox image={preview} onClose={() => setPreview(null)} />
+            )}
+            tableAlertRender={() => (
+              <Text weight={500}>
+                {selectAllAcross
+                  ? copy('allSelected', { count: total })
+                  : copy('selectedCount', { count: selectedCount })}
+              </Text>
+            )}
+            tableRender={(_props, dom) =>
+              firstLoad ? <TableSkeleton rows={8} /> : dom
+            }
+            toolBarRender={() => [
+              <div className={styles.search} key="search">
+                <SearchBar
+                  allowClear
+                  aria-label={copy('searchLabel')}
+                  enableShortKey={false}
+                  onInputChange={fileSearch.setQuery}
+                  placeholder={copy('searchPlaceholder')}
+                  value={fileSearch.query}
+                />
+              </div>,
+            ]}
+            variant="outlined"
+          />
+        </Page>
+        <Outlet />
+      </FocusScope>
     </OrphanFilesRouteContext.Provider>
   )
 }

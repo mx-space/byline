@@ -1,3 +1,4 @@
+import { createStaticStyles } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { Sparkles } from 'lucide-react'
 
@@ -8,6 +9,16 @@ import { Button } from '~/ui/primitives/button'
 
 import { CoverGenerationDrawer } from './CoverGenerationDrawer'
 import { useCoverGeneration } from './use-cover-generation'
+
+const lobeStyles = createStaticStyles(({ css }) => ({
+  u6da6a3c3: css`
+    width: 100%;
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+}))
 
 export function CoverGenerationEntry(props: {
   currentCover: string
@@ -47,12 +58,12 @@ export function CoverGenerationEntry(props: {
   return (
     <>
       <Button
-        className="w-full"
+        className={lobeStyles.u6da6a3c3}
         onClick={generation.openDrawer}
         type="button"
         variant="subtle"
       >
-        <Sparkles aria-hidden="true" className="size-4" />
+        <Sparkles aria-hidden="true" className={lobeStyles.uf7b5fa97} />
         {t('write.coverGeneration.entry')}
       </Button>
       <CoverGenerationDrawer {...generation} />

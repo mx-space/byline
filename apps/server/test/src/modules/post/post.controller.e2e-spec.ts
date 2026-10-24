@@ -33,14 +33,29 @@ describe('PostController', () => {
     })
   })
 
-  it('hides unpublished posts from anonymous detail requests', async () => {
-    const { controller, postService } = createController()
-    postService.findById.mockResolvedValue({ id: 'post-1', isPublished: false })
+  it.each([
+    { isPublished: false },
+    { isPublished: true, publicAt: new Date('2999-01-01') },
+  ])(
+    'hides non-public posts from anonymous detail and URL requests: %j',
+    async (visibility) => {
+      const { controller, postService } = createController()
+      postService.findById.mockResolvedValue({ id: 'post-1', ...visibility })
+      postService.findBySlug.mockResolvedValue({
+        id: 'post-1',
+        slug: 'hello',
+        category: { slug: 'default' },
+        ...visibility,
+      })
 
-    await expect(controller.getById({ id: 'post-1' }, false)).rejects.toThrow(
-      AppException,
-    )
-  })
+      await expect(controller.getById({ id: 'post-1' }, false)).rejects.toThrow(
+        AppException,
+      )
+      await expect(controller.getBySlug('hello', false)).rejects.toThrow(
+        AppException,
+      )
+    },
+  )
 
   it('delegates publish status changes to PostService updateById', async () => {
     const { controller, postService } = createController()

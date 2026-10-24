@@ -5,7 +5,6 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getDraftRevisions, getDraftShare, setDraftShare } from '~/api/drafts'
-import { I18nProvider } from '~/i18n'
 import type {
   ContentRevision,
   DraftModel,
@@ -13,6 +12,7 @@ import type {
 } from '~/models/draft'
 import { DraftRefType } from '~/models/draft'
 
+import { withUi } from './test-providers'
 import { VersionTreePanel } from './VersionTreePanel'
 
 vi.mock('~/api/drafts', () => ({
@@ -29,7 +29,7 @@ const revision = (
   title: string,
 ): ContentRevision => ({
   content: null,
-  contentFormat: 'markdown',
+  contentFormat: 'lexical',
   createdAt: at,
   documentId: 'document-1',
   id,
@@ -169,9 +169,7 @@ describe('VersionTreePanel', () => {
         createElement(
           QueryClientProvider,
           { client: queryClient },
-          createElement(
-            I18nProvider,
-            null,
+          withUi(
             createElement(VersionTreePanel, {
               currentDraftId: branchA.id,
               currentPublishedRevisionId: onlineRevision.id,
@@ -179,7 +177,6 @@ describe('VersionTreePanel', () => {
               documentId: null,
               drafts: [branchA, branchB, branchC],
               nodes,
-              onClose: vi.fn(),
               onCompare,
               onContinue,
               onDelete: vi.fn(),
@@ -193,7 +190,6 @@ describe('VersionTreePanel', () => {
       await Promise.resolve()
     })
 
-    expect(document.body.textContent).toContain('版本与草稿')
     expect(document.body.textContent).toContain('当前线上')
     expect(document.body.textContent).toContain('当前正在编辑')
     expect(document.body.textContent).toContain('Initial publication')
@@ -256,9 +252,7 @@ describe('VersionTreePanel', () => {
         createElement(
           QueryClientProvider,
           { client: queryClient },
-          createElement(
-            I18nProvider,
-            null,
+          withUi(
             createElement(VersionTreePanel, {
               currentDraftId: branchA.id,
               currentPublishedRevisionId: onlineRevision.id,
@@ -266,7 +260,6 @@ describe('VersionTreePanel', () => {
               documentId: 'document-1',
               drafts: [branchA, branchB, branchC],
               nodes,
-              onClose: vi.fn(),
               onCompare: vi.fn(),
               onContinue: vi.fn(),
               onDelete: vi.fn(),

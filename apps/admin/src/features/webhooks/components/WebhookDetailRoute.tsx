@@ -1,50 +1,82 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { Center, Empty, Skeleton } from '@lobehub/ui'
+import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router'
 
-import { findInListCache } from '~/api/list-cache'
-import type { WebhookModel } from '~/api/webhooks'
+import { getWebhooks } from '~/api/webhooks'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { adminQueryKeys } from '~/query/keys'
+import { DetailPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
+import { useWebhookCopy } from '../copy'
+import { endpointUrl, errorText } from '../utils/webhooks'
+import { styles } from './styles'
 import { WebhookDetail } from './WebhookDetail'
-import { WebhookDispatches } from './WebhookDispatches'
 import { useWebhooksRouteContext } from './webhooks-route-context'
-import { WebhookDetailEmptyState } from './WebhookStates'
-
-const LIST_PREFIX = adminQueryKeys.webhooks.list()
-
-function extractWebhooks(value: unknown): WebhookModel[] | undefined {
-  if (Array.isArray(value)) return value as WebhookModel[]
-  return undefined
-}
 
 export function WebhookDetailRoute() {
   const { id } = useParams<{ id: string }>()
-  const queryClient = useQueryClient()
+  const text = useWebhookCopy()
   const ctx = useWebhooksRouteContext()
+  const query = useQuery({
+    queryFn: getWebhooks,
+    queryKey: adminQueryKeys.webhooks.list(),
+  })
+  const webhook = query.data?.find((item) => item.id === id)
+  useDocumentTitle(endpointUrl(webhook) || text('listTitle'))
 
-  const webhook = id
-    ? findInListCache<WebhookModel>(queryClient, LIST_PREFIX, id, {
-        extractItems: extractWebhooks,
-      })
-    : undefined
-
-  useDocumentTitle(webhook?.url)
-
-  if (!webhook) return <WebhookDetailEmptyState />
-
-  return (
-    <section className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(18rem,0.75fr)]">
+  if (webhook) {
+    return (
       <WebhookDetail
         onBack={ctx.onBack}
-        onDelete={() => ctx.onDelete(webhook)}
-        onEdit={() => void ctx.onEdit(webhook)}
-        onTest={(event) => ctx.onTest(webhook.id, event)}
-        showBack
+        onDeleted={() => ctx.onDeleted(webhook.id)}
         webhook={webhook}
       />
-      <WebhookDispatches webhookId={webhook.id} />
-    </section>
+    )
+  }
+
+  if (query.isPending) {
+    return (
+      <DetailPane
+        backLabel={text('backToList')}
+        onBack={ctx.onBack}
+        title={<Skeleton height={20} width={240} />}
+      >
+        <div className={styles.drawerBody}>
+          <Skeleton height={32} width="100%" />
+          <Skeleton height={32} width="100%" />
+          <Skeleton height={160} width="100%" />
+        </div>
+      </DetailPane>
+    )
+  }
+
+  return (
+    <DetailPane
+      backLabel={text('backToList')}
+      onBack={ctx.onBack}
+      title={text('listTitle')}
+    >
+      <Center paddingBlock={48}>
+        {query.isError ? (
+          <Empty
+            action={
+              <Button onClick={() => void query.refetch()}>
+                {text('retry')}
+              </Button>
+            }
+            description={errorText(query.error, text('listErrorDescription'))}
+            title={text('listErrorTitle')}
+          />
+        ) : (
+          <Empty
+            action={<Button onClick={ctx.onBack}>{text('backToList')}</Button>}
+            description={text('notFoundDescription')}
+            title={text('notFoundTitle')}
+          />
+        )}
+      </Center>
+    </DetailPane>
   )
 }
 

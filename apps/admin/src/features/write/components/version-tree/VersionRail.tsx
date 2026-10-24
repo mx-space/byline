@@ -1,8 +1,50 @@
+import { createStaticStyles } from '@lobehub/ui'
+
 import type { GraphRow } from './layout'
 import { MAX_LANE } from './layout'
 
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  dot: css`
+    position: absolute;
+    box-sizing: border-box;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: ${cssVar.colorBgContainer};
+  `,
+  u62bc683e: css`
+    background: ${cssVar.colorWarning};
+  `,
+  u88b28b5a: css`
+    background: ${cssVar.colorText};
+  `,
+  u117e152e: css`
+    border: 2px solid ${cssVar.colorText};
+  `,
+  u8084dc2e: css`
+    background: ${cssVar.colorSuccess};
+  `,
+  uc2780701: css`
+    background: ${cssVar.colorTextTertiary};
+  `,
+  u925d9134: css`
+    border: 2px solid ${cssVar.colorBorder};
+  `,
+  ud452ad70: css`
+    position: relative;
+    flex-shrink: 0;
+  `,
+  uefbb9c95: css`
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    color: ${cssVar.colorBorderSecondary};
+  `,
+}))
+
 const LANE_WIDTH = 16
-const LANE_INSET = 9
+const LANE_INSET = 4
 const MERGE_RADIUS = 8
 
 export const laneX = (lane: number) =>
@@ -14,12 +56,12 @@ export type RailTone =
   'conflict' | 'current' | 'draft' | 'online' | 'published' | 'revision'
 
 const DOT_CLASS: Record<RailTone, string> = {
-  conflict: 'size-2.5 rounded-full bg-amber-500 ring-[3px] ring-amber-500/20',
-  current: 'size-2.5 rounded-full bg-accent ring-[3px] ring-accent/25',
-  draft: 'size-2.5 rounded-full border-2 border-accent bg-background',
-  online: 'size-3 rounded-full bg-emerald-500 ring-[3px] ring-emerald-500/25',
-  published: 'size-2.5 rounded-full bg-fg-subtle',
-  revision: 'size-2 rounded-full border-2 border-border-strong bg-background',
+  conflict: lobeStyles.u62bc683e,
+  current: lobeStyles.u88b28b5a,
+  draft: lobeStyles.u117e152e,
+  online: lobeStyles.u8084dc2e,
+  published: lobeStyles.uc2780701,
+  revision: lobeStyles.u925d9134,
 }
 
 const mergePath = (from: number, to: number, dotY: number) => {
@@ -36,9 +78,9 @@ export function VersionRail(props: {
   const x = laneX(row.lane) + 0.5
 
   return (
-    <div aria-hidden="true" className="relative shrink-0">
+    <div aria-hidden="true" className={lobeStyles.ud452ad70}>
       <svg
-        className="absolute inset-0 size-full text-border-strong"
+        className={lobeStyles.uefbb9c95}
         fill="none"
         stroke="currentColor"
         strokeWidth={1}
@@ -63,7 +105,7 @@ export function VersionRail(props: {
       </svg>
 
       <span
-        className={`absolute ${DOT_CLASS[props.tone]}`}
+        className={`${lobeStyles.dot} ${DOT_CLASS[props.tone]}`}
         style={{
           left: x,
           top: dotY,

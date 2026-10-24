@@ -1,4 +1,3 @@
-import { Plus } from 'lucide-react'
 import { useMemo } from 'react'
 
 import type { AISummary } from '~/api/ai'
@@ -11,28 +10,24 @@ import {
 } from '~/api/ai'
 
 import { ArticleGroupedRouteView } from '../components/article-grouped/ArticleGroupedRouteView'
-import { SummaryEditBody } from '../components/article-grouped/SummaryEditBody'
 import type { ArticleGroupedConfig } from '../components/article-grouped/types'
 
 export function AiSummaryRouteView() {
   const config = useMemo<ArticleGroupedConfig<AISummary>>(
     () => ({
-      scopeIdPrefix: 'ai-summary',
-      pageTitleKey: 'routes.aiSummary.title',
-      totalCountKey: 'ai.articleGrouped.totalCount',
-      itemCountKey: 'ai.articleGrouped.itemCount',
-      searchPlaceholderKey: 'ai.summary.searchPlaceholder',
-      emptyTitleKey: 'ai.articleGrouped.emptyTitle',
-      emptyDescriptionKey: 'ai.articleGrouped.emptyDescription',
-      detailEmptyTitleKey: 'ai.summary.emptyTitle',
-      detailEmptyDescriptionKey: 'ai.summary.emptyDescription',
-      detailSectionTitleKey: 'ai.summary.detailSectionTitle',
-      inlineEmptyKey: 'ai.articleGrouped.inlineEmpty',
-      itemDeleteConfirmKey: 'ai.articleGrouped.confirmDelete',
-      editTitleKey: 'ai.summary.editTitle',
-      kindKey: 'ai.summary.kind',
-
-      groupedQueryKey: 'summaries',
+      deleteItem: deleteSummary,
+      generate: {
+        defaultLangsOptionKey: 'summaryTargetLanguages',
+        promptForLang: true,
+        runTask: ({ refId, langs, force }) =>
+          createSummaryTask({
+            force,
+            refId,
+            targetLanguages: langs?.length ? langs : undefined,
+          }),
+        taskTypeForQueue: 'Summary',
+      },
+      getCreatedAt: (item) => item.createdAt,
       getGroupedPage: async (params) => {
         const response = await getSummariesGrouped(params)
         return {
@@ -43,33 +38,16 @@ export function AiSummaryRouteView() {
           pagination: response.pagination,
         }
       },
+      getId: (item) => item.id,
       getItemsByRef: async (refId) => {
         const response = await getSummaryByRef(refId)
         return { article: response.article, items: response.summaries }
       },
-      deleteItem: deleteSummary,
-      updateItem: (id, next) => updateSummary(id, { summary: next.summary }),
-
-      generate: {
-        labelKey: 'ai.summary.generateLabel',
-        icon: Plus,
-        promptForLang: true,
-        defaultLangsOptionKey: 'summaryTargetLanguages',
-        runTask: ({ refId, langs, force }) =>
-          createSummaryTask({
-            force,
-            refId,
-            targetLanguages: langs?.length ? langs : undefined,
-          }),
-        taskTypeForQueue: 'Summary',
-      },
-
-      getPreview: (item) => item.summary,
       getLang: (item) => item.lang,
-      getCreatedAt: (item) => item.createdAt,
-      getId: (item) => item.id,
-
-      EditDrawerBody: SummaryEditBody,
+      getPreview: (item) => item.summary,
+      groupedQueryKey: 'summaries',
+      product: 'summary',
+      updateItem: (id, next) => updateSummary(id, { summary: next.summary }),
     }),
     [],
   )

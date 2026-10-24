@@ -1,7 +1,7 @@
+import { toast } from '@lobehub/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CircleAlert, RotateCcw } from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
-import { toast } from 'sonner'
 
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'

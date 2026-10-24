@@ -5,16 +5,30 @@ import {
   desc,
   eq,
   getTableColumns,
+  gt,
   gte,
   ilike,
   inArray,
+  isNotNull,
+  isNull,
   lt,
+  lte,
+  ne,
+  or,
   type SQL,
   sql,
 } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
-import { categories, postAuthors, posts, users } from '~/database/schema'
+import {
+  categories,
+  contentDocuments,
+  contentRevisions,
+  drafts,
+  postAuthors,
+  posts,
+  users,
+} from '~/database/schema'
 import {
   BaseRepository,
   type PaginationResult,
@@ -24,6 +38,7 @@ import type { AppDatabase } from '~/processors/database/postgres.provider'
 import { type EntityId, parseEntityId } from '~/shared/id/entity-id'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 
+import { DraftRefType } from '../draft/draft.enum'
 import { type PublicUserProfile, toPublicProfile } from '../user/user.types'
 import type {
   PostCreateInput,
@@ -33,6 +48,7 @@ import type {
   PostRow,
   PostTagCount,
 } from './post.types'
+import { publicPostCondition } from './post-visibility'
 
 type PostRowSource = Omit<typeof posts.$inferSelect, 'text' | 'content'> &
   Partial<Pick<typeof posts.$inferSelect, 'text' | 'content'>>
@@ -51,6 +67,7 @@ const mapBase = (row: PostRowSource): PostRow => ({
   modifiedAt: row.modifiedAt,
   categoryId: toEntityId(row.categoryId) as EntityId,
   isPublished: row.isPublished,
+  publicAt: row.publicAt,
   sourceLang: row.sourceLang,
   image: row.image,
   seo: row.seo ?? null,
@@ -68,10 +85,31 @@ const {
 
 const pinAtDescNullsLast = sql`${posts.pinAt} desc nulls last`
 
+const likeContains = (value: string) => {
+  const escaped = value.replaceAll(/[%\\_]/g, (char) => `\\${char}`)
+  return `%${escaped}%`
+}
+
 const yearRange = (year: number) => ({
   end: new Date(Date.UTC(year + 1, 0, 1)),
   start: new Date(Date.UTC(year, 0, 1)),
 })
+
+const unpublishedPostDraftWhere = () =>
+  and(
+    eq(drafts.status, 'active'),
+    eq(contentDocuments.refType, DraftRefType.Post),
+    isNull(contentDocuments.refId),
+    or(
+      isNull(contentDocuments.publishedRevisionId),
+      ne(drafts.headRevisionId, contentDocuments.publishedRevisionId),
+    ),
+  )!
+
+const unpublishedDraftJoin = {
+  document: eq(drafts.documentId, contentDocuments.id),
+  revision: eq(drafts.headRevisionId, contentRevisions.id),
+}
 
 @Injectable()
 export class PostRepository extends BaseRepository {
@@ -98,7 +136,7 @@ export class PostRepository extends BaseRepository {
     options: { publishedOnly?: boolean } = {},
   ): Promise<PostRow | null> {
     const filters: SQL[] = [eq(posts.slug, slug)]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
     const [row] = await this.db
       .select()
       .from(posts)
@@ -125,7 +163,16 @@ export class PostRepository extends BaseRepository {
       )
     }
     if (params.publishedOnly) {
-      filters.push(eq(posts.isPublished, true))
+      filters.push(publicPostCondition())
+    }
+    if (params.scheduledOnly) {
+      filters.push(
+        and(
+          eq(posts.isPublished, true),
+          isNotNull(posts.publicAt),
+          gt(posts.publicAt, sql`now()`),
+        )!,
+      )
     }
     if (params.authorId) {
       filters.push(
@@ -138,6 +185,18 @@ export class PostRepository extends BaseRepository {
     if (params.year) {
       const { start, end } = yearRange(params.year)
       filters.push(gte(posts.createdAt, start), lt(posts.createdAt, end))
+    }
+    const keyword = params.keyword?.trim()
+    if (keyword) {
+      const pattern = likeContains(keyword)
+      filters.push(
+        or(
+          ilike(posts.title, pattern),
+          ilike(posts.slug, pattern),
+          ilike(posts.summary, pattern),
+          ilike(posts.text, pattern),
+        )!,
+      )
     }
     if (params.excludeAiWritten) {
       // aiGen preset 2 = "fully AI-written" (see web ai-gen.ts); jsonb @> matches
@@ -160,14 +219,22 @@ export class PostRepository extends BaseRepository {
             ? params.sortOrder === 1
               ? asc(posts.pinAt)
               : pinAtDescNullsLast
-            : null
+            : params.sortBy === 'publicAt'
+              ? params.sortOrder === 1
+                ? asc(posts.publicAt)
+                : desc(posts.publicAt)
+              : null
 
-    const selection = params.truncateText
-      ? {
-          ...postColumns,
-          text: sql<string | null>`left(${posts.text}, ${params.truncateText})`,
-        }
-      : postColumns
+    const selection = params.metaOnly
+      ? postMetaColumns
+      : params.truncateText
+        ? {
+            ...postColumns,
+            text: sql<
+              string | null
+            >`left(${posts.text}, ${params.truncateText})`,
+          }
+        : postColumns
     const [rows, [{ count }]] = await Promise.all([
       this.db
         .select(selection)
@@ -208,6 +275,7 @@ export class PostRepository extends BaseRepository {
           tags: input.tags ?? [],
           categoryId: parseEntityId(input.categoryId),
           isPublished: input.isPublished ?? true,
+          publicAt: input.publicAt ?? null,
           sourceLang: input.sourceLang ?? null,
           image: input.image ?? null,
           seo: input.seo ?? null,
@@ -240,6 +308,7 @@ export class PostRepository extends BaseRepository {
     if (patch.tags !== undefined) update.tags = patch.tags
     if (patch.categoryId !== undefined)
       update.categoryId = parseEntityId(patch.categoryId)
+    if (patch.publicAt !== undefined) update.publicAt = patch.publicAt
     if (patch.isPublished !== undefined) update.isPublished = patch.isPublished
     if (patch.sourceLang !== undefined) update.sourceLang = patch.sourceLang
     if (patch.image !== undefined) update.image = patch.image
@@ -250,7 +319,14 @@ export class PostRepository extends BaseRepository {
     const row = await this.db.transaction(async (tx) => {
       const [updated] = await tx
         .update(posts)
-        .set(update)
+        .set({
+          ...update,
+          ...(patch.publicAt !== undefined
+            ? {
+                publicNotifiedAt: sql`case when ${posts.publicAt} is distinct from ${patch.publicAt?.toISOString() ?? null}::timestamptz then null else ${posts.publicNotifiedAt} end`,
+              }
+            : {}),
+        })
         .where(eq(posts.id, idBig))
         .returning()
       if (updated && patch.authorIds !== undefined) {
@@ -275,7 +351,7 @@ export class PostRepository extends BaseRepository {
     options: { publishedOnly?: boolean } = {},
   ): Promise<number> {
     const filters: SQL[] = [eq(posts.categoryId, parseEntityId(categoryId))]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
     const [row] = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(posts)
@@ -294,9 +370,7 @@ export class PostRepository extends BaseRepository {
     size: number,
     options: { publishedOnly?: boolean; metaOnly?: boolean } = {},
   ): Promise<PostRow[]> {
-    const where = options.publishedOnly
-      ? eq(posts.isPublished, true)
-      : undefined
+    const where = options.publishedOnly ? publicPostCondition() : undefined
     const rows = await this.db
       .select(options.metaOnly ? postMetaColumns : postColumns)
       .from(posts)
@@ -317,11 +391,27 @@ export class PostRepository extends BaseRepository {
   }
 
   async findIdsByTitle(search: string): Promise<EntityId[]> {
-    const rows = await this.db
-      .select({ id: posts.id })
-      .from(posts)
-      .where(ilike(posts.title, `%${search}%`))
-    return rows.map((row) => toEntityId(row.id) as EntityId)
+    const pattern = `%${search}%`
+    const [postRows, draftRows] = await Promise.all([
+      this.db
+        .select({ id: posts.id })
+        .from(posts)
+        .where(ilike(posts.title, pattern)),
+      this.db
+        .select({ id: drafts.id })
+        .from(drafts)
+        .innerJoin(contentDocuments, unpublishedDraftJoin.document)
+        .innerJoin(contentRevisions, unpublishedDraftJoin.revision)
+        .where(
+          and(
+            unpublishedPostDraftWhere(),
+            ilike(contentRevisions.title, pattern),
+          ),
+        ),
+    ])
+    return [...postRows, ...draftRows].map(
+      (row) => toEntityId(row.id) as EntityId,
+    )
   }
 
   async aggregateAllTagCounts(
@@ -334,7 +424,7 @@ export class PostRepository extends BaseRepository {
         count: sql<number>`count(*)::int`,
       })
       .from(posts)
-      .where(options.publishedOnly ? eq(posts.isPublished, true) : undefined)
+      .where(options.publishedOnly ? publicPostCondition() : undefined)
       .groupBy(tagAlias)
       .orderBy(sql`count(*) desc`, sql`tag asc`)
     return rows.map((row) => ({
@@ -348,7 +438,7 @@ export class PostRepository extends BaseRepository {
     options: { publishedOnly?: boolean } = {},
   ): Promise<PostTagCount[]> {
     const filters: SQL[] = [eq(posts.categoryId, parseEntityId(categoryId))]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
     const tagAlias = sql<string>`tag`
     const rows = await this.db
       .select({
@@ -374,7 +464,7 @@ export class PostRepository extends BaseRepository {
     } = {},
   ): Promise<PostRow[]> {
     const filters: SQL[] = [sql`${posts.tags} @> array[${tag}]::text[]`]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
     const rows = await this.db
       .select(options.metaOnly ? postMetaColumns : postColumns)
       .from(posts)
@@ -391,7 +481,7 @@ export class PostRepository extends BaseRepository {
     options: PostListByCategoryOptions = {},
   ): Promise<PostRow[]> {
     const filters: SQL[] = [eq(posts.categoryId, parseEntityId(categoryId))]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
 
     const query = this.db
       .select(options.metaOnly ? postMetaColumns : postColumns)
@@ -417,7 +507,7 @@ export class PostRepository extends BaseRepository {
 
     const parsedIds = categoryIds.map((id) => parseEntityId(id))
     const filters: SQL[] = [inArray(posts.categoryId, parsedIds)]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
 
     const rows = await this.db
       .select(options.metaOnly ? postMetaColumns : postColumns)
@@ -449,7 +539,7 @@ export class PostRepository extends BaseRepository {
       eq(posts.categoryId, parseEntityId(categoryId)),
       eq(posts.slug, slug),
     ]
-    if (options.publishedOnly) filters.push(eq(posts.isPublished, true))
+    if (options.publishedOnly) filters.push(publicPostCondition())
     const [row] = await this.db
       .select()
       .from(posts)
@@ -470,7 +560,7 @@ export class PostRepository extends BaseRepository {
         : sql`${posts.createdAt} > ${pivotDate}`,
     ]
     if (options.publishedOnly) {
-      filters.push(eq(posts.isPublished, true))
+      filters.push(publicPostCondition())
     }
     const where = and(...filters)
     const [row] = await this.db
@@ -483,13 +573,87 @@ export class PostRepository extends BaseRepository {
     return this.hydrateOne(mapBase(row))
   }
 
+  async findProductListArticles(): Promise<
+    Array<{
+      id: string
+      title: string
+      isPublished: boolean
+      publicAt: Date | null
+      createdAt: Date
+      draftId?: string
+    }>
+  > {
+    const [rows, draftRows] = await Promise.all([
+      this.db
+        .select({
+          id: posts.id,
+          title: posts.title,
+          isPublished: posts.isPublished,
+          publicAt: posts.publicAt,
+          createdAt: posts.createdAt,
+        })
+        .from(posts),
+      this.db
+        .select({
+          id: drafts.id,
+          title: contentRevisions.title,
+          createdAt: drafts.createdAt,
+          updatedAt: drafts.updatedAt,
+        })
+        .from(drafts)
+        .innerJoin(contentDocuments, unpublishedDraftJoin.document)
+        .innerJoin(contentRevisions, unpublishedDraftJoin.revision)
+        .where(unpublishedPostDraftWhere()),
+    ])
+    return [
+      ...rows.map((row) => ({
+        id: String(toEntityId(row.id)),
+        title: row.title,
+        isPublished: row.isPublished,
+        publicAt: row.publicAt,
+        createdAt: row.createdAt,
+      })),
+      ...draftRows.map((row) => {
+        const id = String(toEntityId(row.id))
+        return {
+          id,
+          title: row.title,
+          isPublished: false,
+          publicAt: null,
+          createdAt: row.updatedAt ?? row.createdAt,
+          draftId: id,
+        }
+      }),
+    ]
+  }
+
   async findPublishedForSitemap(): Promise<PostRow[]> {
     const rows = await this.db
       .select(postMetaColumns)
       .from(posts)
-      .where(eq(posts.isPublished, true))
+      .where(publicPostCondition())
       .orderBy(desc(posts.createdAt))
     return this.hydrate(rows.map(mapBase))
+  }
+
+  async dispatchDuePublications(
+    notify: (posts: Array<{ id: string }>) => Promise<void>,
+  ) {
+    await this.db.transaction(async (tx) => {
+      const due = await tx
+        .update(posts)
+        .set({ publicNotifiedAt: sql`now()` })
+        .where(
+          and(
+            eq(posts.isPublished, true),
+            isNotNull(posts.publicAt),
+            lte(posts.publicAt, sql`now()`),
+            isNull(posts.publicNotifiedAt),
+          ),
+        )
+        .returning({ id: posts.id })
+      if (due.length) await notify(due)
+    })
   }
 
   private async attachCategories(rows: PostRow[]): Promise<PostRow[]> {

@@ -1,101 +1,91 @@
-import { useQuery } from '@tanstack/react-query'
-import { useParams } from 'react-router'
+import { useLocation, useNavigate, useParams } from 'react-router'
 
-import { getCategories, getCategory, getTags } from '~/api/categories'
+import { getCategory } from '~/api/categories'
 import {
   useCollectionDetailQuery,
-  useCollectionListQuery,
   useEntity,
+  useEntityList,
 } from '~/data/resource/hooks'
 import { categories } from '~/data/resources/category'
 import { useDocumentTitle } from '~/hooks/use-document-title'
-import type { TagModel } from '~/models/category'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
-import { useCategoriesRouteContext } from './categories-route-context'
-import { CategoryDetail } from './CategoryDetail'
-import { DetailEmpty } from './DetailEmpty'
-import { TagDetail } from './TagDetail'
-
-const CATEGORY_LIST_KEY = adminQueryKeys.categories.list()
-const TAGS_LIST_KEY = adminQueryKeys.categories.tags()
-
-interface ParsedTarget {
-  kind: 'category' | 'tag'
-  value: string
-}
-
-function parseId(raw: string | undefined): ParsedTarget | null {
-  if (!raw) return null
-  if (raw.startsWith('c-')) return { kind: 'category', value: raw.slice(2) }
-  if (raw.startsWith('t-')) {
-    return { kind: 'tag', value: decodeURIComponent(raw.slice(2)) }
-  }
-  // Backward-compatible: bare id treated as category.
-  return { kind: 'category', value: raw }
-}
+import { useCategoryCopy } from '../copy'
+import { isForbiddenError, isNotFoundError } from '../utils/errors'
+import { categoryIdFromRouteParam } from '../utils/route-id'
+import { CategoryFormModal, CategoryModalState } from './CategoryFormModal'
 
 export function CategoryDetailRoute() {
-  const { id } = useParams<{ id: string }>()
-  const ctx = useCategoriesRouteContext()
-
-  const parsed = parseId(id)
-
-  const category = useEntity(
-    categories,
-    parsed?.kind === 'category' ? parsed.value : undefined,
-  )
-
-  useCollectionDetailQuery(categories, {
-    enabled: parsed?.kind === 'category',
-    queryFn: () => getCategory(parsed!.value),
-    queryKey: parsed?.value
-      ? adminQueryKeys.categories.detail(parsed.value)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const params = useParams<{ id?: string }>()
+  const categoryId = categoryIdFromRouteParam(params.id)
+  const { text } = useCategoryCopy()
+  const category = useEntity(categories, categoryId ?? undefined)
+  const list = useEntityList(categories, adminQueryKeys.categories.list())
+  const detailQuery = useCollectionDetailQuery(categories, {
+    enabled: Boolean(categoryId),
+    queryFn: () => getCategory(categoryId ?? ''),
+    queryKey: categoryId
+      ? adminQueryKeys.categories.detail(categoryId)
       : adminQueryKeys.categories.root,
   })
 
-  const tagsListCacheQuery = useQuery({
-    enabled: parsed?.kind === 'tag',
-    queryFn: getTags,
-    queryKey: TAGS_LIST_KEY,
-  })
+  useDocumentTitle(category?.name)
 
-  useCollectionListQuery(categories, {
-    enabled: parsed?.kind === 'category' && !category,
-    queryFn: () => getCategories({ type: 'Category' }),
-    queryKey: CATEGORY_LIST_KEY,
-    toPage: (result) => ({ items: result }),
-  })
-
-  const dynamicTitle =
-    parsed?.kind === 'tag'
-      ? (tagsListCacheQuery.data?.find(
-          (entry: TagModel) => entry.name === parsed.value,
-        )?.name ?? parsed.value)
-      : (category?.name ?? undefined)
-  useDocumentTitle(dynamicTitle)
-
-  if (!parsed) return <DetailEmpty />
-
-  if (parsed.kind === 'tag') {
-    const tag =
-      tagsListCacheQuery.data?.find(
-        (entry: TagModel) => entry.name === parsed.value,
-      ) ?? null
-    if (!tag) return <DetailEmpty />
-    return <TagDetail onBack={ctx.onBack} tag={tag} />
+  const close = () => {
+    navigate({ pathname: '/posts/category', search: location.search })
   }
 
-  if (!category) return <DetailEmpty />
+  if (category) {
+    return (
+      <CategoryFormModal
+        category={category}
+        isLast={list.isHydrated && list.items.length === 1}
+        mode="edit"
+        onClose={close}
+        open
+      />
+    )
+  }
+
+  if (!categoryId || isNotFoundError(detailQuery.error)) {
+    return (
+      <CategoryModalState
+        description={text('notFoundDescription')}
+        onClose={close}
+        title={text('notFoundTitle')}
+      />
+    )
+  }
+
+  if (isForbiddenError(detailQuery.error)) {
+    return (
+      <CategoryModalState
+        description={text('forbiddenDescription')}
+        onClose={close}
+        title={text('forbiddenTitle')}
+      />
+    )
+  }
+
+  if (detailQuery.isError) {
+    return (
+      <CategoryModalState
+        action={
+          <Button onClick={() => void detailQuery.refetch()}>
+            {text('retry')}
+          </Button>
+        }
+        onClose={close}
+        title={text('detailLoadErrorTitle')}
+      />
+    )
+  }
 
   return (
-    <CategoryDetail
-      category={category}
-      deleting={ctx.deleting}
-      onBack={ctx.onBack}
-      onDelete={ctx.onDelete}
-      onEdit={ctx.onEdit}
-    />
+    <CategoryModalState loading onClose={close} title={text('editTitle')} />
   )
 }
 

@@ -1,31 +1,34 @@
+import { Alert, Collapsible, Input, Skeleton, Text, toast } from '@lobehub/ui'
+import { Form, useForm, useWatch } from '@lobehub/ui/form'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { FormEvent } from 'react'
-import { useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-import type { UrlOptions } from '~/api/options'
 import { getOption, getUrlOptions, patchOption } from '~/api/options'
 import { API_URL } from '~/constants/env'
 import { LanguageSelect } from '~/features/settings/components/config/LanguageSelect'
-import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { Button } from '~/ui/primitives/button'
-import { TextInput } from '~/ui/primitives/text-field'
+import { Button } from '~/ui/site-button'
 
+import { useSetupCopy } from '../copy'
 import { deriveServiceUrls } from '../utils/onboarding'
 import { getErrorMessage } from '../utils/setup'
 import {
-  FieldHint,
-  OnboardingAsideTitle,
   OnboardingCard,
   OnboardingFooter,
   OnboardingShell,
 } from './OnboardingShell'
-
-type ServiceUrls = Omit<UrlOptions, 'webUrl'>
+import { wizardStyles } from './wizard-styles'
 
 interface SiteOptions {
   defaultSourceLang?: string
+}
+
+interface SiteValues {
+  adminUrl: string
+  serverUrl: string
+  sourceLang: string
+  webUrl: string
+  wsUrl: string
 }
 
 const serviceKeys = ['serverUrl', 'adminUrl', 'wsUrl'] as const
@@ -59,8 +62,13 @@ export function SiteStep(props: {
   onLater?: () => void
   onNext: () => void
 }) {
-  const { t } = useI18n()
+  // lobe-design-ignore DETAIL-NO-EMPTY: 服务地址是固定的三项，不是请求回来的列表
+  const copy = useSetupCopy()
   const queryClient = useQueryClient()
+  const hydrated = useRef(false)
+  const lock = useRef(false)
+  const [servicesOpen, setServicesOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const siteQuery = useQuery({
     queryFn: () => getOption<SiteOptions>('site'),
     queryKey: siteQueryKey,
@@ -78,149 +86,181 @@ export function SiteStep(props: {
       }),
     [],
   )
-  const [sourceLang, setSourceLang] = useState('en')
-  const [webUrl, setWebUrl] = useState('')
-  const [services, setServices] = useState<ServiceUrls>(derived)
-  const [submitting, setSubmitting] = useState(false)
+  const form = useForm<SiteValues>({
+    initialValues: {
+      adminUrl: derived.adminUrl,
+      serverUrl: derived.serverUrl,
+      sourceLang: 'en',
+      webUrl: '',
+      wsUrl: derived.wsUrl,
+    },
+    onSubmit: async (values) => {
+      if (lock.current) return
+      lock.current = true
+      setSubmitting(true)
+      try {
+        await patchOption('site', { defaultSourceLang: values.sourceLang })
+        queryClient.setQueryData<SiteOptions>(siteQueryKey, (current) => ({
+          ...current,
+          defaultSourceLang: values.sourceLang,
+        }))
+        const trimmedWebUrl = values.webUrl.trim()
+        const services = {
+          adminUrl: values.adminUrl,
+          serverUrl: values.serverUrl,
+          wsUrl: values.wsUrl,
+        }
+        await patchOption(
+          'url',
+          trimmedWebUrl ? { ...services, webUrl: trimmedWebUrl } : services,
+        )
+        await queryClient.invalidateQueries({
+          queryKey: adminQueryKeys.settings.root,
+        })
+        props.onNext()
+      } catch (error) {
+        toast.error(getErrorMessage(error, copy('siteSaveError')))
+      } finally {
+        lock.current = false
+        setSubmitting(false)
+      }
+    },
+  })
 
   useEffect(() => {
-    if (siteQuery.data?.defaultSourceLang) {
-      setSourceLang(siteQuery.data.defaultSourceLang)
-    }
-  }, [siteQuery.data])
-
-  useEffect(() => {
+    if (hydrated.current || !siteQuery.isSuccess || !urlQuery.isSuccess) return
+    hydrated.current = true
     const saved = urlQuery.data
-    if (!saved) return
-    if (isConfiguredUrl(saved.webUrl)) setWebUrl(saved.webUrl)
-    setServices((current) => {
-      const next = { ...current }
+    const next = { ...form.getValues() }
+    if (siteQuery.data?.defaultSourceLang) {
+      next.sourceLang = siteQuery.data.defaultSourceLang
+    }
+    if (saved) {
+      if (isConfiguredUrl(saved.webUrl)) next.webUrl = saved.webUrl
       for (const key of serviceKeys) {
         if (isConfiguredUrl(saved[key])) next[key] = saved[key]
       }
-      return next
-    })
-  }, [urlQuery.data])
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault()
-    if (submitting) return
-    setSubmitting(true)
-    try {
-      await patchOption('site', { defaultSourceLang: sourceLang })
-      queryClient.setQueryData<SiteOptions>(siteQueryKey, (current) => ({
-        ...current,
-        defaultSourceLang: sourceLang,
-      }))
-      const trimmedWebUrl = webUrl.trim()
-      await patchOption(
-        'url',
-        trimmedWebUrl ? { ...services, webUrl: trimmedWebUrl } : services,
-      )
-      await queryClient.invalidateQueries({
-        queryKey: adminQueryKeys.settings.root,
-      })
-      props.onNext()
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('setup.onboarding.site.saveError')))
-    } finally {
-      setSubmitting(false)
     }
+    form.setValues(next)
+  }, [
+    form,
+    siteQuery.data,
+    siteQuery.isSuccess,
+    urlQuery.data,
+    urlQuery.isSuccess,
+  ])
+
+  const sourceLang = useWatch(form, 'sourceLang')
+
+  const serviceLabels: Record<
+    (typeof serviceKeys)[number],
+    'siteAdmin' | 'siteServer' | 'siteWs'
+  > = {
+    adminUrl: 'siteAdmin',
+    serverUrl: 'siteServer',
+    wsUrl: 'siteWs',
   }
 
-  const serviceRows: Array<{
-    key: (typeof serviceKeys)[number]
-    label: string
-  }> = [
-    { key: 'serverUrl', label: t('setup.onboarding.site.serverUrl') },
-    { key: 'adminUrl', label: t('setup.onboarding.site.adminUrl') },
-    { key: 'wsUrl', label: t('setup.onboarding.site.wsUrl') },
-  ]
-
   return (
-    <OnboardingShell
-      aside={
-        <>
-          <OnboardingAsideTitle>
-            {t('setup.onboarding.site.asideTitle')}
-          </OnboardingAsideTitle>
-          <div className="rounded-sm border border-border bg-white px-2.5 py-2 font-mono text-sm text-fg shadow-xs">
-            <span className="text-fg-muted">GET </span>
-            <span className="break-all">{services.serverUrl}/posts</span>
-          </div>
-          <p className="mt-3 text-sm text-fg-muted">
-            {t('setup.onboarding.site.asideHint')}
-          </p>
-        </>
-      }
-      onLater={props.onLater}
-      step="site"
-    >
-      <form className="contents" onSubmit={submit}>
+    <OnboardingShell onLater={props.onLater} step="site">
+      <Form form={form} gap={16} layout="vertical">
         <OnboardingCard
-          description={t('setup.onboarding.site.description')}
+          description={copy('siteDescription')}
           footer={
             <OnboardingFooter onBack={props.onBack}>
               <Button
                 data-testid="onboarding-submit"
                 disabled={submitting}
-                type="submit"
+                htmlType="submit"
+                loading={submitting}
+                type="primary"
               >
-                {t('setup.onboarding.action.continue')}
+                {copy('siteContinue')}
               </Button>
             </OnboardingFooter>
           }
-          title={t('setup.onboarding.site.title')}
+          title={copy('siteTitle')}
         >
-          <div className="flex flex-col gap-4">
-            <div className="grid gap-1.5 text-sm">
-              <span className="font-medium text-fg">
-                {t('setup.onboarding.site.sourceLang')}
-              </span>
+          <div className={wizardStyles.stack}>
+            {siteQuery.isPending || urlQuery.isPending ? (
+              <Skeleton.Text
+                aria-label={copy('siteLoading')}
+                rows={1}
+                width="42%"
+              />
+            ) : null}
+            {siteQuery.isError || urlQuery.isError ? (
+              <Alert
+                description={copy('siteLoadErrorDetail')}
+                showIcon
+                title={copy('siteLoadError')}
+                type="error"
+              />
+            ) : null}
+            {siteQuery.isError || urlQuery.isError ? (
+              <Button
+                htmlType="button"
+                onClick={() => {
+                  void siteQuery.refetch()
+                  void urlQuery.refetch()
+                }}
+                type="text"
+              >
+                {copy('retry')}
+              </Button>
+            ) : null}
+            <Form.Field
+              desc={copy('siteSourceHint')}
+              label={copy('siteSource')}
+              name="sourceLang"
+            >
               <LanguageSelect
-                aria-label={t('setup.onboarding.site.sourceLang')}
-                onChange={setSourceLang}
+                aria-label={copy('siteSource')}
+                onChange={(value) =>
+                  form.setValue('sourceLang', value, { asUser: true })
+                }
                 value={sourceLang}
               />
-              <FieldHint>{t('setup.onboarding.site.sourceLangHint')}</FieldHint>
-            </div>
-            <div>
-              <TextInput
+            </Form.Field>
+            <Form.Field
+              desc={copy('siteWebHint')}
+              label={copy('siteWeb')}
+              name="webUrl"
+            >
+              <Input
                 autoComplete="url"
-                label={t('setup.onboarding.site.webUrl')}
                 name="webUrl"
-                onChange={setWebUrl}
-                placeholder="https://"
+                placeholder={copy('siteWebPlaceholder')}
                 type="url"
-                value={webUrl}
               />
-              <FieldHint>{t('setup.onboarding.site.webUrlHint')}</FieldHint>
+            </Form.Field>
+            <div>
+              <Button
+                aria-expanded={servicesOpen}
+                htmlType="button"
+                onClick={() => setServicesOpen((open) => !open)}
+                type="text"
+              >
+                {copy('siteServices')}
+              </Button>
+              <Text type="secondary">{copy('siteServicesHint')}</Text>
+              <Collapsible keepMounted open={servicesOpen}>
+                <div className={wizardStyles.stack}>
+                  {serviceKeys.map((key) => (
+                    <Form.Field
+                      key={key}
+                      label={copy(serviceLabels[key])}
+                      name={key}
+                    >
+                      <Input name={key} type="url" />
+                    </Form.Field>
+                  ))}
+                </div>
+              </Collapsible>
             </div>
-            <details className="group rounded-sm border border-border bg-surface-page px-3 py-2 text-sm">
-              <summary className="cursor-pointer font-medium text-fg">
-                {t('setup.onboarding.site.services')}
-              </summary>
-              <div className="mt-3 flex flex-col gap-3">
-                {serviceRows.map((row) => (
-                  <TextInput
-                    key={row.key}
-                    label={row.label}
-                    name={row.key}
-                    onChange={(value) =>
-                      setServices((current) => ({
-                        ...current,
-                        [row.key]: value,
-                      }))
-                    }
-                    type="url"
-                    value={services[row.key]}
-                  />
-                ))}
-              </div>
-            </details>
           </div>
         </OnboardingCard>
-      </form>
+      </Form>
     </OnboardingShell>
   )
 }

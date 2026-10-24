@@ -1,52 +1,62 @@
-import { UserRoundPen } from 'lucide-react'
-import { toast } from 'sonner'
+import { Flexbox, Modal, Text, toast } from '@lobehub/ui'
+import { useMutation } from '@tanstack/react-query'
 
-import type { UserDetail } from '~/api/users'
+import type { UserDetail, UserProfileInput } from '~/api/users'
 import { createProfileOnlyUser } from '~/api/users'
-import { useI18n } from '~/i18n'
-import { ModalHeader } from '~/ui/feedback/modal'
-import { present, useModal } from '~/ui/feedback/modal-imperative'
 
+import { useUsersCopy } from '../copy'
 import { getUserErrorMessage } from '../utils/users'
 import { UserProfileForm } from './UserProfileForm'
 
-function CreateAuthorModal() {
-  const { t } = useI18n()
-  const modal = useModal<UserDetail>()
+export function CreateAuthorModal(props: {
+  onClose: () => void
+  onCreated: (user: UserDetail) => void
+  open: boolean
+}) {
+  const copy = useUsersCopy()
+  const create = useMutation({
+    mutationFn: (input: UserProfileInput) => {
+      const { email, ...profile } = input
+      return createProfileOnlyUser({
+        ...profile,
+        ...(email ? { email } : {}),
+        displayName: input.displayName ?? '',
+      })
+    },
+    onError: (error: unknown) => {
+      toast.error(getUserErrorMessage(error, copy('authorFailed')))
+    },
+    onSuccess: (user) => {
+      props.onCreated(user)
+    },
+  })
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <ModalHeader
-        icon={UserRoundPen}
-        subtitle={t('users.author.description')}
-        title={t('users.author.title')}
-      />
-      <div className="px-5 py-5">
-        <UserProfileForm
-          onSubmit={async (input) => {
-            try {
-              const { email, ...profile } = input
-              const created = await createProfileOnlyUser({
-                ...profile,
-                ...(email ? { email } : {}),
-                displayName: input.displayName ?? '',
-              })
-              modal.close(created)
-            } catch (error) {
-              toast.error(getUserErrorMessage(error, t('users.author.failed')))
-            }
-          }}
-          submitLabel={t('common.create')}
-        />
-      </div>
-    </div>
-  )
-}
-
-export async function presentCreateAuthor() {
-  return await present<Record<string, never>, UserDetail>(
-    CreateAuthorModal,
-    {},
-    { modalProps: { popupStyle: { width: 'min(94vw, 40rem)' } } },
+    <Modal
+      footer={false}
+      maskClosable={!create.isPending}
+      onCancel={() => {
+        if (!create.isPending) props.onClose()
+      }}
+      open={props.open}
+      title={copy('addAuthor')}
+      width="min(400px, 100%)"
+    >
+      <Flexbox gap={16}>
+        <Text type="secondary">{copy('addAuthorHint')}</Text>
+        {props.open ? (
+          <UserProfileForm
+            onSubmit={async (input) => {
+              try {
+                await create.mutateAsync(input)
+              } catch {
+                return undefined
+              }
+            }}
+            submitLabel={copy('createAuthor')}
+          />
+        ) : null}
+      </Flexbox>
+    </Modal>
   )
 }

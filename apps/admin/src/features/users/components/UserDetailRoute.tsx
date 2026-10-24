@@ -1,23 +1,35 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Loader2, Mail, UserCheck, UserX } from 'lucide-react'
+import {
+  Alert,
+  createStaticStyles,
+  DraggablePanel,
+  Empty,
+  Flexbox,
+  Modal,
+  Text,
+  toast,
+} from '@lobehub/ui'
+import { PageHeader } from '@lobehub/ui/dashboard'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useParams } from 'react-router'
-import { toast } from 'sonner'
 
+import { ApiRequestError } from '~/api/http'
+import type { UserProfileInput } from '~/api/users'
 import {
   deactivateUser,
   getUser,
   reactivateUser,
   updateUser,
 } from '~/api/users'
-import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
 import { useDocumentTitle } from '~/hooks/use-document-title'
+import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { confirmDialog } from '~/ui/feedback/confirm'
-import { Button } from '~/ui/primitives/button'
-import { Scroll } from '~/ui/primitives/scroll'
-import { cn } from '~/utils/cn'
+import { ARTICLE_MAX_WIDTH } from '~/ui/page'
+import { FormSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
+import { useUsersCopy } from '../copy'
 import { hasPermission, Permission } from '../utils/permissions'
 import {
   canEditSignInIdentity,
@@ -25,18 +37,96 @@ import {
   getUserErrorMessage,
   getUserStatus,
 } from '../utils/users'
-import { presentInviteUser } from './InviteUserModal'
-import { UserAvatar } from './UserAvatar'
+import { AuthoredPosts } from './AuthoredPosts'
+import { InviteUserModal } from './InviteUserModal'
+import { UserIdentityPanel, UserIdentitySkeleton } from './UserIdentityPanel'
 import { UserPermissionsCard } from './UserPermissionsCard'
 import { UserProfileForm } from './UserProfileForm'
 import { useUsersRouteContext } from './users-route-context'
-import { UserStatusBadge } from './UserStatusBadge'
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  column: css`
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+
+    width: 100%;
+    max-width: ${ARTICLE_MAX_WIDTH};
+    margin-inline: auto;
+  `,
+  fallback: css`
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+
+    height: 100%;
+    min-height: 0;
+    padding: 24px;
+  `,
+  frame: css`
+    display: flex;
+    flex: 1;
+    align-items: stretch;
+
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  `,
+  identity: css`
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+
+    block-size: 100%;
+    padding-block: 24px;
+    padding-inline: 20px 16px;
+
+    background: ${cssVar.colorBgContainer};
+  `,
+  panel: css`
+    flex: none;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  `,
+  main: css`
+    overflow: auto;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 24px;
+
+    min-width: 0;
+    min-height: 0;
+    padding: 24px;
+  `,
+  mobile: css`
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    height: 100%;
+    min-height: 0;
+    padding: 16px;
+  `,
+  stack: css`
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  `,
+}))
 
 export function UserDetailRoute() {
+  const copy = useUsersCopy()
   const { t } = useI18n()
   const { id = '' } = useParams<{ id: string }>()
   const ctx = useUsersRouteContext()
-  const queryClient = useQueryClient()
+  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [error, setError] = useState('')
 
   const userQuery = useQuery({
     enabled: Boolean(id),
@@ -46,143 +136,148 @@ export function UserDetailRoute() {
   const user = userQuery.data
   useDocumentTitle(user ? getUserDisplayName(user) : null)
 
-  const statusMutation = useMutation({
-    mutationFn: (action: 'deactivate' | 'reactivate') =>
-      action === 'deactivate' ? deactivateUser(id) : reactivateUser(id),
-    onError: (error: unknown) =>
-      toast.error(getUserErrorMessage(error, t('users.toast.statusFailed'))),
-    onSuccess: async (updated, action) => {
-      toast.success(
-        action === 'deactivate'
-          ? t('users.toast.deactivated')
-          : t('users.toast.reactivated'),
-      )
+  const save = useMutation({
+    mutationFn: (input: UserProfileInput) => updateUser(id, input),
+    onError: (saveError: unknown) => {
+      toast.error(getUserErrorMessage(saveError, copy('saveFailed')))
+    },
+    onSuccess: async (updated) => {
+      toast.success(copy('saved'))
+      await ctx.onUserChanged(updated)
+    },
+  })
+  const deactivate = useMutation({
+    mutationFn: () => deactivateUser(id),
+    onError: (statusError: unknown) => {
+      setError(getUserErrorMessage(statusError, copy('statusFailed')))
+    },
+    onSuccess: async (updated) => {
+      setError('')
+      setConfirmOpen(false)
+      toast.success(copy('deactivated'))
+      await ctx.onUserChanged(updated)
+    },
+  })
+  const enable = useMutation({
+    mutationFn: () => reactivateUser(id),
+    onError: (statusError: unknown) => {
+      toast.error(getUserErrorMessage(statusError, copy('statusFailed')))
+    },
+    onSuccess: async (updated) => {
+      toast.success(copy('enabled'))
       await ctx.onUserChanged(updated)
     },
   })
 
-  if (userQuery.isLoading || !user) {
+  const notFound =
+    userQuery.error instanceof ApiRequestError && userQuery.error.status === 404
+  const status = user ? getUserStatus(user) : null
+  const isSelf = user?.id === ctx.currentUserId
+  const canManageUsers = hasPermission(
+    ctx.currentUserPermissions,
+    Permission.ManageUsers,
+  )
+  const name = user ? getUserDisplayName(user) : ''
+  const busy = deactivate.isPending || enable.isPending
+
+  const modals = user ? (
+    <>
+      <Modal
+        cancelText={copy('cancel')}
+        confirmLoading={deactivate.isPending}
+        maskClosable={!deactivate.isPending}
+        okButtonProps={{ danger: true }}
+        okText={copy('deactivate')}
+        onCancel={() => {
+          if (!deactivate.isPending) {
+            setConfirmOpen(false)
+            setError('')
+          }
+        }}
+        onOk={() => deactivate.mutate()}
+        open={confirmOpen}
+        title={copy('deactivateTitle', { name })}
+        width="min(400px, 100%)"
+      >
+        <Flexbox gap={12}>
+          <Text>{copy('deactivateBody')}</Text>
+          {error ? <Alert title={error} type="error" /> : null}
+        </Flexbox>
+      </Modal>
+      <InviteUserModal
+        onClose={() => setInviteOpen(false)}
+        onCreated={() => undefined}
+        open={inviteOpen}
+        user={user}
+      />
+    </>
+  ) : null
+
+  if (userQuery.isError || (!userQuery.isLoading && !user)) {
     return (
-      <div className="flex h-full items-center justify-center bg-surface-card text-sm text-fg-muted">
-        {userQuery.isError ? (
-          getUserErrorMessage(userQuery.error, t('users.toast.loadFailed'))
+      <div className={styles.fallback}>
+        {notFound || !userQuery.isError ? (
+          <Empty title={copy('notFound')} />
         ) : (
-          <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+          <Alert
+            action={
+              <Button onClick={() => void userQuery.refetch()}>
+                {copy('retry')}
+              </Button>
+            }
+            title={copy('detailError')}
+            type="error"
+          />
         )}
       </div>
     )
   }
 
-  const status = getUserStatus(user)
-  const isSelf = user.id === ctx.currentUserId
-  const canManageUsers = hasPermission(
-    ctx.currentUserPermissions,
-    Permission.ManageUsers,
-  )
-  const name = getUserDisplayName(user)
+  const identity =
+    user && status ? (
+      <UserIdentityPanel
+        busy={busy}
+        canManage={canManageUsers}
+        compact={!isDesktop}
+        isSelf={isSelf}
+        onDeactivate={() => {
+          setError('')
+          setConfirmOpen(true)
+        }}
+        onEnable={() => enable.mutate()}
+        onInvite={() => setInviteOpen(true)}
+        status={status}
+        user={user}
+      />
+    ) : (
+      <UserIdentitySkeleton compact={!isDesktop} />
+    )
 
-  const inviteToSignIn = async () => {
-    const created = await presentInviteUser(user)
-    if (!created) return
-    await queryClient.invalidateQueries({
-      queryKey: adminQueryKeys.users.invites(),
-    })
-  }
-
-  const toggleStatus = async () => {
-    if (status === 'deactivated') {
-      statusMutation.mutate('reactivate')
-      return
-    }
-    const ok = await confirmDialog({
-      confirmText: t('users.action.deactivate'),
-      description: t('users.action.deactivateDescription'),
-      destructive: true,
-      title: t('users.action.deactivateConfirm', { name }),
-    })
-    if (ok) statusMutation.mutate('deactivate')
-  }
-
-  return (
-    <section className="flex h-full min-h-0 flex-col bg-surface-card">
-      <div
-        className={cn(
-          'flex shrink-0 items-center justify-between gap-3 border-b border-border px-4',
-          APP_SHELL_HEADER_HEIGHT_CLASS,
+  const detail = (
+    <div className={styles.column}>
+      <PageHeader
+        description={copy('detailDescription')}
+        title={t('routes.users.detail')}
+      />
+      <div className={styles.stack}>
+        {user ? (
+          <UserProfileForm
+            identityLocked={!canEditSignInIdentity(user, ctx.currentUserId)}
+            key={user.updatedAt ?? user.id}
+            onSubmit={async (input) => {
+              try {
+                await save.mutateAsync(input)
+              } catch {
+                return undefined
+              }
+            }}
+            submitLabel={copy('saveProfile')}
+            user={user}
+          />
+        ) : (
+          <FormSkeleton label={copy('loading')} rows={5} />
         )}
-      >
-        <div className="flex min-w-0 items-center gap-2">
-          <Button
-            aria-label={t('users.action.back')}
-            className="h-8 px-2 lg:hidden"
-            onClick={ctx.onBack}
-            type="button"
-            variant="subtle"
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-          </Button>
-          <UserAvatar avatar={user.avatar} className="size-6" name={name} />
-          <span className="truncate text-sm font-semibold text-fg">{name}</span>
-          <UserStatusBadge status={status} />
-        </div>
-        {isSelf || !canManageUsers ? null : (
-          <div className="flex shrink-0 items-center gap-1.5">
-            {status === 'profileOnly' ? (
-              <Button
-                className="h-8 px-2"
-                onClick={() => void inviteToSignIn()}
-                type="button"
-                variant="subtle"
-              >
-                <Mail aria-hidden="true" className="size-3.5" />
-                {t('users.invite.existingAction')}
-              </Button>
-            ) : null}
-            <Button
-              className="h-8 px-2"
-              disabled={statusMutation.isPending}
-              onClick={() => void toggleStatus()}
-              type="button"
-              variant="subtle"
-            >
-              {status === 'deactivated' ? (
-                <UserCheck aria-hidden="true" className="size-3.5" />
-              ) : (
-                <UserX aria-hidden="true" className="size-3.5" />
-              )}
-              {status === 'deactivated'
-                ? t('users.action.reactivate')
-                : t('users.action.deactivate')}
-            </Button>
-          </div>
-        )}
-      </div>
-      <Scroll
-        className="flex-1"
-        innerClassName="mx-auto w-full max-w-3xl px-5 py-6"
-      >
-        {status === 'profileOnly' ? (
-          <p className="mb-5 rounded-md border border-border bg-surface-inset px-3 py-2 text-xs text-fg-muted">
-            {t('users.detail.profileOnlyHint')}
-          </p>
-        ) : null}
-        <UserProfileForm
-          identityLocked={!canEditSignInIdentity(user, ctx.currentUserId)}
-          key={user.updatedAt ?? user.id}
-          onSubmit={async (input) => {
-            try {
-              const updated = await updateUser(user.id, input)
-              toast.success(t('users.toast.saved'))
-              await ctx.onUserChanged(updated)
-            } catch (error) {
-              toast.error(
-                getUserErrorMessage(error, t('users.toast.saveFailed')),
-              )
-            }
-          }}
-          user={user}
-        />
-        {status === 'profileOnly' ? null : (
+        {user && status !== 'profileOnly' ? (
           <UserPermissionsCard
             canEdit={canManageUsers}
             isSelf={isSelf}
@@ -190,30 +285,44 @@ export function UserDetailRoute() {
             onSaved={ctx.onUserChanged}
             user={user}
           />
-        )}
-        <dl className="mt-8 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t border-border pt-4 text-xs">
-          <dt className="text-fg-muted">{t('users.detail.createdAt')}</dt>
-          <dd className="text-fg">{formatTime(user.createdAt)}</dd>
-          <dt className="text-fg-muted">{t('users.detail.lastLoginAt')}</dt>
-          <dd className="text-fg">{formatTime(user.lastLoginAt)}</dd>
-          {user.deactivatedAt ? (
-            <>
-              <dt className="text-fg-muted">
-                {t('users.detail.deactivatedAt')}
-              </dt>
-              <dd className="text-fg">{formatTime(user.deactivatedAt)}</dd>
-            </>
-          ) : null}
-        </dl>
-      </Scroll>
-    </section>
+        ) : null}
+        {user ? <AuthoredPosts userId={user.id} /> : null}
+      </div>
+    </div>
   )
-}
 
-function formatTime(value: string | null | undefined) {
-  if (!value) return '-'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString()
+  if (!isDesktop) {
+    return (
+      <div className={styles.mobile}>
+        {identity}
+        {detail}
+        {modals}
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.frame}>
+      <DraggablePanel
+        expandable
+        showBorder
+        showHandleWhenCollapsed
+        className={styles.panel}
+        classNames={{ content: styles.identity }}
+        defaultSize={{ width: 320 }}
+        maxWidth={480}
+        minWidth={280}
+        mode="fixed"
+        placement="left"
+      >
+        {identity}
+      </DraggablePanel>
+      <div className={styles.main}>
+        {detail}
+        {modals}
+      </div>
+    </div>
+  )
 }
 
 export default UserDetailRoute

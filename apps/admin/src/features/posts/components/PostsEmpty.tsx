@@ -1,33 +1,58 @@
+import { Empty } from '@lobehub/ui'
 import { FileText, Plus } from 'lucide-react'
 
-import { useI18n } from '~/i18n'
-import { EmptyState } from '~/ui/patterns/EmptyState'
-import { ButtonLink } from '~/ui/primitives/button'
+import { Button } from '~/ui/site-button'
 
-export function PostsEmpty(props: { keyword: string }) {
-  const { t } = useI18n()
-  const hasSearch = Boolean(props.keyword)
+import { usePostCopy } from '../copy'
+import { styles } from './styles'
+
+export function PostsEmpty(props: {
+  kind: 'filter' | 'first' | 'page'
+  onBack: () => void
+  onClear: () => void
+  onWrite: () => void
+  scheduled?: boolean
+}) {
+  const copy = usePostCopy()
+  const title =
+    props.kind === 'first'
+      ? copy(props.scheduled ? 'scheduledEmptyTitle' : 'firstEmptyTitle')
+      : props.kind === 'page'
+        ? copy('pageEmptyTitle')
+        : copy('filterEmptyTitle')
+  const description =
+    props.kind === 'first'
+      ? copy(
+          props.scheduled
+            ? 'scheduledEmptyDescription'
+            : 'firstEmptyDescription',
+        )
+      : props.kind === 'page'
+        ? copy('pageEmptyDescription')
+        : copy('filterEmptyDescription')
 
   return (
-    <div className="flex min-h-[24rem] items-center justify-center px-4">
-      <EmptyState
+    <div className={styles.state}>
+      <Empty
         action={
-          hasSearch ? null : (
-            <ButtonLink to="/posts/edit" variant="subtle">
-              <Plus aria-hidden="true" className="size-4" />
-              {t('posts.empty.create')}
-            </ButtonLink>
+          props.kind === 'first' ? (
+            <Button htmlType="button" icon={Plus} onClick={props.onWrite}>
+              {copy('write')}
+            </Button>
+          ) : (
+            <Button
+              htmlType="button"
+              onClick={props.kind === 'page' ? props.onBack : props.onClear}
+            >
+              {props.kind === 'page'
+                ? copy('backToFirst')
+                : copy('clearFilters')}
+            </Button>
           )
         }
-        description={
-          hasSearch
-            ? t('posts.empty.hasSearch.description')
-            : t('posts.empty.description')
-        }
+        description={description}
         icon={FileText}
-        title={
-          hasSearch ? t('posts.empty.hasSearch.title') : t('posts.empty.title')
-        }
+        title={title}
       />
     </div>
   )

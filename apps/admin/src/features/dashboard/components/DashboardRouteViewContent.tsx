@@ -1,123 +1,199 @@
+import { createStaticStyles } from '@lobehub/ui'
+import { MetricStrip } from '@lobehub/ui/dashboard'
 import { useQuery } from '@tanstack/react-query'
-import { Leaf } from 'lucide-react'
-import { useMemo } from 'react'
+import { CircleCheck, FilePen, Languages, ListTodo } from 'lucide-react'
 
-import { getDrafts } from '~/api/drafts'
-import { getPosts } from '~/api/posts'
-import { getAppInfo } from '~/api/system'
 import { OnboardingResumeBanner } from '~/features/setup/components/OnboardingResumeBanner'
 import { useI18n } from '~/i18n'
-import { DraftRefType } from '~/models/draft'
-import { EmptyState } from '~/ui/patterns/EmptyState'
+import { Page } from '~/ui/page'
 
-import { dashboardQueryKeys, deskRecentPostLimit } from '../constants'
-import { buildWritingItems } from '../utils/desk'
+import { useDashboardCopy } from '../copy'
+import {
+  activeTasksQuery,
+  draftCountsQuery,
+  failedTasksQuery,
+  postCountsQuery,
+  translationCoverageQuery,
+} from '../queries'
+import {
+  draftsPath,
+  postsPath,
+  tasksPath,
+  translationGapsPath,
+  translationGapSummary,
+} from '../utils/desk'
+import { ActiveTasks } from './ActiveTasks'
+import { CategoryShare } from './CategoryShare'
+import { CreationHeatmap } from './CreationHeatmap'
 import { DeskFooter } from './DeskFooter'
-import { DeskGreeting } from './DeskGreeting'
-import { DeskLayout } from './DeskLayout'
-import { DeskLoadError } from './DeskLoadError'
-import { DeskRecentPostsCard } from './DeskRecentPostsCard'
-import { DeskResumeCard } from './DeskResumeCard'
-import { DeskPrimarySkeleton, DeskRailSkeleton } from './DeskSkeleton'
-import { DeskWritingCard } from './DeskWritingCard'
+import { PendingSection } from './PendingSection'
+import { LatestPublished, RecentPublished } from './PublishedPosts'
+
+const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
+  charts: css`
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: stretch;
+
+    > * {
+      min-width: 0;
+    }
+
+    ${responsive.lg} {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  `,
+  pair: css`
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: stretch;
+
+    > * {
+      min-width: 0;
+    }
+
+    ${responsive.lg} {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  `,
+  danger: css`
+    color: ${cssVar.colorError};
+  `,
+  info: css`
+    color: ${cssVar.colorInfo};
+  `,
+  success: css`
+    color: ${cssVar.colorSuccess};
+  `,
+}))
+
+function DeskMetrics() {
+  const { format } = useI18n()
+  const copy = useDashboardCopy()
+  const posts = useQuery(postCountsQuery)
+  const draftCounts = useQuery(draftCountsQuery)
+  const translations = useQuery(translationCoverageQuery)
+  const failed = useQuery(failedTasksQuery)
+  const active = useQuery(activeTasksQuery)
+
+  const value = (count: number | undefined) =>
+    count === undefined ? '--' : format.number(count)
+  const publishedCount = posts.data?.published
+  const latestPublishedAt = posts.data?.latestPublishedAt
+  const draftCount = draftCounts.data?.drafts
+  const behindCount = draftCounts.data?.behind
+  const unpublishedCount =
+    draftCount === undefined || behindCount === undefined
+      ? undefined
+      : draftCount + behindCount
+  const translationGaps = translations.data
+    ? translationGapSummary(translations.data)
+    : undefined
+  const activeCount = active.data?.total
+  const failedCount = failed.data?.total
+  const taskValue =
+    activeCount === undefined || failedCount === undefined ? (
+      '--'
+    ) : (
+      <>
+        <span className={activeCount ? styles.info : undefined}>
+          {format.number(activeCount)}
+        </span>
+        {' · '}
+        <span className={failedCount ? styles.danger : undefined}>
+          {format.number(failedCount)}
+        </span>
+      </>
+    )
+  const translationHint = !translationGaps
+    ? undefined
+    : translationGaps.items > 0
+      ? copy('metricTranslationItems', { count: translationGaps.items })
+      : translationGaps.applicable > 0
+        ? copy('metricTranslationDone')
+        : translations.data?.length
+          ? copy('metricTranslationUnset')
+          : undefined
+
+  return (
+    <MetricStrip
+      items={[
+        {
+          hint: latestPublishedAt
+            ? format.dateTime(latestPublishedAt)
+            : undefined,
+          href: postsPath,
+          label: copy('metricPublished'),
+          loading: posts.isPending,
+          mark: CircleCheck,
+          value: (
+            <span className={publishedCount ? styles.success : undefined}>
+              {value(publishedCount)}
+            </span>
+          ),
+        },
+        {
+          hint:
+            draftCount === undefined || behindCount === undefined
+              ? undefined
+              : copy('metricUnpublishedHint', {
+                  behind: behindCount,
+                  drafts: draftCount,
+                }),
+          href: draftsPath,
+          label: copy('metricUnpublished'),
+          loading: draftCounts.isPending,
+          mark: FilePen,
+          value: value(unpublishedCount),
+          valueTone: unpublishedCount ? 'warning' : undefined,
+        },
+        {
+          hint: translationHint,
+          href: translationGapsPath,
+          label: copy('metricTranslationGaps'),
+          loading: translations.isPending,
+          mark: Languages,
+          value: value(translationGaps?.posts),
+          valueTone: translationGaps?.posts ? 'warning' : undefined,
+        },
+        {
+          hint: copy('metricTasksHint'),
+          href: tasksPath,
+          label: copy('metricTasks'),
+          loading: active.isPending || failed.isPending,
+          mark: ListTodo,
+          value: taskValue,
+        },
+      ]}
+    />
+  )
+}
 
 export function DashboardRouteViewContent() {
   const { t } = useI18n()
-
-  const draftsQuery = useQuery({
-    queryFn: () =>
-      getDrafts({
-        page: 1,
-        refType: DraftRefType.Post,
-        size: 50,
-        sort_by: 'updatedAt',
-        sort_order: 'desc',
-      }),
-    queryKey: dashboardQueryKeys.drafts,
-  })
-  const postsQuery = useQuery({
-    queryFn: () =>
-      getPosts({
-        page: 1,
-        size: deskRecentPostLimit,
-        sort_by: 'modifiedAt',
-        sort_order: 'desc',
-      }),
-    queryKey: dashboardQueryKeys.recentPosts,
-  })
-  const appInfoQuery = useQuery({
-    queryFn: getAppInfo,
-    queryKey: dashboardQueryKeys.appInfo,
-    retry: false,
-  })
-
-  const adminVersion = __DEV__ ? 'dev mode' : window.version || 'N/A'
-  const systemVersion = appInfoQuery.data?.version || 'N/A'
-  const writingItems = useMemo(
-    () => buildWritingItems(draftsQuery.data?.data ?? []),
-    [draftsQuery.data],
-  )
-
-  if (!draftsQuery.data || !postsQuery.data) {
-    const failed = draftsQuery.isError || postsQuery.isError
-    return (
-      <DeskLayout
-        primary={
-          failed ? (
-            <DeskLoadError
-              onRetry={() => {
-                void draftsQuery.refetch()
-                void postsQuery.refetch()
-              }}
-              retrying={draftsQuery.isFetching || postsQuery.isFetching}
-            />
-          ) : (
-            <DeskPrimarySkeleton />
-          )
-        }
-        rail={failed ? null : <DeskRailSkeleton />}
-      />
-    )
-  }
-
-  const [resumeItem, ...restItems] = writingItems
+  const copy = useDashboardCopy()
 
   return (
-    <DeskLayout
-      primary={
-        <>
-          <DeskGreeting className="phone:order-1" />
-
-          <OnboardingResumeBanner className="mb-6 phone:order-2" />
-
-          {resumeItem ? (
-            <DeskResumeCard className="phone:order-2" item={resumeItem} />
-          ) : (
-            <div className="border-t border-border py-7 phone:order-2 phone:py-6">
-              <EmptyState icon={Leaf} title={t('dashboard.desk.zen.title')} />
-            </div>
-          )}
-          {restItems.length > 0 ? (
-            <DeskWritingCard
-              className="phone:order-3"
-              items={restItems}
-              total={writingItems.length}
-            />
-          ) : null}
-
-          <DeskFooter
-            adminVersion={adminVersion}
-            className="phone:order-5"
-            systemVersion={systemVersion}
-          />
-        </>
-      }
-      rail={
-        <DeskRecentPostsCard
-          className="phone:order-4"
-          posts={postsQuery.data.data}
-        />
-      }
-    />
+    <Page
+      description={copy('pageDescription')}
+      title={t('routes.dashboard.title')}
+      width="wide"
+    >
+      <OnboardingResumeBanner />
+      <DeskMetrics />
+      <div className={styles.charts}>
+        <CreationHeatmap />
+        <CategoryShare />
+      </div>
+      <LatestPublished />
+      <div className={styles.pair}>
+        <RecentPublished />
+        <PendingSection />
+      </div>
+      <ActiveTasks />
+      <DeskFooter />
+    </Page>
   )
 }

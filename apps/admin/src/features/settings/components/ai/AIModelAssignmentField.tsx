@@ -1,9 +1,7 @@
-import { ChevronDown } from 'lucide-react'
+import { AutoComplete, createStaticStyles, cx } from '@lobehub/ui'
 import { useCallback, useMemo } from 'react'
 
 import { useI18n } from '~/i18n'
-import { Combobox } from '~/ui/primitives/combobox'
-import { Scroll } from '~/ui/primitives/scroll'
 import { SelectField } from '~/ui/primitives/select'
 
 import type {
@@ -16,11 +14,55 @@ import type {
 import { formatAIModelPricing } from '../../utils/aiModelPricing'
 import { formatAIProviderLabel } from '../../utils/settings'
 
+const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
+  controls: css`
+    display: grid;
+    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+
+    ${responsive.md} {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  `,
+  controlsWithReasoning: css`
+    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) minmax(0, 8.5rem);
+
+    ${responsive.md} {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  `,
+  modelId: css`
+    margin-inline-start: 8px;
+    font-size: ${cssVar.fontSizeSM};
+    color: ${cssVar.colorTextTertiary};
+  `,
+  modelName: css`
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  option: css`
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+  `,
+  pricing: css`
+    flex-shrink: 0;
+    font-size: ${cssVar.fontSizeSM};
+    font-variant-numeric: tabular-nums;
+    color: ${cssVar.colorTextSecondary};
+  `,
+}))
+
 const REASONING_EFFORTS: AIReasoningEffort[] = ['none', 'low', 'medium', 'high']
 
 export function AIModelAssignmentField(props: {
   capability?: AIProviderCapability
-  description?: string
+  /** Names the controls for assistive tech; the visible label belongs to the row. */
   label: string
   modelPlaceholder?: string
   models: Record<string, AIProviderModel[]>
@@ -39,9 +81,29 @@ export function AIModelAssignmentField(props: {
       ? (provider.capabilities?.text ?? true)
       : Boolean(provider.capabilities?.[capability]),
   )
-  const modelIds = useMemo(
-    () => providerModels.map((model) => model.id),
-    [providerModels],
+  const modelOptions = useMemo(
+    () =>
+      providerModels.map((model) => {
+        const name = model.name || model.id
+        const pricing = formatAIModelPricing(model.pricing, t)
+        return {
+          label: (
+            <span className={styles.option}>
+              <span className={styles.modelName}>
+                <span>{name}</span>
+                {name !== model.id ? (
+                  <span className={styles.modelId}>{model.id}</span>
+                ) : null}
+              </span>
+              {pricing ? (
+                <span className={styles.pricing}>{pricing}</span>
+              ) : null}
+            </span>
+          ),
+          value: model.id,
+        }
+      }),
+    [providerModels, t],
   )
   const modelById = useMemo(
     () => new Map(providerModels.map((model) => [model.id, model])),
@@ -78,125 +140,68 @@ export function AIModelAssignmentField(props: {
   }
 
   return (
-    <div className="grid items-center gap-2 text-sm md:grid-cols-[12rem_minmax(0,1fr)]">
-      <div>
-        <div className="font-medium text-neutral-700 dark:text-neutral-300">
-          {props.label}
-        </div>
-        {props.description ? (
-          <p className="mt-1 text-xs text-neutral-500">{props.description}</p>
-        ) : null}
-      </div>
-      <div
-        className={
-          showReasoning
-            ? 'grid items-center gap-2 md:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_minmax(0,8.5rem)]'
-            : 'grid items-center gap-2 md:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]'
+    <div
+      className={cx(
+        styles.controls,
+        showReasoning && styles.controlsWithReasoning,
+      )}
+    >
+      <SelectField<string>
+        aria-label={t('settings.ai.assignment.providerAriaLabel', {
+          label: props.label,
+        })}
+        onValueChange={(nextProviderId) =>
+          nextProviderId
+            ? patch({
+                providerId: nextProviderId,
+                model: undefined,
+              })
+            : props.onChange(null)
         }
-      >
-        <SelectField<string>
-          aria-label={t('settings.ai.assignment.providerAriaLabel', {
+        options={[
+          { label: t('settings.ai.assignment.providerNone'), value: '' },
+          ...providers.map((provider) => ({
+            label: formatAIProviderLabel(provider),
+            value: provider.id,
+          })),
+        ]}
+        value={providerId}
+      />
+      <AutoComplete
+        disabled={!providerId}
+        filter={(item, query) =>
+          filterModel(
+            item && typeof item === 'object' && 'value' in item
+              ? String(item.value)
+              : '',
+            query,
+          )
+        }
+        value={modelValue}
+        onChange={(next) => patch({ model: next })}
+        options={modelOptions}
+        placeholder={
+          props.modelPlaceholder ?? t('settings.ai.assignment.modelPlaceholder')
+        }
+      />
+      {showReasoning ? (
+        <SelectField<AIReasoningEffort>
+          aria-label={t('settings.ai.assignment.reasoningAriaLabel', {
             label: props.label,
           })}
-          onValueChange={(nextProviderId) =>
-            nextProviderId
-              ? patch({
-                  providerId: nextProviderId,
-                  model: undefined,
-                })
-              : props.onChange(null)
-          }
-          options={[
-            { label: t('settings.ai.assignment.providerNone'), value: '' },
-            ...providers.map((provider) => ({
-              label: formatAIProviderLabel(provider),
-              value: provider.id,
-            })),
-          ]}
-          value={providerId}
-        />
-        <Combobox
-          autoComplete="list"
           disabled={!providerId}
-          filter={filterModel}
-          inputValue={modelValue}
-          items={modelIds}
-          onInputValueChange={(next) => patch({ model: next })}
-          onValueChange={(next) => {
-            if (typeof next === 'string') patch({ model: next })
-          }}
-        >
-          <Combobox.Control>
-            <Combobox.Input
-              aria-label={t('settings.ai.assignment.modelAriaLabel', {
-                label: props.label,
-              })}
-              placeholder={
-                props.modelPlaceholder ??
-                t('settings.ai.assignment.modelPlaceholder')
-              }
-            />
-            <Combobox.Trigger
-              aria-label={t('settings.ai.assignment.openModelList')}
-            >
-              <ChevronDown aria-hidden="true" className="size-4" />
-            </Combobox.Trigger>
-          </Combobox.Control>
-          <Combobox.Content>
-            <Combobox.Empty />
-            <Scroll
-              className="max-h-72"
-              innerClassName="p-1"
-              viewportClassName="max-h-72"
-            >
-              <Combobox.List>
-                {(id: string) => {
-                  const model = modelById.get(id)
-                  const name = model?.name || id
-                  const pricing = formatAIModelPricing(model?.pricing, t)
-                  return (
-                    <Combobox.Item key={id} value={id}>
-                      <span className="flex min-w-0 items-center gap-3">
-                        <span className="min-w-0 flex-1 truncate">
-                          <span>{name}</span>
-                          {name !== id ? (
-                            <span className="ml-2 text-xs text-fg-subtle">
-                              {id}
-                            </span>
-                          ) : null}
-                        </span>
-                        {pricing ? (
-                          <span className="shrink-0 text-xs tabular-nums text-fg-muted">
-                            {pricing}
-                          </span>
-                        ) : null}
-                      </span>
-                    </Combobox.Item>
-                  )
-                }}
-              </Combobox.List>
-            </Scroll>
-          </Combobox.Content>
-        </Combobox>
-        {showReasoning ? (
-          <SelectField<AIReasoningEffort>
-            aria-label={t('settings.ai.assignment.reasoningAriaLabel', {
-              label: props.label,
-            })}
-            disabled={!providerId}
-            onValueChange={(next) =>
-              patch({
-                reasoningEffort: next === 'none' ? undefined : next,
-              })
-            }
-            options={REASONING_EFFORTS.map((value) => ({
-              label: t(`settings.ai.assignment.reasoning.${value}`),
-              value,
-            }))}
-            value={reasoningEffort}
-          />
-        ) : null}
-      </div>
+          onValueChange={(next) =>
+            patch({
+              reasoningEffort: next === 'none' ? undefined : next,
+            })
+          }
+          options={REASONING_EFFORTS.map((value) => ({
+            label: t(`settings.ai.assignment.reasoning.${value}`),
+            value,
+          }))}
+          value={reasoningEffort}
+        />
+      ) : null}
     </div>
   )
 }

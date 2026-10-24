@@ -86,6 +86,10 @@ function findBestRouteMatch(pathname: string): AppRoute | null {
  * Page-level override. Last-mount wins; cleared on unmount.
  * Falsy → no override (auto-resolved title from route metadata stays in effect).
  */
+export function useDocumentTitleOverride() {
+  return useSyncExternalStore(subscribe, getTopOverride, getTopOverride)
+}
+
 export function useDocumentTitle(title?: string | null | false) {
   useEffect(() => {
     if (!title) return
@@ -101,11 +105,7 @@ export function useDocumentTitle(title?: string | null | false) {
 export function DocumentTitleSync() {
   const location = useLocation()
   const { t } = useI18n()
-  const override = useSyncExternalStore(
-    subscribe,
-    getTopOverride,
-    getTopOverride,
-  )
+  const override = useDocumentTitleOverride()
 
   const routeTitle = useMemo(() => {
     const route = findBestRouteMatch(location.pathname)

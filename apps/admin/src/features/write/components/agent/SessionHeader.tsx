@@ -1,7 +1,8 @@
+import { createStaticStyles, DropdownMenu } from '@lobehub/ui'
 import {
+  Check,
   ChevronDown,
   Download,
-  Loader2,
   Plus,
   RefreshCw,
   Trash2,
@@ -11,8 +12,127 @@ import { useState } from 'react'
 import type { AgentSessionMeta } from '~/hooks/use-agent-session-manager'
 import { useI18n } from '~/i18n'
 import { confirmDialog } from '~/ui/feedback/confirm'
-import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
-import { cn } from '~/utils/cn'
+import { Button } from '~/ui/site-button'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u355a147c: css`
+    display: flex;
+    min-height: 40px;
+    flex-shrink: 0;
+    align-items: center;
+    border-block-end: 1px solid ${cssVar.colorBorderSecondary};
+  `,
+  uf6d9673f: css`
+    display: flex;
+    flex: 1 1 0%;
+    align-items: center;
+    gap: 0.375rem;
+    text-align: left;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+    color: ${cssVar.colorError};
+  `,
+  uef2d6f74: css`
+    width: 0.75rem;
+    height: 0.75rem;
+  `,
+  u99616931: css`
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 4px;
+    min-height: 40px;
+    border-block-end: 1px solid ${cssVar.colorBorderSecondary};
+  `,
+  ud943fc3e: css`
+    display: flex;
+    min-width: 0px;
+    flex: 1 1 0%;
+    align-items: center;
+  `,
+  u535294c8: css`
+    display: flex;
+    min-width: 0px;
+    align-items: center;
+    gap: 4px;
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
+    color: ${cssVar.colorText};
+  `,
+  uf283ea9b: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  ufc18c167: css`
+    width: 0.75rem;
+    height: 0.75rem;
+    flex-shrink: 0;
+    opacity: 0.5;
+  `,
+  u33e87723: css`
+    max-height: 16rem;
+    width: 16rem;
+    overflow-y: auto;
+  `,
+  u02034fc7: css`
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+  `,
+  u908a12ba: css`
+    display: flex;
+    width: 1.75rem;
+    height: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+  `,
+  u783b0d9d: css`
+    width: 0.875rem;
+    height: 0.875rem;
+  `,
+  ub1dd3762: css`
+    display: flex;
+    width: 1.75rem;
+    height: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      background-color: ${cssVar.colorErrorBg};
+    }
+    &:hover {
+      color: ${cssVar.colorError};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorError} 30%,
+        transparent
+      );
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorError};
+    }
+  `,
+}))
 
 interface SessionHeaderProps {
   sessions: AgentSessionMeta[]
@@ -94,13 +214,13 @@ export function SessionHeader(props: SessionHeaderProps) {
 
   if (loadError) {
     return (
-      <div className="flex h-9 shrink-0 items-center border-b border-border px-2">
+      <div className={lobeStyles.u355a147c}>
         <button
-          className="flex flex-1 items-center gap-1.5 text-left text-xs text-red-600"
+          className={lobeStyles.uf6d9673f}
           onClick={onRetryLoad}
           type="button"
         >
-          <RefreshCw aria-hidden="true" className="size-3" />
+          <RefreshCw aria-hidden="true" className={lobeStyles.uef2d6f74} />
           {t('write.agent.loadSessionsFailed')}
         </button>
       </div>
@@ -114,93 +234,77 @@ export function SessionHeader(props: SessionHeaderProps) {
   })
 
   return (
-    <div className="flex h-9 shrink-0 items-center gap-1 border-b border-border px-2">
-      <div className="flex min-w-0 flex-1 items-center">
-        <DropdownMenu onOpenChange={setOpen} open={open}>
-          <DropdownMenu.Trigger
-            className="flex min-w-0 items-center gap-1 text-sm font-medium text-fg"
-            type="button"
-          >
-            <span className="truncate">{activeTitle}</span>
-            <ChevronDown
-              aria-hidden="true"
-              className="size-3 shrink-0 opacity-50"
-            />
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content className="max-h-64 w-64 overflow-y-auto">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-6">
-                <Loader2
-                  aria-hidden="true"
-                  className="size-4 animate-spin text-fg-subtle"
-                />
-              </div>
-            ) : sorted.length === 0 ? (
-              <DropdownMenu.Empty>
-                {t('write.agent.session.empty')}
-              </DropdownMenu.Empty>
-            ) : (
-              sorted.map((session) => {
-                const subDate =
-                  parseDate(session.updatedAt) ?? parseDate(session.createdAt)
-                const hasTopTitle = Boolean(
-                  session.title ?? session.derivedTitle,
-                )
-                const sub = hasTopTitle ? relativeTime(subDate) : null
-                return (
-                  <DropdownMenu.Item
-                    aria-current={
-                      session.id === activeSessionId ? 'true' : undefined
+    <div className={lobeStyles.u99616931}>
+      <div className={lobeStyles.ud943fc3e}>
+        <DropdownMenu
+          items={
+            isLoading
+              ? [
+                  {
+                    disabled: true,
+                    key: 'loading',
+                    label: t('common.loading'),
+                    loading: true,
+                  },
+                ]
+              : sorted.length === 0
+                ? [
+                    {
+                      disabled: true,
+                      key: 'empty',
+                      label: t('write.agent.session.empty'),
+                    },
+                  ]
+                : sorted.map((session) => {
+                    const subDate =
+                      parseDate(session.updatedAt) ??
+                      parseDate(session.createdAt)
+                    const hasTopTitle = Boolean(
+                      session.title ?? session.derivedTitle,
+                    )
+                    return {
+                      desc: hasTopTitle ? relativeTime(subDate) : undefined,
+                      icon: session.id === activeSessionId ? Check : undefined,
+                      key: session.id,
+                      label: sessionLabel(session),
+                      onClick: () => selectSession(session.id),
                     }
-                    className={cn(
-                      'flex-col items-start gap-0.5',
-                      session.id === activeSessionId && 'bg-surface-inset',
-                    )}
-                    key={session.id}
-                    onClick={() => selectSession(session.id)}
-                  >
-                    <span className="w-full truncate text-xs font-medium text-fg">
-                      {sessionLabel(session)}
-                    </span>
-                    {sub ? (
-                      <span className="w-full truncate text-xs text-fg-subtle">
-                        {sub}
-                      </span>
-                    ) : null}
-                  </DropdownMenu.Item>
-                )
-              })
-            )}
-          </DropdownMenu.Content>
+                  })
+          }
+          onOpenChange={setOpen}
+          open={open}
+          popupProps={{ className: lobeStyles.u33e87723 }}
+          triggerProps={{ className: lobeStyles.u535294c8 }}
+        >
+          <span className={lobeStyles.uf283ea9b}>{activeTitle}</span>
+          <ChevronDown aria-hidden="true" className={lobeStyles.ufc18c167} />
         </DropdownMenu>
       </div>
 
-      <div className="flex items-center gap-0.5">
-        <button
-          className="flex size-7 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-surface-inset hover:text-fg"
+      <div className={lobeStyles.u02034fc7}>
+        <Button
+          aria-label={t('write.agent.session.export')}
+          icon={Download}
           onClick={onExport}
           title={t('write.agent.session.export')}
-          type="button"
-        >
-          <Download aria-hidden="true" className="size-3.5" />
-        </button>
-        <button
-          className="flex size-7 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-surface-inset hover:text-fg"
+          type="text"
+        />
+        <Button
+          aria-label={t('write.agent.session.newTitle')}
+          icon={Plus}
           onClick={onCreate}
           title={t('write.agent.session.newTitle')}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="size-3.5" />
-        </button>
+          type="text"
+        />
         {activeSessionId ? (
-          <button
-            className="flex size-7 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-500"
-            onClick={handleDelete}
+          <Button
+            aria-label={t('write.agent.session.deleteTitle')}
+            danger
+            icon={Trash2}
+            onClick={() => void handleDelete()}
             title={t('write.agent.session.deleteTitle')}
-            type="button"
-          >
-            <Trash2 aria-hidden="true" className="size-3.5" />
-          </button>
+            type="text"
+          />
         ) : null}
       </div>
     </div>

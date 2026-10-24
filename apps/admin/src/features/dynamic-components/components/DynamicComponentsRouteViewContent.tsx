@@ -1,15 +1,13 @@
+import { toast } from '@lobehub/ui'
 import { useMutation } from '@tanstack/react-query'
 import { Plus, RefreshCw, Search } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { toast } from 'sonner'
 
 import { deleteDynamicComponentEntry } from '~/api/dynamic-components'
-import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
 import { useI18n } from '~/i18n'
 import { confirmDialog } from '~/ui/feedback/confirm'
 import { MasterDetailShell } from '~/ui/layout/master-detail-shell'
-import { MobileHeaderAffordance } from '~/ui/layout/mobile-header-affordance'
 import { Button } from '~/ui/primitives/button'
 import { Scroll } from '~/ui/primitives/scroll'
 import { TextInput } from '~/ui/primitives/text-field'
@@ -104,11 +102,10 @@ export function DynamicComponentsRouteViewContent() {
             <div
               className={cn(
                 'flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800',
-                APP_SHELL_HEADER_HEIGHT_CLASS,
+                'h-12',
               )}
             >
               <div className="flex min-w-0 items-center gap-2">
-                <MobileHeaderAffordance />
                 <span className="truncate text-sm font-semibold text-fg">
                   {t('dynamicComponents.title')}
                 </span>

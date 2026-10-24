@@ -1,12 +1,13 @@
+import { createStaticStyles, toast } from '@lobehub/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fingerprint, Plus, Shield, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { deletePasskey, listPasskeys } from '~/api/auth'
 import { getOption, patchOption } from '~/api/options'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { ListSkeleton } from '~/ui/placeholders'
 import { Button } from '~/ui/primitives/button'
 import { Scroll } from '~/ui/primitives/scroll'
 import { FormSwitch } from '~/ui/primitives/switch'
@@ -16,6 +17,82 @@ import { authClient } from '~/utils/authjs/auth'
 import { accountQueryKey } from '../../constants'
 import { formatDateTime, getErrorMessage } from '../../utils/settings'
 import { EmptyState } from '../SettingsPrimitives'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+  uf27cdd9d: css`
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: ${cssVar.colorFillSecondary};
+    padding: 1rem;
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+  `,
+  u8a292509: css`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  `,
+  uebf7b214: css`
+    min-width: 12rem;
+    flex: 1 1 0%;
+  `,
+  u36e579c0: css`
+    flex: 1 1 0%;
+  `,
+  ucc46d0fa: css`
+    width: 1.75rem;
+    height: 1.75rem;
+  `,
+  u80b47be2: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      border-top-width: 1px;
+      border-top-style: solid;
+    }
+    border-color: ${cssVar.colorFillSecondary};
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+  `,
+  uf21304d3: css`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem;
+  `,
+  u7e0b7cdf: css`
+    min-width: 0px;
+  `,
+  ue43bc276: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    font-weight: 500;
+  `,
+  u85c4ac8b: css`
+    margin-top: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u8342d5c2: css`
+    margin-top: 0.25rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+}))
 
 export function PasskeyPanelHeaderAction() {
   const { t } = useI18n()
@@ -42,7 +119,7 @@ export function PasskeyPanelHeaderAction() {
       type="button"
       variant="subtle"
     >
-      <Shield aria-hidden="true" className="size-4" />
+      <Shield aria-hidden="true" className={lobeStyles.uf7b5fa97} />
       {t('settings.passkey.action.validate')}
     </Button>
   )
@@ -112,7 +189,7 @@ export function PasskeyPanel() {
 
   return (
     <>
-      <div className="border-b border-neutral-100 p-4 dark:border-neutral-900">
+      <div className={lobeStyles.uf27cdd9d}>
         <FormSwitch
           checked={Boolean(authSecurityQuery.data?.disablePasswordLogin)}
           description={t('settings.passkey.switch.disablePasswordDescription')}
@@ -129,51 +206,44 @@ export function PasskeyPanel() {
           }}
         />
       </div>
-      <div className="border-b border-neutral-100 p-4 dark:border-neutral-900">
+      <div className={lobeStyles.uf27cdd9d}>
         <form
-          className="flex flex-wrap gap-2"
+          className={lobeStyles.u8a292509}
           onSubmit={(event) => {
             event.preventDefault()
             addMutation.mutate()
           }}
         >
           <TextInput
-            className="min-w-48 flex-1"
+            className={lobeStyles.uebf7b214}
             onChange={setName}
             placeholder={t('settings.passkey.namePlaceholder')}
             value={name}
           />
           <Button disabled={addMutation.isPending} type="submit">
-            <Plus aria-hidden="true" className="size-4" />
+            <Plus aria-hidden="true" className={lobeStyles.uf7b5fa97} />
             {t('settings.passkey.action.add')}
           </Button>
         </form>
       </div>
-      <Scroll className="flex-1">
+      <Scroll className={lobeStyles.u36e579c0}>
         {passkeysQuery.isLoading ? (
-          <div className="p-4 text-sm text-neutral-500">
-            {t('settings.common.loading')}
-          </div>
+          <ListSkeleton label={t('settings.common.loading')} rows={3} />
         ) : (passkeysQuery.data ?? []).length === 0 ? (
           <EmptyState
-            icon={<Fingerprint className="size-7" />}
+            icon={<Fingerprint className={lobeStyles.ucc46d0fa} />}
             label={t('settings.passkey.empty')}
           />
         ) : (
-          <div className="divide-y divide-neutral-100 dark:divide-neutral-900">
+          <div className={lobeStyles.u80b47be2}>
             {passkeysQuery.data?.map((passkey) => (
-              <div
-                className="flex items-center justify-between gap-3 p-4"
-                key={passkey.id}
-              >
-                <div className="min-w-0">
-                  <h3 className="truncate text-sm font-medium">
+              <div className={lobeStyles.uf21304d3} key={passkey.id}>
+                <div className={lobeStyles.u7e0b7cdf}>
+                  <h3 className={lobeStyles.ue43bc276}>
                     {passkey.name || passkey.id}
                   </h3>
-                  <p className="mt-1 truncate font-mono text-xs text-neutral-500">
-                    {passkey.credentialID}
-                  </p>
-                  <p className="mt-1 text-xs text-neutral-500">
+                  <p className={lobeStyles.u85c4ac8b}>{passkey.credentialID}</p>
+                  <p className={lobeStyles.u8342d5c2}>
                     {t('settings.passkey.createdAt', {
                       time: formatDateTime(passkey.createdAt),
                     })}
@@ -188,7 +258,7 @@ export function PasskeyPanel() {
                   type="button"
                   variant="subtle"
                 >
-                  <Trash2 aria-hidden="true" className="size-4" />
+                  <Trash2 aria-hidden="true" className={lobeStyles.uf7b5fa97} />
                 </Button>
               </div>
             ))}

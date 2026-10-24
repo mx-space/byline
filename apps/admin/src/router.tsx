@@ -5,8 +5,10 @@ import type { AppRoute, RedirectEntry } from 'virtual:admin-routes'
 import { publicRoutes, redirects, shellRoutes } from 'virtual:admin-routes'
 
 import { DocumentTitleSync } from './hooks/use-document-title'
+import { useI18n } from './i18n'
 import { ProtectedLayout } from './layouts/protected-layout'
 import { LegacyStaticRedirect } from './lib/legacy-redirects'
+import { PageLoadingFrame } from './ui/page'
 
 function toRouteObject(route: AppRoute): RouteObject {
   return {
@@ -41,11 +43,8 @@ function RootLayout() {
 }
 
 function RouteLoadingFallback() {
-  return (
-    <div className="flex h-full min-h-0 items-center justify-center bg-white text-sm text-neutral-500 dark:bg-neutral-950 dark:text-neutral-400">
-      Loading...
-    </div>
-  )
+  const { t } = useI18n()
+  return <PageLoadingFrame label={t('common.loading')} />
 }
 
 const routeTree: RouteObject[] = [

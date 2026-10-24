@@ -62,7 +62,6 @@ function buildService(lockedLangs: string[] = []) {
     {} as any,
     {} as any,
     {} as any,
-    {} as any,
   )
   const generate = vi.spyOn(service, 'generateTranslation').mockImplementation(
     async (_refId, lang) =>

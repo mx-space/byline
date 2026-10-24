@@ -2,8 +2,7 @@
 //
 // Loaded via `test.setupFiles` in `vite.config.mts`. We intentionally keep the
 // runtime contract minimal: tests in this repo use `react-dom/client` + raw
-// DOM queries against the happy-dom environment (see e.g.
-// `src/ui/layout/content-layout.test.tsx`). This file exists as a single
+// DOM queries against the happy-dom environment. This file exists as a single
 // hook-point for future shared test concerns (matchers, network mocks, etc.)
 // without forcing every test to re-import them.
 
@@ -28,8 +27,8 @@ if (typeof window !== 'undefined') {
     {}
 }
 
-// React 19's `act` from `react` (used by raw `react-dom/client` mounts in
-// `responsive-data-table.test.tsx` etc.) requires this flag at module load.
+// React 19's `act` from `react` (used by raw `react-dom/client` mounts)
+// requires this flag at module load.
 ;(
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true

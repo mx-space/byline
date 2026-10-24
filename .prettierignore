@@ -11,3 +11,4 @@ packages/*/test
 packages/*/tests
 packages/*/esm
 packages/*/types
+.agents/skills

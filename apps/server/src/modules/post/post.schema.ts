@@ -12,11 +12,13 @@ import { createPagerSchema } from '~/shared/dto/pager.dto'
 
 import {
   PostAuthorIdsSchema,
+  PostPublicAtSchema,
   PostSeoSchema,
   PostSourceLangSchema,
 } from './post-write.schema'
 
 export const PartialPostSchema = z.object({
+  publicAt: PostPublicAtSchema.optional(),
   categoryId: zEntityId.optional(),
   pinAt: zPinDate,
   authors: PostAuthorIdsSchema.refine((ids) => ids.length > 0, {
@@ -62,9 +64,11 @@ export const PostPagerSchema = createPagerSchema([
   'createdAt',
   'modifiedAt',
   'pinAt',
+  'publicAt',
 ]).extend({
   truncate: zCoerceInt.optional(),
   authorId: zEntityId.optional(),
+  visibility: z.enum(['scheduled']).optional(),
   categoryIds: z
     .preprocess(
       (val) => (typeof val === 'string' ? val.split(',') : val),
@@ -76,6 +80,15 @@ export const PostPagerSchema = createPagerSchema([
 })
 
 export type PostPagerDto = z.infer<typeof PostPagerSchema>
+
+export const PostSearchSchema = z.object({
+  keyword: z.string().trim().min(1).max(200),
+  page: zCoerceInt.min(1).optional(),
+  size: zCoerceInt.min(1).max(50).optional(),
+  visibility: z.enum(['scheduled']).optional(),
+})
+
+export type PostSearchDto = z.infer<typeof PostSearchSchema>
 
 export const SetPostPublishStatusSchema = z.object({
   isPublished: z.boolean(),

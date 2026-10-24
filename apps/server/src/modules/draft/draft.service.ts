@@ -649,7 +649,7 @@ export class DraftService {
   ): RevisionSnapshot {
     const common = {
       content: (article.content as string | null) ?? null,
-      contentFormat: (article.contentFormat as string) ?? 'lexical',
+      contentFormat: 'lexical' as const,
       images: (article.images as unknown[] | null) ?? null,
       meta: (article.meta as Record<string, unknown> | null) ?? null,
       text: (article.text as string) ?? '',
@@ -668,6 +668,10 @@ export class DraftService {
         seo: article.seo ?? null,
         slug: article.slug,
         sourceLang: article.sourceLang ?? null,
+        publicAt:
+          article.publicAt instanceof Date
+            ? article.publicAt.toISOString()
+            : (article.publicAt ?? null),
         summary: article.summary,
         tags: article.tags,
       },

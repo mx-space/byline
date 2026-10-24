@@ -6,7 +6,7 @@ export const metadata = defineMetadata({
   titleKey: 'routes.aiOverview.title',
   descriptionKey: 'routes.aiOverview.description',
   icon: LayoutGrid,
-  order: 0,
+  order: 1,
 })
 
 export { AiOverviewRouteView as default } from '~/features/ai/routes/AiOverviewRouteView'

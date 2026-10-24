@@ -1,197 +1,269 @@
+import {
+  Alert,
+  confirmModal,
+  createStaticStyles,
+  Flexbox,
+  List,
+  SkeletonText,
+  Text,
+} from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo } from 'react'
+import { SlidersHorizontal } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 
 import { getFormSchema } from '~/api/options'
-import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
+import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { FocusScope, useScopeArrowNav } from '~/ui/focus-scope'
 import { MasterDetailShell } from '~/ui/layout/master-detail-shell'
-import { MobileHeaderAffordance } from '~/ui/layout/mobile-header-affordance'
-import { Scroll } from '~/ui/primitives/scroll'
-import { cn } from '~/utils/cn'
+import { DetailPlaceholder, ListPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
-import {
-  staticGroupsAfter,
-  staticGroupsBefore,
-  systemGroupTranslationKeys,
-} from '../constants'
+import { accountGroups } from '../constants'
+import { settingsCopy } from '../copy'
 import type { SettingsGroupSummary } from '../types/settings'
-import { getGroupIcon } from '../utils/settings'
+import { getGroupIcon, getGroupTitle } from '../utils/settings'
 import { SettingsRouteContext } from './settings-route-context'
-import { SettingsDetailEmpty } from './SettingsDetailEmpty'
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  heading: css`
+    margin: 0;
+    padding-block: 12px 4px;
+    padding-inline: 12px;
+
+    font-size: ${cssVar.fontSizeSM};
+    font-weight: 500;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  nav: css`
+    padding-block-end: 12px;
+    padding-inline: 4px;
+  `,
+  scope: css`
+    height: 100%;
+    min-height: 0;
+  `,
+  skeleton: css`
+    padding-inline: 12px;
+  `,
+}))
 
 const SETTINGS_NAV_SCOPE_ID = 'settings-nav'
 
 export function SettingsRouteViewContent() {
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const navigate = useNavigate()
+  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
   const params = useParams<{ section?: string }>()
   const selectedSection = params.section ?? null
   const [searchParams] = useSearchParams()
   const queryGroup = searchParams.get('group')
+  const leaveGuardRef = useRef<(() => boolean) | null>(null)
+  const confirmingRef = useRef(false)
 
   const schemaQuery = useQuery({
     queryFn: getFormSchema,
     queryKey: adminQueryKeys.settings.schema(),
   })
 
-  const groups = useMemo<SettingsGroupSummary[]>(() => {
-    const systemGroups: SettingsGroupSummary[] =
+  const systemGroups = useMemo<SettingsGroupSummary[]>(
+    () =>
       schemaQuery.data?.groups.map((group) => ({
         description: group.description,
-        descriptionKey: systemGroupTranslationKeys[group.key]?.descriptionKey,
         icon: getGroupIcon(group.icon),
         key: group.key,
         systemGroup: group,
         title: group.title,
-        titleKey: systemGroupTranslationKeys[group.key]?.titleKey,
         type: 'system',
-      })) ?? []
+      })) ?? [],
+    [schemaQuery.data?.groups],
+  )
 
-    return [...staticGroupsBefore, ...systemGroups, ...staticGroupsAfter]
-  }, [schemaQuery.data?.groups])
+  const groups = useMemo(
+    () => [...systemGroups, ...accountGroups],
+    [systemGroups],
+  )
+  const groupsRef = useRef(groups)
+  groupsRef.current = groups
 
-  const activeGroupKey = selectedSection ?? queryGroup ?? null
-  const activeGroup =
-    (activeGroupKey
-      ? groups.find((group) => group.key === activeGroupKey)
-      : null) ?? null
+  const activeKey = selectedSection ?? queryGroup ?? null
 
-  const selectGroup = useCallback(
-    (key: string) => {
-      const nextSearchParams = new URLSearchParams(searchParams)
-      nextSearchParams.delete('group')
-      const search = nextSearchParams.toString()
-      navigate({
-        pathname: `/setting/${encodeURIComponent(key)}`,
-        search: search ? `?${search}` : '',
+  const registerLeaveGuard = useCallback((guard: (() => boolean) | null) => {
+    leaveGuardRef.current = guard
+  }, [])
+
+  const confirmLeave = useCallback(
+    (go: () => void) => {
+      if (!leaveGuardRef.current?.()) {
+        go()
+        return
+      }
+      if (confirmingRef.current) return
+      confirmingRef.current = true
+      confirmModal({
+        cancelText: settingsCopy(locale, 'leaveCancel'),
+        content: settingsCopy(locale, 'leaveBody'),
+        okButtonProps: { danger: true },
+        okText: settingsCopy(locale, 'leaveConfirm'),
+        onCancel: () => {
+          confirmingRef.current = false
+        },
+        onOk: () => {
+          confirmingRef.current = false
+          leaveGuardRef.current = null
+          go()
+        },
+        title: settingsCopy(locale, 'leaveTitle'),
       })
+    },
+    [locale],
+  )
+
+  const navigateTo = useCallback(
+    (pathname: string, replace = false) => {
+      const next = new URLSearchParams(searchParams)
+      next.delete('group')
+      const search = next.toString()
+      navigate({ pathname, search: search ? `?${search}` : '' }, { replace })
     },
     [navigate, searchParams],
   )
 
+  const selectGroup = useCallback(
+    (key: string) => {
+      if (key === selectedSection) return
+      confirmLeave(() => navigateTo(`/setting/${encodeURIComponent(key)}`))
+    },
+    [confirmLeave, navigateTo, selectedSection],
+  )
+  const selectGroupRef = useRef(selectGroup)
+  selectGroupRef.current = selectGroup
+
   useScopeArrowNav({
-    itemSelector: '[data-scope-item="row"]',
+    itemSelector: 'nav button',
     onItemFocus: (el) => {
-      const key = el.dataset.id
-      if (key) selectGroup(key)
+      const nav = el.closest('nav')
+      if (!nav) return
+      const index = [...nav.querySelectorAll('button')].indexOf(
+        el as HTMLButtonElement,
+      )
+      const group = groupsRef.current[index]
+      if (group) selectGroupRef.current(group.key)
     },
     scopeId: SETTINGS_NAV_SCOPE_ID,
   })
 
   useEffect(() => {
-    if (selectedSection || !queryGroup) return
-    const nextSearchParams = new URLSearchParams(searchParams)
-    nextSearchParams.delete('group')
-    const search = nextSearchParams.toString()
-    navigate(
-      {
-        pathname: `/setting/${encodeURIComponent(queryGroup)}`,
-        search: search ? `?${search}` : '',
-      },
-      { replace: true },
-    )
-  }, [navigate, queryGroup, searchParams, selectedSection])
+    if (selectedSection) return
+    if (queryGroup) {
+      navigateTo(`/setting/${encodeURIComponent(queryGroup)}`, true)
+      return
+    }
+    if (!isDesktop || schemaQuery.isLoading) return
+    const first = groupsRef.current[0]
+    if (first) navigateTo(`/setting/${encodeURIComponent(first.key)}`, true)
+  }, [
+    isDesktop,
+    navigateTo,
+    queryGroup,
+    schemaQuery.isLoading,
+    selectedSection,
+  ])
 
   const closeDetail = useCallback(() => {
-    const qs = searchParams.toString()
-    navigate(`/setting${qs ? `?${qs}` : ''}`)
-  }, [navigate, searchParams])
+    confirmLeave(() => {
+      const qs = searchParams.toString()
+      navigate(`/setting${qs ? `?${qs}` : ''}`)
+    })
+  }, [confirmLeave, navigate, searchParams])
 
   const routeContextValue = useMemo(
     () => ({
       groups,
-      schema: schemaQuery.data,
       onBack: closeDetail,
+      registerLeaveGuard,
+      schema: schemaQuery.data,
     }),
-    [closeDetail, groups, schemaQuery.data],
+    [closeDetail, groups, registerLeaveGuard, schemaQuery.data],
+  )
+
+  const navList = (items: SettingsGroupSummary[]) => (
+    <List
+      activeKey={activeKey}
+      compact
+      items={items.map((group) => ({
+        icon: group.icon,
+        key: group.key,
+        label: getGroupTitle(locale, group),
+      }))}
+      onActiveChange={(key) => selectGroup(String(key))}
+      selectable
+    />
   )
 
   return (
     <SettingsRouteContext.Provider value={routeContextValue}>
       <MasterDetailShell
-        emptyDetail={<SettingsDetailEmpty />}
+        defaultSize={240}
+        emptyDetail={
+          <DetailPlaceholder
+            description={settingsCopy(locale, 'emptyDetail')}
+            icon={SlidersHorizontal}
+            title={t('settings.shell.title')}
+          />
+        }
+        maxSize={320}
+        minSize={200}
         onDismiss={closeDetail}
         list={
-          <FocusScope
-            className="outline-hidden flex h-full min-h-0 flex-col"
-            id={SETTINGS_NAV_SCOPE_ID}
-          >
-            <div
-              className={cn(
-                'flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800',
-                APP_SHELL_HEADER_HEIGHT_CLASS,
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <MobileHeaderAffordance />
-                <h2 className="text-lg font-semibold text-neutral-950 dark:text-neutral-50">
-                  {t('settings.shell.title')}
-                </h2>
-              </div>
-              <span className="inline-flex items-center gap-2 text-xs text-neutral-400">
-                {schemaQuery.isFetching ? (
-                  <Loader2
-                    aria-hidden="true"
-                    className="size-3.5 animate-spin"
-                  />
-                ) : null}
-                {t('settings.shell.itemCount', { count: groups.length })}
-              </span>
-            </div>
-
-            <Scroll className="flex-1" innerClassName="p-2">
-              <nav>
-                {groups.map((group) => {
-                  const Icon = group.icon
-                  const selected = activeGroup?.key === group.key
-                  const groupTitle = group.titleKey
-                    ? t(group.titleKey)
-                    : (group.title ?? '')
-                  const groupDescription = group.descriptionKey
-                    ? t(group.descriptionKey)
-                    : (group.description ?? '')
-
-                  return (
-                    <button
-                      className={cn(
-                        'outline-hidden flex w-full items-center gap-3 rounded px-3 py-2 text-left transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-primary-shallow)]',
-                        selected
-                          ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-900 dark:text-neutral-50'
-                          : 'text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-900/70',
-                      )}
-                      data-id={group.key}
-                      data-scope-item="row"
-                      key={group.key}
-                      onClick={() => selectGroup(group.key)}
-                      type="button"
-                    >
-                      <span
-                        className={cn(
-                          'flex size-9 shrink-0 items-center justify-center rounded',
-                          selected
-                            ? 'bg-neutral-200 text-neutral-950 dark:bg-neutral-800 dark:text-neutral-50'
-                            : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-900 dark:text-neutral-400',
-                        )}
+          <FocusScope className={styles.scope} id={SETTINGS_NAV_SCOPE_ID}>
+            <ListPane
+              notices={
+                schemaQuery.isError && !schemaQuery.data ? (
+                  <Alert
+                    action={
+                      <Button
+                        onClick={() => schemaQuery.refetch()}
+                        size="small"
                       >
-                        <Icon aria-hidden="true" className="size-4" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium">
-                          {groupTitle}
-                        </span>
-                        <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">
-                          {groupDescription}
-                        </span>
-                      </span>
-                    </button>
-                  )
-                })}
+                        {settingsCopy(locale, 'retry')}
+                      </Button>
+                    }
+                    description={settingsCopy(locale, 'loadFailedDetail')}
+                    showIcon
+                    title={settingsCopy(locale, 'loadFailed')}
+                    type="warning"
+                  />
+                ) : null
+              }
+              title={t('settings.shell.title')}
+            >
+              <nav
+                aria-label={t('settings.shell.title')}
+                className={styles.nav}
+              >
+                <Flexbox>
+                  <Text as="h2" className={styles.heading}>
+                    {settingsCopy(locale, 'navSystem')}
+                  </Text>
+                  {schemaQuery.isLoading ? (
+                    <div className={styles.skeleton}>
+                      <SkeletonText rows={4} />
+                    </div>
+                  ) : systemGroups.length > 0 ? (
+                    navList(systemGroups)
+                  ) : null}
+                </Flexbox>
+                <Flexbox>
+                  <Text as="h2" className={styles.heading}>
+                    {settingsCopy(locale, 'navAccount')}
+                  </Text>
+                  {navList(accountGroups)}
+                </Flexbox>
               </nav>
-            </Scroll>
+            </ListPane>
           </FocusScope>
         }
       />

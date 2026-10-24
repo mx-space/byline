@@ -31,6 +31,7 @@ import {
   type PostListParams,
   type PostModel,
 } from './post.types'
+import { isPostPublic } from './post-visibility'
 import { type PostExtras, PostExtrasSchema } from './post-write.schema'
 
 @Injectable()
@@ -169,6 +170,7 @@ export class PostService implements OnApplicationBootstrap {
 
   private parseExtras(data: Record<string, unknown>): PostExtras {
     return PostExtrasSchema.parse({
+      publicAt: data.publicAt,
       authors: data.authors ?? data.authorIds,
       sourceLang: data.sourceLang,
       image: data.image,
@@ -226,6 +228,7 @@ export class PostService implements OnApplicationBootstrap {
       tags: post.tags,
       categoryId: category.id,
       isPublished: post.isPublished,
+      publicAt: extras.publicAt,
       sourceLang: extras.sourceLang ?? null,
       image: extras.image ?? null,
       seo: extras.seo ?? null,
@@ -252,7 +255,7 @@ export class PostService implements OnApplicationBootstrap {
           BusinessEvents.POST_CREATE,
           { id: doc.id },
           {
-            scope: doc.isPublished
+            scope: isPostPublic(doc)
               ? EventScope.TO_SYSTEM_VISITOR
               : EventScope.TO_SYSTEM,
           },
@@ -325,7 +328,7 @@ export class PostService implements OnApplicationBootstrap {
       const trackedPost = await findTrackedPost()
       if (!trackedPost)
         throw createAppException(AppErrorCode.CATEGORY_NOT_FOUND)
-      if (!isAuthenticated && !trackedPost.isPublished) {
+      if (!isAuthenticated && !isPostPublic(trackedPost)) {
         throw createAppException(AppErrorCode.POST_NOT_FOUND, {
           id: trackedPost.id,
         })
@@ -341,7 +344,7 @@ export class PostService implements OnApplicationBootstrap {
     if (postDocument) return postDocument
 
     const trackedPost = await findTrackedPost()
-    if (trackedPost && !isAuthenticated && !trackedPost.isPublished) {
+    if (trackedPost && !isAuthenticated && !isPostPublic(trackedPost)) {
       throw createAppException(AppErrorCode.POST_NOT_FOUND, {
         id: trackedPost.id,
       })
@@ -361,7 +364,7 @@ export class PostService implements OnApplicationBootstrap {
         ArticleTypeEnum.Post,
       )
     const trackedPost = tracked ? await this.findById(tracked.targetId) : null
-    if (trackedPost && !isAuthenticated && !trackedPost.isPublished) {
+    if (trackedPost && !isAuthenticated && !isPostPublic(trackedPost)) {
       throw createAppException(AppErrorCode.POST_NOT_FOUND, {
         id: trackedPost.id,
       })
@@ -420,6 +423,7 @@ export class PostService implements OnApplicationBootstrap {
       tags: patch.tags,
       categoryId: patch.categoryId as string | undefined,
       isPublished: patch.isPublished,
+      publicAt: extras.publicAt,
       sourceLang: extras.sourceLang,
       image: extras.image,
       seo: extras.seo,
@@ -430,7 +434,7 @@ export class PostService implements OnApplicationBootstrap {
     })
     await this.apiCache.invalidate()
 
-    const wasPublished = oldDocument.isPublished
+    const wasPublished = isPostPublic(oldDocument)
     scheduleManager.schedule(() => this.afterUpdatePost(id, wasPublished))
     return updated
   }
@@ -448,15 +452,15 @@ export class PostService implements OnApplicationBootstrap {
 
       await (doc &&
         this.eventManager.emit(
-          wasPublished === doc.isPublished
+          wasPublished === isPostPublic(doc)
             ? BusinessEvents.POST_UPDATE
-            : doc.isPublished
+            : isPostPublic(doc)
               ? BusinessEvents.POST_REPUBLISH
               : BusinessEvents.POST_UNPUBLISH,
           { id: doc.id },
           {
             scope:
-              wasPublished || doc.isPublished
+              wasPublished || isPostPublic(doc)
                 ? EventScope.TO_SYSTEM_VISITOR
                 : EventScope.TO_SYSTEM,
           },

@@ -37,6 +37,8 @@ import {
   PostDetailQuerySchema,
   type PostPagerDto,
   PostPagerSchema,
+  type PostSearchDto,
+  PostSearchSchema,
   type PostSlugDto,
   PostSlugSchema,
   type SetPostPublishStatusDto,
@@ -45,6 +47,7 @@ import {
 import { PostService } from './post.service'
 import type { PostModel, PostRow } from './post.types'
 import { PostMetaBuilder } from './post-meta-builder'
+import { isPostPublic } from './post-visibility'
 
 const CATEGORY_NAME_RULES: ReadonlyArray<EntryRule> = [
   {
@@ -124,6 +127,7 @@ export class PostController {
       categoryIds,
       authorId,
       excludeAiWritten,
+      visibility,
     } = query
 
     const res = await this.postService.listPaginated({
@@ -134,6 +138,7 @@ export class PostController {
       authorId,
       excludeAiWritten,
       publishedOnly: !isAuthenticated,
+      scheduledOnly: isAuthenticated && visibility === 'scheduled',
       sortBy: sortBy as any,
       sortOrder: sortOrder === 'asc' ? 1 : -1,
       truncateText: truncate,
@@ -208,12 +213,15 @@ export class PostController {
   }
 
   @Get('/get-url/:slug')
-  async getBySlug(@Param('slug') slug: string) {
+  async getBySlug(
+    @Param('slug') slug: string,
+    @HasAdminAccess() isAuthenticated?: boolean,
+  ) {
     if (typeof slug !== 'string') {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }
     const doc = await this.postService.findBySlug(slug)
-    if (!doc) {
+    if (!doc || (!isAuthenticated && !isPostPublic(doc))) {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }
 
@@ -259,6 +267,30 @@ export class PostController {
     )
   }
 
+  @Get('/search')
+  @Auth()
+  async search(@Query({ schema: PostSearchSchema }) query: PostSearchDto) {
+    const res = await this.postService.listPaginated({
+      keyword: query.keyword,
+      metaOnly: true,
+      page: query.page,
+      size: query.size,
+      scheduledOnly: query.visibility === 'scheduled',
+    })
+    return withMeta(
+      res.data,
+      new MetaObjectBuilder()
+        .view('card')
+        .pagination({
+          page: res.pagination.currentPage,
+          size: res.pagination.size,
+          total: res.pagination.total,
+          totalPages: res.pagination.totalPage,
+        })
+        .build(),
+    )
+  }
+
   @Get('/:id')
   @BypassCaseTransform(['meta'])
   async getById(
@@ -272,7 +304,7 @@ export class PostController {
       throw createAppException(AppErrorCode.POST_NOT_FOUND, { id })
     }
 
-    if (!isAuthenticated && !doc.isPublished) {
+    if (!isAuthenticated && !isPostPublic(doc)) {
       throw createAppException(AppErrorCode.POST_NOT_FOUND, { id })
     }
 
@@ -349,7 +381,7 @@ export class PostController {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }
 
-    if (!isAuthenticated && !postDocument.isPublished) {
+    if (!isAuthenticated && !isPostPublic(postDocument)) {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }
 

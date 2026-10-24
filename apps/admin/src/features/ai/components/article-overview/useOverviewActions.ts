@@ -1,5 +1,5 @@
+import { toast } from '@lobehub/ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import {
   deleteInsights,
@@ -41,6 +41,18 @@ export function useOverviewActions(refId: string) {
       queryClient.invalidateQueries({
         queryKey: adminQueryKeys.tasks.tasksRoot,
       }),
+      queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.ai.groupedRoot('summaries'),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.ai.groupedRoot('insights'),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.ai.groupedRoot('translations'),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.ai.groupedRoot('tts'),
+      }),
     ])
   }
 
@@ -67,9 +79,18 @@ export function useOverviewActions(refId: string) {
     langs: string[] | undefined,
     detail: AiOverviewDetail,
     force = false,
+    regenerateLocked = false,
   ) => {
     generateMutation.mutate(
-      () => buildGenerateTask(capability, langs, refId, detail, force),
+      () =>
+        buildGenerateTask(
+          capability,
+          langs,
+          refId,
+          detail,
+          force,
+          regenerateLocked,
+        ),
       { onSuccess: () => void invalidate() },
     )
   }

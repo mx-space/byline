@@ -1,9 +1,183 @@
+import { createStaticStyles } from '@lobehub/ui'
 import type { LucideIcon } from 'lucide-react'
 import { AlertCircle, CloudDownload, History, X } from 'lucide-react'
 
 import { useI18n } from '~/i18n'
 import { Button } from '~/ui/primitives/button'
 import { cn } from '~/utils/cn'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u016f2eea: css`
+    background-color: ${cssVar.colorBgContainer};
+    border-color: ${cssVar.colorBorderSecondary};
+  `,
+  ud40b0a80: css`
+    color: ${cssVar.colorTextSecondary};
+  `,
+  ucfc6e672: css`
+    color: ${cssVar.colorText};
+  `,
+  uc4bced39: css`
+    background-color: ${cssVar.colorWarningBg};
+    border-color: ${cssVar.colorWarningBg};
+    :where(.dark, .dark *) & {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorWarning} 30%,
+        transparent
+      );
+    }
+    :where(.dark, .dark *) & {
+      border-color: color-mix(in srgb, ${cssVar.colorWarning} 40%, transparent);
+    }
+  `,
+  u126b835a: css`
+    color: ${cssVar.colorWarning};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorWarning};
+    }
+  `,
+  ufddad14f: css`
+    color: ${cssVar.colorWarning};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorWarningBg};
+    }
+  `,
+  u0b4bebd9: css`
+    color: color-mix(in srgb, ${cssVar.colorWarning} 70%, transparent);
+    &:hover {
+      background-color: ${cssVar.colorWarningBg};
+    }
+    &:hover {
+      color: ${cssVar.colorWarning};
+    }
+    :where(.dark, .dark *) & {
+      color: color-mix(in srgb, ${cssVar.colorWarning} 70%, transparent);
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorWarning} 40%,
+        transparent
+      );
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorWarningBg};
+    }
+  `,
+  ua82a1496: css`
+    color: ${cssVar.colorPrimary};
+  `,
+  u5ad81ca6: css`
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 12px;
+    border-width: 1px;
+    border-style: solid;
+    padding-inline: 0.75rem;
+    padding-block: 0.5rem;
+    @media (min-width: 640px) {
+      gap: 0.75rem;
+    }
+  `,
+  uc39c8d01: css`
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  `,
+  u9459aa18: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    @media (max-width: 639px) {
+      flex-basis: calc(100%-2rem);
+    }
+  `,
+  ub93021ad: css`
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    @media (max-width: 639px) {
+      width: 100%;
+    }
+    @media (max-width: 639px) {
+      padding-left: 1.5rem;
+    }
+  `,
+  uca068657: css`
+    height: 1.75rem;
+    padding-inline: 0.625rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+  ua3b6e7b1: css`
+    height: 1.75rem;
+    padding-inline: 0.625rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorError};
+    &:hover {
+      color: ${cssVar.colorError};
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorError};
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorError};
+    }
+  `,
+  u40f5651d: css`
+    display: inline-flex;
+    width: 1.75rem;
+    height: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:focus-visible {
+      outline: none;
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 3px
+        color-mix(in srgb, ${cssVar.colorPrimary} 15%, transparent);
+    }
+  `,
+  u783b0d9d: css`
+    width: 0.875rem;
+    height: 0.875rem;
+  `,
+  u02064bce: css`
+    color: ${cssVar.colorTextTertiary};
+    &:hover {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorText} NaN%,
+        transparent
+      );
+    }
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) &:hover {
+      background-color: color-mix(
+        in srgb,
+        ${cssVar.colorBgContainer} NaN%,
+        transparent
+      );
+    }
+  `,
+}))
 
 interface DraftHintBannerProps {
   variant: 'list' | 'recovery' | 'remote-update'
@@ -29,31 +203,27 @@ const variantConfig: Record<
 > = {
   list: {
     icon: History,
-    cardClass: 'bg-surface-card border-border',
-    iconClass: 'text-fg-muted',
-    messageClass: 'text-fg',
+    cardClass: lobeStyles.u016f2eea,
+    iconClass: lobeStyles.ud40b0a80,
+    messageClass: lobeStyles.ucfc6e672,
     actionVariant: 'secondary',
-    dismissClass:
-      'text-fg-subtle hover:bg-black/[0.06] hover:text-fg dark:hover:bg-white/[0.08]',
+    dismissClass: lobeStyles.u02064bce,
   },
   recovery: {
     icon: AlertCircle,
-    cardClass:
-      'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/40',
-    iconClass: 'text-amber-600 dark:text-amber-400',
-    messageClass: 'text-amber-900 dark:text-amber-100',
+    cardClass: lobeStyles.uc4bced39,
+    iconClass: lobeStyles.u126b835a,
+    messageClass: lobeStyles.ufddad14f,
     actionVariant: 'primary',
-    dismissClass:
-      'text-amber-700/70 hover:bg-amber-100 hover:text-amber-900 dark:text-amber-300/70 dark:hover:bg-amber-900/40 dark:hover:text-amber-200',
+    dismissClass: lobeStyles.u0b4bebd9,
   },
   'remote-update': {
     icon: CloudDownload,
-    cardClass: 'bg-surface-card border-border',
-    iconClass: 'text-accent',
-    messageClass: 'text-fg',
+    cardClass: lobeStyles.u016f2eea,
+    iconClass: lobeStyles.ua82a1496,
+    messageClass: lobeStyles.ucfc6e672,
     actionVariant: 'primary',
-    dismissClass:
-      'text-fg-subtle hover:bg-black/[0.06] hover:text-fg dark:hover:bg-white/[0.08]',
+    dismissClass: lobeStyles.u02064bce,
   },
 }
 
@@ -70,24 +240,19 @@ export function DraftHintBanner(props: DraftHintBannerProps) {
 
   return (
     <div
-      className={cn(
-        'flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 sm:gap-3',
-        cardClass,
-      )}
+      className={cn(lobeStyles.u5ad81ca6, cardClass)}
       role={props.variant === 'recovery' ? 'alert' : 'status'}
     >
-      <Icon aria-hidden="true" className={cn('size-4 shrink-0', iconClass)} />
-      <span
-        className={cn(
-          'min-w-0 flex-1 text-sm max-sm:basis-[calc(100%-2rem)]',
-          messageClass,
-        )}
-      >
+      <Icon
+        aria-hidden="true"
+        className={cn(lobeStyles.uc39c8d01, iconClass)}
+      />
+      <span className={cn(lobeStyles.u9459aa18, messageClass)}>
         {props.message}
       </span>
-      <div className="flex shrink-0 flex-wrap items-center gap-1 max-sm:w-full max-sm:pl-6">
+      <div className={lobeStyles.ub93021ad}>
         <Button
-          className="h-7 px-2.5 text-xs"
+          className={lobeStyles.uca068657}
           onClick={props.onAction}
           type="button"
           variant={actionVariant}
@@ -96,7 +261,7 @@ export function DraftHintBanner(props: DraftHintBannerProps) {
         </Button>
         {props.onSecondaryAction && props.secondaryActionLabel ? (
           <Button
-            className="h-7 px-2.5 text-xs"
+            className={lobeStyles.uca068657}
             onClick={props.onSecondaryAction}
             type="button"
             variant="secondary"
@@ -106,7 +271,7 @@ export function DraftHintBanner(props: DraftHintBannerProps) {
         ) : null}
         {props.onDelete ? (
           <Button
-            className="h-7 px-2.5 text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+            className={lobeStyles.ua3b6e7b1}
             onClick={props.onDelete}
             type="button"
             variant="ghost"
@@ -117,14 +282,11 @@ export function DraftHintBanner(props: DraftHintBannerProps) {
         {props.onDismiss ? (
           <button
             aria-label={t('write.draftHint.dismissAria')}
-            className={cn(
-              'inline-flex size-7 items-center justify-center rounded-sm transition-colors focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-accent/15',
-              dismissClass,
-            )}
+            className={cn(lobeStyles.u40f5651d, dismissClass)}
             onClick={props.onDismiss}
             type="button"
           >
-            <X aria-hidden="true" className="size-3.5" />
+            <X aria-hidden="true" className={lobeStyles.u783b0d9d} />
           </button>
         ) : null}
       </div>

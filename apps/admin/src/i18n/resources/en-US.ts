@@ -57,7 +57,7 @@ export const enUS = {
   'ai.overview.addLangPlaceholder': 'en',
   'ai.overview.assetsEmptyDescription':
     'Click an empty cell in the matrix above to generate one.',
-  'ai.overview.asset.stale': 'Based on an older version',
+  'ai.overview.asset.stale': 'Stale',
   'ai.overview.assetsTitle': 'Assets · {count}',
   'ai.overview.capability.insights': 'Insights',
   'ai.overview.capability.summary': 'Summary',
@@ -69,16 +69,16 @@ export const enUS = {
   'ai.overview.cell.openAria': 'View {kind} for {lang}',
   'ai.overview.cell.pendingAria': 'Generating {kind} for {lang}',
   'ai.overview.cell.sourceAria': '{lang} is the source language',
-  'ai.overview.confirmDelete': 'Delete this AI asset?',
+  'ai.overview.confirmDelete': 'Delete this output?',
   'ai.overview.costRunCount': '{count} runs',
   'ai.overview.costRuns': 'Runs',
   'ai.overview.costTitle': 'Cost',
   'ai.overview.costTokens': 'Tokens',
   'ai.overview.costTotal': 'Total spend',
   'ai.overview.detailEmptyDescription':
-    'Pick an article on the left to see its AI assets.',
+    'Pick an article on the left to see its outputs.',
   'ai.overview.detailEmptyTitle': 'No article selected',
-  'ai.overview.detailTitle': 'AI overview',
+  'ai.overview.detailTitle': 'Outputs',
   'ai.overview.gapCount': '{count} missing',
   'ai.overview.gapNone': 'Complete',
   'ai.overview.listEmptyDescription': 'Articles show up here once published.',
@@ -92,7 +92,7 @@ export const enUS = {
   'ai.overview.progress.queued': 'Queued',
   'ai.overview.progress.running': 'Running',
   'ai.overview.pickLangDescription':
-    'No target languages configured and no AI assets yet. Pick a language and the matrix opens up.',
+    'No target languages yet, and no outputs. Pick a language and the matrix opens.',
   'ai.overview.pickLangTitle': 'Pick a language to start',
   'ai.overview.matrixTitle': 'Coverage matrix',
   'ai.overview.searchPlaceholder': 'Search articles',
@@ -116,7 +116,7 @@ export const enUS = {
   'ai.empty.label': 'No {label}',
   'tasks.empty.tasks': 'No tasks',
   'tasks.empty.tasksDescription':
-    'Background tasks from AI, enrichment, and cron will show here.',
+    'Generation, publish, and scheduled tasks show up here.',
   'tasks.empty.tasksDetail': 'Select a task to view details.',
   'tasks.empty.tasksLoadFailed': 'Failed to load tasks',
   'ai.filter.allKeyPath': 'All paths',
@@ -178,10 +178,13 @@ export const enUS = {
   'tasks.task.imageGeneration.task': 'Image generation task',
   'tasks.task.insights.generation': 'Insights generation',
   'tasks.task.insights.translation': 'Insights translation',
-  'tasks.task.live_paused': 'Live updates paused',
+  'tasks.task.live_paused': 'Live paused',
   'tasks.task.progressDefault': 'Task progress',
   'tasks.task.retryBadge': 'Retry {count}',
+  'tasks.task.cleanTempDirectory': 'Clean temporary files',
+  'tasks.task.deleteExpiredJwt': 'Delete expired JWTs',
   'tasks.task.slugBackfill.summary': 'Backfill missing slug',
+  'tasks.task.summaryTranslation': 'Summary translation',
   'tasks.task.startedAt': 'Started at',
   'tasks.task.stream.lang': 'Language {lang}',
   'tasks.task.stream.lateHint':
@@ -211,12 +214,15 @@ export const enUS = {
   'tasks.taskStatus.partialFailed': 'Partially failed',
   'tasks.taskStatus.pending': 'Pending',
   'tasks.taskStatus.running': 'Running',
+  'tasks.taskType.cleanTempDirectory': 'Temp files',
+  'tasks.taskType.deleteExpiredJwt': 'Expired JWTs',
   'tasks.taskType.imageGeneration': 'Image generation',
   'tasks.taskType.insights': 'Insights generation',
   'ai.taskType.insightsTranslation': 'Insights translation',
   'tasks.taskType.insightsTranslation': 'Insights translation',
   'tasks.taskType.slugBackfill': 'Slug backfill',
   'tasks.taskType.summary': 'Summary generation',
+  'tasks.taskType.summaryTranslation': 'Summary translation',
   'tasks.taskType.translation': 'Translation',
   'tasks.taskType.translationAll': 'Translate all',
   'tasks.taskType.translationBatch': 'Batch translation',
@@ -319,6 +325,7 @@ export const enUS = {
 
   'app.loading.auth': 'Checking sign-in state...',
 
+  'auth.login.asideLine': 'Invite-only, multi-author content',
   'auth.login.apple': 'Sign in with Apple',
   'auth.login.failed': 'Sign-in failed',
   'auth.login.github': 'Sign in with GitHub',
@@ -381,7 +388,9 @@ export const enUS = {
   'common.loading': 'Loading',
   'common.noData': 'No data',
   'common.openMainSite': 'Open main site',
+  'common.closeNavigation': 'Close navigation',
   'common.openNavigation': 'Open navigation',
+  'common.skipToContent': 'Skip to content',
   'common.pagination.nextPage': 'Next page',
   'common.pagination.pageSize': '{count} / page',
   'common.pagination.previousPage': 'Previous page',
@@ -404,9 +413,18 @@ export const enUS = {
   'imageUploadPrivacy.toast.stripFailed':
     'Failed to remove GPS metadata. The image was not uploaded.',
 
-  'commandPalette.empty': 'No matches',
-  'commandPalette.placeholder': 'Search commands or pages…',
-  'commandPalette.title': 'Command palette',
+  'shell.search.clear': 'Clear',
+  'shell.search.empty': 'No matches',
+  'shell.search.hint': 'Try a page name or a post title.',
+  'shell.search.label': 'Search',
+  'shell.search.pages': 'Pages',
+  'shell.search.placeholder': 'Search pages, paths, or post titles…',
+  'shell.search.posts': 'Posts',
+  'shell.search.postsError': 'Post search failed',
+  'shell.search.postsLoading': 'Searching posts',
+  'shell.search.postsMore': 'View all posts',
+  'shell.search.trigger': 'Search pages or posts…',
+  'shell.search.unpublished': 'Unpublished',
 
   'dashboard.desk.action.post': 'Write post',
   'dashboard.desk.action.files': 'Files',
@@ -434,9 +452,8 @@ export const enUS = {
   'drafts.detail.edit': 'Edit',
   'drafts.detail.empty': 'Select a draft to view details.',
   'drafts.diff.empty': 'No content body.',
-  'drafts.diff.failed': 'Failed to render Markdown diff.',
+  'drafts.diff.failed': 'Failed to render body diff.',
   'drafts.diff.loading': 'Loading diff view...',
-  'drafts.diff.markdown.title': 'Markdown diff',
   'drafts.diff.rich.title': 'Rich text diff',
   'drafts.diff.richFailed': 'Failed to parse rich text content.',
   'drafts.diff.sameContent': 'Same as the current version',
@@ -450,11 +467,6 @@ export const enUS = {
   'drafts.history.deltaChars': '{delta} chars',
   'drafts.history.pickVersion': 'Select a historical version to view the diff',
   'drafts.history.title': 'Version list',
-  'drafts.list.bulkDelete': 'Delete selected',
-  'drafts.list.checkboxAria': 'Select draft "{title}"',
-  'drafts.list.confirmBatchDelete': 'Delete {count} drafts?',
-  'drafts.list.selectAllVisible': 'Select all visible',
-  'drafts.list.selectedCount': '{count} selected',
   'drafts.newPost': 'New post',
   'drafts.refType.post': 'Post',
   'drafts.row.creating': 'New',
@@ -618,10 +630,12 @@ export const enUS = {
   'posts.toast.deleted': 'Post deleted',
   'posts.toast.pinFailed': 'Failed to update pin state',
 
-  'routes.ai.description': 'AI task surfaces and enrichment workflows.',
-  'routes.ai.title': 'AI',
+  'routes.ai.description':
+    'Translations, summaries, close readings, and narration.',
+  'routes.ai.detail': 'Post',
+  'routes.ai.title': 'Outputs',
   'routes.aiOverview.description':
-    'Per-article AI coverage and generation spend.',
+    'See whether each article has a translation, summary, close reading, and narration.',
   'routes.aiOverview.title': 'Overview',
   'routes.aiInsights.description':
     'AI insights, insight translations, and generation tasks.',
@@ -630,7 +644,7 @@ export const enUS = {
     'AI summary results and batch generation status.',
   'routes.aiSummary.title': 'Summary',
   'routes.tasks.description':
-    'Unified background task queue across AI, enrichment, and cron — retry, cancel, and inspect.',
+    'Retry, cancel, and inspect generation, publish, and scheduled tasks.',
   'routes.tasks.title': 'Tasks',
   'routes.aiTranslation.description':
     'AI translation results and batch translation workflows.',
@@ -645,27 +659,29 @@ export const enUS = {
     'Posts categories, tags, and their associated articles.',
   'routes.categories.title': 'Categories',
   'routes.dashboard.description': 'Runtime status and environment data.',
-  'routes.dashboard.title': 'Dashboard',
+  'routes.dashboard.title': 'Overview',
   'routes.drafts.description':
     'Autosaved drafts, versions, and content recovery.',
   'routes.drafts.title': 'Drafts',
-  'routes.files.description':
-    'Uploaded files, isolated files, and comment image uploads.',
+  'routes.files.description': 'Images, media, and attachments used by posts.',
   'routes.files.title': 'Files',
   'routes.orphanImages.description':
     'Uploaded files not referenced by persisted content or configuration.',
   'routes.orphanImages.title': 'Isolated Files',
+  'routes.scheduledPosts.description':
+    'Published posts that are not public yet.',
+  'routes.scheduledPosts.title': 'Scheduled',
   'routes.posts.description':
     'Posts, publishing state, search, and article operations.',
-  'routes.posts.title': 'Posts',
+  'routes.posts.title': 'Published',
   'routes.settings.description':
     'Your profile, account security and system options.',
   'routes.settings.title': 'Settings',
   'routes.webhooks.description':
-    'Outbound webhook endpoints and dispatch history.',
+    'Notify your other services when content changes, and check each delivery.',
   'routes.webhooks.title': 'Webhooks',
   'routes.writePost.description':
-    'Create and edit posts in the React markdown writing surface.',
+    'Create and edit posts in the rich text editor.',
   'routes.writePost.title': 'Write Post',
 
   'settings.account.entry.passkeyDescription':
@@ -859,8 +875,7 @@ export const enUS = {
   'settings.group.notification.title': 'Notifications',
   'settings.group.site.description': 'Site URL, SEO',
   'settings.group.site.title': 'Site',
-  'settings.group.storage.description':
-    'Backup, image hosting, comment image uploads',
+  'settings.group.storage.description': 'Image hosting and file storage',
   'settings.group.storage.title': 'Storage',
   'settings.group.system.description': 'Admin settings, feature toggles',
   'settings.group.system.title': 'System',
@@ -917,7 +932,7 @@ export const enUS = {
   'settings.oauth.apple.keyIdHelp':
     'Ten-character ID of the key created under Keys with Sign in with Apple enabled, bound to the same primary App ID.',
   'settings.oauth.apple.privateKeyHelp':
-    'Full contents of the downloaded .p8 file, including the BEGIN PRIVATE KEY and END PRIVATE KEY lines.',
+    'Paste the full contents of the downloaded .p8 file, including the BEGIN PRIVATE KEY and END PRIVATE KEY lines.',
   'settings.oauth.apple.servicesIdHelp':
     'Identifier created under Identifiers → Services IDs, e.g. dev.example.web. It is not the app Bundle ID — reusing the Bundle ID fails with invalid_client.',
   'settings.oauth.apple.teamIdHelp':
@@ -1205,12 +1220,15 @@ export const enUS = {
   'setup.onboarding.ai.features.asideSource': 'Original',
   'setup.api.urlLabel': 'API URL',
 
+  'shell.debug.api': 'API debug',
+  'shell.debug.local': 'Local dev',
+  'shell.locale.en': 'English',
   'shell.locale.label': 'Interface language',
+  'shell.locale.zh': '中文',
   'shell.logout': 'Sign out',
   'shell.nav.assets': 'Assets',
-  'shell.nav.content': 'Content',
-  'shell.nav.intelligence': 'Intelligence',
-  'shell.nav.integrations': 'Integrations',
+  'shell.nav.content': 'Articles',
+  'shell.nav.intelligence': 'Outputs',
   'shell.nav.system': 'System',
   'shell.owner.fallback': 'User',
   'shell.theme.dark': 'Dark',
@@ -1406,7 +1424,7 @@ export const enUS = {
   'write.header.publish': 'Publish article',
   'write.publishAi.translationRequiresLanguages':
     'Configure translation target languages first',
-  'write.publishAi.unavailable': 'This AI capability is not enabled',
+  'write.publishAi.unavailable': 'This is not enabled yet',
   'write.publishAi.modeAsync': 'After',
   'write.publishAi.modeNone': 'Skip',
   'write.publishAi.modeSync': 'Before',
@@ -1424,12 +1442,12 @@ export const enUS = {
   'write.publishProcess.open': 'Open publish progress',
   'write.publishProcess.onlineUpdated': 'Online article updated',
   'write.publishProcess.onlineUpdatedWithAiFailure':
-    'Online article updated, but some AI assets did not finish',
+    'The live article was updated, but some outputs did not finish',
   'write.publishProcess.newerDraftRemains':
     'This snapshot was published, but the editor still has changes that are not online.',
   'write.publishProcess.openLatestDraft': 'Open latest draft',
-  'write.publishProcess.preparing': 'Preparing AI assets',
-  'write.publishProcess.publishing': 'AI assets ready. Publishing',
+  'write.publishProcess.preparing': 'Preparing outputs',
+  'write.publishProcess.publishing': 'Outputs are ready. Publishing',
   'write.publishProcess.queued': 'Queued',
   'write.publishProcess.republished': 'Article republished',
   'write.publishProcess.republish': 'Republish',
@@ -1454,12 +1472,17 @@ export const enUS = {
   'write.publication.unpublished': 'Unpublished',
   'write.publication.unpublishAction': 'Take article offline',
   'write.publication.unpublishDescription':
-    'The article will go offline; its draft and existing AI resources are preserved.',
+    'The article goes offline. The draft and existing outputs stay.',
   'write.publication.unpublishTitle': 'Take this article offline?',
+  'write.publication.deleteTitle': 'Delete this post?',
+  'write.publication.deleteDescription':
+    'This cannot be undone. The public URL will stop working, and the draft will be deleted too.',
+  'write.publication.deleteAction': 'Delete post',
+  'write.toast.postDeleted': 'Post deleted',
   'write.publishProcess.viewTask': 'View task details',
   'write.publishProcess.backgroundGenerating':
     'Still generating in the background: {resources}',
-  'write.publishProcess.viewBackground': 'View AI resources',
+  'write.publishProcess.viewBackground': 'Open outputs',
   'write.header.titlePost': 'Write a post',
   'write.kind.note': 'note',
   'write.kind.page': 'page',
@@ -1546,12 +1569,12 @@ export const enUS = {
   'write.postPublicPath.fallback':
     'With a title, the slug is generated; without, both title and slug are generated from the body.',
   'write.publishConfirm.aiDescription':
-    'For each resource, skip it, generate it before going live (publishing waits for it), or after going live (generated in the background). Unselected existing resources are preserved.',
-  'write.publishConfirm.aiTitle': 'Update AI resources too (optional)',
+    'For each one, skip it, generate it before going live, or after. Outputs you do not select stay.',
+  'write.publishConfirm.aiTitle': 'Update outputs too (optional)',
   'write.publishConfirm.diverged':
     'This draft started from an older online version. Continuing will replace the online article with this draft. The other {count} draft branch(es) will be preserved.',
   'write.publishConfirm.firstDescription':
-    'Save the current draft, then publish that fixed snapshot.',
+    'Save the current draft, then publish that snapshot.',
   'write.publishConfirm.onlineDescription':
     'Submitting will directly update the current online article.',
   'write.publishConfirm.onlineChanged':
@@ -1559,7 +1582,7 @@ export const enUS = {
   'write.publishConfirm.otherBranchesPreserved':
     'The other {count} draft branch(es) will remain unchanged.',
   'write.publishConfirm.republishDescription':
-    'Save the current draft, then republish that fixed snapshot online.',
+    'Save the current draft, then republish that snapshot online.',
   'write.publishConfirm.savedAt':
     'The draft was last saved {time}; current changes are saved before submission.',
   'write.publishConfirm.willSave':
@@ -1618,6 +1641,8 @@ export const enUS = {
   'write.recovery.field.meta': 'Custom meta',
   'write.recovery.field.pin': 'Pinned',
   'write.recovery.field.pinOrder': 'Pin order',
+  'write.recovery.field.publicAt': 'Public time',
+  'write.recovery.field.publishedAt': 'Publish date',
   'write.recovery.field.slug': 'Slug',
   'write.recovery.field.summary': 'Summary',
   'write.recovery.field.tags': 'Tags',
@@ -1760,6 +1785,7 @@ export const enUS = {
   'write.validation.titleRequired': 'Enter a title',
   'write.validation.createCategoryFirst': 'Create a category first',
   'routes.users.title': 'Users',
+  'routes.users.detail': 'User details',
   'routes.users.description':
     'Invite writers, manage authors and deactivate accounts.',
   'auth.login.subtitle': 'Sign in to your workspace',
@@ -1955,8 +1981,16 @@ export const enUS = {
   'write.seo.title': 'SEO title',
   'write.seo.description': 'SEO description',
   'write.seo.image': 'SEO image',
+  'write.seo.titleCount': 'Recommended: {max} characters. You’ve used',
+  'write.seo.descriptionCount': 'Recommended: {max} characters. You’ve used',
+  'write.seo.preview': 'Search result preview',
+  'write.seo.previewFallback':
+    'With no custom description, search engines pull a snippet from the post.',
+  'write.seo.searchPreview': 'Search',
+  'write.seo.cardPreview': 'Card',
+  'write.seo.imageFallback': 'Uses the cover when left empty',
   'write.publishAi.lockedTranslations':
-    'Locked translations are kept as they are: {langs}.',
+    'These translations stay as they are: {langs}.',
   'routes.dynamicComponents.title': 'Dynamic components',
   'routes.dynamicComponents.description':
     'ES module widgets writers and the agent can insert into posts.',
@@ -2016,17 +2050,17 @@ export const enUS = {
   'dynamicComponents.toast.deleted': 'Component deleted',
   'dynamicComponents.toast.deleteFailed': 'Delete failed',
   'write.publishAi.regenerateLocked':
-    'Regenerate locked translations too (overwrites manual edits)',
-  'ai.action.lock': 'Lock translation',
-  'ai.action.unlock': 'Unlock translation',
-  'ai.translation.locked': 'Locked',
+    'Regenerate these translations too (replaces the current text)',
+  'ai.action.lock': 'Keep on regenerate',
+  'ai.action.unlock': 'Allow overwrite',
+  'ai.translation.locked': 'Kept',
   'ai.translation.lockDescription':
-    'Locked translations are manual and AI never overwrites them unless you ask to regenerate.',
-  'ai.translation.regenerateLockedTitle':
-    'Regenerate the locked {lang} translation?',
+    'Regeneration and publishing leave this translation in place unless you ask to replace it.',
+  'ai.translation.regenerateLockedTitle': 'Regenerate the {lang} translation?',
   'ai.translation.regenerateLockedDescription':
-    'The manual translation will be replaced by a new AI translation.',
+    'This translation is marked Kept. Continuing replaces it with a new result.',
   'settings.schema.site.title': 'Content',
+  'settings.schema.site.defaultSourceLang.title': 'Default source language',
   'settings.schema.site.description': 'Defaults for new posts.',
   'dynamicProps.noFields':
     "This component's props can't be edited as a form. Switch to JSON.",

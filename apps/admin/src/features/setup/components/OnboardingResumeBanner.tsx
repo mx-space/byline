@@ -1,21 +1,23 @@
+import { Block, Flexbox, Text } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
-import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router'
 
 import { getMe } from '~/api/users'
-import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { Button, ButtonLink } from '~/ui/primitives/button'
-import { cn } from '~/utils/cn'
+import { Button } from '~/ui/site-button'
 
+import { useSetupCopy } from '../copy'
 import {
   claimPendingOnboarding,
   readOnboardingProgress,
   writeOnboardingProgress,
 } from '../utils/onboarding'
+import { wizardStyles } from './wizard-styles'
 
 export function OnboardingResumeBanner(props: { className?: string }) {
-  const { t } = useI18n()
+  // lobe-design-ignore DETAIL-NO-RETRY: 读不到当前用户时不显示横幅，重试由所在页面负责
+  const copy = useSetupCopy()
   const ownerQuery = useQuery({
     queryFn: getMe,
     queryKey: adminQueryKeys.users.me(),
@@ -26,7 +28,14 @@ export function OnboardingResumeBanner(props: { className?: string }) {
     ? (readOnboardingProgress(ownerId) ?? claimPendingOnboarding(ownerId))
     : null
 
-  if (!ownerId || !progress || progress.status !== 'active' || dismissed) {
+  if (
+    ownerQuery.isPending ||
+    ownerQuery.isError ||
+    !ownerId ||
+    !progress ||
+    progress.status !== 'active' ||
+    dismissed
+  ) {
     return null
   }
 
@@ -36,36 +45,28 @@ export function OnboardingResumeBanner(props: { className?: string }) {
   }
 
   return (
-    <div
-      className={cn(
-        'flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-card px-4 py-3 shadow-xs',
-        props.className,
-      )}
+    <Block
+      align="center"
+      className={props.className}
+      gap={12}
+      horizontal
+      variant="outlined"
     >
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-accent-soft text-accent">
-        <Sparkles aria-hidden="true" className="size-4" />
-      </span>
-      <span className="min-w-0 flex-1 text-sm">
-        <span className="block font-medium text-fg">
-          {t('setup.onboarding.resume.title')}
-        </span>
-        <span className="block text-fg-muted">
-          {t('setup.onboarding.resume.description')}
-        </span>
-      </span>
-      <div className="flex items-center gap-2">
-        <Button
-          data-testid="onboarding-dismiss"
-          onClick={dismiss}
-          type="button"
-          variant="ghost"
-        >
-          {t('setup.onboarding.resume.dismiss')}
-        </Button>
-        <ButtonLink to="/setup">
-          {t('setup.onboarding.resume.continue')}
-        </ButtonLink>
-      </div>
-    </div>
+      <Flexbox gap={4} style={{ flex: 1, minWidth: 0 }}>
+        <Text>{copy('resumeTitle')}</Text>
+        <Text type="secondary">{copy('resumeDescription')}</Text>
+      </Flexbox>
+      <Button
+        data-testid="onboarding-dismiss"
+        htmlType="button"
+        onClick={dismiss}
+        type="text"
+      >
+        {copy('resumeDismiss')}
+      </Button>
+      <Link className={wizardStyles.link} to="/setup">
+        {copy('resumeContinue')}
+      </Link>
+    </Block>
   )
 }

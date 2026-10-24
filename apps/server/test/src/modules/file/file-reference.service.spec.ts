@@ -80,7 +80,16 @@ describe('FileReferenceService', () => {
     const { fileUsageRepository, repository, service } = createService()
 
     await service.updateReferencesForDocument(
-      { text: '[download](https://cdn.example.com/archive.zip)' },
+      {
+        text: '',
+        content: JSON.stringify({
+          root: {
+            children: [
+              { type: 'file', src: 'https://cdn.example.com/archive.zip' },
+            ],
+          },
+        }),
+      },
       'post-1',
       'post',
     )

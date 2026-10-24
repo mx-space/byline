@@ -1,6 +1,6 @@
+import { createStaticStyles, toast } from '@lobehub/ui'
 import { X } from 'lucide-react'
 import { useId, useState } from 'react'
-import { toast } from 'sonner'
 
 import { useI18n } from '~/i18n'
 import {
@@ -11,7 +11,57 @@ import {
 import { Button } from '~/ui/primitives/button'
 import { TextInput } from '~/ui/primitives/text-field'
 
-import { FieldShell } from '../SettingsPrimitives'
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u6f7e013d: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.5rem;
+    }
+  `,
+  u152c1189: css`
+    display: flex;
+    gap: 0.5rem;
+  `,
+  u3b4c716c: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+  `,
+  udbad9057: css`
+    flex-shrink: 0;
+    white-space: nowrap;
+  `,
+  u6978b7c6: css`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  `,
+  ucfefb1ef: css`
+    border-radius: 0.25rem;
+    background-color: ${cssVar.colorFillSecondary};
+    padding-inline: 0.5rem;
+    padding-block: 0.25rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+    &:disabled {
+      cursor: not-allowed;
+    }
+    &:disabled {
+      opacity: 0.6;
+    }
+    :where(.dark, .dark *) & {
+      background-color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  ud05630af: css`
+    margin-left: 0.25rem;
+    display: inline;
+    width: 0.75rem;
+    height: 0.75rem;
+  `,
+}))
 
 export function AITextListField(props: {
   disabled?: boolean
@@ -39,61 +89,60 @@ export function AITextListField(props: {
   }
 
   return (
-    <FieldShell label={props.label}>
-      <div className="space-y-2">
-        <div className="flex gap-2">
-          <TextInput
-            className="min-w-0 flex-1"
-            disabled={props.disabled}
-            list={listId}
-            maxLength={35}
-            onChange={setDraft}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                add()
-              }
-            }}
-            placeholder={t('settings.ai.test.placeholder')}
-            value={draft}
-          />
-          <datalist id={listId}>
-            {COMMON_LANGUAGE_CODES.filter(
-              (code) => !props.value.includes(code),
-            ).map((code) => (
-              <option key={code} value={code}>
-                {formatLanguageLabel(code, locale)}
-              </option>
-            ))}
-          </datalist>
-          <Button
-            className="shrink-0 whitespace-nowrap"
-            disabled={props.disabled || !draft.trim()}
-            onClick={add}
-            type="button"
-            variant="subtle"
-          >
-            {t('common.add')}
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {props.value.map((item) => (
-            <button
-              className="rounded bg-neutral-100 px-2 py-1 text-xs text-neutral-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-neutral-900 dark:text-neutral-300"
-              disabled={props.disabled}
-              key={item}
-              onClick={() =>
-                props.onChange(props.value.filter((value) => value !== item))
-              }
-              title={formatLanguageLabel(item, locale)}
-              type="button"
-            >
-              {item}
-              <X aria-hidden="true" className="ml-1 inline size-3" />
-            </button>
+    <div className={lobeStyles.u6f7e013d}>
+      <div className={lobeStyles.u152c1189}>
+        <TextInput
+          aria-label={props.label}
+          className={lobeStyles.u3b4c716c}
+          disabled={props.disabled}
+          list={listId}
+          maxLength={35}
+          onChange={setDraft}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              add()
+            }
+          }}
+          placeholder={t('settings.ai.test.placeholder')}
+          value={draft}
+        />
+        <datalist id={listId}>
+          {COMMON_LANGUAGE_CODES.filter(
+            (code) => !props.value.includes(code),
+          ).map((code) => (
+            <option key={code} value={code}>
+              {formatLanguageLabel(code, locale)}
+            </option>
           ))}
-        </div>
+        </datalist>
+        <Button
+          className={lobeStyles.udbad9057}
+          disabled={props.disabled || !draft.trim()}
+          onClick={add}
+          type="button"
+          variant="subtle"
+        >
+          {t('common.add')}
+        </Button>
       </div>
-    </FieldShell>
+      <div className={lobeStyles.u6978b7c6}>
+        {props.value.map((item) => (
+          <button
+            className={lobeStyles.ucfefb1ef}
+            disabled={props.disabled}
+            key={item}
+            onClick={() =>
+              props.onChange(props.value.filter((value) => value !== item))
+            }
+            title={formatLanguageLabel(item, locale)}
+            type="button"
+          >
+            {item}
+            <X aria-hidden="true" className={lobeStyles.ud05630af} />
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }

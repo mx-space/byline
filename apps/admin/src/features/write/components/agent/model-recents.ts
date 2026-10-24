@@ -47,7 +47,9 @@ export function writeRecentModels(models: SelectedAgentModel[]): void {
     } else {
       localStorage.removeItem(STORAGE_KEY)
     }
-  } catch {}
+  } catch {
+    return
+  }
 }
 
 export function rememberRecentModel(

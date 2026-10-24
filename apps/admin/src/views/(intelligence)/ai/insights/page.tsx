@@ -6,7 +6,8 @@ export const metadata = defineMetadata({
   titleKey: 'routes.aiInsights.title',
   descriptionKey: 'routes.aiInsights.description',
   icon: Telescope,
-  order: 2,
+  order: 4,
+  hidden: true,
 })
 
 export { AiInsightsRouteView as default } from '~/features/ai/routes/AiInsightsRouteView'

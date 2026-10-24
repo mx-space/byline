@@ -1,4 +1,5 @@
 import type { ToolCallGroupItem } from '@haklex/rich-agent-core'
+import { createStaticStyles, Highlighter } from '@lobehub/ui'
 import { Check, ChevronRight, Loader2, X } from 'lucide-react'
 import { useState } from 'react'
 
@@ -8,43 +9,217 @@ import { cn } from '~/utils/cn'
 
 import { isReplayableToolItem } from './agent-operations'
 
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  uc8add4c1: css`
+    display: flex;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+  `,
+  uc7edc5c0: css`
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 999px;
+    background-color: ${cssVar.colorFillSecondary};
+    opacity: 0.5;
+  `,
+  uf9dfa057: css`
+    width: 0.875rem;
+    height: 0.875rem;
+    @keyframes byline-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    animation: byline-spin 1s linear infinite;
+  `,
+  u03d9edcc: css`
+    width: 0.875rem;
+    height: 0.875rem;
+    color: ${cssVar.colorSuccess};
+  `,
+  u8a360676: css`
+    width: 0.875rem;
+    height: 0.875rem;
+    color: ${cssVar.colorError};
+  `,
+  u7e0b7cdf: css`
+    min-width: 0px;
+  `,
+  u560b44ca: css`
+    margin-bottom: 0.125rem;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  errorCode: css`
+    outline: 1px solid ${cssVar.colorErrorBorder};
+  `,
+  u032458a7: css`
+    display: flex;
+    width: 100%;
+    min-width: 0px;
+    align-items: center;
+    gap: 0.5rem;
+    padding-block: 0.25rem;
+    text-align: left;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.375;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  `,
+  u01d6268c: css`
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u50ca6ba5: css`
+    cursor: default;
+  `,
+  u920917e0: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: ${cssVar.fontFamilyCode};
+    color: ${cssVar.colorTextSecondary};
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u7862275b: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u36e579c0: css`
+    flex: 1 1 0%;
+  `,
+  u7faad9fa: css`
+    width: 0.75rem;
+    height: 0.75rem;
+    flex-shrink: 0;
+    color: ${cssVar.colorTextSecondary};
+    transition: transform 0.15s ease;
+  `,
+  u35be72eb: css`
+    display: flex;
+    min-width: 0px;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 1.5rem;
+  `,
+  u5174068b: css`
+    display: flex;
+    width: 100%;
+    min-width: 0px;
+    align-items: center;
+    gap: 0.5rem;
+    padding-block: 0.25rem;
+    text-align: left;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    line-height: 1.375;
+    color: ${cssVar.colorTextSecondary};
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+    &:hover {
+      color: ${cssVar.colorText};
+    }
+    :where(.dark, .dark *) & {
+      color: ${cssVar.colorTextSecondary};
+    }
+    :where(.dark, .dark *) &:hover {
+      color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  u67bab313: css`
+    min-width: 0px;
+    flex: 1 1 0%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  u5b06b7ef: css`
+    flex-shrink: 0;
+    font-family: ${cssVar.fontFamilyCode};
+    color: ${cssVar.colorTextSecondary};
+  `,
+  uf5120a69: css`
+    min-width: 0px;
+    padding-left: 1rem;
+  `,
+  u706bfe77: css`
+    margin-top: 0.375rem;
+    height: 1.5rem;
+    padding-inline: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  `,
+}))
+
 type ItemStatus = ToolCallGroupItem['status']
 
 function StatusIcon({ status }: { status: ItemStatus }) {
   return (
-    <span className="flex size-4 shrink-0 items-center justify-center">
-      {status === 'pending' ? (
-        <span className="size-1.5 rounded-full bg-neutral-300 opacity-50" />
-      ) : null}
+    <span className={lobeStyles.uc8add4c1}>
+      {status === 'pending' ? <span className={lobeStyles.uc7edc5c0} /> : null}
       {status === 'running' ? (
-        <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+        <Loader2 aria-hidden="true" className={lobeStyles.uf9dfa057} />
       ) : null}
       {status === 'completed' ? (
-        <Check aria-hidden="true" className="size-3.5 text-green-600" />
+        <Check aria-hidden="true" className={lobeStyles.u03d9edcc} />
       ) : null}
       {status === 'error' ? (
-        <X aria-hidden="true" className="size-3.5 text-red-500" />
+        <X aria-hidden="true" className={lobeStyles.u8a360676} />
       ) : null}
     </span>
   )
 }
 
+function detailLanguage(text: string) {
+  const trimmed = text.trim()
+  if (
+    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+    (trimmed.startsWith('[') && trimmed.endsWith(']'))
+  ) {
+    return 'json'
+  }
+  return 'plaintext'
+}
+
 function DetailBlock(props: { label: string; text: string; tone?: 'error' }) {
   return (
-    <div className="min-w-0">
-      <div className="mb-0.5 font-mono text-xs uppercase tracking-wide text-neutral-400">
-        {props.label}
-      </div>
-      <pre
-        className={cn(
-          'm-0 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded p-1.5 font-mono text-xs',
-          props.tone === 'error'
-            ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400'
-            : 'bg-surface-inset text-fg-muted',
-        )}
+    <div className={lobeStyles.u7e0b7cdf}>
+      <div className={lobeStyles.u560b44ca}>{props.label}</div>
+      <Highlighter
+        className={props.tone === 'error' ? lobeStyles.errorCode : undefined}
+        language={
+          props.tone === 'error' ? 'plaintext' : detailLanguage(props.text)
+        }
+        style={{ maxHeight: '12rem', overflow: 'auto' }}
+        variant="filled"
+        wrap
       >
         {props.text}
-      </pre>
+      </Highlighter>
     </div>
   )
 }
@@ -55,42 +230,33 @@ function ToolItemRow({ item }: { item: ToolCallGroupItem }) {
     Object.keys(item.params).length > 0 || Boolean(item.result || item.error)
 
   return (
-    <div className="min-w-0">
+    <div className={lobeStyles.u7e0b7cdf}>
       <button
         className={cn(
-          'flex w-full min-w-0 items-center gap-2 py-1 text-left text-xs leading-snug text-neutral-400 transition-colors',
-          hasDetail
-            ? 'hover:text-neutral-700 dark:hover:text-neutral-200'
-            : 'cursor-default',
+          lobeStyles.u032458a7,
+          hasDetail ? lobeStyles.u01d6268c : lobeStyles.u50ca6ba5,
         )}
         disabled={!hasDetail}
         onClick={() => hasDetail && setOpen((value) => !value)}
         type="button"
       >
         <StatusIcon status={item.status} />
-        <span className="truncate font-mono text-neutral-500 dark:text-neutral-300">
-          {item.toolName}
-        </span>
+        <span className={lobeStyles.u920917e0}>{item.toolName}</span>
         {item.description ? (
-          <span className="min-w-0 flex-1 truncate text-neutral-400">
-            {item.description}
-          </span>
+          <span className={lobeStyles.u7862275b}>{item.description}</span>
         ) : (
-          <span className="flex-1" />
+          <span className={lobeStyles.u36e579c0} />
         )}
         {hasDetail ? (
           <ChevronRight
             aria-hidden="true"
-            className={cn(
-              'size-3 shrink-0 text-neutral-400 transition-transform',
-              open && 'rotate-90',
-            )}
+            className={cn(lobeStyles.u7faad9fa, open && 'rotate-90')}
           />
         ) : null}
       </button>
 
       {open && hasDetail ? (
-        <div className="flex min-w-0 flex-col gap-2 pb-2 pl-6">
+        <div className={lobeStyles.u35be72eb}>
           {Object.keys(item.params).length > 0 ? (
             <DetailBlock
               label="params"
@@ -130,30 +296,27 @@ export function ToolCallGroupView(props: {
   const status = deriveGroupStatus(items)
 
   return (
-    <div className="min-w-0">
+    <div className={lobeStyles.u7e0b7cdf}>
       <button
-        className="flex w-full min-w-0 items-center gap-2 py-1 text-left text-xs leading-snug text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+        className={lobeStyles.u5174068b}
         onClick={() => setOpen((value) => !value)}
         type="button"
       >
         <StatusIcon status={status} />
-        <span className="min-w-0 flex-1 truncate">
+        <span className={lobeStyles.u67bab313}>
           {t('write.agent.bubble.toolGroupCount', { count: items.length })}
         </span>
-        <span className="shrink-0 font-mono text-neutral-400">
+        <span className={lobeStyles.u5b06b7ef}>
           {completed}/{items.length}
         </span>
         <ChevronRight
           aria-hidden="true"
-          className={cn(
-            'size-3 shrink-0 text-neutral-400 transition-transform',
-            open && 'rotate-90',
-          )}
+          className={cn(lobeStyles.u7faad9fa, open && 'rotate-90')}
         />
       </button>
 
       {open ? (
-        <div className="min-w-0 pl-4">
+        <div className={lobeStyles.uf5120a69}>
           {items.map((item) => (
             <ToolItemRow item={item} key={item.id} />
           ))}
@@ -162,7 +325,7 @@ export function ToolCallGroupView(props: {
 
       {replayable.length > 0 ? (
         <Button
-          className="mt-1.5 h-6 px-2 text-xs"
+          className={lobeStyles.u706bfe77}
           disabled={props.reapplyDisabled}
           onClick={() => props.onReapply(items)}
           type="button"

@@ -39,8 +39,7 @@ export function useThemeMode() {
 }
 
 export function installThemeTokens() {
-  // Legacy --color-primary* aliases for any code still reading them.
-  // New code uses --color-accent* via tokens.css.
+  // Legacy --color-primary* aliases. New surfaces use @lobehub/ui tokens.
   const root = document.documentElement.style
   root.setProperty('--color-primary', '#2563eb')
   root.setProperty('--color-primary-shallow', '#3b82f6')

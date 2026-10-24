@@ -11,10 +11,3 @@ export interface DraftDiffStats {
   delta: number
   isSame: boolean
 }
-
-export interface VersionItem {
-  id: string
-  isCurrent: boolean
-  savedAt: string
-  title: string
-}

@@ -1,4 +1,6 @@
+import { ConfigProvider } from '@lobehub/ui'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import * as motion from 'motion/react-m'
 import { act, createElement, useState } from 'react'
 import type { Root } from 'react-dom/client'
 import { createRoot } from 'react-dom/client'
@@ -11,7 +13,10 @@ import { DynamicComponentSourcePanel } from './DynamicComponentSourcePanel'
 
 let finishSave: (catalog: DynamicCatalog) => void = () => {}
 
-vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
+vi.mock('@lobehub/ui', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@lobehub/ui')>()),
+  toast: { error: vi.fn(), success: vi.fn() },
+}))
 vi.mock('~/ui/primitives/code-editor', async () => {
   const { createElement: h } = await import('react')
   return {
@@ -96,7 +101,10 @@ it('keeps edits typed while a save is in flight', async () => {
       createElement(
         QueryClientProvider,
         { client: queryClient },
-        createElement(I18nProvider, null, createElement(Harness)),
+        createElement(ConfigProvider, {
+          children: createElement(I18nProvider, null, createElement(Harness)),
+          motion,
+        }),
       ),
     )
   })

@@ -93,6 +93,7 @@ export const adminQueryKeys = {
       size: number
       sortKey: string
       sortOrder: string
+      visibility: string
     }) => ['posts', 'list', params] as const,
     relatedOptions: (context: string) =>
       ['posts', 'related-options', context] as const,

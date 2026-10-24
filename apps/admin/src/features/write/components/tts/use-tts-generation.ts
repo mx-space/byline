@@ -1,6 +1,6 @@
+import { toast } from '@lobehub/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 
 import { createTtsTask, getTtsByRefId } from '~/api/ai'
 import { AITaskStatus, getTask } from '~/api/tasks'

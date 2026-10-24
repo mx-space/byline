@@ -1,15 +1,39 @@
+import { createStaticStyles } from '@lobehub/ui'
+
 import type { AITask, AITaskLog, AITasksResponse } from '~/api/tasks'
 import { AITaskStatus, AITaskType } from '~/api/tasks'
 import type { TranslationKey, TranslationValues } from '~/i18n/types'
-import { relativeTimeFromNow } from '~/utils/time'
 
 import type { TaskStatusCategory } from '../constants'
-import { statusCategoryOptionKeys, taskTypeLabelKeys } from '../constants'
+import {
+  extraTaskTypeLabelKeys,
+  statusCategoryOptionKeys,
+  taskTypeLabelKeys,
+} from '../constants'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  u0e55306e: css`
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u340b3124: css`
+    color: ${cssVar.colorInfo};
+  `,
+  uab398374: css`
+    color: ${cssVar.colorSuccess};
+  `,
+  u1dd48761: css`
+    color: ${cssVar.colorWarning};
+  `,
+  ue3f51cc6: css`
+    color: ${cssVar.colorError};
+  `,
+}))
 
 type Translator = (key: TranslationKey, values?: TranslationValues) => string
 
-export function getTaskTypeLabel(type: AITask['type'], t: Translator): string {
-  const key = taskTypeLabelKeys[type]
+export function getTaskTypeLabel(type: string, t: Translator): string {
+  const key =
+    taskTypeLabelKeys[type as AITaskType] ?? extraTaskTypeLabelKeys[type]
   if (key) return t(key)
   const separatorIndex = type.indexOf(':')
   return separatorIndex > 0 ? type.slice(separatorIndex + 1) : type
@@ -79,40 +103,19 @@ export function getTaskSummary(task: AITask, t: Translator) {
       t('tasks.task.tts.task')
     )
   }
+  if ((task.type as string) === 'cron:clean-temp-directory') {
+    return t('tasks.task.cleanTempDirectory')
+  }
+  if ((task.type as string) === 'cron:delete-expired-jwt') {
+    return t('tasks.task.deleteExpiredJwt')
+  }
+  if ((task.type as string) === 'ai:summary:translation') {
+    return t('tasks.task.summaryTranslation')
+  }
 
   const refId = task.payload.refId
   if (typeof refId === 'string' && refId) return refId
-  return task.type
-}
-
-export function getTaskDetailSummary(task: AITask, t: Translator) {
-  const payload = task.payload
-  const result = task.result as Record<string, unknown> | undefined
-  if (task.type === AITaskType.Translation) {
-    const title = (payload.title as string) || (payload.refId as string)
-    const langs = (payload.targetLanguages as string[] | undefined)?.join(', ')
-    return `${title || t('tasks.task.translation.task')} -> ${langs || t('tasks.task.translation.defaultLang')}`
-  }
-  if (task.type === AITaskType.TranslationBatch) {
-    const count = (payload.refIds as string[] | undefined)?.length ?? 0
-    const langs = (payload.targetLanguages as string[] | undefined)?.join(', ')
-    return `${t('tasks.task.translation.articleCount', { count })} -> ${langs || t('tasks.task.translation.defaultLang')}`
-  }
-  if (task.type === AITaskType.TranslationAll) {
-    const count = result?.total as number | undefined
-    const langs = (payload.targetLanguages as string[] | undefined)?.join(', ')
-    const head = count
-      ? t('tasks.task.translation.allArticlesCount', { count })
-      : t('tasks.task.translation.allArticles')
-    return `${head} -> ${langs || t('tasks.task.translation.defaultLang')}`
-  }
-  if (task.type === AITaskType.Tts) {
-    const title = (payload.title as string) || (payload.refId as string)
-    const langs = (payload.langs as string[] | undefined)?.join(', ')
-    return `${title || t('tasks.task.tts.task')} -> ${langs || t('tasks.task.translation.defaultLang')}`
-  }
-
-  return getTaskSummary(task, t)
+  return getTaskTypeLabel(task.type, t)
 }
 
 export function getTaskProgressLabel(task: AITask) {
@@ -151,37 +154,13 @@ export function getProgress(task: AITask) {
 
 export function statusIconClassName(status: AITaskStatus) {
   return {
-    [AITaskStatus.Pending]: 'text-fg-subtle',
-    [AITaskStatus.Running]: 'text-blue-500',
-    [AITaskStatus.Completed]: 'text-emerald-500',
-    [AITaskStatus.PartialFailed]: 'text-amber-500',
-    [AITaskStatus.Failed]: 'text-red-500',
-    [AITaskStatus.Cancelled]: 'text-fg-subtle',
+    [AITaskStatus.Pending]: lobeStyles.u0e55306e,
+    [AITaskStatus.Running]: lobeStyles.u340b3124,
+    [AITaskStatus.Completed]: lobeStyles.uab398374,
+    [AITaskStatus.PartialFailed]: lobeStyles.u1dd48761,
+    [AITaskStatus.Failed]: lobeStyles.ue3f51cc6,
+    [AITaskStatus.Cancelled]: lobeStyles.u0e55306e,
   }[status]
-}
-
-export function formatTaskDuration(task: AITask) {
-  if (!task.startedAt || !task.completedAt) return null
-  const ms = task.completedAt - task.startedAt
-  if (ms < 0) return null
-  if (ms < 1000) return `${ms}ms`
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`
-  const minutes = Math.floor(ms / 60_000)
-  const seconds = Math.round((ms % 60_000) / 1000)
-  return `${minutes}m ${seconds}s`
-}
-
-export function formatRelativeTimestamp(timestamp?: number) {
-  if (!timestamp) return '-'
-  return relativeTimeFromNow(new Date(timestamp))
-}
-
-export function formatAbsoluteTimestamp(timestamp?: number) {
-  if (!timestamp) return '-'
-  return new Intl.DateTimeFormat('zh-CN', {
-    dateStyle: 'medium',
-    timeStyle: 'medium',
-  }).format(new Date(timestamp))
 }
 
 export function readPositivePage(value: null | string) {

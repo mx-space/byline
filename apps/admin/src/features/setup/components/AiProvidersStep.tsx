@@ -1,6 +1,7 @@
-import { CircleAlert, CircleCheck, Loader2, X } from 'lucide-react'
+import { Alert, Empty, Icon, Input, Text, toast } from '@lobehub/ui'
+import { Form, useForm, useWatch } from '@lobehub/ui/form'
+import { CircleAlert, CircleCheck, X } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { getModelList, testConfig } from '~/api/ai'
 import type { AIProviderPreset } from '~/features/settings/config/aiProviderPresets'
@@ -8,11 +9,10 @@ import {
   aiProviderPresets,
   createProviderFromPreset,
 } from '~/features/settings/config/aiProviderPresets'
-import { useI18n } from '~/i18n'
-import { Button } from '~/ui/primitives/button'
-import { TextInput } from '~/ui/primitives/text-field'
-import { cn } from '~/utils/cn'
+import { ListSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
+import { useSetupCopy } from '../copy'
 import {
   useOnboardingAiConfig,
   useSaveOnboardingAiConfig,
@@ -20,12 +20,11 @@ import {
 import { removeProviderFromConfig } from '../utils/onboarding'
 import { getErrorMessage } from '../utils/setup'
 import {
-  FieldHint,
-  OnboardingAsideTitle,
   OnboardingCard,
   OnboardingFooter,
   OnboardingShell,
 } from './OnboardingShell'
+import { wizardStyles } from './wizard-styles'
 
 const onboardingPresetIds = ['anthropic', 'openai', 'openrouter', 'custom']
 
@@ -35,43 +34,51 @@ const onboardingPresets = onboardingPresetIds
 
 type TestResult = { count: number; ok: true } | { message: string; ok: false }
 
+interface ProviderDraft {
+  apiKey: string
+  endpoint: string
+}
+
 export function AiProvidersStep(props: {
   onBack: () => void
   onLater?: () => void
   onNext: () => void
   onSkip: () => void
 }) {
-  const { t } = useI18n()
+  const copy = useSetupCopy()
   const configQuery = useOnboardingAiConfig()
   const save = useSaveOnboardingAiConfig()
   const [preset, setPreset] = useState(onboardingPresets[0])
-  const [apiKey, setApiKey] = useState('')
-  const [endpoint, setEndpoint] = useState(preset.endpoint ?? '')
   const [testing, setTesting] = useState(false)
   const [result, setResult] = useState<TestResult | null>(null)
   const [modelCounts, setModelCounts] = useState<Record<string, number>>({})
   const providers = configQuery.data?.providers ?? []
+  const form = useForm<ProviderDraft>({
+    initialValues: { apiKey: '', endpoint: preset.endpoint ?? '' },
+    onSubmit: async (values) => {
+      await addProvider(values)
+    },
+  })
+  const apiKey = useWatch(form, 'apiKey')
 
   const presetLabel = (item: AIProviderPreset) =>
-    item.id === 'custom'
-      ? t('setup.onboarding.ai.providers.compatible')
-      : item.name
+    item.id === 'custom' ? copy('providersCompatible') : item.name
 
   const selectPreset = (item: AIProviderPreset) => {
     setPreset(item)
-    setEndpoint(item.endpoint ?? '')
+    form.setValue('endpoint', item.endpoint ?? '', { asUser: true })
     setResult(null)
   }
 
-  const addProvider = async () => {
-    if (!configQuery.data || !apiKey.trim() || testing) return
+  const addProvider = async (values: ProviderDraft) => {
+    if (!configQuery.data || !values.apiKey.trim() || testing) return
     setTesting(true)
     setResult(null)
     const base = createProviderFromPreset(preset)
-    const trimmedEndpoint = endpoint.trim() || base.endpoint
+    const trimmedEndpoint = values.endpoint.trim() || base.endpoint
     const provider = {
       ...base,
-      apiKey: apiKey.trim(),
+      apiKey: values.apiKey.trim(),
       endpoint: trimmedEndpoint,
       name: base.name || hostnameOf(trimmedEndpoint) || presetLabel(preset),
     }
@@ -86,7 +93,7 @@ export function AiProvidersStep(props: {
       })
       if (list.error) throw new Error(list.error)
       const model = provider.defaultModel || list.models[0]?.id
-      if (!model) throw new Error(t('setup.onboarding.ai.providers.testFailed'))
+      if (!model) throw new Error(copy('providersTestFailed'))
       await testConfig({
         apiKey: provider.apiKey,
         appendV1: provider.appendV1,
@@ -104,13 +111,10 @@ export function AiProvidersStep(props: {
         [provider.id]: list.models.length,
       }))
       setResult({ count: list.models.length, ok: true })
-      setApiKey('')
+      form.setValue('apiKey', '')
     } catch (error) {
       setResult({
-        message: getErrorMessage(
-          error,
-          t('setup.onboarding.ai.providers.testFailed'),
-        ),
+        message: getErrorMessage(error, copy('providersTestFailed')),
         ok: false,
       })
     } finally {
@@ -123,161 +127,154 @@ export function AiProvidersStep(props: {
     try {
       await save(removeProviderFromConfig(configQuery.data, id))
     } catch (error) {
-      toast.error(
-        getErrorMessage(error, t('setup.onboarding.ai.providers.saveError')),
-      )
+      toast.error(getErrorMessage(error, copy('providersSaveError')))
     }
   }
 
+  const addBlocked = !apiKey.trim() || testing || !configQuery.data
+  const addTitle = configQuery.isError
+    ? copy('providersLoadError')
+    : configQuery.isPending
+      ? copy('providersLoading')
+      : !apiKey.trim()
+        ? copy('providersAddBlocked')
+        : undefined
+
   return (
-    <OnboardingShell
-      aside={
-        <>
-          <OnboardingAsideTitle>
-            {t('setup.onboarding.ai.providers.asideTitle')}
-          </OnboardingAsideTitle>
-          <div className="flex flex-col gap-2">
-            {providers.length === 0 ? (
-              <p className="text-sm text-fg-subtle">
-                {t('setup.onboarding.ai.providers.asideEmpty')}
-              </p>
-            ) : (
-              providers.map((provider) => (
-                <div
-                  className="flex h-9 items-center gap-2 rounded-sm border border-border bg-white px-3 text-sm shadow-xs"
-                  key={provider.id}
-                >
-                  <span className="size-1.5 rounded-full bg-green-600" />
-                  <span className="truncate font-medium">{provider.name}</span>
-                  {modelCounts[provider.id] ? (
-                    <span className="ml-auto shrink-0 text-fg-muted">
-                      {t('setup.onboarding.ai.providers.models', {
-                        count: modelCounts[provider.id],
-                      })}
-                    </span>
-                  ) : null}
-                  <button
-                    aria-label={t('setup.onboarding.ai.providers.remove')}
-                    className={cn(
-                      'flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-subtle hover:bg-surface-inset hover:text-fg',
-                      !modelCounts[provider.id] && 'ml-auto',
-                    )}
-                    data-testid={`onboarding-provider-remove-${provider.id}`}
-                    onClick={() => void removeProvider(provider.id)}
-                    type="button"
-                  >
-                    <X aria-hidden="true" className="size-3.5" />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-          <p className="mt-3 text-sm text-fg-muted">
-            {t('setup.onboarding.ai.providers.asideHint')}
-          </p>
-        </>
-      }
-      onLater={props.onLater}
-      step="ai-providers"
-    >
+    <OnboardingShell onLater={props.onLater} step="ai-providers">
       <OnboardingCard
-        description={t('setup.onboarding.ai.providers.description')}
+        description={copy('providersDescription')}
         footer={
           <OnboardingFooter onBack={props.onBack}>
-            <Button onClick={props.onSkip} type="button" variant="ghost">
-              {t('setup.onboarding.action.skipAi')}
+            <Button htmlType="button" onClick={props.onSkip} type="text">
+              {copy('providersSkip')}
             </Button>
             <Button
               data-testid="onboarding-submit"
               disabled={providers.length === 0}
+              htmlType="button"
               onClick={props.onNext}
-              type="button"
+              title={
+                providers.length === 0
+                  ? copy('providersContinueBlocked')
+                  : undefined
+              }
+              type="primary"
             >
-              {t('setup.onboarding.action.continue')}
+              {copy('providersContinue')}
             </Button>
           </OnboardingFooter>
         }
-        title={t('setup.onboarding.ai.providers.title')}
+        title={copy('providersTitle')}
       >
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className={wizardStyles.stack}>
+          {configQuery.isError ? (
+            <Alert showIcon title={copy('providersLoadError')} type="error" />
+          ) : null}
+          {configQuery.isError ? (
+            <Button
+              htmlType="button"
+              onClick={() => void configQuery.refetch()}
+              type="text"
+            >
+              {copy('retry')}
+            </Button>
+          ) : null}
+          <Text>{copy('providersList')}</Text>
+          {configQuery.isPending ? (
+            <ListSkeleton label={copy('providersLoading')} rows={2} />
+          ) : configQuery.isError ? null : providers.length === 0 ? (
+            <Empty description={copy('providersEmpty')} />
+          ) : (
+            providers.map((provider) => (
+              <div className={wizardStyles.provider} key={provider.id}>
+                <Icon icon={CircleCheck} size="small" />
+                <span className={wizardStyles.providerName}>
+                  {provider.name}
+                </span>
+                {modelCounts[provider.id] ? (
+                  <Text as="span" type="secondary">
+                    {copy('providersModels', {
+                      count: modelCounts[provider.id],
+                    })}
+                  </Text>
+                ) : null}
+                <Button
+                  aria-label={copy('providersRemove', { name: provider.name })}
+                  data-testid={`onboarding-provider-remove-${provider.id}`}
+                  htmlType="button"
+                  icon={X}
+                  onClick={() => void removeProvider(provider.id)}
+                  type="text"
+                />
+              </div>
+            ))
+          )}
+          <Text type="secondary">{copy('providersAsideHint')}</Text>
+          <div className={wizardStyles.choices}>
             {onboardingPresets.map((item) => (
-              <button
+              <Button
                 aria-pressed={item.id === preset.id}
-                className={cn(
-                  'h-8 truncate rounded-sm border px-2 text-sm font-medium transition-colors',
-                  item.id === preset.id
-                    ? 'border-accent bg-accent-soft text-accent'
-                    : 'border-border bg-surface-card text-fg shadow-xs hover:bg-surface-inset',
-                )}
                 data-testid={`onboarding-preset-${item.id}`}
+                htmlType="button"
+                icon={item.id === preset.id ? CircleCheck : undefined}
                 key={item.id}
                 onClick={() => selectPreset(item)}
-                type="button"
+                type="default"
               >
                 {presetLabel(item)}
-              </button>
+              </Button>
             ))}
           </div>
-          <TextInput
-            autoComplete="off"
-            label={t('setup.onboarding.ai.providers.apiKey')}
-            name="apiKey"
-            onChange={setApiKey}
-            type="password"
-            value={apiKey}
-          />
-          <div>
-            <TextInput
-              label={t('setup.onboarding.ai.providers.endpoint')}
+          <Form form={form} gap={16} layout="vertical">
+            <Form.Field
+              desc={copy('providersKeyHint')}
+              label={copy('providersKey')}
+              name="apiKey"
+            >
+              <Input autoComplete="off" name="apiKey" type="password" />
+            </Form.Field>
+            <Form.Field
+              desc={copy('providersEndpointHint')}
+              label={copy('providersEndpoint')}
               name="endpoint"
-              onChange={setEndpoint}
-              placeholder="https://"
-              type="url"
-              value={endpoint}
-            />
-            <FieldHint>
-              {t('setup.onboarding.ai.providers.endpointHint')}
-            </FieldHint>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
+            >
+              <Input
+                name="endpoint"
+                placeholder={copy('providersEndpointPlaceholder')}
+                type="url"
+              />
+            </Form.Field>
             <Button
               data-testid="onboarding-provider-add"
-              disabled={!apiKey.trim() || testing || !configQuery.data}
-              onClick={() => void addProvider()}
-              type="button"
-              variant="secondary"
+              disabled={addBlocked}
+              htmlType="submit"
+              loading={testing}
+              title={addTitle}
+              type="default"
             >
-              {testing ? (
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : null}
-              {t('setup.onboarding.ai.providers.add')}
+              {copy('providersAdd')}
             </Button>
-            {result ? <TestResultRow result={result} /> : null}
-          </div>
+          </Form>
+          {result?.ok ? (
+            <Alert
+              showIcon
+              title={copy('providersTestOk', { count: result.count })}
+              type="success"
+            />
+          ) : null}
+          {result && !result.ok ? (
+            <Alert
+              description={result.message}
+              icon={CircleAlert}
+              showIcon
+              title={copy('providersTestFailed')}
+              type="error"
+            />
+          ) : null}
         </div>
       </OnboardingCard>
     </OnboardingShell>
-  )
-}
-
-function TestResultRow(props: { result: TestResult }) {
-  const { t } = useI18n()
-  if (props.result.ok) {
-    return (
-      <span className="flex items-center gap-1.5 text-sm text-green-700">
-        <CircleCheck aria-hidden="true" className="size-4" />
-        {t('setup.onboarding.ai.providers.testOk', {
-          count: props.result.count,
-        })}
-      </span>
-    )
-  }
-  return (
-    <span className="flex min-w-0 items-center gap-1.5 text-sm text-red-600">
-      <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
-      <span className="truncate">{props.result.message}</span>
-    </span>
   )
 }
 

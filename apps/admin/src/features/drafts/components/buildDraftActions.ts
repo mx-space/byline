@@ -1,37 +1,40 @@
-import { Pencil, Trash2 } from 'lucide-react'
+import { PanelRightOpen, Pencil, Trash2 } from 'lucide-react'
 
-import type { TranslationKey, TranslationValues } from '~/i18n/types'
 import type { DraftModel } from '~/models/draft'
 import type { ListAction } from '~/ui/list-actions'
 
+import type { DraftCopyFn } from '../copy'
+
 export interface DraftActionHandlers {
+  continueWriting: (draft: DraftModel) => void
   deleteMany: (drafts: DraftModel[]) => Promise<void> | void
   open: (draft: DraftModel) => void
 }
 
-/**
- * Shortcut-eligible actions for the drafts list. Same registry feeds the
- * context menu and `useListShortcuts`.
- */
 export function buildDraftActions(
   handlers: DraftActionHandlers,
-  t: (key: TranslationKey, values?: TranslationValues) => string,
+  copy: DraftCopyFn,
 ): ListAction<DraftModel>[] {
   return [
     {
-      icon: Pencil,
+      icon: PanelRightOpen,
       key: 'open',
-      label: t('drafts.detail.edit'),
+      label: copy('openDetail'),
       run: (targets) => handlers.open(targets[0]),
       shortcut: 'Enter',
       shortcutLabel: '↵',
     },
     {
+      icon: Pencil,
+      key: 'continue',
+      label: copy('continueWriting'),
+      run: (targets) => handlers.continueWriting(targets[0]),
+    },
+    {
       danger: true,
       icon: Trash2,
       key: 'delete',
-      label: t('common.delete'),
-      multi: true,
+      label: copy('deleteDraft'),
       run: (targets) => handlers.deleteMany(targets),
       shortcut: 'Backspace',
       shortcutLabel: '⌫',

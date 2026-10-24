@@ -10,6 +10,17 @@ import {
 } from './post-byline-state'
 
 describe('post byline state', () => {
+  it('keeps the public time through loading, editing a draft and saving it', () => {
+    const publicAt = '2030-01-01T12:00:00.000Z'
+    const state = postBylineFromModel({ publicAt } as PostModel)
+    expect(state.publicAt).toBe(publicAt)
+    expect(postBylineToSpecific(state).publicAt).toBe(publicAt)
+    expect(postBylineFromSpecific({}, state).publicAt).toBe(publicAt)
+    const cleared = postBylineFromSpecific({ publicAt: null }, state)
+    expect(cleared.publicAt).toBe('')
+    expect(postBylineToSpecific(cleared).publicAt).toBeNull()
+  })
+
   it('reads author profiles from a post in byline order', () => {
     const state = postBylineFromModel({
       authors: [
@@ -22,6 +33,7 @@ describe('post byline state', () => {
     } as PostModel)
 
     expect(state).toEqual({
+      publicAt: '',
       authors: ['2', '1'],
       image: 'https://cdn.example/cover.png',
       seoDescription: 'Desc',
@@ -49,6 +61,7 @@ describe('post byline state', () => {
 
   it('omits empty authors and nulls empty optional fields', () => {
     expect(postBylineToSpecific(emptyPostBylineState)).toEqual({
+      publicAt: null,
       image: null,
       seo: null,
       sourceLang: null,
@@ -62,6 +75,7 @@ describe('post byline state', () => {
       }),
     ).toEqual({
       authors: ['1', '2'],
+      publicAt: null,
       image: null,
       seo: { title: 'Title' },
       sourceLang: 'pt-BR',

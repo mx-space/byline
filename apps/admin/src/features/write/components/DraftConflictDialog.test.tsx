@@ -3,9 +3,8 @@ import type { Root } from 'react-dom/client'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { I18nProvider } from '~/i18n'
-
 import { DraftConflictDialog } from './DraftConflictDialog'
+import { withUi } from './test-providers'
 
 let container: HTMLDivElement
 let root: Root
@@ -29,9 +28,7 @@ describe('DraftConflictDialog', () => {
 
     act(() => {
       root.render(
-        createElement(
-          I18nProvider,
-          null,
+        withUi(
           createElement(DraftConflictDialog, {
             conflictCount: 2,
             onClose,

@@ -1,10 +1,11 @@
+import { createStaticStyles, toast } from '@lobehub/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Key, Plus, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { deleteToken, getTokens } from '~/api/auth'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { ListSkeleton } from '~/ui/placeholders'
 import { Button } from '~/ui/primitives/button'
 import { Scroll } from '~/ui/primitives/scroll'
 
@@ -12,6 +13,71 @@ import { accountQueryKey } from '../../constants'
 import { formatDateTime, getErrorMessage } from '../../utils/settings'
 import { presentCreateToken } from '../modals/TokenModals'
 import { EmptyState } from '../SettingsPrimitives'
+
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+  u36e579c0: css`
+    flex: 1 1 0%;
+  `,
+  ucc46d0fa: css`
+    width: 1.75rem;
+    height: 1.75rem;
+  `,
+  u80b47be2: css`
+    & > :not([hidden]) ~ :not([hidden]) {
+      border-top-width: 1px;
+      border-top-style: solid;
+    }
+    border-color: ${cssVar.colorFillSecondary};
+    :where(.dark, .dark *) & {
+      border-color: ${cssVar.colorText};
+    }
+  `,
+  u8e63407b: css`
+    padding: 1rem;
+  `,
+  u0f1761da: css`
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  `,
+  u7e0b7cdf: css`
+    min-width: 0px;
+  `,
+  ue43bc276: css`
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    font-weight: 500;
+  `,
+  u63f95d91: css`
+    margin-top: 0.5rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: ${cssVar.fontFamilyCode};
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u6c9dd3b1: css`
+    margin-top: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  u5e9cc106: css`
+    display: flex;
+    gap: 0.25rem;
+  `,
+}))
 
 export function TokenPanelHeaderAction() {
   const { t } = useI18n()
@@ -22,7 +88,7 @@ export function TokenPanelHeaderAction() {
       }}
       type="button"
     >
-      <Plus aria-hidden="true" className="size-4" />
+      <Plus aria-hidden="true" className={lobeStyles.uf7b5fa97} />
       {t('settings.token.action.new')}
     </Button>
   )
@@ -48,30 +114,24 @@ export function TokenPanel() {
   })
 
   return (
-    <Scroll className="flex-1">
+    <Scroll className={lobeStyles.u36e579c0}>
       {tokensQuery.isLoading ? (
-        <div className="p-4 text-sm text-neutral-500">
-          {t('settings.common.loading')}
-        </div>
+        <ListSkeleton label={t('settings.common.loading')} rows={3} />
       ) : (tokensQuery.data ?? []).length === 0 ? (
         <EmptyState
-          icon={<Key className="size-7" />}
+          icon={<Key className={lobeStyles.ucc46d0fa} />}
           label={t('settings.token.empty')}
         />
       ) : (
-        <div className="divide-y divide-neutral-100 dark:divide-neutral-900">
+        <div className={lobeStyles.u80b47be2}>
           {tokensQuery.data?.map((token) => {
             return (
-              <div className="p-4" key={token.id}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="truncate text-sm font-medium">
-                      {token.name}
-                    </h3>
-                    <p className="mt-2 max-w-full truncate font-mono text-xs text-neutral-500">
-                      {token.token}
-                    </p>
-                    <p className="mt-2 text-xs text-neutral-500">
+              <div className={lobeStyles.u8e63407b} key={token.id}>
+                <div className={lobeStyles.u0f1761da}>
+                  <div className={lobeStyles.u7e0b7cdf}>
+                    <h3 className={lobeStyles.ue43bc276}>{token.name}</h3>
+                    <p className={lobeStyles.u63f95d91}>{token.token}</p>
+                    <p className={lobeStyles.u6c9dd3b1}>
                       {t('settings.token.createdAt', {
                         time: formatDateTime(token.createdAt),
                       })}
@@ -82,7 +142,7 @@ export function TokenPanel() {
                         : t('settings.token.createdNeverExpire')}
                     </p>
                   </div>
-                  <div className="flex gap-1">
+                  <div className={lobeStyles.u5e9cc106}>
                     <Button
                       onClick={() => {
                         if (
@@ -99,7 +159,10 @@ export function TokenPanel() {
                       variant="subtle"
                       aria-label={t('common.delete')}
                     >
-                      <Trash2 aria-hidden="true" className="size-4" />
+                      <Trash2
+                        aria-hidden="true"
+                        className={lobeStyles.uf7b5fa97}
+                      />
                     </Button>
                   </div>
                 </div>

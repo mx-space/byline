@@ -99,9 +99,7 @@ function buildOutline(state: SerializedEditorState): string {
       .slice(0, 80)
     return `${id} ${type} ${preview}`.trim()
   })
-  return ['# /doc.xml outline — ids are XML id attributes', ...lines, ''].join(
-    '\n',
-  )
+  return [`# /doc.xml — ids are XML id attributes`, ...lines, ''].join('\n')
 }
 
 function stubCommand(name: string) {

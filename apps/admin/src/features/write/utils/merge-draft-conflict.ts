@@ -26,12 +26,6 @@ interface MergeContext {
   conflicts: DraftMergeConflict[]
 }
 
-interface TextEdit {
-  end: number
-  replacement: string
-  start: number
-}
-
 type JsonRecord = Record<string, unknown>
 
 const isRecord = (value: unknown): value is JsonRecord =>
@@ -125,83 +119,6 @@ function mergeRecord(
   }
 
   return result
-}
-
-function findSingleTextEdit(base: string, value: string): TextEdit | null {
-  if (base === value) return null
-
-  let start = 0
-  const sharedLength = Math.min(base.length, value.length)
-  while (start < sharedLength && base[start] === value[start]) start += 1
-
-  let baseEnd = base.length
-  let valueEnd = value.length
-  while (
-    baseEnd > start &&
-    valueEnd > start &&
-    base[baseEnd - 1] === value[valueEnd - 1]
-  ) {
-    baseEnd -= 1
-    valueEnd -= 1
-  }
-
-  return {
-    end: baseEnd,
-    replacement: value.slice(start, valueEnd),
-    start,
-  }
-}
-
-function editsOverlap(left: TextEdit, right: TextEdit): boolean {
-  if (
-    left.start === left.end &&
-    right.start === right.end &&
-    left.start === right.start
-  ) {
-    return true
-  }
-  return left.start < right.end && right.start < left.end
-}
-
-function applyTextEdits(base: string, edits: TextEdit[]): string {
-  return [...edits]
-    .sort((left, right) => right.start - left.start)
-    .reduce(
-      (value, edit) =>
-        `${value.slice(0, edit.start)}${edit.replacement}${value.slice(edit.end)}`,
-      base,
-    )
-}
-
-function mergeText(
-  base: string,
-  local: string,
-  remote: string,
-  path: string,
-  context: MergeContext,
-): string {
-  if (local === remote) return local
-  if (local === base) {
-    context.autoMergedChanges += 1
-    return remote
-  }
-  if (remote === base) return local
-
-  const localEdit = findSingleTextEdit(base, local)
-  const remoteEdit = findSingleTextEdit(base, remote)
-  if (localEdit && remoteEdit && !editsOverlap(localEdit, remoteEdit)) {
-    context.autoMergedChanges += 1
-    return applyTextEdits(base, [localEdit, remoteEdit])
-  }
-
-  context.conflicts.push({
-    base,
-    kind: 'text',
-    local,
-    path,
-    remote,
-  })
-  return local
 }
 
 function parseLexicalState(
@@ -401,15 +318,8 @@ export function mergeDraftConflict(input: {
   const context: MergeContext = { autoMergedChanges: 0, conflicts: [] }
   const base = draftToData(input.base)
   const remote = draftToData(input.remote)
-  const contentFormat = mergeValue(
-    base.contentFormat,
-    input.local.contentFormat,
-    remote.contentFormat,
-    'contentFormat',
-    context,
-  )
   const data: DraftWriteData = {
-    contentFormat,
+    contentFormat: 'lexical',
     images: mergeValue(
       base.images,
       input.local.images,
@@ -439,33 +349,24 @@ export function mergeDraftConflict(input: {
       'typeSpecificData',
       context,
     ) as TypeSpecificData | undefined,
-  }
-
-  if (contentFormat === 'lexical') {
-    data.content = mergeLexicalContent(
+    content: mergeLexicalContent(
       base.content ?? '',
       input.local.content ?? '',
       remote.content ?? '',
       context,
-    )
-    try {
-      data.text = mxLexicalToMarkdown(data.content)
-    } catch {
-      data.text = mergeText(
-        base.text ?? '',
-        input.local.text ?? '',
-        remote.text ?? '',
-        'text',
-        context,
-      )
-    }
-  } else {
-    data.text = mergeText(
+    ),
+  }
+
+  try {
+    data.text = mxLexicalToMarkdown(data.content!)
+  } catch {
+    data.text = mergeValue(
       base.text ?? '',
       input.local.text ?? '',
       remote.text ?? '',
       'text',
       context,
+      'text',
     )
   }
 

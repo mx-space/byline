@@ -2,7 +2,6 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import babel from '@rolldown/plugin-babel'
-import tailwindcss from '@tailwindcss/vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { codeInspectorPlugin } from 'code-inspector-plugin'
 import type { PluginOption } from 'vite'
@@ -27,7 +26,6 @@ export default ({ mode }) => {
       esToolkitCompatShim(),
       codeInspectorPlugin({ bundler: 'vite' }),
       adminRoutes({ viewsDir: resolve(__dirname, 'src/views') }),
-      tailwindcss(),
       react(),
       babel({ presets: [reactCompilerPreset()] }),
 
@@ -117,21 +115,6 @@ export default ({ mode }) => {
         '@better-auth/passkey/client',
       ],
       include: [
-        '@base-ui/react/button',
-        '@base-ui/react/checkbox',
-        '@base-ui/react/field',
-        '@base-ui/react/input',
-        '@base-ui/react/popover',
-        '@base-ui/react/switch',
-        '@codemirror/commands',
-        '@codemirror/lang-markdown',
-        '@codemirror/language',
-        '@codemirror/language-data',
-        '@codemirror/search',
-        '@codemirror/state',
-        '@codemirror/theme-one-dark',
-        '@codemirror/view',
-        '@ddietr/codemirror-themes/theme/github-light',
         '@haklex/rich-agent-core',
         '@haklex/rich-editor',
         '@haklex/rich-editor-ui',
@@ -189,18 +172,15 @@ export default ({ mode }) => {
         '@lexical/markdown',
         '@lexical/react/LexicalComposerContext',
         '@lexical/rich-text',
-        '@lezer/highlight',
         '@lobehub/streamdown',
         'lexical',
         '@monaco-editor/react',
         '@rehookify/datepicker',
-        'canvas-confetti',
         'fuse.js',
         'katex',
         'lit',
         'lit/directives/unsafe-html.js',
         'monaco-editor',
-        'react-resizable-panels',
         'shiki',
         'zod',
         'zustand',

@@ -25,7 +25,7 @@ export interface GetDraftsParams {
 
 export interface DraftWriteData {
   content?: string
-  contentFormat: 'lexical' | 'markdown'
+  contentFormat: 'lexical'
   images?: Image[] | null
   meta?: Record<string, unknown> | null
   text: string

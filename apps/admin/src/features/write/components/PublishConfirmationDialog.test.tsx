@@ -4,9 +4,9 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PublishAiResourceRequest } from '~/api/publish-jobs'
-import { I18nProvider } from '~/i18n'
 
 import { PublishConfirmationDialog } from './PublishConfirmationDialog'
+import { withUi } from './test-providers'
 
 const SUMMARY = '摘要'
 const INSIGHTS = '精读'
@@ -30,9 +30,7 @@ describe('PublishConfirmationDialog', () => {
     const onReviewDiff = vi.fn()
     act(() => {
       root.render(
-        createElement(
-          I18nProvider,
-          null,
+        withUi(
           createElement(PublishConfirmationDialog, {
             diverged: true,
             onClose: vi.fn(),
@@ -82,9 +80,7 @@ describe('PublishConfirmationDialog', () => {
     ) =>
       act(() => {
         root.render(
-          createElement(
-            I18nProvider,
-            null,
+          withUi(
             createElement(PublishConfirmationDialog, {
               ...props,
               open,
@@ -93,19 +89,23 @@ describe('PublishConfirmationDialog', () => {
           ),
         )
       })
-    const tab = (resource: string, label: string) =>
-      [
-        ...document.querySelectorAll<HTMLElement>(
-          `[role="tablist"][aria-label="${resource}"] [role="tab"]`,
-        ),
-      ].find((item) => item.textContent?.trim() === label)!
+    const tab = (resource: string, label: string) => {
+      const name = [...document.querySelectorAll('span')].find(
+        (item) =>
+          item.childElementCount === 0 && item.textContent?.trim() === resource,
+      )
+      const row = name?.parentElement?.parentElement
+      return [...(row?.querySelectorAll('button') ?? [])].find(
+        (item) => item.textContent?.trim() === label,
+      )!
+    }
 
     render(true)
 
     expect(document.body.textContent).toContain(
       '提交后将直接更新当前线上文章。',
     )
-    expect(tab(SUMMARY, '不生成').getAttribute('aria-selected')).toBe('true')
+    expect(tab(SUMMARY, '不生成').getAttribute('aria-pressed')).toBe('true')
 
     await act(async () => {
       tab(SUMMARY, '上线前').click()
@@ -131,16 +131,14 @@ describe('PublishConfirmationDialog', () => {
       { mode: 'async', resource: 'insights' },
     ])
 
-    expect(tab(SUMMARY, '上线前').getAttribute('aria-selected')).toBe('true')
-    expect(tab(INSIGHTS, '上线后').getAttribute('aria-selected')).toBe('true')
+    expect(tab(SUMMARY, '上线前').getAttribute('aria-pressed')).toBe('true')
+    expect(tab(INSIGHTS, '上线后').getAttribute('aria-pressed')).toBe('true')
   })
   it('keeps locked translations unless regeneration is ticked', async () => {
     const onConfirm = vi.fn()
     act(() => {
       root.render(
-        createElement(
-          I18nProvider,
-          null,
+        withUi(
           createElement(PublishConfirmationDialog, {
             aiConfig: {
               enableTranslation: true,

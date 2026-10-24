@@ -6,7 +6,7 @@ export const metadata = defineMetadata({
   titleKey: 'routes.tasks.title',
   descriptionKey: 'routes.tasks.description',
   icon: ListTodo,
-  order: 2,
+  order: 6,
 })
 
 export { default } from '~/features/tasks/routes/TasksRouteView'

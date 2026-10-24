@@ -24,7 +24,8 @@ import {
 } from '@haklex/rich-ext-nested-doc'
 import { ImageEditModalPlugin } from '@haklex/rich-plugin-image-editor'
 import type { LexicalEditor } from 'lexical'
-import { useRef } from 'react'
+import { useContext, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 import { imageGpsPrivacy } from '~/lib/image-upload-privacy'
 
@@ -38,6 +39,7 @@ import type {
 import { AgentLoopCapture } from './AgentLoopCapture'
 import { EditorToolbar } from './EditorToolbar'
 import { NestedDocDialogEditor } from './NestedDocDialogEditor'
+import { EditorToolbarSlotContext } from './toolbar-slot'
 
 export interface ReactEditorPaneProps {
   editorProps: Omit<RichEditorProps, 'onChange' | 'onSubmit' | 'onEditorReady'>
@@ -77,6 +79,7 @@ export function ReactEditorPane({
   systemMessages,
 }: ReactEditorPaneProps) {
   const editorRef = useRef<LexicalEditor | null>(null)
+  const toolbarSlot = useContext(EditorToolbarSlotContext)
 
   const handleEditorReady = (editor: LexicalEditor | null) => {
     editorRef.current = editor
@@ -97,7 +100,13 @@ export function ReactEditorPane({
               ...nestedDocEditNodes,
               AgentDiffEditNode,
             ]}
-            header={<EditorToolbar />}
+            header={
+              toolbarSlot ? (
+                createPortal(<EditorToolbar />, toolbarSlot)
+              ) : (
+                <EditorToolbar />
+              )
+            }
             floatingToolbarActions={
               provider ? <AgentAskAIAction onPin={onPinSelection} /> : undefined
             }

@@ -49,10 +49,7 @@ function createHarness(options: { storedNotePassword?: string } = {}) {
   const databaseService = {
     findGlobalById: vi.fn(),
     getRefArticleMap: vi.fn().mockResolvedValue({}),
-    findAllArticlesForAIText: vi.fn().mockResolvedValue({
-      posts: [],
-      notes: [],
-    }),
+    findArticlesForProductLists: vi.fn().mockResolvedValue({ posts: [] }),
   }
   const entitlementService = {
     isPremiumLocked: vi.fn(
@@ -425,12 +422,21 @@ describe('AiTtsQueryService.getAllNarrationsGrouped', () => {
     repository.findBlocksByTtsIds.mockResolvedValue([
       blockRow('blk-a', { ttsId: 'tts-1' }),
     ])
-    databaseService.findAllArticlesForAIText.mockResolvedValue({
+    databaseService.findArticlesForProductLists.mockResolvedValue({
       posts: [
-        { id: 'post-1', title: 'Has Narration' },
-        { id: 'post-2', title: 'Orphan Post' },
+        {
+          id: 'post-1',
+          title: 'Has Narration',
+          isPublished: true,
+          createdAt: '2024-02-01T00:00:00.000Z',
+        },
+        {
+          id: 'post-2',
+          title: 'Orphan Post',
+          isPublished: true,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
       ],
-      notes: [],
     })
     databaseService.getRefArticleMap.mockResolvedValue({
       'post-1': {

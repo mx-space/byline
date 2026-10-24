@@ -1,3 +1,4 @@
+import './lobe-layers.css'
 import './index.css'
 
 import { StrictMode } from 'react'

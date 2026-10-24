@@ -37,7 +37,7 @@ export function useFilesByTypeList() {
 }
 
 function readFileType(value: null | string): FileType {
-  return isFileType(value) ? value : 'icon'
+  return isFileType(value) ? value : 'image'
 }
 
 function isFileType(value: null | string): value is FileType {

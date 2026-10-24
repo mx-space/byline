@@ -3,8 +3,8 @@ import type {
   AgentStoreSlice,
   ChatBubble,
 } from '@haklex/rich-agent-core'
+import { toast } from '@lobehub/ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 import { translate } from '~/i18n/translate'
 

@@ -2,6 +2,7 @@ import type { PostSpecificData } from '~/models/draft'
 import type { PostModel, PostSeo } from '~/models/post'
 
 export interface PostBylineState {
+  publicAt: string
   authors: string[]
   image: string
   seoDescription: string
@@ -11,6 +12,7 @@ export interface PostBylineState {
 }
 
 export const emptyPostBylineState: PostBylineState = {
+  publicAt: '',
   authors: [],
   image: '',
   seoDescription: '',
@@ -43,6 +45,7 @@ function seoToState(seo: PostSeo | null | undefined) {
 
 export function postBylineFromModel(post: PostModel): PostBylineState {
   return {
+    publicAt: post.publicAt ?? '',
     authors: readAuthorIds(post.authors) ?? [],
     image: post.image ?? '',
     sourceLang: post.sourceLang ?? '',
@@ -55,6 +58,12 @@ export function postBylineFromSpecific(
   previous: PostBylineState,
 ): PostBylineState {
   return {
+    publicAt:
+      'publicAt' in specific
+        ? typeof specific.publicAt === 'string'
+          ? specific.publicAt
+          : ''
+        : previous.publicAt,
     authors: readAuthorIds(specific.authors) ?? previous.authors,
     image:
       'image' in specific
@@ -80,13 +89,17 @@ export function postBylineFromSpecific(
 
 export function postBylineToSpecific(
   state: PostBylineState,
-): Pick<PostSpecificData, 'authors' | 'image' | 'seo' | 'sourceLang'> {
+): Pick<
+  PostSpecificData,
+  'authors' | 'image' | 'seo' | 'sourceLang' | 'publicAt'
+> {
   const seo: PostSeo = {}
   if (state.seoTitle.trim()) seo.title = state.seoTitle.trim()
   if (state.seoDescription.trim()) seo.description = state.seoDescription.trim()
   if (state.seoImage.trim()) seo.image = state.seoImage.trim()
 
   return {
+    publicAt: state.publicAt || null,
     ...(state.authors.length ? { authors: state.authors } : {}),
     image: state.image.trim() || null,
     seo: Object.keys(seo).length ? seo : null,

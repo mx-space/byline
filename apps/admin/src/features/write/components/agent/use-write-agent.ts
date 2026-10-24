@@ -6,10 +6,10 @@ import type {
   ToolCallGroupItem,
 } from '@haklex/rich-agent-core'
 import { projectAgentDiffNodesToFactualState } from '@haklex/rich-ext-ai-agent'
+import { toast } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import type { LexicalEditor } from 'lexical'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { toast } from 'sonner'
 
 import type { ProviderModelsResponse } from '~/api/ai'
 import { getModels } from '~/api/ai'

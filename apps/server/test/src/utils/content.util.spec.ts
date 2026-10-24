@@ -2,6 +2,7 @@ import { extractDocumentContext } from '@mx-space/ai/translation'
 import { describe, expect, it } from 'vitest'
 
 import {
+  computeContentHash,
   contentIdentityChanged,
   extractFileUrlsFromContent,
   extractTextFromContent,
@@ -28,6 +29,28 @@ const nestedState = (text: string) => ({
 })
 
 describe('content.util', () => {
+  it('reads Lexical content without requiring a format discriminator', () => {
+    expect(
+      extractTextFromContent({
+        text: 'stale projection',
+        content: JSON.stringify(nestedState('current body')),
+      }),
+    ).toBe('current body')
+  })
+
+  it('hashes the Lexical body independently of its text projection', () => {
+    const doc = { title: 'Post', content: JSON.stringify(nestedState('body')) }
+    expect(computeContentHash({ ...doc, text: 'old' }, 'en')).toBe(
+      computeContentHash({ ...doc, text: 'new' }, 'en'),
+    )
+    expect(computeContentHash({ ...doc, text: 'old' }, 'en')).not.toBe(
+      computeContentHash(
+        { ...doc, text: 'old', content: JSON.stringify(nestedState('edited')) },
+        'en',
+      ),
+    )
+  })
+
   it('should reuse lexical translation context extraction for lexical text', () => {
     const rootChildren = [
       {
@@ -106,10 +129,10 @@ describe('content.util', () => {
     expect(extracted).not.toContain('const rich = true')
   })
 
-  it('should include cover image from markdown meta and dedupe repeated urls', () => {
+  it('includes cover metadata when the body is absent', () => {
     const extracted = extractFileUrlsFromContent({
-      text: '![cover](https://img.example/cover.png)',
-      contentFormat: 'markdown',
+      text: '',
+      contentFormat: 'lexical',
       meta: {
         cover: ' https://img.example/cover.png ',
       },
@@ -209,22 +232,6 @@ describe('content.util', () => {
     })
 
     expect(extracted).toEqual(['https://img.example/cover.png'])
-  })
-
-  it('should collect Markdown attachments and HTML media files', () => {
-    const extracted = extractFileUrlsFromContent({
-      text: [
-        '[Download guide](https://cdn.example/guide.pdf)',
-        '<video src="https://cdn.example/demo.mp4" poster="https://cdn.example/poster.webp"></video>',
-      ].join('\n'),
-      contentFormat: 'markdown',
-    })
-
-    expect(extracted).toEqual([
-      'https://cdn.example/guide.pdf',
-      'https://cdn.example/demo.mp4',
-      'https://cdn.example/poster.webp',
-    ])
   })
 
   it('should collect file URLs from rich media and nested lexical states', () => {
@@ -349,18 +356,6 @@ describe('contentIdentityChanged', () => {
     expect(contentIdentityChanged(current, { title: 'Renamed' })).toBe(true)
     expect(contentIdentityChanged(current, { summary: null })).toBe(true)
     expect(contentIdentityChanged(current, { tags: ['css', 'lexical'] })).toBe(
-      true,
-    )
-  })
-
-  it('treats a markdown to lexical switch as a change', () => {
-    const markdown = {
-      title: 'Post',
-      text: '# Post',
-      contentFormat: 'markdown',
-      content: null,
-    }
-    expect(contentIdentityChanged(markdown, lexicalDoc('hello', 'a'))).toBe(
       true,
     )
   })

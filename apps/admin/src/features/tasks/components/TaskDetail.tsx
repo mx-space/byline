@@ -1,304 +1,290 @@
-import { Loader2, Play, RotateCcw, Trash2, XCircle } from 'lucide-react'
+import {
+  ActionIcon,
+  Alert,
+  createStaticStyles,
+  type DropdownItem,
+  DropdownMenu,
+  Progress,
+  Tag,
+  Text,
+} from '@lobehub/ui'
+import { Ellipsis, FileText, RotateCcw, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router'
 
 import type { AITask } from '~/api/tasks'
-import { AITaskStatus, AITaskType } from '~/api/tasks'
+import { AITaskStatus } from '~/api/tasks'
 import { useI18n } from '~/i18n'
-import { DetailHeader } from '~/ui/layout/detail-header'
-import { Button } from '~/ui/primitives/button'
-import { Scroll } from '~/ui/primitives/scroll'
-import { cn } from '~/utils/cn'
+import { Button } from '~/ui/site-button'
 
-import { statusIcon, taskStatusLabelKeys } from '../constants'
+import { useTaskCopy } from '../copy'
 import {
-  formatAbsoluteTimestamp,
-  getEffectiveStatus,
-  getProgress,
-  getTaskDetailSummary,
-  getTaskTypeLabel,
-  isBatchTask,
-  statusIconClassName,
-} from '../utils/tasks'
+  canCancelTask,
+  canContinueTts,
+  canDeleteTask,
+  canRetryTask,
+  type useTaskActions,
+} from '../hooks/use-task-actions'
+import { useTaskLabels } from '../hooks/use-task-labels'
+import { taskDestinations } from '../utils/task-destinations'
+import type { TaskSubject } from '../utils/task-subject'
+import { taskLanguages } from '../utils/task-subject'
+import {
+  formatElapsed,
+  formatTaskClock,
+  taskElapsedMs,
+} from '../utils/task-time'
+import { getEffectiveStatus, getProgress, isBatchTask } from '../utils/tasks'
 import { CollapsibleSection } from './CollapsibleSection'
 import { SubTaskList } from './SubTaskList'
 import { SubTaskStatsView } from './SubTaskStatsView'
 import { TaskCostBadge } from './TaskCostBadge'
 import { TaskLogsBlock } from './TaskLogsBlock'
-import {
-  Code,
-  Field,
-  JsonBlock,
-  SmallBadge,
-  StatusBadge,
-} from './TaskPrimitives'
+import { Code, Field, JsonBlock } from './TaskPrimitives'
 import { shouldMountTaskStreamPanel, TaskStreamPanel } from './TaskStreamPanel'
 import { TaskTimeline } from './TaskTimeline'
 
-export function TaskDetail(props: {
-  canceling: boolean
-  continuing: boolean
-  deleting: boolean
-  onBack: () => void
-  onCancel: (task: AITask) => void
-  onContinueTts: (task: AITask) => void
-  onDelete: (task: AITask) => void
-  onRetry: (task: AITask) => void
-  retrying: boolean
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  body: css`
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  `,
+  grid: css`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 12px 24px;
+  `,
+  mono: css`
+    font-family: ${cssVar.fontFamilyCode};
+    color: ${cssVar.colorTextTertiary};
+  `,
+  num: css`
+    font-variant-numeric: tabular-nums;
+  `,
+}))
+
+type TaskActions = ReturnType<typeof useTaskActions>
+
+export function TaskDetailActions(props: {
+  actions: TaskActions
   task: AITask
-  polling: boolean
 }) {
-  const { t } = useI18n()
-  const task = props.task
-  const effectiveStatus = getEffectiveStatus(task)
-  const Icon = statusIcon[effectiveStatus]
-  const canCancel =
-    effectiveStatus === AITaskStatus.Pending ||
-    effectiveStatus === AITaskStatus.Running
-  const canRetry =
-    task.status === AITaskStatus.Failed ||
-    task.status === AITaskStatus.PartialFailed ||
-    task.status === AITaskStatus.Cancelled
-  // TTS commits each finished chunk before a task dies, so an interrupted task
-  // can be continued incrementally instead of retried with its original
-  // (possibly force) payload.
-  const canContinueTts =
-    canRetry && task.type === AITaskType.Tts && Boolean(task.payload.refId)
-  const canDelete =
-    task.status === AITaskStatus.Completed ||
-    task.status === AITaskStatus.Failed ||
-    task.status === AITaskStatus.PartialFailed ||
-    task.status === AITaskStatus.Cancelled
-  const progress = getProgress(task)
-  const isRunning = effectiveStatus === AITaskStatus.Running
+  const copy = useTaskCopy()
+  const navigate = useNavigate()
+  const { actions, task } = props
+  const destinations = taskDestinations(task)
+  const retryable = canRetryTask(task)
+
+  const menuItems: DropdownItem[] = [
+    ...(destinations.artifactHref && destinations.artifactKey
+      ? [
+          {
+            key: 'artifact',
+            label: copy(destinations.artifactKey),
+            onClick: () => navigate(destinations.artifactHref!),
+          },
+        ]
+      : []),
+    ...(canDeleteTask(task)
+      ? [
+          {
+            danger: true,
+            icon: Trash2,
+            key: 'delete',
+            label: copy('deleteTask'),
+            onClick: () => actions.remove(task),
+          },
+        ]
+      : []),
+  ]
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <DetailHeader
-        actions={
-          <>
-            {canContinueTts ? (
-              <Button
-                aria-label={t('tasks.action.continueTts')}
-                disabled={props.continuing}
-                iconOnly
-                onClick={() => props.onContinueTts(task)}
-                title={t('tasks.action.continueTts')}
-                type="button"
-                variant="subtle"
-              >
-                {props.continuing ? (
-                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                ) : (
-                  <Play aria-hidden="true" className="size-4" />
-                )}
-              </Button>
-            ) : null}
-            {canRetry ? (
-              <Button
-                aria-label={t('tasks.action.retryTask')}
-                disabled={props.retrying}
-                iconOnly
-                onClick={() => props.onRetry(task)}
-                title={t('tasks.action.retryTask')}
-                type="button"
-                variant="subtle"
-              >
-                {props.retrying ? (
-                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                ) : (
-                  <RotateCcw aria-hidden="true" className="size-4" />
-                )}
-              </Button>
-            ) : null}
-            {canCancel ? (
-              <Button
-                aria-label={t('tasks.action.cancel')}
-                disabled={props.canceling}
-                iconOnly
-                onClick={() => props.onCancel(task)}
-                title={t('tasks.action.cancel')}
-                type="button"
-                variant="subtle"
-              >
-                {props.canceling ? (
-                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                ) : (
-                  <XCircle aria-hidden="true" className="size-4" />
-                )}
-              </Button>
-            ) : null}
-            {canDelete ? (
-              <Button
-                aria-label={t('tasks.action.deleteTask')}
-                className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-950 dark:text-red-400 dark:hover:bg-red-950/30"
-                disabled={props.deleting}
-                iconOnly
-                onClick={() => props.onDelete(task)}
-                title={t('tasks.action.deleteTask')}
-                type="button"
-                variant="subtle"
-              >
-                {props.deleting ? (
-                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                ) : (
-                  <Trash2 aria-hidden="true" className="size-4" />
-                )}
-              </Button>
-            ) : null}
-          </>
-        }
-        icon={Icon}
-        iconClassName={cn(
-          isRunning && 'animate-spin',
-          statusIconClassName(effectiveStatus),
-        )}
-        onBack={props.onBack}
-        subtitle={getTaskDetailSummary(task, t)}
-        title={
-          <>
-            <span className="truncate">{getTaskTypeLabel(task.type, t)}</span>
-            <StatusBadge status={effectiveStatus}>
-              {t(taskStatusLabelKeys[effectiveStatus])}
-            </StatusBadge>
-            <TaskCostBadge cost={task.cost} />
-            {task.retryCount > 0 ? (
-              <SmallBadge size="sm" tone="warning">
-                {t('tasks.task.retryBadge', { count: task.retryCount })}
-              </SmallBadge>
-            ) : null}
-            {isBatchTask(task) ? (
-              <SmallBadge size="sm" tone="info">
-                {t('tasks.task.batch')}
-              </SmallBadge>
-            ) : null}
-          </>
-        }
+    <>
+      {canContinueTts(task) ? (
+        <Button
+          loading={actions.continuing}
+          onClick={() => actions.continueTts(task)}
+        >
+          {copy('continueTts')}
+        </Button>
+      ) : null}
+      {retryable ? (
+        <Button
+          icon={RotateCcw}
+          loading={actions.retrying}
+          onClick={() => actions.retry(task)}
+          type="primary"
+        >
+          {copy('retry')}
+        </Button>
+      ) : null}
+      {canCancelTask(task) ? (
+        <Button
+          loading={actions.canceling}
+          onClick={() => actions.cancel(task)}
+        >
+          {copy('cancelTask')}
+        </Button>
+      ) : null}
+      {destinations.articleHref ? (
+        <ActionIcon
+          aria-label={copy('openArticle')}
+          icon={FileText}
+          onClick={() => navigate(destinations.articleHref!)}
+          title={copy('openArticle')}
+        />
+      ) : null}
+      {menuItems.length > 0 ? (
+        <DropdownMenu items={menuItems}>
+          <ActionIcon
+            aria-label={copy('more')}
+            icon={Ellipsis}
+            title={copy('more')}
+          />
+        </DropdownMenu>
+      ) : null}
+    </>
+  )
+}
+
+export function TaskDetailMeta(props: { subject: TaskSubject; task: AITask }) {
+  const { format, t } = useI18n()
+  const labels = useTaskLabels()
+  const { subject, task } = props
+  const languages = taskLanguages(task)
+  const elapsed = taskElapsedMs(task, Date.now())
+
+  return (
+    <>
+      <span>{labels.type(task.type)}</span>
+      {subject.subline ? (
+        <span className={styles.mono}>{subject.subline}</span>
+      ) : null}
+      {languages ? <span>{languages}</span> : null}
+      <time
+        dateTime={new Date(task.createdAt).toISOString()}
+        title={formatTaskClock(task.createdAt)}
+      >
+        {format.relativeTime(task.createdAt)}
+      </time>
+      {elapsed !== null ? (
+        <span className={styles.num}>{formatElapsed(elapsed)}</span>
+      ) : null}
+      {task.retryCount > 0 ? (
+        <span>{t('tasks.task.retryBadge', { count: task.retryCount })}</span>
+      ) : null}
+      {isBatchTask(task) ? (
+        <Tag size="small">{t('tasks.task.batch')}</Tag>
+      ) : null}
+      <TaskCostBadge cost={task.cost} />
+    </>
+  )
+}
+
+export function TaskDetail(props: {
+  logsLoadFailed: boolean
+  logsReloading: boolean
+  onReloadLogs: () => void
+  polling: boolean
+  task: AITask
+}) {
+  const { format, t } = useI18n()
+  const copy = useTaskCopy()
+  const { task } = props
+  const status = getEffectiveStatus(task)
+  const failed =
+    status === AITaskStatus.Failed || status === AITaskStatus.PartialFailed
+  const running = status === AITaskStatus.Running
+  const progress = getProgress(task)
+
+  return (
+    <div className={styles.body}>
+      {failed ? (
+        <Alert
+          description={task.error?.trim() || copy('failedNoReason')}
+          showIcon
+          title={
+            status === AITaskStatus.PartialFailed
+              ? copy('partialFailedTitle')
+              : copy('failedTitle')
+          }
+          type={task.error?.trim() ? 'error' : 'warning'}
+        />
+      ) : null}
+      {running && progress !== null ? (
+        <Progress
+          label={task.progressMessage ?? t('tasks.task.progressDefault')}
+          percent={Math.round(Math.max(0, Math.min(100, progress)))}
+          size="small"
+          status="active"
+        />
+      ) : null}
+      {status === AITaskStatus.Pending ? (
+        <Text type="secondary">{copy('queuedBody')}</Text>
+      ) : null}
+      {shouldMountTaskStreamPanel(task) ? (
+        <TaskStreamPanel taskId={task.id} />
+      ) : null}
+      <TaskLogsBlock
+        loadFailed={props.logsLoadFailed}
+        logs={task.logs}
+        onReload={props.onReloadLogs}
+        polling={props.polling && running && !props.logsLoadFailed}
+        reloading={props.logsReloading}
       />
-
-      <Scroll className="flex-1" innerClassName="px-5 py-4">
-        {task.error ? (
-          <div
-            className="mb-5 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-950 dark:bg-red-950/40 dark:text-red-300"
-            role="alert"
-          >
-            <span className="mr-1 font-medium">{t('tasks.task.error')}</span>
-            {task.error}
-          </div>
-        ) : null}
-
-        <TaskTimeline task={task} />
-
-        {shouldMountTaskStreamPanel(task) ? (
-          <TaskStreamPanel taskId={task.id} />
-        ) : null}
-
-        {progress !== null ? (
-          <section className="mb-6">
-            <div className="mb-2 flex items-center justify-between text-xs text-fg-muted">
-              <span>
-                {task.progressMessage ?? t('tasks.task.progressDefault')}
-              </span>
-              <span className="tabular-nums">{Math.round(progress)}%</span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-surface-inset">
-              <div
-                className="h-full rounded-full bg-[var(--color-primary)] transition-[width]"
-                style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
-              />
-            </div>
-            {task.tokensGenerated && task.tokensGenerated > 0 ? (
-              <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-fg-muted">
-                <Loader2
-                  aria-hidden="true"
-                  className={cn(
-                    'size-3',
-                    isRunning && 'animate-spin text-blue-500',
-                  )}
-                />
-                {t('tasks.task.tokensGenerated', {
-                  count: task.tokensGenerated,
-                })}
-              </div>
-            ) : null}
-          </section>
-        ) : null}
-
-        <TaskLogsBlock logs={task.logs} polling={props.polling && isRunning} />
-
+      <div>
         {task.subTaskStats ? (
           <CollapsibleSection
-            defaultOpen={isRunning}
+            defaultOpen={running || failed}
             hint={
-              <span className="tabular-nums">
+              <span className={styles.num}>
                 {task.subTaskStats.completed + task.subTaskStats.failed}/
                 {task.subTaskStats.total}
               </span>
             }
-            title={t('tasks.sections.subTasks')}
+            title={copy('subTasks')}
           >
             <SubTaskStatsView task={task} />
             <SubTaskList groupId={task.id} />
           </CollapsibleSection>
         ) : null}
-
-        <CollapsibleSection title={t('tasks.sections.payload')}>
-          <JsonBlock value={task.payload} />
-        </CollapsibleSection>
-
-        {task.result !== undefined ? (
-          <CollapsibleSection title={t('tasks.sections.result')}>
+        {task.result !== undefined && task.result !== null ? (
+          <CollapsibleSection
+            defaultOpen={!failed && !running}
+            title={copy('result')}
+          >
             <JsonBlock value={task.result} />
           </CollapsibleSection>
         ) : null}
-
-        <CollapsibleSection title={t('tasks.sections.metadata')}>
-          <div className="space-y-5 text-sm">
-            <MetadataGroup title={t('tasks.metadata.identity')}>
-              <Field label={t('tasks.task.id')}>
-                <Code>{task.id}</Code>
-              </Field>
-              <Field label={t('tasks.task.type')}>
-                {getTaskTypeLabel(task.type, t)}
-              </Field>
-              <Field label={t('tasks.task.worker')}>
-                {task.workerId ?? '-'}
-              </Field>
-            </MetadataGroup>
-            <MetadataGroup title={t('tasks.metadata.timestamps')}>
-              <Field label={t('tasks.task.createdAt')}>
-                {formatAbsoluteTimestamp(task.createdAt)}
-              </Field>
-              <Field label={t('tasks.task.startedAt')}>
-                {formatAbsoluteTimestamp(task.startedAt)}
-              </Field>
-              <Field label={t('tasks.task.completedAt')}>
-                {formatAbsoluteTimestamp(task.completedAt)}
-              </Field>
-            </MetadataGroup>
-            <MetadataGroup title={t('tasks.metadata.counts')}>
-              <Field label={t('tasks.task.totalItems')}>
-                <span className="tabular-nums">{task.totalItems ?? '-'}</span>
-              </Field>
-              <Field label={t('tasks.task.completedItems')}>
-                <span className="tabular-nums">
-                  {task.completedItems ?? '-'}
+        <CollapsibleSection title={copy('parameters')}>
+          <JsonBlock value={task.payload} />
+        </CollapsibleSection>
+        <CollapsibleSection title={copy('timeline')}>
+          <TaskTimeline task={task} />
+        </CollapsibleSection>
+        <CollapsibleSection title={copy('record')}>
+          <div className={styles.grid}>
+            <Field label={t('tasks.task.id')}>
+              <Code>{task.id}</Code>
+            </Field>
+            <Field label={t('tasks.task.worker')}>
+              {task.workerId ?? '--'}
+            </Field>
+            <Field label={t('tasks.task.totalItems')}>
+              {task.totalItems ?? '--'}
+            </Field>
+            <Field label={t('tasks.task.completedItems')}>
+              {task.completedItems ?? '--'}
+            </Field>
+            {task.tokensGenerated ? (
+              <Field label={copy('tokens')}>
+                <span className={styles.num}>
+                  {format.number(task.tokensGenerated)}
                 </span>
               </Field>
-            </MetadataGroup>
+            ) : null}
           </div>
         </CollapsibleSection>
-      </Scroll>
-    </div>
-  )
-}
-
-function MetadataGroup(props: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted">
-        {props.title}
-      </h4>
-      <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-        {props.children}
       </div>
     </div>
   )

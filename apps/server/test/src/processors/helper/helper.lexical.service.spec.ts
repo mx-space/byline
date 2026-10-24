@@ -796,16 +796,6 @@ describe('LexicalService', () => {
       expect(parsed.root.children[0].$.blockId).toMatch(/^[\w-]{8}$/)
     })
 
-    it('returns false for Markdown format', () => {
-      const doc = {
-        contentFormat: ContentFormat.Markdown,
-        content: '# hi',
-        text: '',
-      }
-      expect(service.normalizeContentForStorage(doc)).toBe(false)
-      expect(doc.text).toBe('')
-    })
-
     it('returns false when content is empty string', () => {
       const doc = {
         contentFormat: ContentFormat.Lexical,

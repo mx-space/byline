@@ -3,11 +3,9 @@ import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { useBlocker } from 'react-router'
 
-import { APP_SHELL_HEADER_HEIGHT_CLASS } from '~/constants/layout'
 import { useI18n } from '~/i18n'
 import { formatJson, samplePropsFromSchema } from '~/lib/dynamic-props'
 import { confirmDialog } from '~/ui/feedback/confirm'
-import { MobileHeaderAffordance } from '~/ui/layout/mobile-header-affordance'
 import { PropsEditor } from '~/ui/patterns/PropsEditor'
 import { Button } from '~/ui/primitives/button'
 import { Scroll } from '~/ui/primitives/scroll'
@@ -57,11 +55,10 @@ export function DynamicComponentDetail(props: {
       <div
         className={cn(
           'flex shrink-0 items-center justify-between gap-2 border-b border-neutral-200 px-4 dark:border-neutral-800',
-          APP_SHELL_HEADER_HEIGHT_CLASS,
+          'h-12',
         )}
       >
         <div className="flex min-w-0 items-center gap-2">
-          <MobileHeaderAffordance />
           <Button
             aria-label={t('dynamicComponents.detail.backAria')}
             className="h-8 px-2 lg:hidden"

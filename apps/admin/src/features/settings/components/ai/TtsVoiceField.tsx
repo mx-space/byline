@@ -1,14 +1,53 @@
+import { AutoComplete, createStaticStyles } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 
 import { getTtsVoices, type TtsVoiceOption } from '~/api/ai'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { Combobox } from '~/ui/primitives/combobox'
-import { Scroll } from '~/ui/primitives/scroll'
 
-import { FieldShell } from '../SettingsPrimitives'
+const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
+  stack: css`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  `,
+  u0bb529bd: css`
+    width: 16px;
+    height: 16px;
+    @keyframes byline-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    animation: byline-spin 1s linear infinite; /* lobe-design-ignore LOBE-MOTION-DURATION: a status spinner needs a full turn */
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  `,
+  uf7b5fa97: css`
+    width: 1rem;
+    height: 1rem;
+  `,
+  u8aee2b07: css`
+    max-height: 16rem;
+  `,
+  ueb6a3cef: css`
+    padding: 0.25rem;
+  `,
+  u10c992af: css`
+    margin-left: 0.5rem;
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  u59d40084: css`
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+    color: ${cssVar.colorTextTertiary};
+  `,
+}))
 
 const VOICE_CATALOG_STALE_MS = 5 * 60 * 1000
 const EMPTY_VOICES: TtsVoiceOption[] = []
@@ -54,62 +93,47 @@ export function TtsVoiceField(props: {
     (voicesQuery.error instanceof Error ? voicesQuery.error.message : '')
 
   return (
-    <FieldShell label={t('settings.ai.field.voice')}>
-      <Combobox
-        autoComplete="list"
+    <div className={lobeStyles.stack}>
+      <AutoComplete
         disabled={!ready}
-        filter={filterVoice}
-        inputValue={props.value}
-        items={voiceCatalog.ids}
-        onInputValueChange={(next) => props.onChange(next)}
-        onValueChange={(next) => {
-          if (typeof next === 'string') props.onChange(next)
-        }}
-      >
-        <Combobox.Control>
-          <Combobox.Input
-            aria-label={t('settings.ai.field.voice')}
-            placeholder={
-              ready
-                ? t('settings.ai.voiceDiscovery.inputPlaceholder')
-                : t('settings.ai.voiceDiscovery.selectModel')
-            }
-          />
-          <Combobox.Trigger aria-label={t('settings.ai.voiceDiscovery.open')}>
-            {voicesQuery.isFetching ? (
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-            ) : (
-              <ChevronDown aria-hidden="true" className="size-4" />
-            )}
-          </Combobox.Trigger>
-        </Combobox.Control>
-        <Combobox.Content>
-          <Combobox.Empty>
-            {t('settings.ai.voiceDiscovery.empty')}
-          </Combobox.Empty>
-          <Scroll
-            className="max-h-64"
-            innerClassName="p-1"
-            viewportClassName="max-h-64"
-          >
-            <Combobox.List>
-              {(id: string) => {
-                const voice = voiceCatalog.byId.get(id)
-                return (
-                  <Combobox.Item key={id} value={id}>
-                    <span>{voice?.name ?? id}</span>
-                    {voice?.name && voice.name !== id ? (
-                      <span className="ml-2 text-xs text-fg-subtle">{id}</span>
-                    ) : null}
-                  </Combobox.Item>
-                )
-              }}
-            </Combobox.List>
-          </Scroll>
-        </Combobox.Content>
-      </Combobox>
+        emptyText={t('settings.ai.voiceDiscovery.empty')}
+        filter={(item, query) =>
+          filterVoice(
+            item && typeof item === 'object' && 'value' in item
+              ? String(item.value)
+              : '',
+            query,
+          )
+        }
+        value={props.value}
+        onChange={props.onChange}
+        options={voiceCatalog.ids.map((id) => {
+          const voice = voiceCatalog.byId.get(id)
+          return {
+            label: (
+              <span>
+                <span>{voice?.name ?? id}</span>
+                {voice?.name && voice.name !== id ? (
+                  <span className={lobeStyles.u10c992af}>{id}</span>
+                ) : null}
+              </span>
+            ),
+            value: id,
+          }
+        })}
+        placeholder={
+          ready
+            ? t('settings.ai.voiceDiscovery.inputPlaceholder')
+            : t('settings.ai.voiceDiscovery.selectModel')
+        }
+        suffix={
+          voicesQuery.isFetching ? (
+            <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
+          ) : undefined
+        }
+      />
       {ready ? (
-        <span className="text-xs text-fg-subtle">
+        <span className={lobeStyles.u59d40084}>
           {error
             ? t('settings.ai.voiceDiscovery.error', { error })
             : voices.length > 0
@@ -119,6 +143,6 @@ export function TtsVoiceField(props: {
               : t('settings.ai.voiceDiscovery.manual')}
         </span>
       ) : null}
-    </FieldShell>
+    </div>
   )
 }

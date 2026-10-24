@@ -18,7 +18,7 @@ export interface PostRow {
   slug: string
   text: string
   content: string | null
-  contentFormat: string
+  contentFormat: 'lexical'
   summary: string | null
   images: unknown[] | null
   meta: Record<string, unknown> | null
@@ -27,6 +27,7 @@ export interface PostRow {
   categoryId: EntityId
   category?: PostCategorySummary
   isPublished: boolean
+  publicAt?: Date | null
   sourceLang: string | null
   image: string | null
   seo: PostSeo | null
@@ -39,7 +40,7 @@ export interface PostRow {
 export interface PostCreateInput {
   title: string
   slug: string
-  contentFormat: string
+  contentFormat: 'lexical'
   createdAt?: Date
   text?: string | null
   content?: string | null
@@ -49,6 +50,7 @@ export interface PostCreateInput {
   tags?: string[]
   categoryId: EntityId | string
   isPublished?: boolean
+  publicAt?: Date | null
   sourceLang?: string | null
   image?: string | null
   seo?: PostSeo | null
@@ -73,8 +75,11 @@ export interface PostListParams {
   authorId?: string
   tag?: string
   publishedOnly?: boolean
+  scheduledOnly?: boolean
   year?: number
   excludeAiWritten?: boolean
+  keyword?: string
+  metaOnly?: boolean
   sortBy?: keyof PostRow
   sortOrder?: 1 | -1
   truncateText?: number
