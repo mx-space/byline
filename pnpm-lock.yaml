@@ -212,7 +212,7 @@ overrides:
   '@lexical/text': 0.52.0
   '@lexical/utils': 0.52.0
   '@lexical/yjs': 0.52.0
-  '@mx-space/ai>@haklex/rich-headless': 0.54.3
+  '@mx-space/ai>@haklex/rich-headless': 0.54.4
   '@mx-space/editor>@haklex/rich-headless': 0.54.3
   '@mx-space/editor>@haklex/rich-litexml': 0.54.3
   '@esbuild-kit/core-utils>esbuild': 0.25.12
@@ -1347,7 +1347,7 @@ packages:
     peerDependencies:
       '@better-auth/core': 1.6.27
       '@better-auth/utils': 0.4.2
-      kysely: 0.29.6
+      kysely: 0.29.7
     peerDependenciesMeta:
       kysely:
         optional: true
@@ -2453,6 +2453,11 @@ packages:
 
   '@haklex/rich-headless@0.54.3':
     resolution: {integrity: sha512-8Kkn9b3dgYQ7IQFLFX3sNsKh6KPOVceeQr3DkNMQcQUZpbMHWCXgfgZwCAKwWVuBYzOG3eSYzod7Mcgqp7W3Bw==}
+    peerDependencies:
+      lexical: 0.52.0
+
+  '@haklex/rich-headless@0.54.4':
+    resolution: {integrity: sha512-b4U1j2hmKA2Feqh8+IU9FX/9sdEMJlmzP8vhUn/CgTEFUskZCl06fULjuzhnWviGUTIoHsdT6AWSwAWD/vYwcA==}
     peerDependencies:
       lexical: 0.52.0
 
@@ -13062,6 +13067,19 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
+  '@haklex/rich-headless@0.54.4(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)':
+    dependencies:
+      '@lexical/code-core': 0.52.0(typescript@6.0.3)
+      '@lexical/extension': 0.52.0(typescript@6.0.3)
+      '@lexical/link': 0.52.0(typescript@6.0.3)
+      '@lexical/list': 0.52.0(typescript@6.0.3)
+      '@lexical/markdown': 0.52.0(typescript@6.0.3)
+      '@lexical/rich-text': 0.52.0(typescript@6.0.3)
+      '@lexical/table': 0.52.0(typescript@6.0.3)
+      lexical: 0.52.0(typescript@6.0.3)
+    transitivePeerDependencies:
+      - typescript
+
   '@haklex/rich-litexml@0.54.3(typescript@6.0.3)':
     dependencies:
       lexical: 0.52.0(typescript@6.0.3)
@@ -14275,7 +14293,7 @@ snapshots:
     dependencies:
       '@earendil-works/pi-agent-core': 0.99.1(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(supports-color@5.5.0)(undici@8.12.3)(ws@8.22.0)(zod@4.6.7)
       '@earendil-works/pi-ai': 0.99.1(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(supports-color@5.5.0)(undici@8.12.3)(ws@8.22.0)(zod@4.6.7)
-      '@haklex/rich-headless': 0.54.3(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
+      '@haklex/rich-headless': 0.54.4(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
       '@innei/message-engine': 0.5.0(@earendil-works/pi-agent-core@0.99.1(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.4)(supports-color@5.5.0)(undici@8.12.3)(ws@8.22.0)(zod@4.6.7))(react@19.3.1)
       es-toolkit: 1.52.0
       json5: 2.2.3
