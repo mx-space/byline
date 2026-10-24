@@ -1,5 +1,6 @@
 import './lobe-layers.css'
 import './index.css'
+import './styles/stylex.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

@@ -2,14 +2,15 @@ import type { DynamicNode } from '@haklex/rich-ext-dynamic'
 import { $isDynamicNode, DynamicHostRenderer } from '@haklex/rich-ext-dynamic'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { ActionIcon, Popover, Tag } from '@lobehub/ui'
+import * as stylex from '@stylexjs/stylex'
 import { $getNodeByKey, HISTORY_MERGE_TAG } from 'lexical'
 import { ArrowLeft, Boxes, Settings2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { useI18n } from '~/i18n'
+import { sx } from '~/styles/sx'
 import { PropsEditor } from '~/ui/patterns/PropsEditor'
 import { Button } from '~/ui/site-button'
-import { cn } from '~/utils/cn'
 
 import {
   currentCatalogEntries,
@@ -66,7 +67,7 @@ export function DynamicNodeEditor(props: {
   const entry = resolved?.entry
 
   return (
-    <div className={styles.root}>
+    <div {...stylex.props(stylex.defaultMarker(), styles.root)}>
       {props.url ? (
         <DynamicHostRenderer
           componentProps={props.componentProps}
@@ -75,18 +76,19 @@ export function DynamicNodeEditor(props: {
         />
       ) : (
         <div
-          className={styles.placeholder}
-          style={{ minHeight: Math.min(props.initialHeight, 160) }}
+          {...sx(styles.placeholder, undefined, {
+            minHeight: Math.min(props.initialHeight, 160),
+          })}
         >
           <Boxes aria-hidden="true" size={16} />
           {t('dynamicNode.placeholder')}
         </div>
       )}
       <Popover
-        classNames={{ content: styles.popover }}
+        classNames={{ content: stylex.props(styles.popover).className }}
         content={
           <div
-            className={styles.panel}
+            {...stylex.props(styles.panel)}
             onKeyDown={(event) => {
               if (event.key === 'Escape' && !props.url) {
                 event.preventDefault()
@@ -123,7 +125,7 @@ export function DynamicNodeEditor(props: {
               />
             ) : (
               <>
-                <div className={styles.header}>
+                <div {...stylex.props(styles.header)}>
                   <ActionIcon
                     aria-label={t('dynamicNode.backToPicker')}
                     icon={ArrowLeft}
@@ -131,14 +133,14 @@ export function DynamicNodeEditor(props: {
                     size="small"
                     title={t('dynamicNode.backToPicker')}
                   />
-                  <span className={styles.title}>{entry.name}</span>
+                  <span {...stylex.props(styles.title)}>{entry.name}</span>
                   {resolved.outdated ? (
                     <Tag size="small" title={t('dynamicNode.outdatedHint')}>
                       {t('dynamicNode.outdated')}
                     </Tag>
                   ) : null}
                 </div>
-                <div className={styles.body}>
+                <div {...stylex.props(styles.body)}>
                   <PropsEditor
                     key={entry.url}
                     onChange={(next) =>
@@ -148,11 +150,11 @@ export function DynamicNodeEditor(props: {
                     value={props.componentProps}
                   />
                 </div>
-                <div className={styles.footer}>
-                  <span className={styles.hint}>
+                <div {...stylex.props(styles.footer)}>
+                  <span {...stylex.props(styles.hint)}>
                     {t('dynamicNode.liveHint')}
                   </span>
-                  <div className={styles.footerActions}>
+                  <div {...stylex.props(styles.footerActions)}>
                     <Button danger onClick={removeNode}>
                       {t('dynamicNode.remove')}
                     </Button>
@@ -172,10 +174,12 @@ export function DynamicNodeEditor(props: {
       >
         <ActionIcon
           aria-label={t('dynamicNode.settings')}
-          className={cn(
-            styles.trigger,
-            props.url && !open && styles.triggerIdle,
-          )}
+          className={
+            stylex.props(
+              styles.trigger,
+              !!props.url && !open && styles.triggerIdle,
+            ).className
+          }
           icon={Settings2}
           size="small"
           variant="outlined"

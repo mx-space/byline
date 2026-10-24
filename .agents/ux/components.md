@@ -2,7 +2,7 @@
 
 # 组件盘点（项目层 · Byline admin）
 
-> 05-init Round 2。只写场景和注意点。新界面的原子层从 `@lobehub/ui` 取，控制台骨架从 `@lobehub/ui/dashboard` 取，取值用 `cssVar`。下面是现有项目组件，迁移完成前仍会被旧页面用到。
+> 05-init Round 2。只写场景和注意点。新界面的原子层从 `@lobehub/ui` 取，控制台骨架从 `@lobehub/ui/dashboard` 取，样式用 StyleX（`stylex.create`），取值用 `@lobehub/ui/stylex/cssVar.stylex` 和 `media.stylex`，写法见 `lobe-design-rules.md` §6。下面是现有项目组件，迁移完成前仍会被旧页面用到。
 
 ## 薄包装（优先用上游件）
 

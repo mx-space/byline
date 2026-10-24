@@ -1,4 +1,6 @@
-import { createStaticStyles, TextArea } from '@lobehub/ui'
+import { TextArea } from '@lobehub/ui'
+import { cssVar } from '@lobehub/ui/stylex/cssVar.stylex'
+import * as stylex from '@stylexjs/stylex'
 import { useState } from 'react'
 
 import { useI18n } from '~/i18n'
@@ -13,31 +15,17 @@ import { SchemaPropsForm } from './SchemaPropsForm'
 
 type PropsEditorMode = 'form' | 'json'
 
-const styles = createStaticStyles(({ css, cssVar }) => ({
-  error: css`
-    margin: 0;
-    font-size: ${cssVar.fontSizeSM};
-    color: ${cssVar.colorError};
-  `,
-  json: css`
-    font-family: ${cssVar.fontFamilyCode};
-    font-size: ${cssVar.fontSizeSM};
-    line-height: 20px;
-  `,
-  mode: css`
-    align-self: flex-start;
-  `,
-  root: css`
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  `,
-  stack: css`
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  `,
-}))
+const styles = stylex.create({
+  error: { margin: '0', fontSize: cssVar.fontSizeSM, color: cssVar.colorError },
+  json: {
+    fontFamily: cssVar.fontFamilyCode,
+    fontSize: cssVar.fontSizeSM,
+    lineHeight: '20px',
+  },
+  mode: { alignSelf: 'flex-start' },
+  root: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  stack: { display: 'flex', flexDirection: 'column', gap: '6px' },
+})
 
 export function PropsEditor(props: {
   onChange: (value: Record<string, unknown>) => void
@@ -60,9 +48,9 @@ export function PropsEditor(props: {
   }
 
   return (
-    <div className={styles.root}>
+    <div {...stylex.props(styles.root)}>
       <SegmentedControl<PropsEditorMode>
-        className={styles.mode}
+        className={stylex.props(styles.mode).className}
         onValueChange={switchMode}
         options={[
           { label: t('dynamicProps.form'), value: 'form' },
@@ -77,10 +65,10 @@ export function PropsEditor(props: {
           value={props.value}
         />
       ) : (
-        <div className={styles.stack}>
+        <div {...stylex.props(styles.stack)}>
           <TextArea
             autoSize={{ maxRows: 16, minRows: 5 }}
-            classNames={{ input: styles.json }}
+            classNames={{ input: stylex.props(styles.json).className }}
             onChange={(event) => {
               const text = event.target.value
               setJsonText(text)
@@ -92,7 +80,7 @@ export function PropsEditor(props: {
             value={jsonText}
           />
           {jsonInvalid ? (
-            <p className={styles.error} role="alert">
+            <p {...stylex.props(styles.error)} role="alert">
               {t('dynamicProps.jsonInvalid')}
             </p>
           ) : null}

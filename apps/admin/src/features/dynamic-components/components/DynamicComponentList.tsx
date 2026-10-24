@@ -1,4 +1,5 @@
-import { ActionIcon, Alert, Center, cx, Empty, SearchBar } from '@lobehub/ui'
+import { ActionIcon, Alert, Center, Empty, SearchBar } from '@lobehub/ui'
+import * as stylex from '@stylexjs/stylex'
 import { Plus, RefreshCw, SearchX } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -35,7 +36,7 @@ export function DynamicComponentList(props: {
     if (query.isPending) return <ListSkeleton rows={4} />
     if (query.isError && !hasItems) {
       return (
-        <Center className={styles.empty}>
+        <Center className={stylex.props(styles.empty).className}>
           <Empty
             action={
               <Button onClick={() => void query.refetch()}>
@@ -51,7 +52,7 @@ export function DynamicComponentList(props: {
     }
     if (visibleItems.length === 0) {
       return (
-        <Center className={styles.empty}>
+        <Center className={stylex.props(styles.empty).className}>
           <Empty icon={SearchX} title={t('dynamicComponents.noMatch')} />
         </Center>
       )
@@ -110,7 +111,7 @@ export function DynamicComponentList(props: {
         hasItems ? (
           <SearchBar
             aria-label={t('dynamicComponents.searchPlaceholder')}
-            className={styles.search}
+            className={stylex.props(styles.search).className}
             enableShortKey={false}
             onInputChange={setSearch}
             placeholder={t('dynamicComponents.searchPlaceholder')}
@@ -132,16 +133,18 @@ function DynamicComponentRow(props: {
   return (
     <button
       aria-current={props.selected ? 'true' : undefined}
-      className={cx(styles.row, props.selected && styles.rowCurrent)}
+      {...stylex.props(styles.row, props.selected && styles.rowCurrent)}
       onClick={props.onSelect}
       title={props.item.url}
       type="button"
     >
-      <span className={styles.rowMain}>
-        <span className={styles.rowName}>{props.item.name}</span>
-        <span className={styles.rowUrl}>{props.item.url}</span>
+      <span {...stylex.props(styles.rowMain)}>
+        <span {...stylex.props(styles.rowName)}>{props.item.name}</span>
+        <span {...stylex.props(styles.rowUrl)}>{props.item.url}</span>
       </span>
-      <span className={styles.rowHeight}>{props.item.initialHeight}px</span>
+      <span {...stylex.props(styles.rowHeight)}>
+        {props.item.initialHeight}px
+      </span>
     </button>
   )
 }

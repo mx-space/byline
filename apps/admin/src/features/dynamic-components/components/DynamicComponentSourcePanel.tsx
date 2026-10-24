@@ -1,4 +1,5 @@
 import { Alert, Center, Text, toast } from '@lobehub/ui'
+import * as stylex from '@stylexjs/stylex'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RotateCcw } from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
@@ -81,12 +82,12 @@ export function DynamicComponentSourcePanel(props: {
   }
 
   return (
-    <div className={styles.sourceRoot}>
-      <div className={styles.sourceGrid}>
-        <div className={styles.sourceCode}>
-          <div className={styles.sourceEditor}>
+    <div {...stylex.props(styles.sourceRoot)}>
+      <div {...stylex.props(styles.sourceGrid)}>
+        <div {...stylex.props(styles.sourceCode)}>
+          <div {...stylex.props(styles.sourceEditor)}>
             {source === null ? (
-              <Center className={styles.sourceLoading}>
+              <Center className={stylex.props(styles.sourceLoading).className}>
                 <Text type="secondary">{t('common.loading')}</Text>
               </Center>
             ) : (
@@ -104,11 +105,11 @@ export function DynamicComponentSourcePanel(props: {
             )}
           </div>
           {live.error ? (
-            <div className={styles.liveError} role="alert">
+            <div {...stylex.props(styles.liveError)} role="alert">
               {live.error} · {t('dynamicComponents.source.keptLastWorking')}
             </div>
           ) : null}
-          <div className={styles.sourceFooter}>
+          <div {...stylex.props(styles.sourceFooter)}>
             <Button
               disabled={!dirty || saveMutation.isPending}
               icon={RotateCcw}
@@ -131,8 +132,8 @@ export function DynamicComponentSourcePanel(props: {
           </div>
         </div>
 
-        <div className={styles.sourcePreview}>
-          <div className={styles.previewFrame}>
+        <div {...stylex.props(styles.sourcePreview)}>
+          <div {...stylex.props(styles.previewFrame)}>
             {live.url ? (
               <DynamicComponentPreview
                 componentProps={props.previewProps}
@@ -151,7 +152,7 @@ export function DynamicComponentSourcePanel(props: {
             schema={item.propsSchema}
             value={props.previewProps}
           />
-          <p className={styles.hint}>
+          <p {...stylex.props(styles.hint)}>
             {t('dynamicComponents.detail.samplePropsHint')}
           </p>
         </div>

@@ -12,6 +12,11 @@ import { defineConfig } from 'vitest/config'
 import PKG from './package.json'
 import { adminRoutes } from './vite-plugins/admin-routes'
 import { esToolkitCompatShim } from './vite-plugins/es-toolkit-compat-shim'
+import {
+  stylexPlugin,
+  stylexTokenModules,
+  stylexVitestInlineDeps,
+} from './vite-plugins/stylex'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -26,6 +31,7 @@ export default ({ mode }) => {
       esToolkitCompatShim(),
       codeInspectorPlugin({ bundler: 'vite' }),
       adminRoutes({ viewsDir: resolve(__dirname, 'src/views') }),
+      stylexPlugin(),
       react(),
       babel({ presets: [reactCompilerPreset()] }),
 
@@ -105,9 +111,14 @@ export default ({ mode }) => {
       },
     },
     optimizeDeps: {
+      // The StyleX unplugin loads every import of a file it compiles while the
+      // first crawl is still running; holding optimized deps until crawl end
+      // deadlocks that load.
+      holdUntilCrawlEnd: false,
       // Vite 8 esbuild optimizer drops re-export aliases in barrel modules;
       // these trigger "Export 'X' is not defined" at runtime.
       exclude: [
+        ...stylexTokenModules,
         'lucide-react',
         '@haklex/rich-compose',
         'better-auth/client',
@@ -219,6 +230,7 @@ export default ({ mode }) => {
     test: {
       environment: 'happy-dom',
       setupFiles: [resolve(__dirname, 'test/setup.ts')],
+      server: { deps: { inline: stylexVitestInlineDeps } },
     },
   })
 }

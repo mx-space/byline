@@ -1,14 +1,15 @@
-import { createStaticStyles } from '@lobehub/ui'
+import { cssVar } from '@lobehub/ui/stylex/cssVar.stylex'
+import * as stylex from '@stylexjs/stylex'
 
-export const styles = createStaticStyles(({ css, cssVar }) => ({
-  caption: css`
-    font-size: 11px;
-    line-height: 14px;
-    color: ${cssVar.colorTextTertiary};
-    white-space: nowrap;
-  `,
-  logo: css`
-    flex: none;
-    line-height: 1;
-  `,
-}))
+export const styles = stylex.create({
+  caption: {
+    color: cssVar.colorTextTertiary,
+    fontSize: 11,
+    lineHeight: '14px',
+    whiteSpace: 'nowrap',
+  },
+  logo: {
+    flex: 'none',
+    lineHeight: 1,
+  },
+})

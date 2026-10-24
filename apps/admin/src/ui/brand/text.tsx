@@ -1,5 +1,6 @@
-import { cx } from '@lobehub/ui'
 import { useId } from 'react'
+
+import { sx } from '~/styles/sx'
 
 import type { LogoProps } from './logo'
 import { styles } from './style'
@@ -23,10 +24,9 @@ export function LogoText({
 
   return (
     <svg
-      className={cx(styles.logo, className)}
+      {...sx(styles.logo, className, style)}
       fill="currentColor"
       height={size}
-      style={style}
       viewBox={`0 0 ${TEXT_WIDTH} ${TEXT_HEIGHT}`}
       width={textWidth(size)}
       xmlns="http://www.w3.org/2000/svg"

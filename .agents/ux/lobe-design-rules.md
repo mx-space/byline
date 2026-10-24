@@ -54,3 +54,15 @@
 - 路由以 `apps/admin/src/views` 的目录为准，不要凭印象拼。分类在 `/posts/category`，设置在 `/setting`，写错会被重定向回总览，看起来像「页面正常」。
 - 浏览器截图偶尔落后一帧，结论前再截一次。
 - 用户说「这个页面有问题」时，先查所有同类页面。双层留白是一处发现、所有页面都有。
+
+## 6 样式写法（StyleX）
+
+admin 的样式统一写成 `stylex.create`，不再新增 `createStaticStyles`、`createStyles`、`css`、`keyframes`、`createGlobalStyle`、`injectGlobal`。ESLint 的 `stylex-migration/no-emotion-styles` 只对 `apps/admin/scripts/stylex-migration/legacyFiles.json` 里的旧文件放行；这个名单只减不增，迁完一个文件就跑 `pnpm -C apps/admin stylex:migration --prune-legacy`。
+
+- **取值**：颜色、字号、圆角、阴影从 `@lobehub/ui/stylex/cssVar.stylex` 取，断点从 `@lobehub/ui/stylex/media.stylex` 取（`[media.sm]: ...`）。能被 `stylex.create` 引用的外部常量只能来自 `.stylex.ts` 的 `defineConsts`，普通 `const` 要搬进去。
+- **只写长写法**：`border`、`background`、`animation` 的简写在 StyleX 里会静默失效，写成 `borderWidth` / `borderStyle` / `borderColor`、`backgroundColor`、`animationName` 等。`transition`、`font` 和多值的 `gap`、`padding-inline` 也照样拆开写，避免和长写法互相覆盖。
+- **整文件迁移**：一个文件要么全是 StyleX，要么全是旧写法。混用时 StyleX 长写法会压过 emotion，但简写不会，页面看着对、细节错。
+- **没有后代选择器**：`& dt`、`& + &`、`[aria-selected]` 改成给元素自己挂样式，或按状态传条件样式（`index > 0 && styles.divided`）；父元素悬停才显示的子元素用 `stylex.defaultMarker()` + `stylex.when.ancestor(':hover')`。`@container` 查询可以直接写在条件值里。
+- **挂到元素上**：原生元素用 `{...stylex.props(...)}`；lobe-ui 组件只收 `className` 时用 `stylex.props(...).className`；需要再并一个外部 `className` 或内联 `style` 时用 `~/styles/sx`。同一个元素上不要同时展开 `stylex.props` 又写 `style`。
+- **迁完要截图**：类型检查和单测发现不了简写失效，迁过的每个路由按 §5 打开截图，明暗两套都看。
+

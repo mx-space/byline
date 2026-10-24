@@ -1,6 +1,7 @@
 // lobe-design-ignore-file LOBE-RAW-COLOR: brand mark paints (gradient, eyes, pupils) are the supplied asset
-import { cx } from '@lobehub/ui'
 import { type SVGProps, useId } from 'react'
+
+import { sx } from '~/styles/sx'
 
 import { styles } from './style'
 
@@ -21,10 +22,9 @@ export function LogoColor({
   return (
     <svg
       aria-hidden
-      className={cx(styles.logo, className)}
+      {...sx(styles.logo, className, style)}
       fill="none"
       height={size}
-      style={style}
       viewBox="0 0 24 24"
       width={size}
       xmlns="http://www.w3.org/2000/svg"

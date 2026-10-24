@@ -1,4 +1,5 @@
 import { Input } from '@lobehub/ui'
+import * as stylex from '@stylexjs/stylex'
 import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 
@@ -39,20 +40,20 @@ export function ManualDynamicForm(props: {
 
   return (
     <>
-      <div className={styles.body}>
-        <label className={styles.field}>
-          <span className={styles.label}>{t('dynamicNode.url')}</span>
+      <div {...stylex.props(styles.body)}>
+        <label {...stylex.props(styles.field)}>
+          <span {...stylex.props(styles.label)}>{t('dynamicNode.url')}</span>
           <Input
             autoFocus
-            classNames={{ input: styles.mono }}
+            classNames={{ input: stylex.props(styles.mono).className }}
             onChange={(event) => setUrl(event.target.value)}
             placeholder="https://cdn.example.com/widget.js"
             type="url"
             value={url}
           />
         </label>
-        <label className={styles.field}>
-          <span className={styles.label}>{t('dynamicNode.height')}</span>
+        <label {...stylex.props(styles.field)}>
+          <span {...stylex.props(styles.label)}>{t('dynamicNode.height')}</span>
           <Input
             min={0}
             onChange={(event) => setHeight(event.target.value)}
@@ -65,9 +66,9 @@ export function ManualDynamicForm(props: {
           schema={NO_SCHEMA}
           value={componentProps}
         />
-        <p className={styles.hint}>{t('dynamicNode.manualHint')}</p>
+        <p {...stylex.props(styles.hint)}>{t('dynamicNode.manualHint')}</p>
       </div>
-      <div className={styles.footer}>
+      <div {...stylex.props(styles.footer)}>
         <Button
           icon={ArrowLeft}
           onClick={props.onBack}
@@ -76,7 +77,7 @@ export function ManualDynamicForm(props: {
         >
           {t('dynamicNode.backToPicker')}
         </Button>
-        <div className={styles.footerActions}>
+        <div {...stylex.props(styles.footerActions)}>
           <Button danger onClick={props.onRemove}>
             {t('dynamicNode.remove')}
           </Button>

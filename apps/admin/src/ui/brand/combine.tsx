@@ -1,6 +1,8 @@
 import { Flexbox } from '@lobehub/ui'
 import type { HTMLAttributes, ReactNode } from 'react'
 
+import { sx } from '~/styles/sx'
+
 import { LogoColor } from './logo'
 import { styles } from './style'
 import { LOGO_TEXT_INSET_UNITS, LogoText, TEXT_HEIGHT } from './text'
@@ -40,10 +42,9 @@ export function Combine({
         <LogoText aria-hidden size={wordmark} />
         {caption ? (
           <span
-            className={styles.caption}
-            style={{
+            {...sx(styles.caption, undefined, {
               marginLeft: (wordmark * LOGO_TEXT_INSET_UNITS) / TEXT_HEIGHT,
-            }}
+            })}
           >
             {caption}
           </span>

@@ -1,0 +1,5 @@
+/* The entry chunk needs a CSS asset for production StyleX rules
+   (vite-plugins/stylex); keep it while it is otherwise empty. */
+:root {
+  --bl-stylex: 1;
+}

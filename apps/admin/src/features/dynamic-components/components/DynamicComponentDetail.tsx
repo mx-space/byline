@@ -1,4 +1,5 @@
 import { Flexbox, Highlighter, Tabs } from '@lobehub/ui'
+import * as stylex from '@stylexjs/stylex'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useBlocker } from 'react-router'
@@ -74,7 +75,7 @@ export function DynamicComponentDetail(props: {
       contentWidth={tab === 'source' ? 'full' : 'default'}
       meta={
         <>
-          <span className={styles.mono} title={item.url}>
+          <span {...stylex.props(styles.mono)} title={item.url}>
             {item.url}
           </span>
           <span>
@@ -84,7 +85,7 @@ export function DynamicComponentDetail(props: {
       }
       onBack={props.onBack}
       tabs={
-        <div className={styles.tabs}>
+        <div {...stylex.props(styles.tabs)}>
           <Tabs
             activeKey={tab}
             items={[
@@ -102,14 +103,14 @@ export function DynamicComponentDetail(props: {
       }
       title={item.name}
     >
-      <div className={styles.body}>
-        <p className={styles.description}>
+      <div {...stylex.props(styles.body)}>
+        <p {...stylex.props(styles.description)}>
           {item.description || t('dynamicComponents.detail.noDescription')}
         </p>
 
         {tab === 'preview' ? (
-          <div className={styles.previewPanel}>
-            <div className={styles.previewFrame}>
+          <div {...stylex.props(styles.previewPanel)}>
+            <div {...stylex.props(styles.previewFrame)}>
               <DynamicComponentPreview
                 componentProps={previewProps}
                 initialHeight={item.initialHeight}
@@ -121,13 +122,13 @@ export function DynamicComponentDetail(props: {
               schema={item.propsSchema}
               value={previewProps}
             />
-            <p className={styles.hint}>
+            <p {...stylex.props(styles.hint)}>
               {t('dynamicComponents.detail.samplePropsHint')}
             </p>
           </div>
         ) : tab === 'schema' ? (
           <Highlighter
-            className={styles.schemaCode}
+            className={stylex.props(styles.schemaCode).className}
             language="json"
             variant="filled"
           >
@@ -144,17 +145,21 @@ export function DynamicComponentDetail(props: {
         )}
 
         {hasHistory ? (
-          <dl className={styles.facts}>
+          <dl {...stylex.props(styles.facts)}>
             {showParentUrl ? (
               <>
-                <dt>{t('dynamicComponents.detail.parentUrl')}</dt>
-                <dd>{item.parentUrl}</dd>
+                <dt {...stylex.props(styles.factLabel)}>
+                  {t('dynamicComponents.detail.parentUrl')}
+                </dt>
+                <dd {...stylex.props(styles.factValue)}>{item.parentUrl}</dd>
               </>
             ) : null}
             {item.previousUrls?.length ? (
               <>
-                <dt>{t('dynamicComponents.detail.previousUrls')}</dt>
-                <dd>
+                <dt {...stylex.props(styles.factLabel)}>
+                  {t('dynamicComponents.detail.previousUrls')}
+                </dt>
+                <dd {...stylex.props(styles.factValue)}>
                   {item.previousUrls.toReversed().map((url) => (
                     <div key={url}>{url}</div>
                   ))}

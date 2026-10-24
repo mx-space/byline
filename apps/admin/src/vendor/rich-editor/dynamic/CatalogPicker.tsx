@@ -1,4 +1,5 @@
 import { Input } from '@lobehub/ui'
+import * as stylex from '@stylexjs/stylex'
 import { Code2, Search } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -49,7 +50,7 @@ export function CatalogPicker(props: {
 
   return (
     <>
-      <div className={styles.search}>
+      <div {...stylex.props(styles.search)}>
         <Input
           aria-label={t('dynamicNode.search')}
           onChange={(event) => {
@@ -65,34 +66,37 @@ export function CatalogPicker(props: {
           variant="filled"
         />
       </div>
-      <div className={styles.options} role="listbox">
+      <div {...stylex.props(styles.options)} role="listbox">
         {props.entries === null ? (
-          <p className={styles.status}>{t('common.loading')}</p>
+          <p {...stylex.props(styles.status)}>{t('common.loading')}</p>
         ) : visible.length === 0 ? (
-          <p className={styles.status}>{t('dynamicNode.noMatch')}</p>
+          <p {...stylex.props(styles.status)}>{t('dynamicNode.noMatch')}</p>
         ) : (
           visible.map((entry, index) => (
             <button
               aria-selected={index === active}
-              className={styles.option}
+              {...stylex.props(
+                styles.option,
+                index === active && styles.optionActive,
+              )}
               key={entry.url}
               onClick={() => props.onPick(entry)}
               onMouseEnter={() => setActive(index)}
               role="option"
               type="button"
             >
-              <span className={styles.optionIcon}>
+              <span {...stylex.props(styles.optionIcon)}>
                 <Code2 aria-hidden="true" size={16} />
               </span>
-              <span className={styles.optionMain}>
-                <span className={styles.optionName}>{entry.name}</span>
+              <span {...stylex.props(styles.optionMain)}>
+                <span {...stylex.props(styles.optionName)}>{entry.name}</span>
                 {entry.description ? (
-                  <span className={styles.optionDescription}>
+                  <span {...stylex.props(styles.optionDescription)}>
                     {entry.description}
                   </span>
                 ) : null}
               </span>
-              <span className={styles.optionCount}>
+              <span {...stylex.props(styles.optionCount)}>
                 {t('dynamicNode.fieldCount', {
                   count: fieldsFromSchema(entry.propsSchema).length,
                 })}
@@ -101,8 +105,10 @@ export function CatalogPicker(props: {
           ))
         )}
       </div>
-      <div className={styles.footer}>
-        <span className={styles.hint}>{t('dynamicNode.pickerHint')}</span>
+      <div {...stylex.props(styles.footer)}>
+        <span {...stylex.props(styles.hint)}>
+          {t('dynamicNode.pickerHint')}
+        </span>
         <Button onClick={props.onManual} size="small" type="text">
           {t('dynamicNode.manualLink')}
         </Button>

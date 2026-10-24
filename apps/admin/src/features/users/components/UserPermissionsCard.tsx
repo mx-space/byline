@@ -1,11 +1,6 @@
-import {
-  createStaticStyles,
-  Flexbox,
-  Select,
-  Switch,
-  Text,
-  toast,
-} from '@lobehub/ui'
+import { Flexbox, Select, Switch, Text, toast } from '@lobehub/ui'
+import { cssVar } from '@lobehub/ui/stylex/cssVar.stylex'
+import * as stylex from '@stylexjs/stylex'
 import { useMutation } from '@tanstack/react-query'
 import { Save } from 'lucide-react'
 import { useState } from 'react'
@@ -30,37 +25,36 @@ import { getUserErrorMessage } from '../utils/users'
 
 const ROLE_ORDER = ['owner', 'editor', 'author', 'translator'] as const
 
-const styles = createStaticStyles(({ css, cssVar }) => ({
-  list: css`
-    display: flex;
-    flex-direction: column;
-
-    padding-inline: 16px;
-    border: 1px solid ${cssVar.colorBorderSecondary};
-    border-radius: ${cssVar.borderRadiusLG};
-  `,
-  role: css`
-    width: 176px;
-  `,
-  row: css`
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    justify-content: space-between;
-
-    padding-block: 12px;
-
-    & + & {
-      border-block-start: 1px solid ${cssVar.colorBorderSecondary};
-    }
-  `,
-  rowText: css`
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  `,
-}))
+const styles = stylex.create({
+  list: {
+    display: 'flex',
+    flexDirection: 'column',
+    paddingInline: '16px',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: cssVar.colorBorderSecondary,
+    borderRadius: cssVar.borderRadiusLG,
+  },
+  role: { width: '176px' },
+  row: {
+    display: 'flex',
+    gap: '16px',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBlock: '12px',
+  },
+  rowDivided: {
+    borderBlockStartWidth: '1px',
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: cssVar.colorBorderSecondary,
+  },
+  rowText: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    minWidth: '0',
+  },
+})
 
 interface UserPermissionsCardProps {
   canEdit: boolean
@@ -122,7 +116,7 @@ export function UserPermissionsCard(props: UserPermissionsCardProps) {
         </Text>
         <Select
           aria-label={t('users.permission.role')}
-          className={styles.role}
+          className={stylex.props(styles.role).className}
           disabled={!props.canEdit}
           onChange={(value: PermissionRoleOrCustom) => {
             if (value !== 'custom') {
@@ -137,13 +131,16 @@ export function UserPermissionsCard(props: UserPermissionsCardProps) {
       <Text fontSize={12} type="secondary">
         {props.canEdit ? hint : t('users.permission.readOnly')}
       </Text>
-      <div className={styles.list}>
-        {PERMISSION_FIELDS.map((field) => {
+      <div {...stylex.props(styles.list)}>
+        {PERMISSION_FIELDS.map((field, index) => {
           const selfLocked =
             props.isSelf && field.bit === Permission.ManageUsers
           return (
-            <div className={styles.row} key={field.bit}>
-              <div className={styles.rowText}>
+            <div
+              {...stylex.props(styles.row, index > 0 && styles.rowDivided)}
+              key={field.bit}
+            >
+              <div {...stylex.props(styles.rowText)}>
                 <Text>{t(field.label)}</Text>
                 <Text fontSize={12} type="secondary">
                   {selfLocked

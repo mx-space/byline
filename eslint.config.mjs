@@ -1,5 +1,7 @@
 import { defineConfig } from '@lobehub/eslint-config'
 
+import { stylexMigrationConfig } from './apps/admin/scripts/stylex-migration/eslint.mjs'
+
 export default defineConfig(
   {
     ignores: [
@@ -83,4 +85,5 @@ export default defineConfig(
       'import/no-default-export': 'off',
     },
   },
+  ...stylexMigrationConfig,
 )

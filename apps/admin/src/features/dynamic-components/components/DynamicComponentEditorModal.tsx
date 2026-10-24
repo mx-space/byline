@@ -1,4 +1,5 @@
 import { Alert, Input, TextArea, toast } from '@lobehub/ui'
+import * as stylex from '@stylexjs/stylex'
 import { useMutation } from '@tanstack/react-query'
 import { Upload } from 'lucide-react'
 import type { FormEvent, ReactNode } from 'react'
@@ -43,13 +44,15 @@ function Field(props: {
   required?: boolean
 }) {
   return (
-    <div className={styles.field}>
-      <label className={styles.fieldLabel} htmlFor={props.htmlFor}>
+    <div {...stylex.props(styles.field)}>
+      <label {...stylex.props(styles.fieldLabel)} htmlFor={props.htmlFor}>
         {props.label}
         {props.required ? ' *' : null}
       </label>
       {props.children}
-      {props.hint ? <p className={styles.fieldHint}>{props.hint}</p> : null}
+      {props.hint ? (
+        <p {...stylex.props(styles.fieldHint)}>{props.hint}</p>
+      ) : null}
     </div>
   )
 }
@@ -144,7 +147,7 @@ function DynamicComponentEditorModal({ item }: EditorProps) {
   return (
     <form
       aria-busy={busy}
-      className={styles.editorForm}
+      {...stylex.props(styles.editorForm)}
       onSubmit={handleSubmit}
     >
       <ModalHeader
@@ -155,7 +158,7 @@ function DynamicComponentEditorModal({ item }: EditorProps) {
         )}
       />
 
-      <div className={styles.editorBody}>
+      <div {...stylex.props(styles.editorBody)}>
         <Field
           htmlFor={fieldId('name')}
           label={t('dynamicComponents.editor.name')}
@@ -176,10 +179,10 @@ function DynamicComponentEditorModal({ item }: EditorProps) {
           label={t('dynamicComponents.editor.url')}
           required
         >
-          <div className={styles.uploadRow}>
+          <div {...stylex.props(styles.uploadRow)}>
             <Input
-              className={styles.uploadInput}
-              classNames={{ input: styles.monoInput }}
+              className={stylex.props(styles.uploadInput).className}
+              classNames={{ input: stylex.props(styles.monoInput).className }}
               id={fieldId('url')}
               onChange={(event) => setUrl(event.target.value)}
               placeholder="https://cdn.example.com/widget.js"
@@ -200,7 +203,7 @@ function DynamicComponentEditorModal({ item }: EditorProps) {
             </Button>
             <input
               accept=".js,.mjs,text/javascript"
-              className={styles.hiddenInput}
+              {...stylex.props(styles.hiddenInput)}
               onChange={(event) => {
                 const file = event.target.files?.[0]
                 event.target.value = ''
@@ -249,7 +252,7 @@ function DynamicComponentEditorModal({ item }: EditorProps) {
         >
           <TextArea
             autoSize={{ maxRows: 20, minRows: 8 }}
-            className={styles.monoInput}
+            className={stylex.props(styles.monoInput).className}
             id={fieldId('schema')}
             onChange={(event) => setSchemaText(event.target.value)}
             spellCheck={false}
@@ -259,7 +262,7 @@ function DynamicComponentEditorModal({ item }: EditorProps) {
       </div>
 
       {error ? (
-        <div className={styles.editorError}>
+        <div {...stylex.props(styles.editorError)}>
           <Alert showIcon title={error} type="error" />
         </div>
       ) : null}
