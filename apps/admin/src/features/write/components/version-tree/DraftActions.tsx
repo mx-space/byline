@@ -1,4 +1,4 @@
-import { createStaticStyles } from '@lobehub/ui'
+import { createStaticStyles, DropdownMenu } from '@lobehub/ui'
 import {
   ArrowLeftRight,
   Ellipsis,
@@ -12,7 +12,6 @@ import {
 
 import { useI18n } from '~/i18n'
 import type { DraftModel } from '~/models/draft'
-import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
 import { Button } from '~/ui/primitives/button'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
@@ -69,11 +68,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     width: 1rem;
     height: 1rem;
   `,
-  u73f8c158: css`
-    width: 1rem;
-    height: 1rem;
-    color: ${cssVar.colorTextTertiary};
-  `,
 }))
 
 export interface DraftActionHandlers {
@@ -118,41 +112,48 @@ export function DraftActions(props: {
         <ArrowLeftRight aria-hidden="true" className={lobeStyles.u783b0d9d} />
         {props.labelled ? t('write.branch.compare') : null}
       </Button>
-      <DropdownMenu>
-        <DropdownMenu.Trigger
-          aria-label={t('write.versionTree.moreActions')}
-          className={lobeStyles.u2d172465}
-          disabled={props.deleting}
-          type="button"
-        >
-          {props.deleting ? (
-            <Loader2 aria-hidden="true" className={lobeStyles.uf9dfa057} />
-          ) : (
-            <Ellipsis aria-hidden="true" className={lobeStyles.uf7b5fa97} />
-          )}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="end">
-          <DropdownMenu.Item onClick={handlers.onHistory}>
-            <History aria-hidden="true" className={lobeStyles.u73f8c158} />
-            {t('write.branch.history')}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={handlers.onShare}>
-            <Link2 aria-hidden="true" className={lobeStyles.u73f8c158} />
-            {t('write.share.shareDraft')}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            disabled={props.draft.relationToPublished === 'same'}
-            onClick={handlers.onPublish}
-          >
-            <Send aria-hidden="true" className={lobeStyles.u73f8c158} />
-            {t('write.branch.publish')}
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator />
-          <DropdownMenu.Item danger onClick={handlers.onDelete}>
-            <Trash2 aria-hidden="true" className={lobeStyles.uf7b5fa97} />
-            {t('common.delete')}
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
+      <DropdownMenu
+        items={[
+          {
+            icon: History,
+            key: 'history',
+            label: t('write.branch.history'),
+            onClick: handlers.onHistory,
+          },
+          {
+            icon: Link2,
+            key: 'share',
+            label: t('write.share.shareDraft'),
+            onClick: handlers.onShare,
+          },
+          {
+            disabled: props.draft.relationToPublished === 'same',
+            icon: Send,
+            key: 'publish',
+            label: t('write.branch.publish'),
+            onClick: handlers.onPublish,
+          },
+          { key: 'sep', type: 'divider' },
+          {
+            danger: true,
+            icon: Trash2,
+            key: 'delete',
+            label: t('common.delete'),
+            onClick: handlers.onDelete,
+          },
+        ]}
+        placement="bottomRight"
+        triggerProps={{
+          'aria-label': t('write.versionTree.moreActions'),
+          className: lobeStyles.u2d172465,
+          disabled: props.deleting,
+        }}
+      >
+        {props.deleting ? (
+          <Loader2 aria-hidden="true" className={lobeStyles.uf9dfa057} />
+        ) : (
+          <Ellipsis aria-hidden="true" className={lobeStyles.uf7b5fa97} />
+        )}
       </DropdownMenu>
     </>
   )

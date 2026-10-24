@@ -11,7 +11,11 @@ import {
   useToolbarState,
 } from '@haklex/rich-plugin-toolbar'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import { createStaticStyles } from '@lobehub/ui'
+import {
+  createStaticStyles,
+  type DropdownItem,
+  DropdownMenu,
+} from '@lobehub/ui'
 import {
   FORMAT_ELEMENT_COMMAND,
   FORMAT_TEXT_COMMAND,
@@ -46,7 +50,6 @@ import {
   Undo,
 } from 'lucide-react'
 import {
-  Fragment,
   type ReactNode,
   useLayoutEffect,
   useMemo,
@@ -54,17 +57,12 @@ import {
   useState,
 } from 'react'
 
-import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
 import { Button } from '~/ui/site-button'
 import { cn } from '~/utils/cn'
 
 import { EditorDebugDialog } from './EditorDebugDialog'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
-  u783b0d9d: css`
-    width: 14px;
-    height: 14px;
-  `,
   u90665ca6: css`
     font-style: italic;
   `,
@@ -159,13 +157,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u6a9cae37: css`
     min-width: 8rem;
   `,
-  u359090c2: css`
-    gap: 8px;
-  `,
-  ucfc6e672: css`
-    font-weight: 500;
-    color: ${cssVar.colorText};
-  `,
   ue8f85260: css`
     min-width: 11rem;
   `,
@@ -230,7 +221,7 @@ interface ToolbarSlot {
   key: string
   bar: ReactNode
   leadingDivider?: boolean
-  menu: ReactNode
+  menuItems: DropdownItem[]
 }
 
 interface BlockOption {
@@ -298,61 +289,43 @@ export function EditorToolbar(props: { className?: string }) {
           shortcut={entry.shortcut}
         />
       ),
-      menu: (
-        <ToolbarMenuItem onClick={entry.onClick}>
-          <SlotIcon icon={entry.icon} iconNode={entry.iconNode} />
-          {entry.label}
-        </ToolbarMenuItem>
-      ),
+      menuItems: [
+        {
+          disabled: entry.disabled,
+          icon: entry.icon ?? entry.iconNode,
+          key: entry.key,
+          label: entry.label,
+          onClick: entry.onClick,
+        },
+      ],
     })
 
     return [
       {
         key: 'font',
         bar: <FontFamilyMenu activeValue={state.fontFamily} editor={editor} />,
-        menu: FONT_FAMILIES.map((def) => (
-          <ToolbarMenuItem
-            active={state.fontFamily === def.value}
-            key={def.label}
-            onClick={() => applyFontFamily(editor, def.value)}
-          >
-            {def.label}
-          </ToolbarMenuItem>
-        )),
+        menuItems: FONT_FAMILIES.map((def) => ({
+          key: def.label,
+          label: def.label,
+          onClick: () => applyFontFamily(editor, def.value),
+        })),
       },
       {
         key: 'block',
         leadingDivider: true,
         bar: (
-          <BlockMenu activeIcon={ActiveBlockIcon} label={activeBlock.label}>
-            {BLOCK_OPTIONS.map((option) => {
-              const Icon = option.icon
-              return (
-                <ToolbarMenuItem
-                  active={state.blockType === option.type}
-                  key={option.type}
-                  onClick={() => applyBlockType(editor, option.type)}
-                >
-                  <Icon aria-hidden className={lobeStyles.u783b0d9d} />
-                  {option.label}
-                </ToolbarMenuItem>
-              )
-            })}
-          </BlockMenu>
+          <BlockMenu
+            activeIcon={ActiveBlockIcon}
+            editor={editor}
+            label={activeBlock.label}
+          />
         ),
-        menu: BLOCK_OPTIONS.map((option) => {
-          const Icon = option.icon
-          return (
-            <ToolbarMenuItem
-              active={state.blockType === option.type}
-              key={option.type}
-              onClick={() => applyBlockType(editor, option.type)}
-            >
-              <Icon aria-hidden className={lobeStyles.u783b0d9d} />
-              {option.label}
-            </ToolbarMenuItem>
-          )
-        }),
+        menuItems: BLOCK_OPTIONS.map((option) => ({
+          icon: option.icon,
+          key: option.type,
+          label: option.label,
+          onClick: () => applyBlockType(editor, option.type),
+        })),
       },
       icon({
         key: 'undo',
@@ -459,21 +432,13 @@ export function EditorToolbar(props: { className?: string }) {
             }
           />
         ),
-        menu: ALIGN_OPTIONS.map((option) => {
-          const Icon = option.icon
-          return (
-            <ToolbarMenuItem
-              active={(state.elementFormat || 'left') === option.format}
-              key={option.format}
-              onClick={() =>
-                editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, option.format)
-              }
-            >
-              <Icon aria-hidden className={lobeStyles.u783b0d9d} />
-              {option.label}
-            </ToolbarMenuItem>
-          )
-        }),
+        menuItems: ALIGN_OPTIONS.map((option) => ({
+          icon: option.icon,
+          key: option.format,
+          label: option.label,
+          onClick: () =>
+            editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, option.format),
+        })),
       },
       ...insertItems.map((item, index) =>
         icon({
@@ -582,22 +547,17 @@ export function EditorToolbar(props: { className?: string }) {
           </span>
         ))}
         {overflow.length > 0 ? (
-          <DropdownMenu>
-            <DropdownMenu.Trigger>
-              <button
-                aria-label="更多"
-                className={lobeStyles.u2f41b8fa}
-                title="更多"
-                type="button"
-              >
-                <MoreHorizontal aria-hidden size={14} />
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end" className={lobeStyles.ue8f85260}>
-              {overflow.map((slot) => (
-                <Fragment key={slot.key}>{slot.menu}</Fragment>
-              ))}
-            </DropdownMenu.Content>
+          <DropdownMenu
+            items={overflow.flatMap((slot) => slot.menuItems)}
+            placement="bottomRight"
+            popupProps={{ className: lobeStyles.ue8f85260 }}
+            triggerProps={{
+              'aria-label': '更多',
+              className: lobeStyles.u2f41b8fa,
+              title: '更多',
+            }}
+          >
+            <MoreHorizontal aria-hidden size={14} />
           </DropdownMenu>
         ) : null}
         {import.meta.env.DEV ? (
@@ -669,20 +629,24 @@ const toolbarTriggerClass = lobeStyles.ucd87796a
 
 function BlockMenu(props: {
   activeIcon: LucideIcon
+  editor: ReturnType<typeof useLexicalComposerContext>[0]
   label: string
-  children: ReactNode
 }) {
   const Icon = props.activeIcon
   return (
-    <DropdownMenu>
-      <DropdownMenu.Trigger className={toolbarTriggerClass} type="button">
-        <Icon aria-hidden="true" className={lobeStyles.ub481f7c2} />
-        <span className={lobeStyles.uf283ea9b}>{props.label}</span>
-        <ChevronDown aria-hidden="true" className={lobeStyles.u1097ae67} />
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content className={lobeStyles.u85d2070d}>
-        {props.children}
-      </DropdownMenu.Content>
+    <DropdownMenu
+      items={BLOCK_OPTIONS.map((option) => ({
+        icon: option.icon,
+        key: option.type,
+        label: option.label,
+        onClick: () => applyBlockType(props.editor, option.type),
+      }))}
+      popupProps={{ className: lobeStyles.u85d2070d }}
+      triggerProps={{ className: toolbarTriggerClass }}
+    >
+      <Icon aria-hidden="true" className={lobeStyles.ub481f7c2} />
+      <span className={lobeStyles.uf283ea9b}>{props.label}</span>
+      <ChevronDown aria-hidden="true" className={lobeStyles.u1097ae67} />
     </DropdownMenu>
   )
 }
@@ -696,31 +660,22 @@ function AlignMenu(props: {
     ALIGN_OPTIONS[0]
   const Icon = active.icon
   return (
-    <DropdownMenu>
-      <DropdownMenu.Trigger
-        aria-label={`对齐：${active.label}`}
-        className={toolbarTriggerClass}
-        title="对齐"
-        type="button"
-      >
-        <Icon aria-hidden="true" className={lobeStyles.ub481f7c2} />
-        <ChevronDown aria-hidden="true" className={lobeStyles.u1097ae67} />
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content className={lobeStyles.u85d2070d}>
-        {ALIGN_OPTIONS.map((option) => {
-          const OptionIcon = option.icon
-          return (
-            <ToolbarMenuItem
-              active={option.format === active.format}
-              key={option.format}
-              onClick={() => props.onSelect(option.format)}
-            >
-              <OptionIcon aria-hidden="true" className={lobeStyles.u783b0d9d} />
-              {option.label}
-            </ToolbarMenuItem>
-          )
-        })}
-      </DropdownMenu.Content>
+    <DropdownMenu
+      items={ALIGN_OPTIONS.map((option) => ({
+        icon: option.icon,
+        key: option.format,
+        label: option.label,
+        onClick: () => props.onSelect(option.format),
+      }))}
+      popupProps={{ className: lobeStyles.u85d2070d }}
+      triggerProps={{
+        'aria-label': `对齐：${active.label}`,
+        className: toolbarTriggerClass,
+        title: '对齐',
+      }}
+    >
+      <Icon aria-hidden="true" className={lobeStyles.ub481f7c2} />
+      <ChevronDown aria-hidden="true" className={lobeStyles.u1097ae67} />
     </DropdownMenu>
   )
 }
@@ -731,57 +686,22 @@ function FontFamilyMenu(props: {
 }) {
   const label = getFontLabel(props.activeValue)
   return (
-    <DropdownMenu>
-      <DropdownMenu.Trigger
-        aria-label="字体"
-        className={toolbarTriggerClass}
-        title="字体"
-        type="button"
-      >
-        <Type aria-hidden="true" className={lobeStyles.ub481f7c2} />
-        <span className={lobeStyles.uf283ea9b}>{label}</span>
-        <ChevronDown aria-hidden="true" className={lobeStyles.u1097ae67} />
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content className={lobeStyles.u6a9cae37}>
-        {FONT_FAMILIES.map((def) => {
-          return (
-            <ToolbarMenuItem
-              key={def.label}
-              active={props.activeValue === def.value}
-              onClick={() => applyFontFamily(props.editor, def.value)}
-            >
-              {def.label}
-            </ToolbarMenuItem>
-          )
-        })}
-      </DropdownMenu.Content>
-    </DropdownMenu>
-  )
-}
-
-function ToolbarMenuItem(props: {
-  active?: boolean
-  children: ReactNode
-  onClick: () => void
-}) {
-  return (
-    <DropdownMenu.Item
-      className={cn(lobeStyles.u359090c2, props.active && lobeStyles.ucfc6e672)}
-      onClick={props.onClick}
+    <DropdownMenu
+      items={FONT_FAMILIES.map((def) => ({
+        key: def.label,
+        label: def.label,
+        onClick: () => applyFontFamily(props.editor, def.value),
+      }))}
+      popupProps={{ className: lobeStyles.u6a9cae37 }}
+      triggerProps={{
+        'aria-label': '字体',
+        className: toolbarTriggerClass,
+        title: '字体',
+      }}
     >
-      {props.children}
-    </DropdownMenu.Item>
-  )
-}
-
-function SlotIcon(props: { icon: LucideIcon | null; iconNode?: ReactNode }) {
-  if (props.icon) {
-    const Icon = props.icon
-    return <Icon aria-hidden className={lobeStyles.u783b0d9d} />
-  }
-  return (
-    <span aria-hidden className={lobeStyles.u9580bd2e}>
-      {props.iconNode}
-    </span>
+      <Type aria-hidden="true" className={lobeStyles.ub481f7c2} />
+      <span className={lobeStyles.uf283ea9b}>{label}</span>
+      <ChevronDown aria-hidden="true" className={lobeStyles.u1097ae67} />
+    </DropdownMenu>
   )
 }

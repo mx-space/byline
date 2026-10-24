@@ -38,15 +38,43 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"
     />
-    <script type="module">
-      import favicon from './favicon.png'
-
-      const link = document.createElement('link')
-      link.rel = 'icon'
-      link.href = favicon
-      document.head.appendChild(link)
-    </script>
+    <link
+      rel="icon"
+      type="image/png"
+      href="/favicon-96x96.png"
+      sizes="96x96"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/apple-touch-icon.png"
+    />
+    <meta name="apple-mobile-web-app-title" content="Byline" />
+    <link rel="manifest" href="/site.webmanifest" />
     <title>Byline</title>
+    <meta
+      name="description"
+      content="A slim, multi-author, AI-native headless CMS."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Byline" />
+    <meta
+      property="og:description"
+      content="A slim, multi-author, AI-native headless CMS."
+    />
+    <meta property="og:image" content="og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1800" />
+    <meta property="og:image:height" content="945" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Byline" />
+    <meta
+      name="twitter:description"
+      content="A slim, multi-author, AI-native headless CMS."
+    />
+    <meta name="twitter:image" content="og.png" />
     <script>
       window.injectData = {}
       window.version = 'N/A'

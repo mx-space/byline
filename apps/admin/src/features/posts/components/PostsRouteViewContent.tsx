@@ -21,7 +21,11 @@ import { useNavigate } from 'react-router'
 import { useAiQuickActionsBuilder } from '~/features/ai/hooks/use-ai-quick-actions'
 import { useI18n } from '~/i18n'
 import type { PostModel } from '~/models/post'
-import { newestFirst, readSingleFilter } from '~/ui/data/table-header'
+import {
+  alphaFirst,
+  newestFirst,
+  readSingleFilter,
+} from '~/ui/data/table-header'
 import { FocusScope } from '~/ui/focus-scope'
 import { type ListSelectionAPI, useListKeyboard } from '~/ui/list-actions'
 import { Page } from '~/ui/page'
@@ -62,6 +66,8 @@ const sortChoices: Array<{
     | 'sortModifiedDesc'
     | 'sortPinnedAsc'
     | 'sortPinnedDesc'
+    | 'sortPublicAsc'
+    | 'sortPublicDesc'
   order: SortOrder
   sortKey: PostSortKey
 }> = [
@@ -71,6 +77,8 @@ const sortChoices: Array<{
   { copyKey: 'sortCreatedAsc', order: 'asc', sortKey: 'createdAt' },
   { copyKey: 'sortPinnedDesc', order: 'desc', sortKey: 'pinAt' },
   { copyKey: 'sortPinnedAsc', order: 'asc', sortKey: 'pinAt' },
+  { copyKey: 'sortPublicAsc', order: 'asc', sortKey: 'publicAt' },
+  { copyKey: 'sortPublicDesc', order: 'desc', sortKey: 'publicAt' },
 ]
 
 function sortValue(sortKey: PostSortKey, order: SortOrder) {
@@ -101,7 +109,8 @@ function isInteractiveTarget(target: EventTarget) {
   )
 }
 
-export function PostsRouteViewContent() {
+export function PostsRouteViewContent(props: { scheduled?: boolean } = {}) {
+  const scheduled = props.scheduled ?? false
   const copy = usePostCopy()
   const table = useRecordTable()
   const { format, t } = useI18n()
@@ -125,7 +134,7 @@ export function PostsRouteViewContent() {
     sortKey,
     sortOrder,
     submitSearch,
-  } = usePostsList()
+  } = usePostsList(scheduled ? 'scheduled' : 'all')
 
   const selectionRef = useRef<ListSelectionAPI<PostModel> | null>(null)
   const [failedDeleteIds, setFailedDeleteIds] = useState<string[]>([])
@@ -231,9 +240,14 @@ export function PostsRouteViewContent() {
   const filtered = Boolean(keyword) || categoryId !== allCategoriesValue
   const emptyKind = filtered ? 'filter' : page > 1 ? 'page' : 'first'
   const searchActive = Boolean(keyword)
-  const [dateSortOn, setDateSortOn] = useState(
-    () => sortKey === 'createdAt' && sortOrder !== 'desc',
+  const timeField: PostSortKey = scheduled ? 'publicAt' : 'createdAt'
+  const defaultTimeOrder: SortOrder = scheduled ? 'asc' : 'desc'
+  const [timeSortOn, setTimeSortOn] = useState(
+    () => sortKey === timeField && sortOrder !== defaultTimeOrder,
   )
+  const visibleSortChoices = scheduled
+    ? sortChoices
+    : sortChoices.filter((choice) => choice.sortKey !== 'publicAt')
 
   const columns: ProColumns<PostModel>[] = [
     {
@@ -282,30 +296,39 @@ export function PostsRouteViewContent() {
       width: 96,
     },
     {
-      dataIndex: 'createdAt',
+      dataIndex: timeField,
       ...(searchActive
         ? {}
         : {
-            sortDirections: newestFirst,
+            sortDirections: scheduled ? alphaFirst : newestFirst,
             sortOrder:
-              dateSortOn && sortKey === 'createdAt'
+              timeSortOn && sortKey === timeField
                 ? sortOrder === 'asc'
                   ? ('ascend' as const)
                   : ('descend' as const)
                 : null,
             sorter: true,
           }),
-      render: (_dom, post) => (
-        <Tooltip title={formatUpdatedAt(post.createdAt, copy('emptyValue'))}>
-          <span className={styles.time}>
-            {post.createdAt
-              ? format.relativeTime(post.createdAt)
-              : copy('emptyValue')}
-          </span>
-        </Tooltip>
-      ),
+      render: (_dom, post) => {
+        const value = scheduled ? post.publicAt : post.createdAt
+        return (
+          <Tooltip
+            title={
+              scheduled
+                ? value
+                  ? format.dateTime(value)
+                  : undefined
+                : formatUpdatedAt(post.createdAt, copy('emptyValue'))
+            }
+          >
+            <span className={styles.time}>
+              {value ? format.relativeTime(value) : copy('emptyValue')}
+            </span>
+          </Tooltip>
+        )
+      },
       responsive: ['md'],
-      title: copy('publishedAt'),
+      title: copy(scheduled ? 'publicAt' : 'publishedAt'),
       width: 132,
     },
     {
@@ -339,6 +362,7 @@ export function PostsRouteViewContent() {
           setCategoryId(allCategoriesValue)
         }}
         onWrite={() => openEdit()}
+        scheduled={scheduled}
       />
     )
   }
@@ -371,14 +395,14 @@ export function PostsRouteViewContent() {
             disabled={searchActive}
             onChange={(value) => {
               if (typeof value !== 'string') return
-              const next = sortChoices.find(
+              const next = visibleSortChoices.find(
                 (choice) => sortValue(choice.sortKey, choice.order) === value,
               )
               if (!next) return
-              setDateSortOn(next.sortKey === 'createdAt')
+              setTimeSortOn(next.sortKey === timeField)
               setSort({ field: next.sortKey, order: next.order })
             }}
-            options={sortChoices.map((choice) => ({
+            options={visibleSortChoices.map((choice) => ({
               label: copy(choice.copyKey),
               value: sortValue(choice.sortKey, choice.order),
             }))}
@@ -394,7 +418,7 @@ export function PostsRouteViewContent() {
     <FocusScope className={styles.root} id={FOCUS_SCOPE_ID}>
       <Page
         count={pagination ? pagination.total : undefined}
-        title={copy('title')}
+        title={copy(scheduled ? 'scheduledTitle' : 'title')}
         width="wide"
       >
         {showStale || showCategoryAlert || showPartial ? (
@@ -483,13 +507,13 @@ export function PostsRouteViewContent() {
             const info = Array.isArray(sorter) ? sorter[0] : sorter
             if (
               info?.columnKey != null &&
-              String(info.columnKey) !== 'createdAt'
+              String(info.columnKey) !== timeField
             ) {
               return
             }
-            setDateSortOn(true)
+            setTimeSortOn(true)
             setSort({
-              field: 'createdAt',
+              field: timeField,
               order: info?.order === 'ascend' ? 'asc' : 'desc',
             })
           }}

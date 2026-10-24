@@ -11,7 +11,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   ub05aca15: css`
     position: fixed;
     inset: 0px;
-    z-index: 200;
+    z-index: 20000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -20,7 +20,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     position: relative;
     display: flex;
     max-height: 80svh;
-    width: min(640px, calc(100vw-32px));
+    width: min(640px, calc(100vw - 32px));
     flex-direction: column;
     overflow: hidden;
     border-radius: 14px;

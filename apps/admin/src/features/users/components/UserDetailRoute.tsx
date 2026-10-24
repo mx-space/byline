@@ -1,16 +1,14 @@
 import {
   Alert,
   createStaticStyles,
-  Descriptions,
-  Drawer,
+  DraggablePanel,
   Empty,
   Flexbox,
   Modal,
-  Skeleton,
   Text,
   toast,
-  Tooltip,
 } from '@lobehub/ui'
+import { PageHeader } from '@lobehub/ui/dashboard'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useParams } from 'react-router'
@@ -24,39 +22,108 @@ import {
   updateUser,
 } from '~/api/users'
 import { useDocumentTitle } from '~/hooks/use-document-title'
+import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
+import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
-import { EmptyValue, FormSkeleton } from '~/ui/placeholders'
+import { ARTICLE_MAX_WIDTH } from '~/ui/page'
+import { FormSkeleton } from '~/ui/placeholders'
 import { Button } from '~/ui/site-button'
 
 import { useUsersCopy } from '../copy'
 import { hasPermission, Permission } from '../utils/permissions'
 import {
   canEditSignInIdentity,
-  formatAdminTime,
   getUserDisplayName,
   getUserErrorMessage,
   getUserStatus,
 } from '../utils/users'
 import { AuthoredPosts } from './AuthoredPosts'
 import { InviteUserModal } from './InviteUserModal'
-import { UserAvatar } from './UserAvatar'
+import { UserIdentityPanel, UserIdentitySkeleton } from './UserIdentityPanel'
 import { UserPermissionsCard } from './UserPermissionsCard'
 import { UserProfileForm } from './UserProfileForm'
 import { useUsersRouteContext } from './users-route-context'
-import { UserStatusTag } from './UserStatusTag'
 
-const styles = createStaticStyles(({ css }) => ({
-  body: css`
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  column: css`
     display: flex;
     flex-direction: column;
     gap: 24px;
+
+    width: 100%;
+    max-width: ${ARTICLE_MAX_WIDTH};
+    margin-inline: auto;
+  `,
+  fallback: css`
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+
+    height: 100%;
+    min-height: 0;
+    padding: 24px;
+  `,
+  frame: css`
+    display: flex;
+    flex: 1;
+    align-items: stretch;
+
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  `,
+  identity: css`
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+
+    block-size: 100%;
+    padding-block: 24px;
+    padding-inline: 20px 16px;
+
+    background: ${cssVar.colorBgContainer};
+  `,
+  panel: css`
+    flex: none;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  `,
+  main: css`
+    overflow: auto;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 24px;
+
+    min-width: 0;
+    min-height: 0;
+    padding: 24px;
+  `,
+  mobile: css`
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    height: 100%;
+    min-height: 0;
+    padding: 16px;
+  `,
+  stack: css`
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   `,
 }))
 
 export function UserDetailRoute() {
   const copy = useUsersCopy()
+  const { t } = useI18n()
   const { id = '' } = useParams<{ id: string }>()
   const ctx = useUsersRouteContext()
+  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [error, setError] = useState('')
@@ -110,42 +177,46 @@ export function UserDetailRoute() {
     ctx.currentUserPermissions,
     Permission.ManageUsers,
   )
-  const name = user
-    ? getUserDisplayName(user)
-    : userQuery.isLoading
-      ? null
-      : notFound
-        ? copy('notFound')
-        : copy('detailError')
+  const name = user ? getUserDisplayName(user) : ''
+  const busy = deactivate.isPending || enable.isPending
 
-  return (
-    <Drawer
-      maskClosable={!deactivate.isPending}
-      onClose={ctx.onBack}
-      open
-      title={
-        <Flexbox align="center" gap={8} horizontal>
-          {user ? (
-            <UserAvatar
-              avatar={user.avatar}
-              name={user.displayName || user.username}
-              size={28}
-            />
-          ) : null}
-          {name ? (
-            <Text ellipsis={{ tooltipWhenOverflow: true }}>{name}</Text>
-          ) : (
-            <Skeleton height={16} width={140} />
-          )}
-          {status ? <UserStatusTag status={status} /> : null}
+  const modals = user ? (
+    <>
+      <Modal
+        cancelText={copy('cancel')}
+        confirmLoading={deactivate.isPending}
+        maskClosable={!deactivate.isPending}
+        okButtonProps={{ danger: true }}
+        okText={copy('deactivate')}
+        onCancel={() => {
+          if (!deactivate.isPending) {
+            setConfirmOpen(false)
+            setError('')
+          }
+        }}
+        onOk={() => deactivate.mutate()}
+        open={confirmOpen}
+        title={copy('deactivateTitle', { name })}
+        width="min(400px, 100%)"
+      >
+        <Flexbox gap={12}>
+          <Text>{copy('deactivateBody')}</Text>
+          {error ? <Alert title={error} type="error" /> : null}
         </Flexbox>
-      }
-      width="min(400px, 100%)"
-    >
-      {userQuery.isLoading ? (
-        <FormSkeleton label={copy('loading')} rows={5} />
-      ) : userQuery.isError || !user || !status ? (
-        notFound || !userQuery.isError ? (
+      </Modal>
+      <InviteUserModal
+        onClose={() => setInviteOpen(false)}
+        onCreated={() => undefined}
+        open={inviteOpen}
+        user={user}
+      />
+    </>
+  ) : null
+
+  if (userQuery.isError || (!userQuery.isLoading && !user)) {
+    return (
+      <div className={styles.fallback}>
+        {notFound || !userQuery.isError ? (
           <Empty title={copy('notFound')} />
         ) : (
           <Alert
@@ -157,19 +228,39 @@ export function UserDetailRoute() {
             title={copy('detailError')}
             type="error"
           />
-        )
-      ) : (
-        <div className={styles.body}>
-          {status === 'profileOnly' ? (
-            <Flexbox gap={8}>
-              <Alert title={copy('profileOnlyHint')} type="info" />
-              {canManageUsers ? (
-                <Button onClick={() => setInviteOpen(true)}>
-                  {copy('inviteSignIn')}
-                </Button>
-              ) : null}
-            </Flexbox>
-          ) : null}
+        )}
+      </div>
+    )
+  }
+
+  const identity =
+    user && status ? (
+      <UserIdentityPanel
+        busy={busy}
+        canManage={canManageUsers}
+        compact={!isDesktop}
+        isSelf={isSelf}
+        onDeactivate={() => {
+          setError('')
+          setConfirmOpen(true)
+        }}
+        onEnable={() => enable.mutate()}
+        onInvite={() => setInviteOpen(true)}
+        status={status}
+        user={user}
+      />
+    ) : (
+      <UserIdentitySkeleton compact={!isDesktop} />
+    )
+
+  const detail = (
+    <div className={styles.column}>
+      <PageHeader
+        description={copy('detailDescription')}
+        title={t('routes.users.detail')}
+      />
+      <div className={styles.stack}>
+        {user ? (
           <UserProfileForm
             identityLocked={!canEditSignInIdentity(user, ctx.currentUserId)}
             key={user.updatedAt ?? user.id}
@@ -183,101 +274,54 @@ export function UserDetailRoute() {
             submitLabel={copy('saveProfile')}
             user={user}
           />
-          {status === 'profileOnly' ? null : (
-            <UserPermissionsCard
-              canEdit={canManageUsers}
-              isSelf={isSelf}
-              key={`${user.id}:${user.permissions}`}
-              onSaved={ctx.onUserChanged}
-              user={user}
-            />
-          )}
-          <Descriptions
-            column={1}
-            items={[
-              {
-                children: user.lastLoginAt ? (
-                  formatAdminTime(user.lastLoginAt)
-                ) : (
-                  <EmptyValue />
-                ),
-                key: 'lastLogin',
-                label: copy('lastLogin'),
-              },
-              ...(user.deactivatedAt
-                ? [
-                    {
-                      children: formatAdminTime(user.deactivatedAt),
-                      key: 'deactivatedAt',
-                      label: copy('deactivatedAt'),
-                    },
-                  ]
-                : []),
-            ]}
-          />
-          <AuthoredPosts userId={user.id} />
-          {canManageUsers ? (
-            <Flexbox gap={8}>
-              {status === 'deactivated' ? (
-                <Button
-                  loading={enable.isPending}
-                  onClick={() => enable.mutate()}
-                >
-                  {copy('enable')}
-                </Button>
-              ) : (
-                <Tooltip title={isSelf ? copy('deactivateSelf') : undefined}>
-                  <span>
-                    <Button
-                      danger
-                      disabled={isSelf}
-                      loading={deactivate.isPending}
-                      onClick={() => {
-                        setError('')
-                        setConfirmOpen(true)
-                      }}
-                      title={
-                        isSelf ? copy('deactivateSelf') : copy('deactivate')
-                      }
-                    >
-                      {copy('deactivate')}
-                    </Button>
-                  </span>
-                </Tooltip>
-              )}
-            </Flexbox>
-          ) : null}
-          <Modal
-            cancelText={copy('cancel')}
-            confirmLoading={deactivate.isPending}
-            maskClosable={!deactivate.isPending}
-            okButtonProps={{ danger: true }}
-            okText={copy('deactivate')}
-            onCancel={() => {
-              if (!deactivate.isPending) {
-                setConfirmOpen(false)
-                setError('')
-              }
-            }}
-            onOk={() => deactivate.mutate()}
-            open={confirmOpen}
-            title={copy('deactivateTitle', { name: name ?? '' })}
-            width="min(400px, 100%)"
-          >
-            <Flexbox gap={12}>
-              <Text>{copy('deactivateBody')}</Text>
-              {error ? <Alert title={error} type="error" /> : null}
-            </Flexbox>
-          </Modal>
-          <InviteUserModal
-            onClose={() => setInviteOpen(false)}
-            onCreated={() => undefined}
-            open={inviteOpen}
+        ) : (
+          <FormSkeleton label={copy('loading')} rows={5} />
+        )}
+        {user && status !== 'profileOnly' ? (
+          <UserPermissionsCard
+            canEdit={canManageUsers}
+            isSelf={isSelf}
+            key={`${user.id}:${user.permissions}`}
+            onSaved={ctx.onUserChanged}
             user={user}
           />
-        </div>
-      )}
-    </Drawer>
+        ) : null}
+        {user ? <AuthoredPosts userId={user.id} /> : null}
+      </div>
+    </div>
+  )
+
+  if (!isDesktop) {
+    return (
+      <div className={styles.mobile}>
+        {identity}
+        {detail}
+        {modals}
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.frame}>
+      <DraggablePanel
+        expandable
+        showBorder
+        showHandleWhenCollapsed
+        className={styles.panel}
+        classNames={{ content: styles.identity }}
+        defaultSize={{ width: 320 }}
+        maxWidth={480}
+        minWidth={280}
+        mode="fixed"
+        placement="left"
+      >
+        {identity}
+      </DraggablePanel>
+      <div className={styles.main}>
+        {detail}
+        {modals}
+      </div>
+    </div>
   )
 }
 

@@ -82,7 +82,7 @@ const catalog = {
   deleteTitle: { 'en-US': 'Delete "{title}"?', 'zh-CN': '删除「{title}」？' },
   deleted: { 'en-US': 'Post deleted', 'zh-CN': '已删除文章' },
   draft: { 'en-US': 'Draft', 'zh-CN': '草稿' },
-  scheduled: { 'en-US': 'Scheduled', 'zh-CN': '待公开' },
+  scheduled: { 'en-US': 'Scheduled', 'zh-CN': '定时发布' },
   edit: { 'en-US': 'Edit', 'zh-CN': '编辑' },
   emptyValue: { 'en-US': '--', 'zh-CN': '--' },
   errorDescription: {
@@ -108,6 +108,16 @@ const catalog = {
     'zh-CN': '写一篇之后，从这里决定修改，或先看署名和发布日期。',
   },
   firstEmptyTitle: { 'en-US': 'No posts yet', 'zh-CN': '还没有文章' },
+  scheduledEmptyDescription: {
+    'en-US':
+      'Set a public time when publishing. The post appears in Published when that time arrives.',
+    'zh-CN': '发布时填写公开时间。到点后文章会出现在已发布。',
+  },
+  scheduledEmptyTitle: {
+    'en-US': 'Nothing is scheduled',
+    'zh-CN': '还没有定时发布的文章',
+  },
+  scheduledTitle: { 'en-US': 'Scheduled', 'zh-CN': '定时发布' },
   id: { 'en-US': 'ID', 'zh-CN': 'ID' },
   more: { 'en-US': 'More actions', 'zh-CN': '更多操作' },
   openLink: { 'en-US': 'Open link', 'zh-CN': '打开链接' },
@@ -157,6 +167,8 @@ const catalog = {
   sortModifiedDesc: { 'en-US': 'Recently updated', 'zh-CN': '最近更新' },
   sortPinnedAsc: { 'en-US': 'Least recently pinned', 'zh-CN': '最早置顶' },
   sortPinnedDesc: { 'en-US': 'Recently pinned', 'zh-CN': '最近置顶' },
+  sortPublicAsc: { 'en-US': 'Soonest public', 'zh-CN': '最早公开' },
+  sortPublicDesc: { 'en-US': 'Latest public', 'zh-CN': '最晚公开' },
   staleDescription: {
     'en-US': 'This is still the previous list. Retry.',
     'zh-CN': '当前仍是上次载入的列表。可以重试。',
@@ -166,6 +178,7 @@ const catalog = {
   title: { 'en-US': 'Published', 'zh-CN': '已发布' },
   uncategorized: { 'en-US': 'Uncategorized', 'zh-CN': '未分类' },
   untitled: { 'en-US': 'Untitled', 'zh-CN': '无标题' },
+  publicAt: { 'en-US': 'Public time', 'zh-CN': '公开时间' },
   publishedAt: { 'en-US': 'Publish date', 'zh-CN': '发布日期' },
   write: { 'en-US': 'Write post', 'zh-CN': '写文章' },
 } satisfies FeatureCatalog<string>

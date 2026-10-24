@@ -5,6 +5,7 @@ import type { DraftDiffStats } from '../types/drafts'
 import { RichDraftDiffPanel } from './RichDraftDiffPanel'
 
 export function DraftDiffPreview(props: {
+  bare?: boolean
   comparisonLabel?: string
   currentDraft: RevisionSnapshot
   diffStats: DraftDiffStats | null
@@ -16,6 +17,7 @@ export function DraftDiffPreview(props: {
 
   return (
     <RichDraftDiffPanel
+      bare={props.bare}
       comparisonLabel={props.comparisonLabel ?? copy('diffDirectionPublished')}
       currentContent={props.currentDraft.content ?? ''}
       hideTitle={props.hideTitle}

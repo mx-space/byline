@@ -1,4 +1,4 @@
-import { createStaticStyles, SkeletonText, Tag, Tooltip } from '@lobehub/ui'
+import { createStaticStyles, cx, SkeletonText, Tag, Tooltip } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
@@ -31,8 +31,10 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
   `,
   list: css`
     overflow: hidden;
-    border: 1px solid ${cssVar.colorFillSecondary};
-    border-radius: ${cssVar.borderRadiusLG};
+  `,
+  inset: css`
+    padding-block: 12px;
+    padding-inline: 16px;
   `,
   muted: css`
     margin: 0;
@@ -127,7 +129,7 @@ export function DraftHistory(props: { draft: DraftModel }) {
   }
   if (revisionsQuery.isError) {
     return (
-      <div className={styles.stack}>
+      <div className={cx(styles.stack, styles.inset)}>
         <p className={styles.muted}>{copy('historyError')}</p>
         <div>
           <Button onClick={() => void revisionsQuery.refetch()} size="small">
@@ -138,7 +140,9 @@ export function DraftHistory(props: { draft: DraftModel }) {
     )
   }
   if (revisions.length <= 1) {
-    return <p className={styles.muted}>{copy('historyEmpty')}</p>
+    return (
+      <p className={cx(styles.muted, styles.inset)}>{copy('historyEmpty')}</p>
+    )
   }
 
   const visible = expanded ? revisions : revisions.slice(0, COLLAPSED_COUNT)
@@ -203,20 +207,21 @@ export function DraftHistory(props: { draft: DraftModel }) {
         })}
       </FocusScope>
       {!expanded && revisions.length > COLLAPSED_COUNT ? (
-        <div>
+        <div className={styles.inset}>
           <Button onClick={() => setExpanded(true)} size="small" type="text">
             {copy('historyShowAll', { count: revisions.length })}
           </Button>
         </div>
       ) : null}
       {selected && selectedStats && !selectedStats.isSame ? (
-        <DraftDiffPreview
-          comparisonLabel={copy('diffHistoryDirection')}
-          currentDraft={head}
-
-          diffStats={selectedStats}
-          selectedDraft={selected}
-        />
+        <div className={styles.inset}>
+          <DraftDiffPreview
+            comparisonLabel={copy('diffHistoryDirection')}
+            currentDraft={head}
+            diffStats={selectedStats}
+            selectedDraft={selected}
+          />
+        </div>
       ) : null}
     </div>
   )

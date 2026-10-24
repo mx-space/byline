@@ -11,7 +11,7 @@ export const writeCopy = createFeatureCopy({
       'Complete publishing to schedule visibility. Uses your local time. Clear and publish again to make it public now.',
     'zh-CN': '完成发布后才会按本地时间定时公开。清空时间并再次发布可立即公开。',
   },
-  scheduled: { 'en-US': 'Scheduled', 'zh-CN': '待公开' },
+  scheduled: { 'en-US': 'Scheduled', 'zh-CN': '定时发布' },
   scheduledFor: { 'en-US': 'Public at {time}', 'zh-CN': '将于 {time} 公开' },
   aiTitle: {
     'en-US': 'AI chat',

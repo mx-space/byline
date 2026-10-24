@@ -3,8 +3,11 @@ import type { SidebarNode, SidebarSection } from 'virtual:admin-routes'
 import { describe, expect, it } from 'vitest'
 
 import {
+  artefactWriteBreadcrumb,
+  productDetailBreadcrumb,
   toBreadcrumbItems,
   toConsoleNavigation,
+  withDetailCrumb,
   withParentCrumb,
 } from './console-nav'
 
@@ -152,6 +155,79 @@ describe('toBreadcrumbItems', () => {
       { label: 'shell.nav.content', optional: true },
       { label: 'routes.categories.title' },
     ])
+  })
+})
+
+describe('withDetailCrumb', () => {
+  it('links the list and names the detail page', () => {
+    expect(
+      withDetailCrumb(
+        [
+          { label: 'shell.nav.system', optional: true },
+          { label: 'routes.users.title' },
+        ],
+        '/users',
+        'routes.users.detail',
+      ),
+    ).toEqual([
+      { label: 'shell.nav.system', optional: true },
+      { href: '/users', label: 'routes.users.title' },
+      { label: 'routes.users.detail' },
+    ])
+  })
+})
+
+describe('productDetailBreadcrumb', () => {
+  it('links the category list and names the article', () => {
+    expect(
+      productDetailBreadcrumb(
+        '/ai/translation/post-1',
+        '?q=lobe&item=abc&lang=zh-CN',
+        'Towards LobeHub',
+        t,
+      ),
+    ).toEqual([
+      { label: 'shell.nav.intelligence', optional: true },
+      { href: '/ai/translation?q=lobe', label: 'routes.aiTranslation.title' },
+      { label: 'Towards LobeHub' },
+    ])
+  })
+
+  it('stays off the category list itself', () => {
+    expect(productDetailBreadcrumb('/ai/overview', '', 'Post', t)).toBeNull()
+  })
+})
+
+describe('artefactWriteBreadcrumb', () => {
+  it('links the translation detail for this post', () => {
+    expect(
+      artefactWriteBreadcrumb('?id=post-1&translationId=tr-1', '译文标题', t),
+    ).toEqual([
+      { label: 'shell.nav.intelligence', optional: true },
+      { href: '/ai/translation/post-1', label: 'routes.aiTranslation.title' },
+      { label: '译文标题' },
+    ])
+  })
+
+  it('links the summary and close-reading details', () => {
+    expect(
+      artefactWriteBreadcrumb('?id=post-1&summaryId=s-1', '文章', t),
+    ).toEqual([
+      { label: 'shell.nav.intelligence', optional: true },
+      { href: '/ai/summary/post-1', label: 'routes.aiSummary.title' },
+      { label: '文章' },
+    ])
+    expect(
+      artefactWriteBreadcrumb('?id=post-1&insightsId=i-1', '文章', t),
+    ).toEqual([
+      { label: 'shell.nav.intelligence', optional: true },
+      { href: '/ai/insights/post-1', label: 'routes.aiInsights.title' },
+      { label: '文章' },
+    ])
+  })
+
+  it('stays off a normal post editor', () => {
+    expect(artefactWriteBreadcrumb('?id=post-1', 'Draft', t)).toBeNull()
   })
 })
 

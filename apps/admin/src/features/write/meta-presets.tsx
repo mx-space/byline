@@ -1240,7 +1240,12 @@ function JsonEditorDialog(props: {
     <Modal
       onClose={props.onClose}
       open={props.open}
-      popupStyle={{ height: 'min(80svh, 40rem)', width: 'min(92vw, 56rem)' }}
+      popupStyle={{
+        height: 'min(80svh, 40rem)',
+        maxHeight: 'min(80svh, 40rem)',
+        maxWidth: 'min(92vw, 56rem)',
+        width: 'min(92vw, 56rem)',
+      }}
     >
       <ModalHeader title={t('write.meta.json.dialogTitle')} />
       <div className={lobeStyles.u2b5fa9a9}>

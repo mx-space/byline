@@ -1,11 +1,14 @@
-import type { PaginationResult } from '~/processors/database/base.repository'
+import { CollectionRefTypes } from '~/constants/db.constant'
 import { paginationOf } from '~/processors/database/base.repository'
-import {
-  buildRefArticleMap,
-  type DatabaseService,
-  type RefArticleInfo,
+import type {
+  DatabaseService,
+  RefArticleInfo,
 } from '~/processors/database/database.service'
-import type { EntityId } from '~/shared/id/entity-id'
+
+import {
+  compareArticlesByPublishTime,
+  type PublishOrderArticle,
+} from './article-publish-order'
 
 export interface BuildGroupedWithOrphansInput<TItem> {
   page: number
@@ -15,18 +18,8 @@ export interface BuildGroupedWithOrphansInput<TItem> {
   databaseService: DatabaseService
 
   fetchCandidateArticles: () => Promise<{
-    posts: Array<{ id: string; title: string }>
+    posts: PublishOrderArticle[]
   }>
-
-  fetchRecordsPage: (
-    page: number,
-    size: number,
-    refIds: string[] | undefined,
-  ) => Promise<PaginationResult<{ refId: EntityId | string }>>
-
-  fetchRecordsDistinctRefIds: (
-    refIds: string[] | undefined,
-  ) => Promise<Array<EntityId | string>>
 
   fetchItemsByRefIds: (refIds: string[]) => Promise<TItem[]>
 
@@ -39,15 +32,9 @@ export interface GroupedWithOrphansResult<TItem> {
 }
 
 /**
- * Build a paginated "grouped by ref" list that includes orphan articles —
- * visible articles with zero AI records — alongside articles that have
- * records. Records-having groups are ordered first (by the underlying
- * paginated query's natural order); orphan groups follow, sorted by article
- * id descending (Snowflake monotonic ≈ creation desc).
- *
- * Callers map the returned `items` field into their own item key
- * (`summaries`, `insights`, `translations`) when shaping the controller
- * response.
+ * Paginate every article, including ones with no AI rows. Unpublished posts
+ * come first; public posts follow by publish time. `items` is empty for
+ * articles that have no records.
  */
 export async function buildGroupedWithOrphans<TItem>(
   input: BuildGroupedWithOrphansInput<TItem>,
@@ -63,62 +50,22 @@ export async function buildGroupedWithOrphans<TItem>(
     return { data: [], pagination: paginationOf(0, page, size) }
   }
 
-  const [grouped, recordsHavingIds, candidateArticles] = await Promise.all([
-    input.fetchRecordsPage(page, size, searchableRefIds),
-    input.fetchRecordsDistinctRefIds(searchableRefIds),
-    input.fetchCandidateArticles(),
-  ])
-
-  const recordsTotal = grouped.pagination.total
-  const recordsPageIds = grouped.data.map((g) => String(g.refId))
-  const recordsHavingSet = new Set(recordsHavingIds.map(String))
-
-  const candidateMap = buildRefArticleMap({
-    posts: candidateArticles.posts,
-  })
-
+  const { posts } = await input.fetchCandidateArticles()
   const searchableRefSet = searchableRefIds
     ? new Set(searchableRefIds)
     : undefined
-  const candidateIds = searchableRefSet
-    ? Object.keys(candidateMap).filter((id) => searchableRefSet.has(id))
-    : Object.keys(candidateMap)
+  const ordered = posts
+    .filter((post) => !searchableRefSet || searchableRefSet.has(post.id))
+    .sort(compareArticlesByPublishTime)
 
-  const orphanIds = candidateIds
-    .filter((id) => !recordsHavingSet.has(id))
-    .sort((a, b) => b.localeCompare(a))
-
-  const total = recordsTotal + orphanIds.length
-
+  const total = ordered.length
   const offset = (page - 1) * size
-  let pageRecordIds = recordsPageIds
-  let pageOrphanIds: string[] = []
-
-  if (offset < recordsTotal) {
-    const remaining = size - pageRecordIds.length
-    if (remaining > 0) {
-      pageOrphanIds = orphanIds.slice(0, remaining)
-    }
-  } else {
-    pageRecordIds = []
-    const orphanOffset = offset - recordsTotal
-    pageOrphanIds = orphanIds.slice(orphanOffset, orphanOffset + size)
-  }
-
-  const allRefIds = [...pageRecordIds, ...pageOrphanIds]
-  if (!allRefIds.length) {
+  const pagePosts = ordered.slice(offset, offset + size)
+  if (!pagePosts.length) {
     return { data: [], pagination: paginationOf(total, page, size) }
   }
 
-  const [items, recordsArticleMap] = await Promise.all([
-    pageRecordIds.length
-      ? input.fetchItemsByRefIds(pageRecordIds)
-      : Promise.resolve([] as TItem[]),
-    pageRecordIds.length
-      ? databaseService.getRefArticleMap(pageRecordIds)
-      : Promise.resolve({} as Record<string, RefArticleInfo>),
-  ])
-
+  const items = await input.fetchItemsByRefIds(pagePosts.map((post) => post.id))
   const itemsByRefId = items.reduce<Record<string, TItem[]>>((acc, item) => {
     const refId = input.getItemRefId(item)
     if (!acc[refId]) acc[refId] = []
@@ -126,12 +73,15 @@ export async function buildGroupedWithOrphans<TItem>(
     return acc
   }, {})
 
-  const data: GroupedWithOrphansResult<TItem>['data'] = []
-  for (const refId of allRefIds) {
-    const article = recordsArticleMap[refId] ?? candidateMap[refId]
-    if (!article) continue
-    data.push({ article, items: itemsByRefId[refId] ?? [] })
-  }
+  const data = pagePosts.map((post) => ({
+    article: {
+      id: post.id,
+      title: post.title,
+      type: CollectionRefTypes.Post,
+      ...(post.draftId ? { draftId: post.draftId } : {}),
+    },
+    items: itemsByRefId[post.id] ?? [],
+  }))
 
   return { data, pagination: paginationOf(total, page, size) }
 }

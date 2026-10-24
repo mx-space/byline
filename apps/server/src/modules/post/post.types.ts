@@ -75,6 +75,7 @@ export interface PostListParams {
   authorId?: string
   tag?: string
   publishedOnly?: boolean
+  scheduledOnly?: boolean
   year?: number
   excludeAiWritten?: boolean
   keyword?: string

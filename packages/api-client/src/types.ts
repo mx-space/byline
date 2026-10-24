@@ -208,7 +208,7 @@ export interface Post {
   [key: string]: unknown
 }
 
-export type PostSortKey = 'createdAt' | 'modifiedAt' | 'pinAt'
+export type PostSortKey = 'createdAt' | 'modifiedAt' | 'pinAt' | 'publicAt'
 
 export interface PostListQuery {
   page?: number

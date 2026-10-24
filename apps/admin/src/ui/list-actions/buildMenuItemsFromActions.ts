@@ -1,4 +1,4 @@
-import type { ContextMenuItem } from '~/ui/overlay/context-menu'
+import type { ContextMenuItem } from '@lobehub/ui'
 
 import type { ListAction } from './types'
 

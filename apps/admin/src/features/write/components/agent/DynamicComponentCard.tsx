@@ -48,7 +48,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     color: ${cssVar.colorError};
   `,
   uf8d0139d: css`
-    width: min(960px, calc(100vw-2rem));
+    width: min(960px, calc(100vw - 2rem));
     max-width: none;
   `,
   u4074ef4d: css`

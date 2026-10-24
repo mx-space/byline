@@ -1,4 +1,4 @@
-import { createStaticStyles } from '@lobehub/ui'
+import { createStaticStyles, Popover } from '@lobehub/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
@@ -44,7 +44,6 @@ import { useI18n } from '~/i18n'
 import type { TranslationKey } from '~/i18n/types'
 import { adminQueryKeys } from '~/query/keys'
 import { confirmDialog } from '~/ui/feedback/confirm'
-import { Popover } from '~/ui/overlay/popover'
 import { Button } from '~/ui/primitives/button'
 import { cn } from '~/utils/cn'
 
@@ -63,7 +62,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   ufbf144d6: css`
     display: flex;
     height: 2.5rem;
-    max-width: min(24rem, calc(100vw-2rem));
+    max-width: min(24rem, calc(100vw - 2rem));
     align-items: center;
     gap: 0.5rem;
     border-radius: 12px;
@@ -461,66 +460,67 @@ export function PublishProcessDock() {
 
   return (
     <div className={lobeStyles.u88cee038}>
-      <Popover onOpenChange={setOpen} open={open}>
-        <Popover.Trigger
-          aria-label={t('write.publishProcess.open')}
-          className={cn(
+      <Popover
+        className={lobeStyles.ufe06b4ad}
+        classNames={{
+          trigger: cn(
             lobeStyles.ufbf144d6,
             phase === 'failed' && lobeStyles.u37af38f0,
             phase === 'partial' && lobeStyles.u9c0b6bca,
+          ),
+        }}
+        content={
+          <>
+            <div className={cn(lobeStyles.u7f362f39, lobeStyles.u4de95a9e)}>
+              <span>{t('write.publishProcess.title')}</span>
+              {finishedIds.length ? (
+                <Button
+                  className={lobeStyles.u6b07d529}
+                  onClick={dismissAll}
+                  variant="ghost"
+                >
+                  {t('write.publishProcess.clearFinished')}
+                </Button>
+              ) : null}
+            </div>
+            <div className={lobeStyles.u652c57ab}>
+              {tasks.map((task) => (
+                <ProcessDetail
+                  key={task.id}
+                  onDismiss={() =>
+                    setDismissedIds([...new Set([...dismissedIds, task.id])])
+                  }
+                  task={task}
+                />
+              ))}
+            </div>
+          </>
+        }
+        onOpenChange={setOpen}
+        open={open}
+        placement="topRight"
+        trigger="click"
+        triggerProps={{ 'aria-label': t('write.publishProcess.open') }}
+      >
+        <CurrentIcon
+          aria-hidden="true"
+          className={cn(
+            lobeStyles.uc39c8d01,
+            isActiveTask(current) && lobeStyles.u87043da0,
+            phase === 'completed' && lobeStyles.uab398374,
+            phase === 'failed' && lobeStyles.ue3f51cc6,
+            phase === 'partial' && lobeStyles.u1dd48761,
           )}
-        >
-          <CurrentIcon
-            aria-hidden="true"
-            className={cn(
-              lobeStyles.uc39c8d01,
-              isActiveTask(current) && lobeStyles.u87043da0,
-              phase === 'completed' && lobeStyles.uab398374,
-              phase === 'failed' && lobeStyles.ue3f51cc6,
-              phase === 'partial' && lobeStyles.u1dd48761,
-            )}
-          />
-          <span aria-live="polite" className={lobeStyles.u26f463c1}>
-            {t(getPhaseLabelKey(current, phase))}
-          </span>
-          {isActiveTask(current) ? (
-            <span className={lobeStyles.uab0d95e4}>{progress}%</span>
-          ) : null}
-          {tasks.length > 1 ? (
-            <span className={lobeStyles.uccc0332d}>{tasks.length}</span>
-          ) : null}
-        </Popover.Trigger>
-        <Popover.Content
-          align="end"
-          className={lobeStyles.ufe06b4ad}
-          side="top"
-          sideOffset={8}
-          width="lg"
-        >
-          <Popover.Header>
-            <span>{t('write.publishProcess.title')}</span>
-            {finishedIds.length ? (
-              <Button
-                className={lobeStyles.u6b07d529}
-                onClick={dismissAll}
-                variant="ghost"
-              >
-                {t('write.publishProcess.clearFinished')}
-              </Button>
-            ) : null}
-          </Popover.Header>
-          <Popover.Body className={lobeStyles.u652c57ab}>
-            {tasks.map((task) => (
-              <ProcessDetail
-                key={task.id}
-                onDismiss={() =>
-                  setDismissedIds([...new Set([...dismissedIds, task.id])])
-                }
-                task={task}
-              />
-            ))}
-          </Popover.Body>
-        </Popover.Content>
+        />
+        <span aria-live="polite" className={lobeStyles.u26f463c1}>
+          {t(getPhaseLabelKey(current, phase))}
+        </span>
+        {isActiveTask(current) ? (
+          <span className={lobeStyles.uab0d95e4}>{progress}%</span>
+        ) : null}
+        {tasks.length > 1 ? (
+          <span className={lobeStyles.uccc0332d}>{tasks.length}</span>
+        ) : null}
       </Popover>
     </div>
   )

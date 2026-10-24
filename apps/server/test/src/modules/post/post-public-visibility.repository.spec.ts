@@ -261,4 +261,58 @@ describe('PostRepository public visibility filters', () => {
     await scheduler.announceDuePublications()
     expect(effects).toEqual([`${BusinessEvents.POST_REPUBLISH}:${post.id}`])
   })
+
+  test('lists only published posts whose public time has not arrived', async () => {
+    const category = await categoryRepository.create({
+      name: 'Queue',
+      slug: 'queue',
+    })
+    const soon = await postRepository.create({
+      title: 'Soon',
+      slug: 'soon',
+      contentFormat: 'lexical',
+      categoryId: category.id,
+      authorIds: [],
+      publicAt: new Date('2999-01-02T00:00:00Z'),
+    })
+    const later = await postRepository.create({
+      title: 'Later',
+      slug: 'later',
+      contentFormat: 'lexical',
+      categoryId: category.id,
+      authorIds: [],
+      publicAt: new Date('2999-06-01T00:00:00Z'),
+    })
+    await postRepository.create({
+      title: 'Live',
+      slug: 'live',
+      contentFormat: 'lexical',
+      categoryId: category.id,
+      authorIds: [],
+    })
+    await postRepository.create({
+      title: 'Draft',
+      slug: 'draft',
+      contentFormat: 'lexical',
+      categoryId: category.id,
+      authorIds: [],
+      isPublished: false,
+      publicAt: new Date('2999-01-01T00:00:00Z'),
+    })
+    await postRepository.create({
+      title: 'Already public',
+      slug: 'already',
+      contentFormat: 'lexical',
+      categoryId: category.id,
+      authorIds: [],
+      publicAt: new Date('2000-01-01T00:00:00Z'),
+    })
+
+    const queued = await postRepository.list({
+      scheduledOnly: true,
+      sortBy: 'publicAt',
+      sortOrder: 1,
+    })
+    expect(queued.data.map((post) => post.id)).toEqual([soon.id, later.id])
+  })
 })

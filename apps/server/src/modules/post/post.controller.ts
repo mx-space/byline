@@ -127,6 +127,7 @@ export class PostController {
       categoryIds,
       authorId,
       excludeAiWritten,
+      visibility,
     } = query
 
     const res = await this.postService.listPaginated({
@@ -137,6 +138,7 @@ export class PostController {
       authorId,
       excludeAiWritten,
       publishedOnly: !isAuthenticated,
+      scheduledOnly: isAuthenticated && visibility === 'scheduled',
       sortBy: sortBy as any,
       sortOrder: sortOrder === 'asc' ? 1 : -1,
       truncateText: truncate,
@@ -273,6 +275,7 @@ export class PostController {
       metaOnly: true,
       page: query.page,
       size: query.size,
+      scheduledOnly: query.visibility === 'scheduled',
     })
     return withMeta(
       res.data,

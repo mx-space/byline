@@ -136,27 +136,26 @@ export const taskCopy = createFeatureCopy({
   retryTitle: { 'en-US': 'Retry this task?', 'zh-CN': '重试这条任务？' },
   retryTranslation: {
     'en-US':
-      'Runs again with the same parameters and overwrites unlocked translations. Locked translations stay as they are.',
+      'Runs again with the same parameters. Translations marked Kept stay. The others are replaced.',
     'zh-CN':
-      '会按原来的参数再跑一次，并覆盖未锁定的译文。已锁定的译文保持不变。',
+      '会按原来的参数再跑一次。标成「不覆盖」的译文保持不动，其余会被替换。',
   },
   retryTranslationLocked: {
     'en-US':
-      'Runs again with the same parameters. Locked translations are included this time, and unlocked translations are overwritten.',
+      'Runs again with the same parameters, including translations marked Kept. Those are replaced too.',
     'zh-CN':
-      '会按原来的参数再跑一次。这次包含已锁定的译文，未锁定的译文也会被覆盖。',
+      '会按原来的参数再跑一次，包括标成「不覆盖」的译文。那些译文也会被替换。',
   },
   retryPartialTranslation: {
     'en-US':
-      'Retries only the languages that did not succeed, and overwrites unlocked translations in those languages. Locked translations stay as they are.',
-    'zh-CN':
-      '只会再跑尚未成功的语言，并覆盖这些语言里未锁定的译文。已锁定的译文保持不变。',
+      'Retries only the languages that did not succeed. Translations marked Kept in those languages stay.',
+    'zh-CN': '只再跑还没成功的语言。这些语言里标成「不覆盖」的译文保持不动。',
   },
   retryPartialTranslationLocked: {
     'en-US':
-      'Retries only the languages that did not succeed. Locked and unlocked translations in those languages are generated again.',
+      'Retries only the languages that did not succeed, including translations marked Kept. Those are replaced too.',
     'zh-CN':
-      '只会再跑尚未成功的语言。这些语言里已锁定和未锁定的译文都会重新生成。',
+      '只再跑还没成功的语言，包括标成「不覆盖」的译文。那些译文也会被替换。',
   },
   retryTts: {
     'en-US':

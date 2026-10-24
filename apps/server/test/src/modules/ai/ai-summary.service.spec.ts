@@ -15,9 +15,7 @@ const createService = () => {
     findGlobalById: vi.fn(),
     getRefArticleMap: vi.fn().mockResolvedValue({}),
     findArticleIdsByTitle: vi.fn().mockResolvedValue([]),
-    findAllArticlesForAIText: vi
-      .fn()
-      .mockResolvedValue({ posts: [], notes: [] }),
+    findArticlesForProductLists: vi.fn().mockResolvedValue({ posts: [] }),
   }
   const configService = {
     get: vi.fn(),
@@ -283,12 +281,21 @@ describe('AiSummaryService', () => {
         createdAt: now,
       },
     ])
-    databaseService.findAllArticlesForAIText.mockResolvedValue({
+    databaseService.findArticlesForProductLists.mockResolvedValue({
       posts: [
-        { id: 'post-1', title: 'Has Summary' },
-        { id: 'post-2', title: 'Orphan Post' },
+        {
+          id: 'post-1',
+          title: 'Has Summary',
+          isPublished: true,
+          createdAt: '2024-02-01T00:00:00.000Z',
+        },
+        {
+          id: 'post-2',
+          title: 'Orphan Post',
+          isPublished: true,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
       ],
-      notes: [],
     })
     databaseService.getRefArticleMap.mockResolvedValue({
       'post-1': {

@@ -12,10 +12,10 @@ import {
 import { MetricStrip, TableSkeleton } from '@lobehub/ui/dashboard'
 import { type ProColumns, ProTable } from '@lobehub/ui/pro-table'
 import { useQueryClient } from '@tanstack/react-query'
-import { Ellipsis, PanelRightOpen, WandSparkles, X } from 'lucide-react'
+import { Ellipsis, Eye, WandSparkles, X } from 'lucide-react'
 import type { HTMLAttributes, ReactNode } from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useNavigate, useOutlet, useSearchParams } from 'react-router'
 
 import type { AiOverviewCapability } from '~/api/ai-overview'
 import { AI_OVERVIEW_CAPABILITIES } from '~/api/ai-overview'
@@ -39,8 +39,8 @@ import { Button } from '~/ui/site-button'
 import { useAiCopy } from '../copy'
 import { useAiQuickActionsBuilder } from '../hooks/use-ai-quick-actions'
 import { AiHubPage } from '../hub/AiHubPage'
-import { toLobeMenuItems } from '../hub/menu'
 import { hubStyles } from '../hub/styles'
+import { productDraftPath } from '../product-draft-path'
 import { CAPABILITY_LABEL } from './capability-label'
 import type { MatrixRow } from './coverage'
 import {
@@ -75,6 +75,7 @@ export function CoverageMatrixRouteView() {
   const copy = useAiCopy()
   const table = useRecordTable()
   const navigate = useNavigate()
+  const outlet = useOutlet()
   const queryClient = useQueryClient()
   const buildAiItems = useAiQuickActionsBuilder()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -152,18 +153,25 @@ export function CoverageMatrixRouteView() {
     [activeSort, filtered],
   )
   const pageRows = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-  const fillableRows = filtered.filter((row) => hasGap(row, capability))
+  const fillableRows = filtered.filter(
+    (row) => hasGap(row, capability) && !row.article.draftId,
+  )
   const selectedRows = rows.filter((row) =>
     selectedIds.includes(row.article.id),
   )
   const visibleCapabilities = capability ? [capability] : MATRIX_CAPABILITIES
   const search = searchParams.toString()
 
-  const openPost = (id: string) =>
+  const openPost = (article: MatrixRow['article']) => {
+    if (article.draftId) {
+      navigate(productDraftPath(article.draftId))
+      return
+    }
     navigate({
-      pathname: `/ai/overview/${id}`,
+      pathname: `/ai/overview/${article.id}`,
       search: search ? `?${search}` : '',
     })
+  }
 
   const refresh = () =>
     void queryClient.invalidateQueries({
@@ -219,7 +227,7 @@ export function CoverageMatrixRouteView() {
       key: 'actions',
       render: (_dom, row) => (
         <div className={hubStyles.rowActions} data-row-actions="">
-          {hasGap(row) ? (
+          {hasGap(row) && !row.article.draftId ? (
             <ActionIcon
               aria-label={copy('fillGaps')}
               icon={WandSparkles}
@@ -229,22 +237,26 @@ export function CoverageMatrixRouteView() {
             />
           ) : null}
           <ActionIcon
-            aria-label={copy('openPostOverview')}
-            icon={PanelRightOpen}
-            onClick={() => openPost(row.article.id)}
+            aria-label={
+              row.article.draftId ? copy('editPost') : copy('openPostOverview')
+            }
+            icon={Eye}
+            onClick={() => openPost(row.article)}
             size="small"
-            title={copy('openPostOverview')}
+            title={
+              row.article.draftId ? copy('editPost') : copy('openPostOverview')
+            }
           />
-          <DropdownMenu
-            items={() => toLobeMenuItems(buildAiItems(row.article.id))}
-          >
-            <ActionIcon
-              aria-label={copy('more')}
-              icon={Ellipsis}
-              size="small"
-              title={copy('more')}
-            />
-          </DropdownMenu>
+          {row.article.draftId ? null : (
+            <DropdownMenu items={() => buildAiItems(row.article.id)}>
+              <ActionIcon
+                aria-label={copy('more')}
+                icon={Ellipsis}
+                size="small"
+                title={copy('more')}
+              />
+            </DropdownMenu>
+          )}
         </div>
       ),
       title: '',
@@ -297,6 +309,8 @@ export function CoverageMatrixRouteView() {
   }
 
   const initialLoading = listQuery.isLoading && !rows.length
+
+  if (outlet) return outlet
 
   return (
     <AiHubPage
@@ -368,11 +382,13 @@ export function CoverageMatrixRouteView() {
             'data-scope-item': 'row',
             onClick: (event) => {
               if (isInteractiveTarget(event.target)) return
-              openPost(row.article.id)
+              openPost(row.article)
             },
             onContextMenu: (event) => {
               event.preventDefault()
-              showContextMenu(toLobeMenuItems(buildAiItems(row.article.id)))
+              if (!row.article.draftId) {
+                showContextMenu(buildAiItems(row.article.id))
+              }
             },
           }) as HTMLAttributes<HTMLElement>
         }
@@ -412,7 +428,10 @@ export function CoverageMatrixRouteView() {
             <Button
               icon={WandSparkles}
               onClick={() =>
-                setFill({ clearSelection: true, rows: selectedRows })
+                setFill({
+                  clearSelection: true,
+                  rows: selectedRows.filter((row) => !row.article.draftId),
+                })
               }
               size="small"
             >

@@ -187,6 +187,7 @@ export function postTranslationCheck(
 ): {
   done: number
   missing: number
+  missingLangs: string[]
   state: 'done' | 'gap' | 'unset'
   total: number
 } {
@@ -194,16 +195,22 @@ export function postTranslationCheck(
     !coverage?.applicable ||
     (coverage.expected.length === 0 && coverage.langs.length === 0)
   ) {
-    return { done: 0, missing: 0, state: 'unset', total: 0 }
+    return { done: 0, missing: 0, missingLangs: [], state: 'unset', total: 0 }
   }
   const total =
     coverage.expected.length > 0
       ? coverage.expected.length
       : coverage.langs.length
-  const missing = missingLangs(coverage).length
-  return missing === 0
-    ? { done: total, missing: 0, state: 'done', total }
-    : { done: total - missing, missing, state: 'gap', total }
+  const absent = missingLangs(coverage)
+  return absent.length === 0
+    ? { done: total, missing: 0, missingLangs: [], state: 'done', total }
+    : {
+        done: total - absent.length,
+        missing: absent.length,
+        missingLangs: absent,
+        state: 'gap',
+        total,
+      }
 }
 
 /** Recommended lengths shared with the write-page SEO counters. */

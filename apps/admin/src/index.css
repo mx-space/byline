@@ -35,3 +35,29 @@
 body {
   overflow: hidden;
 }
+
+.lobe-drawer__header,
+.lobe-drawer__container,
+.lobe-drawer__title,
+.lobe-drawer__content,
+.lobe-drawer__body-content {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.lobe-drawer__title {
+  flex: 1 1 0%;
+  overflow: hidden;
+}
+
+.lobe-drawer__title:not(:has(*)) {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lobe-drawer__title > *,
+.lobe-drawer__title .lobe-flex,
+.lobe-drawer__title .lobe-text {
+  min-width: 0;
+  max-width: 100%;
+}

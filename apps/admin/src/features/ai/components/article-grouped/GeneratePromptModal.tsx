@@ -1,4 +1,4 @@
-import { Checkbox, Input, Tag, toast } from '@lobehub/ui'
+import { Checkbox, createStaticStyles, Input, Tag, toast } from '@lobehub/ui'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 
@@ -9,6 +9,16 @@ import { Button } from '~/ui/site-button'
 import { useAiCopy } from '../../copy'
 import { aiStyles } from '../../shell/styles'
 import { parseLangInput } from '../../utils/ai'
+
+const styles = createStaticStyles(({ css }) => ({
+  body: css`
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 16px;
+    padding-inline: 1rem;
+  `,
+}))
 
 const MAX_LANGS = 8
 
@@ -54,7 +64,7 @@ function GeneratePromptModal(props: GeneratePromptModalProps) {
   return (
     <form className={aiStyles.stack} onSubmit={handleSubmit}>
       <ModalHeader title={props.title} />
-      <div className={aiStyles.stack}>
+      <div className={styles.body}>
         {locked.length ? (
           <div className={aiStyles.lockedStrip}>
             <span className={aiStyles.label}>{copy('lockedBefore')}</span>

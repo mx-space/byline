@@ -1,8 +1,10 @@
-import { createStaticStyles } from '@lobehub/ui'
+import {
+  type ContextMenuItem,
+  ContextMenuTrigger,
+  createStaticStyles,
+} from '@lobehub/ui'
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
 
-import type { ContextMenuItem } from '~/ui/overlay/context-menu'
-import { ContextMenuTrigger } from '~/ui/overlay/context-menu'
 import { cn } from '~/utils/cn'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({

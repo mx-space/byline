@@ -305,6 +305,14 @@ export function UsersRouteViewContent() {
       />
     )
 
+  if (params.id) {
+    return (
+      <UsersRouteContext.Provider value={ctxValue}>
+        <Outlet />
+      </UsersRouteContext.Provider>
+    )
+  }
+
   return (
     <UsersRouteContext.Provider value={ctxValue}>
       <Page
@@ -478,7 +486,6 @@ export function UsersRouteViewContent() {
           }}
           open={authorOpen}
         />
-        <Outlet />
       </Page>
     </UsersRouteContext.Provider>
   )

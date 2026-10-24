@@ -5,6 +5,7 @@ import {
   desc,
   eq,
   getTableColumns,
+  gt,
   gte,
   ilike,
   inArray,
@@ -12,13 +13,22 @@ import {
   isNull,
   lt,
   lte,
+  ne,
   or,
   type SQL,
   sql,
 } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
-import { categories, postAuthors, posts, users } from '~/database/schema'
+import {
+  categories,
+  contentDocuments,
+  contentRevisions,
+  drafts,
+  postAuthors,
+  posts,
+  users,
+} from '~/database/schema'
 import {
   BaseRepository,
   type PaginationResult,
@@ -28,6 +38,7 @@ import type { AppDatabase } from '~/processors/database/postgres.provider'
 import { type EntityId, parseEntityId } from '~/shared/id/entity-id'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 
+import { DraftRefType } from '../draft/draft.enum'
 import { type PublicUserProfile, toPublicProfile } from '../user/user.types'
 import type {
   PostCreateInput,
@@ -84,6 +95,22 @@ const yearRange = (year: number) => ({
   start: new Date(Date.UTC(year, 0, 1)),
 })
 
+const unpublishedPostDraftWhere = () =>
+  and(
+    eq(drafts.status, 'active'),
+    eq(contentDocuments.refType, DraftRefType.Post),
+    isNull(contentDocuments.refId),
+    or(
+      isNull(contentDocuments.publishedRevisionId),
+      ne(drafts.headRevisionId, contentDocuments.publishedRevisionId),
+    ),
+  )!
+
+const unpublishedDraftJoin = {
+  document: eq(drafts.documentId, contentDocuments.id),
+  revision: eq(drafts.headRevisionId, contentRevisions.id),
+}
+
 @Injectable()
 export class PostRepository extends BaseRepository {
   constructor(
@@ -138,6 +165,15 @@ export class PostRepository extends BaseRepository {
     if (params.publishedOnly) {
       filters.push(publicPostCondition())
     }
+    if (params.scheduledOnly) {
+      filters.push(
+        and(
+          eq(posts.isPublished, true),
+          isNotNull(posts.publicAt),
+          gt(posts.publicAt, sql`now()`),
+        )!,
+      )
+    }
     if (params.authorId) {
       filters.push(
         sql`exists (select 1 from ${postAuthors} where ${postAuthors.postId} = ${posts.id} and ${postAuthors.userId} = ${params.authorId})`,
@@ -183,7 +219,11 @@ export class PostRepository extends BaseRepository {
             ? params.sortOrder === 1
               ? asc(posts.pinAt)
               : pinAtDescNullsLast
-            : null
+            : params.sortBy === 'publicAt'
+              ? params.sortOrder === 1
+                ? asc(posts.publicAt)
+                : desc(posts.publicAt)
+              : null
 
     const selection = params.metaOnly
       ? postMetaColumns
@@ -351,11 +391,27 @@ export class PostRepository extends BaseRepository {
   }
 
   async findIdsByTitle(search: string): Promise<EntityId[]> {
-    const rows = await this.db
-      .select({ id: posts.id })
-      .from(posts)
-      .where(ilike(posts.title, `%${search}%`))
-    return rows.map((row) => toEntityId(row.id) as EntityId)
+    const pattern = `%${search}%`
+    const [postRows, draftRows] = await Promise.all([
+      this.db
+        .select({ id: posts.id })
+        .from(posts)
+        .where(ilike(posts.title, pattern)),
+      this.db
+        .select({ id: drafts.id })
+        .from(drafts)
+        .innerJoin(contentDocuments, unpublishedDraftJoin.document)
+        .innerJoin(contentRevisions, unpublishedDraftJoin.revision)
+        .where(
+          and(
+            unpublishedPostDraftWhere(),
+            ilike(contentRevisions.title, pattern),
+          ),
+        ),
+    ])
+    return [...postRows, ...draftRows].map(
+      (row) => toEntityId(row.id) as EntityId,
+    )
   }
 
   async aggregateAllTagCounts(
@@ -515,6 +571,60 @@ export class PostRepository extends BaseRepository {
       .limit(1)
     if (!row) return null
     return this.hydrateOne(mapBase(row))
+  }
+
+  async findProductListArticles(): Promise<
+    Array<{
+      id: string
+      title: string
+      isPublished: boolean
+      publicAt: Date | null
+      createdAt: Date
+      draftId?: string
+    }>
+  > {
+    const [rows, draftRows] = await Promise.all([
+      this.db
+        .select({
+          id: posts.id,
+          title: posts.title,
+          isPublished: posts.isPublished,
+          publicAt: posts.publicAt,
+          createdAt: posts.createdAt,
+        })
+        .from(posts),
+      this.db
+        .select({
+          id: drafts.id,
+          title: contentRevisions.title,
+          createdAt: drafts.createdAt,
+          updatedAt: drafts.updatedAt,
+        })
+        .from(drafts)
+        .innerJoin(contentDocuments, unpublishedDraftJoin.document)
+        .innerJoin(contentRevisions, unpublishedDraftJoin.revision)
+        .where(unpublishedPostDraftWhere()),
+    ])
+    return [
+      ...rows.map((row) => ({
+        id: String(toEntityId(row.id)),
+        title: row.title,
+        isPublished: row.isPublished,
+        publicAt: row.publicAt,
+        createdAt: row.createdAt,
+      })),
+      ...draftRows.map((row) => {
+        const id = String(toEntityId(row.id))
+        return {
+          id,
+          title: row.title,
+          isPublished: false,
+          publicAt: null,
+          createdAt: row.updatedAt ?? row.createdAt,
+          draftId: id,
+        }
+      }),
+    ]
   }
 
   async findPublishedForSitemap(): Promise<PostRow[]> {

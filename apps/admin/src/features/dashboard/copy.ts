@@ -12,8 +12,8 @@ export const dashboardCopy = createFeatureCopy({
   metricPublished: { 'en-US': 'Published', 'zh-CN': '已发布' },
   metricUnpublished: { 'en-US': 'Unpublished', 'zh-CN': '未发布' },
   metricUnpublishedHint: {
-    'en-US': '{drafts} drafts · {behind} behind',
-    'zh-CN': '{drafts} 篇草稿 · {behind} 篇落后',
+    'en-US': '{drafts} drafts · {behind} changes',
+    'zh-CN': '{drafts} 篇草稿 · {behind} 篇改动',
   },
   metricTranslationGaps: {
     'en-US': 'Missing translations',

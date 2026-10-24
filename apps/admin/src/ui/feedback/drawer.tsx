@@ -1,8 +1,27 @@
-import { Drawer as LobeDrawer } from '@lobehub/ui'
+import { createStaticStyles, Drawer as LobeDrawer } from '@lobehub/ui'
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { cn } from '~/utils/cn'
+
+const styles = createStaticStyles(({ css }) => ({
+  icon: css`
+    flex-shrink: 0;
+  `,
+  title: css`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+  `,
+  titleText: css`
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+}))
 
 type DrawerSide = 'left' | 'right'
 
@@ -33,11 +52,16 @@ export function Drawer(props: {
       placement={side}
       title={
         showHeader ? (
-          <span
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
-          >
-            {Icon ? <Icon aria-hidden="true" size={16} /> : null}
-            <span>{props.title}</span>
+          <span className={styles.title}>
+            {Icon ? (
+              <Icon aria-hidden="true" className={styles.icon} size={16} />
+            ) : null}
+            <span
+              className={styles.titleText}
+              title={typeof props.title === 'string' ? props.title : undefined}
+            >
+              {props.title}
+            </span>
           </span>
         ) : undefined
       }

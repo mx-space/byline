@@ -9,6 +9,12 @@ import {
 } from '../utils/rich-diff'
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
+  bareFrame: css`
+    min-height: 240px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  `,
   frame: css`
     min-height: 240px;
     border: 1px solid ${cssVar.colorFillSecondary};
@@ -40,6 +46,7 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
 }))
 
 export function RichDraftDiffPanel(props: {
+  bare?: boolean
   comparisonLabel?: string
   hideTitle?: boolean
   currentContent: string
@@ -104,7 +111,7 @@ export function RichDraftDiffPanel(props: {
         </Text>
       </div>
       <ScrollArea
-        className={styles.frame}
+        className={props.bare ? styles.bareFrame : styles.frame}
         corner
         scrollFade="both"
         viewportProps={{ className: styles.viewport }}

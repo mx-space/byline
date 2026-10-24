@@ -67,6 +67,7 @@ const createService = () => {
     findGlobalById: vi.fn(),
     getRefArticleMap: vi.fn().mockResolvedValue({}),
     findAllArticlesForTranslation: vi.fn(),
+    findArticlesForProductLists: vi.fn().mockResolvedValue({ posts: [] }),
     findArticleIdsByTitle: vi.fn().mockResolvedValue([]),
   }
   const translationConsistencyService = {
@@ -231,11 +232,26 @@ describe('AiTranslationService', () => {
     } as any)
     repository.findDistinctRefIds.mockResolvedValue(['post-1'])
     repository.listByRefIds.mockResolvedValue([row()])
-    databaseService.findAllArticlesForTranslation.mockResolvedValue({
+    databaseService.findArticlesForProductLists.mockResolvedValue({
       posts: [
-        { id: 'post-1', title: 'Has Translation' },
-        { id: 'post-2', title: 'Orphan Post' },
-        { id: 'page-1', title: 'Orphan Page' },
+        {
+          id: 'post-1',
+          title: 'Has Translation',
+          isPublished: true,
+          createdAt: '2024-03-01T00:00:00.000Z',
+        },
+        {
+          id: 'post-2',
+          title: 'Orphan Post',
+          isPublished: true,
+          createdAt: '2024-02-01T00:00:00.000Z',
+        },
+        {
+          id: 'page-1',
+          title: 'Orphan Page',
+          isPublished: true,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
       ],
     })
     databaseService.getRefArticleMap.mockResolvedValue({

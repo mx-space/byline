@@ -11,9 +11,27 @@ import { bylinePlace } from '../utils/users'
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
   link: css`
+    display: flex;
+    gap: 12px;
+    align-items: center;
+
     min-width: 0;
+    padding: 8px 12px;
+    border-radius: ${cssVar.borderRadius};
+
     color: ${cssVar.colorText};
     text-decoration: none;
+
+    &:hover {
+      background: ${cssVar.colorFillTertiary};
+    }
+  `,
+  place: css`
+    flex: none;
+  `,
+  title: css`
+    flex: 1;
+    min-width: 0;
   `,
 }))
 
@@ -51,26 +69,28 @@ export function AuthoredPosts(props: { userId: string }) {
   const remaining = Math.max(total - posts.length, 0)
 
   return (
-    <Flexbox gap={8}>
-      <Text as="h2" weight="bold">
-        {copy('postsTitle')}
-      </Text>
+    <Flexbox gap={4}>
+      <Text type="secondary">{copy('postsTitle')}</Text>
       {posts.map((post) => {
         const place = bylinePlace(post.authors, props.userId)
         return (
-          <Flexbox gap={4} key={post.id}>
-            <Link
-              className={styles.link}
-              to={`/posts/edit?id=${encodeURIComponent(post.id)}`}
+          <Link
+            className={styles.link}
+            key={post.id}
+            to={`/posts/edit?id=${encodeURIComponent(post.id)}`}
+          >
+            <Text
+              className={styles.title}
+              ellipsis={{ tooltipWhenOverflow: true }}
             >
-              <Text ellipsis={{ tooltipWhenOverflow: true }}>
-                {emptyOr(post.title)}
-              </Text>
-            </Link>
+              {emptyOr(post.title)}
+            </Text>
             {place ? (
-              <Text type="secondary">{copy('bylinePlace', { place })}</Text>
+              <Text className={styles.place} type="secondary">
+                {copy('bylinePlace', { place })}
+              </Text>
             ) : null}
-          </Flexbox>
+          </Link>
         )
       })}
       {remaining > 0 ? (

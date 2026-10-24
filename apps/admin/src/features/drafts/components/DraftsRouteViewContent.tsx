@@ -16,7 +16,11 @@ import { DetailPlaceholder } from '~/ui/page'
 import { DRAFT_PAGE_SIZE, draftsQueryKey } from '../constants'
 import { useDraftCopy } from '../copy'
 import type { DraftSort, DraftTypeFilter } from '../utils/draft-decision'
-import { draftTitle, sortDrafts } from '../utils/draft-decision'
+import {
+  draftRevertsChanges,
+  draftTitle,
+  sortDrafts,
+} from '../utils/draft-decision'
 import { getEditPathForDraft } from '../utils/draft-edit-path'
 import { describeDraftError } from '../utils/errors'
 import { loadInboxDrafts } from '../utils/load-inbox-drafts'
@@ -164,13 +168,21 @@ export function DraftsRouteViewContent() {
   )
 
   const deleteMutation = useMutation({
-    mutationFn: deleteDraft,
-    onError: (error: unknown) =>
-      toast.error(describeDraftError(error, copy('deleteFailed'))),
-    onSuccess: async (_result, id) => {
-      toast.success(copy('deleted'))
+    mutationFn: async (draft: DraftModel) => {
+      await deleteDraft(draft.id)
+      return draft
+    },
+    onError: (error: unknown, draft) =>
+      toast.error(
+        describeDraftError(
+          error,
+          copy(draftRevertsChanges(draft) ? 'revertFailed' : 'deleteFailed'),
+        ),
+      ),
+    onSuccess: async (draft) => {
+      toast.success(copy(draftRevertsChanges(draft) ? 'reverted' : 'deleted'))
       selectionClearRef.current?.()
-      await refreshAfterDelete(id === detailId)
+      await refreshAfterDelete(draft.id === detailId)
     },
   })
 
@@ -178,16 +190,18 @@ export function DraftsRouteViewContent() {
     (targets: DraftModel[]) => {
       const draft = targets[0]
       if (!draft) return
+      const reverts = draftRevertsChanges(draft)
+      const title = draftTitle(draft, copy('untitled'))
       confirmModal({
         cancelText: copy('cancel'),
-        content: copy('confirmDeleteBody'),
+        content: copy(reverts ? 'confirmRevertBody' : 'confirmDeleteBody'),
         okButtonProps: { danger: true },
-        okText: copy('confirmDeleteConfirm'),
+        okText: copy(reverts ? 'confirmRevertConfirm' : 'confirmDeleteConfirm'),
         onOk: async () => {
-          await deleteMutation.mutateAsync(draft.id).catch(() => {})
+          await deleteMutation.mutateAsync(draft).catch(() => {})
         },
-        title: copy('confirmDeleteTitle', {
-          title: draftTitle(draft, copy('untitled')),
+        title: copy(reverts ? 'confirmRevertTitle' : 'confirmDeleteTitle', {
+          title,
         }),
       })
     },

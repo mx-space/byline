@@ -1,8 +1,7 @@
-import { createModal, useModalContext } from '@lobehub/ui'
+import { Button, createModal, ModalFooter, useModalContext } from '@lobehub/ui'
 import type { ReactNode } from 'react'
 
 import { translate } from '~/i18n/translate'
-import { Button } from '~/ui/site-button'
 
 export interface ConfirmDialogOptions {
   title: ReactNode
@@ -25,7 +24,7 @@ function ConfirmActions(props: {
   }
 
   return (
-    <>
+    <ModalFooter>
       <Button onClick={() => choose(false)}>{props.cancelText}</Button>
       <Button
         danger={props.destructive}
@@ -34,7 +33,7 @@ function ConfirmActions(props: {
       >
         {props.confirmText}
       </Button>
-    </>
+    </ModalFooter>
   )
 }
 

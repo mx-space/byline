@@ -1,8 +1,8 @@
-import { createStaticStyles } from '@lobehub/ui'
+import { createStaticStyles, DropdownMenu } from '@lobehub/ui'
 import {
+  Check,
   ChevronDown,
   Download,
-  Loader2,
   Plus,
   RefreshCw,
   Trash2,
@@ -12,9 +12,7 @@ import { useState } from 'react'
 import type { AgentSessionMeta } from '~/hooks/use-agent-session-manager'
 import { useI18n } from '~/i18n'
 import { confirmDialog } from '~/ui/feedback/confirm'
-import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
 import { Button } from '~/ui/site-button'
-import { cn } from '~/utils/cn'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u355a147c: css`
@@ -76,50 +74,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     max-height: 16rem;
     width: 16rem;
     overflow-y: auto;
-  `,
-  u6a769bbc: css`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding-block: 1.5rem;
-  `,
-  u90218af2: css`
-    width: 1rem;
-    height: 1rem;
-    @keyframes byline-spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-    animation: byline-spin 1s linear infinite;
-    color: ${cssVar.colorTextTertiary};
-  `,
-  u553fd8a2: css`
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.125rem;
-  `,
-  u0af62bfb: css`
-    background-color: ${cssVar.colorFillSecondary};
-  `,
-  uaf233a89: css`
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: ${cssVar.fontSizeSM};
-    line-height: ${cssVar.lineHeightSM};
-    font-weight: 500;
-    color: ${cssVar.colorText};
-  `,
-  u36955ba6: css`
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: ${cssVar.fontSizeSM};
-    line-height: ${cssVar.lineHeightSM};
-    color: ${cssVar.colorTextTertiary};
   `,
   u02034fc7: css`
     display: flex;
@@ -282,51 +236,48 @@ export function SessionHeader(props: SessionHeaderProps) {
   return (
     <div className={lobeStyles.u99616931}>
       <div className={lobeStyles.ud943fc3e}>
-        <DropdownMenu onOpenChange={setOpen} open={open}>
-          <DropdownMenu.Trigger className={lobeStyles.u535294c8} type="button">
-            <span className={lobeStyles.uf283ea9b}>{activeTitle}</span>
-            <ChevronDown aria-hidden="true" className={lobeStyles.ufc18c167} />
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content className={lobeStyles.u33e87723}>
-            {isLoading ? (
-              <div className={lobeStyles.u6a769bbc}>
-                <Loader2 aria-hidden="true" className={lobeStyles.u90218af2} />
-              </div>
-            ) : sorted.length === 0 ? (
-              <DropdownMenu.Empty>
-                {t('write.agent.session.empty')}
-              </DropdownMenu.Empty>
-            ) : (
-              sorted.map((session) => {
-                const subDate =
-                  parseDate(session.updatedAt) ?? parseDate(session.createdAt)
-                const hasTopTitle = Boolean(
-                  session.title ?? session.derivedTitle,
-                )
-                const sub = hasTopTitle ? relativeTime(subDate) : null
-                return (
-                  <DropdownMenu.Item
-                    aria-current={
-                      session.id === activeSessionId ? 'true' : undefined
+        <DropdownMenu
+          items={
+            isLoading
+              ? [
+                  {
+                    disabled: true,
+                    key: 'loading',
+                    label: t('common.loading'),
+                    loading: true,
+                  },
+                ]
+              : sorted.length === 0
+                ? [
+                    {
+                      disabled: true,
+                      key: 'empty',
+                      label: t('write.agent.session.empty'),
+                    },
+                  ]
+                : sorted.map((session) => {
+                    const subDate =
+                      parseDate(session.updatedAt) ??
+                      parseDate(session.createdAt)
+                    const hasTopTitle = Boolean(
+                      session.title ?? session.derivedTitle,
+                    )
+                    return {
+                      desc: hasTopTitle ? relativeTime(subDate) : undefined,
+                      icon: session.id === activeSessionId ? Check : undefined,
+                      key: session.id,
+                      label: sessionLabel(session),
+                      onClick: () => selectSession(session.id),
                     }
-                    className={cn(
-                      lobeStyles.u553fd8a2,
-                      session.id === activeSessionId && lobeStyles.u0af62bfb,
-                    )}
-                    key={session.id}
-                    onClick={() => selectSession(session.id)}
-                  >
-                    <span className={lobeStyles.uaf233a89}>
-                      {sessionLabel(session)}
-                    </span>
-                    {sub ? (
-                      <span className={lobeStyles.u36955ba6}>{sub}</span>
-                    ) : null}
-                  </DropdownMenu.Item>
-                )
-              })
-            )}
-          </DropdownMenu.Content>
+                  })
+          }
+          onOpenChange={setOpen}
+          open={open}
+          popupProps={{ className: lobeStyles.u33e87723 }}
+          triggerProps={{ className: lobeStyles.u535294c8 }}
+        >
+          <span className={lobeStyles.uf283ea9b}>{activeTitle}</span>
+          <ChevronDown aria-hidden="true" className={lobeStyles.ufc18c167} />
         </DropdownMenu>
       </div>
 
