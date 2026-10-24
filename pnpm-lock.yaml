@@ -214,7 +214,7 @@ overrides:
   '@lexical/yjs': 0.52.0
   '@mx-space/ai>@haklex/rich-headless': 0.54.3
   '@mx-space/editor>@haklex/rich-headless': 0.54.3
-  '@mx-space/editor>@haklex/rich-litexml': 0.54.2
+  '@mx-space/editor>@haklex/rich-litexml': 0.54.3
   '@esbuild-kit/core-utils>esbuild': 0.25.12
   '@cloudflare/workers-types': 5.20261005.1
   '@fastify/static': 10.1.5
@@ -2422,6 +2422,9 @@ packages:
 
   '@haklex/rich-litexml@0.54.2':
     resolution: {integrity: sha512-+/H+n6ZhJA4tkvoGx5h5dRKD5t+8T9cBgyH+irhFGaCebyu3AZjKE85/ETmNFXAYtO4uE626nsCXChuPfzYUUA==}
+
+  '@haklex/rich-litexml@0.54.3':
+    resolution: {integrity: sha512-RZ1P3dOKmYIZhI29rfPVJie7sXaOY8h6WduWpTXUwZsDor6iZWpAl+EY+9uTO/msUuGW8+s0eA4VFNGBOIljZw==}
 
   '@haklex/rich-plugin-block-handle@0.54.2':
     resolution: {integrity: sha512-krezN6/9YisudxpCuZDGFhacWLeuARdBh2qDK/qWU6MeKsPYmDMDwWGoatE9cKKLDjEgmQPS8c3guXi2otcXJA==}
@@ -13059,6 +13062,15 @@ snapshots:
       - canvas
       - typescript
 
+  '@haklex/rich-litexml@0.54.3(typescript@6.0.3)':
+    dependencies:
+      lexical: 0.52.0(typescript@6.0.3)
+      linkedom: 0.18.13
+      nanoid: 6.0.2
+    transitivePeerDependencies:
+      - canvas
+      - typescript
+
   '@haklex/rich-plugin-block-handle@0.54.2(@haklex/rich-editor-ui@0.54.2(@base-ui/react@1.9.0(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.58.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@haklex/rich-style-token@0.54.2(react@19.3.1))(@lexical/html@0.52.0(typescript@6.0.3))(@lexical/list@0.52.0(typescript@6.0.3))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(@lexical/rich-text@0.52.0(typescript@6.0.3))(@lexical/selection@0.52.0(typescript@6.0.3))(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.58.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)':
     dependencies:
       '@haklex/rich-editor-ui': 0.54.2(@base-ui/react@1.9.0(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.58.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -14273,7 +14285,7 @@ snapshots:
   '@mx-space/editor@0.4.0(typescript@6.0.3)':
     dependencies:
       '@haklex/rich-headless': 0.54.3(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
-      '@haklex/rich-litexml': 0.54.2(typescript@6.0.3)
+      '@haklex/rich-litexml': 0.54.3(typescript@6.0.3)
       '@lexical/headless': 0.52.0(typescript@6.0.3)
       '@lexical/markdown': 0.52.0(typescript@6.0.3)
       '@noble/hashes': 2.4.0
