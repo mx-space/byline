@@ -1,3 +1,5 @@
+import { ConfigProvider } from '@lobehub/ui'
+import * as motion from 'motion/react-m'
 import { act, createElement } from 'react'
 import type { Root } from 'react-dom/client'
 import { createRoot } from 'react-dom/client'
@@ -64,6 +66,7 @@ vi.mock('@lexical/react/LexicalComposerContext', () => ({
 }))
 
 vi.mock('./EditorDebugDialog', () => ({
+  EditorDebugDialog: () => null,
   presentEditorDebugDialog: mocks.presentEditorDebugDialog,
 }))
 
@@ -92,7 +95,12 @@ function mount(): Harness {
 
 function renderToolbar() {
   act(() => {
-    harness.root.render(createElement(EditorToolbar))
+    harness.root.render(
+      createElement(ConfigProvider, {
+        children: createElement(EditorToolbar),
+        motion,
+      }),
+    )
   })
 }
 

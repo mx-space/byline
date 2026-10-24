@@ -7,6 +7,7 @@ import { deletePasskey, listPasskeys } from '~/api/auth'
 import { getOption, patchOption } from '~/api/options'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { ListSkeleton } from '~/ui/placeholders'
 import { Button } from '~/ui/primitives/button'
 import { Scroll } from '~/ui/primitives/scroll'
 import { FormSwitch } from '~/ui/primitives/switch'
@@ -42,12 +43,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u36e579c0: css`
     flex: 1 1 0%;
-  `,
-  uf01b33ec: css`
-    padding: 1rem;
-    font-size: 0.75rem;
-    line-height: 1.125rem;
-    color: ${cssVar.colorTextSecondary};
   `,
   ucc46d0fa: css`
     width: 1.75rem;
@@ -233,9 +228,7 @@ export function PasskeyPanel() {
       </div>
       <Scroll className={lobeStyles.u36e579c0}>
         {passkeysQuery.isLoading ? (
-          <div className={lobeStyles.uf01b33ec}>
-            {t('settings.common.loading')}
-          </div>
+          <ListSkeleton label={t('settings.common.loading')} rows={3} />
         ) : (passkeysQuery.data ?? []).length === 0 ? (
           <EmptyState
             icon={<Fingerprint className={lobeStyles.ucc46d0fa} />}

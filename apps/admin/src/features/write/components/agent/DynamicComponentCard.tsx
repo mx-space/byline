@@ -1,7 +1,7 @@
 import type { ToolCallGroupItem } from '@haklex/rich-agent-core'
 import { ColorSchemeProvider } from '@haklex/rich-editor/static'
 import { DynamicHostRenderer } from '@haklex/rich-ext-dynamic'
-import { createStaticStyles, toast } from '@lobehub/ui'
+import { createStaticStyles, Highlighter, toast } from '@lobehub/ui'
 import { useEffect, useState } from 'react'
 
 import { useI18n } from '~/i18n'
@@ -61,16 +61,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u34516836: css`
     cursor: pointer;
-  `,
-  u29562ef2: css`
-    margin-top: 0.5rem;
-    max-height: 16rem;
-    overflow: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
-    border-radius: 0.25rem;
-    background-color: ${cssVar.colorFillSecondary};
-    padding: 0.75rem;
   `,
   u611864a2: css`
     font-size: 0.75rem;
@@ -196,7 +186,13 @@ export function DynamicComponentCard({
             <summary className={lobeStyles.u34516836}>
               {t('write.agent.dynamic.source')}
             </summary>
-            <pre className={lobeStyles.u29562ef2}>{draft.source}</pre>
+            <Highlighter
+              language="tsx"
+              style={{ maxHeight: '16rem', overflow: 'auto' }}
+              variant="filled"
+            >
+              {draft.source}
+            </Highlighter>
           </details>
           {actions}
           {error ? (

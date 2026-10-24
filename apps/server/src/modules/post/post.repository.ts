@@ -12,6 +12,7 @@ import {
   isNull,
   lt,
   lte,
+  or,
   type SQL,
   sql,
 } from 'drizzle-orm'
@@ -72,6 +73,11 @@ const {
 } = postColumns
 
 const pinAtDescNullsLast = sql`${posts.pinAt} desc nulls last`
+
+const likeContains = (value: string) => {
+  const escaped = value.replaceAll(/[%\\_]/g, (char) => `\\${char}`)
+  return `%${escaped}%`
+}
 
 const yearRange = (year: number) => ({
   end: new Date(Date.UTC(year + 1, 0, 1)),
@@ -144,6 +150,18 @@ export class PostRepository extends BaseRepository {
       const { start, end } = yearRange(params.year)
       filters.push(gte(posts.createdAt, start), lt(posts.createdAt, end))
     }
+    const keyword = params.keyword?.trim()
+    if (keyword) {
+      const pattern = likeContains(keyword)
+      filters.push(
+        or(
+          ilike(posts.title, pattern),
+          ilike(posts.slug, pattern),
+          ilike(posts.summary, pattern),
+          ilike(posts.text, pattern),
+        )!,
+      )
+    }
     if (params.excludeAiWritten) {
       // aiGen preset 2 = "fully AI-written" (see web ai-gen.ts); jsonb @> matches
       // both the scalar form and membership in the disclosure array
@@ -167,12 +185,16 @@ export class PostRepository extends BaseRepository {
               : pinAtDescNullsLast
             : null
 
-    const selection = params.truncateText
-      ? {
-          ...postColumns,
-          text: sql<string | null>`left(${posts.text}, ${params.truncateText})`,
-        }
-      : postColumns
+    const selection = params.metaOnly
+      ? postMetaColumns
+      : params.truncateText
+        ? {
+            ...postColumns,
+            text: sql<
+              string | null
+            >`left(${posts.text}, ${params.truncateText})`,
+          }
+        : postColumns
     const [rows, [{ count }]] = await Promise.all([
       this.db
         .select(selection)

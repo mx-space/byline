@@ -42,13 +42,13 @@ const catalog = {
     'en-US':
       'Files uploaded in the last {minutes} minutes are kept, since they may belong to a post that is not saved yet. Deletion cannot be undone.',
     'zh-CN':
-      '最近 {minutes} 分钟内上传的会保留，它们可能属于还没保存的博文。删除后无法恢复。',
+      '最近 {minutes} 分钟内上传的会保留，它们可能属于还没保存的文章。删除后无法恢复。',
   },
   cleanupBodyExact: {
     'en-US':
       '{kept} files uploaded in the last {minutes} minutes are kept, since they may belong to a post that is not saved yet. Deletion cannot be undone.',
     'zh-CN':
-      '最近 {minutes} 分钟内上传的 {kept} 个会保留，它们可能属于还没保存的博文。删除后无法恢复。',
+      '最近 {minutes} 分钟内上传的 {kept} 个会保留，它们可能属于还没保存的文章。删除后无法恢复。',
   },
   cleanupConfirm: {
     'en-US': 'Clean up',
@@ -74,6 +74,10 @@ const catalog = {
   cleanupTitleExact: {
     'en-US': 'Delete {count} orphan files{size}?',
     'zh-CN': '删除 {count} 个孤立文件{size}？',
+  },
+  clearFilters: {
+    'en-US': 'Clear filters',
+    'zh-CN': '清除筛选',
   },
   clearSearch: {
     'en-US': 'Clear search',
@@ -113,7 +117,7 @@ const catalog = {
   },
   deleteBatchBody: {
     'en-US': 'No post references these files. Deletion cannot be undone.',
-    'zh-CN': '没有博文引用这些文件。删除后无法恢复。',
+    'zh-CN': '没有文章引用这些文件。删除后无法恢复。',
   },
   deleteBatchConfirm: {
     'en-US': 'Delete {count} files',
@@ -139,7 +143,7 @@ const catalog = {
     'en-US':
       'Byline cannot tell whether a post still uses this file. If one does, its image or link will break. Deletion cannot be undone.',
     'zh-CN':
-      '无法确认是否还有博文在用这个文件。如果有，博文里的图片或链接会失效。删除后无法恢复。',
+      '无法确认是否还有文章在用这个文件。如果有，文章里的图片或链接会失效。删除后无法恢复。',
   },
   deleteFileTitle: {
     'en-US': 'Delete {name}?',
@@ -147,7 +151,7 @@ const catalog = {
   },
   deleteOneBody: {
     'en-US': 'No post references this file. Deletion cannot be undone.',
-    'zh-CN': '没有博文引用这个文件。删除后无法恢复。',
+    'zh-CN': '没有文章引用这个文件。删除后无法恢复。',
   },
   deleteResult: {
     'en-US': 'Deleted {success}. {failed} failed.',
@@ -196,7 +200,7 @@ const catalog = {
   emptyOrphansBody: {
     'en-US':
       'Every file is used by a post. Check references if this looks wrong.',
-    'zh-CN': '所有文件都有博文在用。如果不对，先检查引用。',
+    'zh-CN': '所有文件都有文章在用。如果不对，先检查引用。',
   },
   emptyOrphansTitle: {
     'en-US': 'No orphan files',
@@ -232,7 +236,7 @@ const catalog = {
   },
   libraryDescription: {
     'en-US': 'Images and attachments uploaded for posts.',
-    'zh-CN': '博文用到的图片和附件。',
+    'zh-CN': '文章用到的图片和附件。',
   },
   libraryTitle: {
     'en-US': 'Files',
@@ -310,7 +314,7 @@ const catalog = {
     'en-US':
       'Orphan files are not used by any post. Cleanup keeps files uploaded in the last {minutes} minutes.',
     'zh-CN':
-      '孤立文件是没有任何博文在用的文件。清理时会保留最近 {minutes} 分钟内上传的。',
+      '孤立文件是没有任何文章在用的文件。清理时会保留最近 {minutes} 分钟内上传的。',
   },
   reconcileApply: {
     'en-US': 'Update reference status',
@@ -360,7 +364,7 @@ const catalog = {
   },
   referencesNever: {
     'en-US': 'No post has ever used this file.',
-    'zh-CN': '还没有博文用过这个文件。',
+    'zh-CN': '还没有文章用过这个文件。',
   },
   referencesTitle: {
     'en-US': 'Used by',
@@ -368,7 +372,7 @@ const catalog = {
   },
   referencesUnknown: {
     'en-US': 'The file API does not report which posts use this file.',
-    'zh-CN': '文件接口不提供引用它的博文。',
+    'zh-CN': '文件接口不提供引用它的文章。',
   },
   refresh: {
     'en-US': 'Refresh',
@@ -404,7 +408,7 @@ const catalog = {
   },
   sourcePost: {
     'en-US': 'post',
-    'zh-CN': '博文',
+    'zh-CN': '文章',
   },
   stateDetached: {
     'en-US': 'Reference removed',

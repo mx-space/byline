@@ -97,6 +97,7 @@ export interface PostSpecificData {
   publicAt?: string | null
   authors?: Array<string | { id: string }>
   categoryId?: string
+  created?: string
   image?: string | null
   pin?: boolean | string | null
   pinOrder?: number

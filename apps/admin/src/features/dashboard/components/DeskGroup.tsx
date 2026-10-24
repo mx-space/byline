@@ -1,14 +1,10 @@
-import {
-  Button,
-  createStaticStyles,
-  Flexbox,
-  Skeleton,
-  Text,
-} from '@lobehub/ui'
+import { createStaticStyles, Flexbox, Text } from '@lobehub/ui'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
 import { useI18n } from '~/i18n'
+import { ListSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { useDashboardCopy } from '../copy'
 import { DeskRetryNotice } from './DeskRetryNotice'
@@ -21,9 +17,18 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
   `,
   head: css`
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 8px;
+
+    min-block-size: 32px;
     padding-inline: 12px;
+    border-radius: ${cssVar.borderRadiusXS};
+
+    background: ${cssVar.colorFillQuaternary};
+  `,
+  label: css`
+    font-size: ${cssVar.fontSizeSM};
+    line-height: 1.4;
   `,
   more: css`
     margin-inline-start: auto;
@@ -64,8 +69,8 @@ export function DeskQueryState(props: {
 
   if (pending) {
     return (
-      <Flexbox aria-busy gap={8} paddingInline={12}>
-        <Skeleton.Text rows={props.rows ?? 3} />
+      <Flexbox aria-busy gap={8}>
+        <ListSkeleton rows={props.rows ?? 3} />
         {slow ? (
           <Flexbox align="center" gap={8} horizontal>
             <Text type="secondary">{copy('slowLoading')}</Text>
@@ -113,9 +118,11 @@ export function DeskGroup(props: {
   title: string
 }) {
   return (
-    <Flexbox gap={4}>
+    <Flexbox gap={8}>
       <div className={styles.head}>
-        <Text weight={500}>{props.title}</Text>
+        <Text className={styles.label} type="secondary">
+          {props.title}
+        </Text>
         {props.count != null ? (
           <span className={styles.count}>{props.count}</span>
         ) : null}

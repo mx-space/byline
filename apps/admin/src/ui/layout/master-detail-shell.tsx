@@ -17,6 +17,7 @@ import { useNavigate, useOutlet } from 'react-router'
 
 import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import { FocusScope } from '~/ui/focus-scope'
+import { DetailSkeleton } from '~/ui/placeholders'
 import { cn } from '~/utils/cn'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
@@ -80,49 +81,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     min-width: 0px;
     overflow: hidden;
     background-color: ${cssVar.colorBgContainer};
-  `,
-  u7aae7876: css`
-    display: flex;
-    height: 100%;
-    min-height: 0px;
-    flex-direction: column;
-    background-color: ${cssVar.colorBgContainer};
-  `,
-  u6d617320: css`
-    height: 3rem;
-    flex-shrink: 0;
-    border-bottom-width: 1px;
-    border-style: solid;
-    border-color: ${cssVar.colorBorderSecondary};
-    padding-inline: 1rem;
-  `,
-  ueb0b04ac: css`
-    flex: 1 1 0%;
-    & > :not([hidden]) ~ :not([hidden]) {
-      margin-top: 0.75rem;
-    }
-    padding: 1rem;
-  `,
-  u1e49e42b: css`
-    height: 1rem;
-    width: 75%;
-    animation: byline-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    border-radius: 8px;
-    background-color: ${cssVar.colorFillSecondary};
-  `,
-  ucc400fbc: css`
-    height: 1rem;
-    width: 50%;
-    animation: byline-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    border-radius: 8px;
-    background-color: ${cssVar.colorFillSecondary};
-  `,
-  ueee75aa2: css`
-    height: 1rem;
-    width: 66.66666666666666%;
-    animation: byline-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    border-radius: 8px;
-    background-color: ${cssVar.colorFillSecondary};
   `,
 }))
 
@@ -492,26 +450,4 @@ function MobileShell(props: MobileShellProps) {
  */
 export function useMasterDetailContext() {
   return useContext(MasterDetailContext)
-}
-
-/**
- * Detail lazy-load 之 Suspense fallback。形如 detail panel：header 占位 + body
- * pulse lines。受 overlay/aside 之 inset 自然，shell 之 push 动画立起即显此态，
- * detail 模块入屏后 swap。
- *
- * 若 feature 欲自定 fallback，可于其 detail route 内套 inner `<Suspense>`——
- * 此 outer fallback 用于"模块仍在 lazy import"阶段，inner Suspense 处理已 mount
- * 后之 useQuery / async UI。
- */
-function DetailSkeleton() {
-  return (
-    <div className={lobeStyles.u7aae7876}>
-      <div className={lobeStyles.u6d617320} />
-      <div className={lobeStyles.ueb0b04ac}>
-        <div className={lobeStyles.u1e49e42b} />
-        <div className={lobeStyles.ucc400fbc} />
-        <div className={lobeStyles.ueee75aa2} />
-      </div>
-    </div>
-  )
 }

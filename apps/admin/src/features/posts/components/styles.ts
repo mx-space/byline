@@ -1,19 +1,11 @@
 import { createStaticStyles } from '@lobehub/ui'
 
-export const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
+export const styles = createStaticStyles(({ css, cssVar }) => ({
   actions: css`
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 2px;
-
-    opacity: 0;
-
-    transition: opacity 0.12s ease;
-
-    ${responsive.md} {
-      opacity: 1;
-    }
   `,
   alerts: css`
     display: flex;
@@ -48,6 +40,28 @@ export const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
     gap: 8px;
     min-width: 0;
   `,
+  cover: css`
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+
+    width: 64px;
+    height: 40px;
+    border-radius: ${cssVar.borderRadiusXS};
+
+    background: ${cssVar.colorFillTertiary};
+  `,
+  coverIcon: css`
+    color: ${cssVar.colorTextQuaternary};
+  `,
+  coverImage: css`
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  `,
   pin: css`
     flex: none;
     color: ${cssVar.colorWarning};
@@ -59,12 +73,6 @@ export const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
   row: css`
     cursor: pointer;
 
-    &:hover [data-row-actions],
-    &:focus-within [data-row-actions],
-    &[data-cursor] [data-row-actions] {
-      opacity: 1;
-    }
-
     &[data-cursor] > td {
       background: ${cssVar.colorFillTertiary};
     }
@@ -73,12 +81,6 @@ export const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
     flex: 1 1 16rem;
     min-width: 12rem;
     max-width: 24rem;
-  `,
-  selectionBar: css`
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
   `,
   slug: css`
     overflow: hidden;
@@ -102,10 +104,16 @@ export const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
     color: ${cssVar.colorTextSecondary};
     white-space: nowrap;
   `,
-  titleCell: css`
+  titleBody: css`
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
+  `,
+  titleCell: css`
+    display: flex;
+    align-items: center;
+    gap: 12px;
     min-width: 0;
   `,
   titleLine: css`

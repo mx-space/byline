@@ -1,10 +1,11 @@
-import { Block, Button, Flexbox, Text } from '@lobehub/ui'
+import { Block, Flexbox, Text } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
 
 import { getMe } from '~/api/users'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
 import { useSetupCopy } from '../copy'
 import {

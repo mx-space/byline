@@ -1,11 +1,11 @@
 import {
   ActionIcon,
   Alert,
-  Button,
   confirmModal,
   Drawer,
   Empty,
   Flexbox,
+  Highlighter,
   Tag,
   Text,
   toast,
@@ -21,6 +21,14 @@ import type { WebhookEventRecord, WebhookModel } from '~/api/webhooks'
 import { getWebhookDispatches, redispatchWebhook } from '~/api/webhooks'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import {
+  pinEnd,
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
 import { dispatchPageSize } from '../constants'
 import { useWebhookCopy } from '../copy'
@@ -48,6 +56,7 @@ function isInteractiveTarget(target: EventTarget) {
 
 export function WebhookDeliveries(props: { webhook: WebhookModel }) {
   const text = useWebhookCopy()
+  const table = useRecordTable()
   const { format } = useI18n()
   const queryClient = useQueryClient()
   const webhook = props.webhook
@@ -114,6 +123,7 @@ export function WebhookDeliveries(props: { webhook: WebhookModel }) {
         </Flexbox>
       ),
       title: text('columnEvent'),
+      ...pinStart(table.pin),
     },
     {
       dataIndex: 'status',
@@ -134,7 +144,7 @@ export function WebhookDeliveries(props: { webhook: WebhookModel }) {
       },
       responsive: ['md'],
       title: text('columnDuration'),
-      width: 96,
+      width: 112,
     },
     {
       dataIndex: 'timestamp',
@@ -170,7 +180,8 @@ export function WebhookDeliveries(props: { webhook: WebhookModel }) {
         </div>
       ),
       title: '',
-      width: 56,
+      width: 64,
+      ...pinEnd(table.pin),
     },
   ]
 
@@ -192,7 +203,11 @@ export function WebhookDeliveries(props: { webhook: WebhookModel }) {
         />
       ) : null}
       <ProTable<WebhookEventRecord>
+        className={recordTableStyles.root}
+        columnEmptyText="--"
         columns={columns}
+        scroll={recordTableScroll(columns, table)}
+        tableLayout="fixed"
         dataSource={records}
         headerTitle={
           total > 0 ? (
@@ -343,6 +358,12 @@ function DeliveryDrawer(props: {
   )
 }
 
+function codeLanguage(body: string) {
+  const trimmed = body.trim()
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) return 'json'
+  return 'plaintext'
+}
+
 function CodeSection(props: { content: unknown; label: string }) {
   const text = useWebhookCopy()
   const body = formatJson(props.content)
@@ -351,7 +372,18 @@ function CodeSection(props: { content: unknown; label: string }) {
       <Text type="secondary" weight={500}>
         {props.label}
       </Text>
-      <pre className={styles.code}>{body || text('emptyMark')}</pre>
+      {body ? (
+        <Highlighter
+          language={codeLanguage(body)}
+          style={{ maxHeight: 320, overflow: 'auto' }}
+          variant="filled"
+          wrap
+        >
+          {body}
+        </Highlighter>
+      ) : (
+        <Text type="secondary">{text('emptyMark')}</Text>
+      )}
     </section>
   )
 }

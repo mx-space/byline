@@ -1,4 +1,4 @@
-import { Alert, Button, Icon, Input, Text, toast } from '@lobehub/ui'
+import { Alert, Empty, Icon, Input, Text, toast } from '@lobehub/ui'
 import { Form, useForm, useWatch } from '@lobehub/ui/form'
 import { CircleAlert, CircleCheck, X } from 'lucide-react'
 import { useState } from 'react'
@@ -9,6 +9,8 @@ import {
   aiProviderPresets,
   createProviderFromPreset,
 } from '~/features/settings/config/aiProviderPresets'
+import { ListSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { useSetupCopy } from '../copy'
 import {
@@ -166,9 +168,6 @@ export function AiProvidersStep(props: {
         title={copy('providersTitle')}
       >
         <div className={wizardStyles.stack}>
-          {configQuery.isPending ? (
-            <Text type="secondary">{copy('providersLoading')}</Text>
-          ) : null}
           {configQuery.isError ? (
             <Alert showIcon title={copy('providersLoadError')} type="error" />
           ) : null}
@@ -182,8 +181,10 @@ export function AiProvidersStep(props: {
             </Button>
           ) : null}
           <Text>{copy('providersList')}</Text>
-          {providers.length === 0 ? (
-            <Text type="secondary">{copy('providersEmpty')}</Text>
+          {configQuery.isPending ? (
+            <ListSkeleton label={copy('providersLoading')} rows={2} />
+          ) : configQuery.isError ? null : providers.length === 0 ? (
+            <Empty description={copy('providersEmpty')} />
           ) : (
             providers.map((provider) => (
               <div className={wizardStyles.provider} key={provider.id}>

@@ -13,18 +13,16 @@ import type { AgentSessionMeta } from '~/hooks/use-agent-session-manager'
 import { useI18n } from '~/i18n'
 import { confirmDialog } from '~/ui/feedback/confirm'
 import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
+import { Button } from '~/ui/site-button'
 import { cn } from '~/utils/cn'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u355a147c: css`
     display: flex;
-    height: 2.25rem;
+    min-height: 40px;
     flex-shrink: 0;
     align-items: center;
-    border-bottom-width: 1px;
-    border-style: solid;
-    border-color: ${cssVar.colorBorderSecondary};
-    padding-inline: 0.5rem;
+    border-block-end: 1px solid ${cssVar.colorBorderSecondary};
   `,
   uf6d9673f: css`
     display: flex;
@@ -32,8 +30,8 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     align-items: center;
     gap: 0.375rem;
     text-align: left;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     color: ${cssVar.colorError};
   `,
   uef2d6f74: css`
@@ -42,14 +40,11 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u99616931: css`
     display: flex;
-    height: 2.25rem;
     flex-shrink: 0;
     align-items: center;
-    gap: 0.25rem;
-    border-bottom-width: 1px;
-    border-style: solid;
-    border-color: ${cssVar.colorBorderSecondary};
-    padding-inline: 0.5rem;
+    gap: 4px;
+    min-height: 40px;
+    border-block-end: 1px solid ${cssVar.colorBorderSecondary};
   `,
   ud943fc3e: css`
     display: flex;
@@ -61,10 +56,9 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     display: flex;
     min-width: 0px;
     align-items: center;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    line-height: 1.125rem;
-    font-weight: 500;
+    gap: 4px;
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
     color: ${cssVar.colorText};
   `,
   uf283ea9b: css`
@@ -113,8 +107,8 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     font-weight: 500;
     color: ${cssVar.colorText};
   `,
@@ -123,8 +117,8 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     color: ${cssVar.colorTextTertiary};
   `,
   u02034fc7: css`
@@ -337,31 +331,29 @@ export function SessionHeader(props: SessionHeaderProps) {
       </div>
 
       <div className={lobeStyles.u02034fc7}>
-        <button
-          className={lobeStyles.u908a12ba}
+        <Button
+          aria-label={t('write.agent.session.export')}
+          icon={Download}
           onClick={onExport}
           title={t('write.agent.session.export')}
-          type="button"
-        >
-          <Download aria-hidden="true" className={lobeStyles.u783b0d9d} />
-        </button>
-        <button
-          className={lobeStyles.u908a12ba}
+          type="text"
+        />
+        <Button
+          aria-label={t('write.agent.session.newTitle')}
+          icon={Plus}
           onClick={onCreate}
           title={t('write.agent.session.newTitle')}
-          type="button"
-        >
-          <Plus aria-hidden="true" className={lobeStyles.u783b0d9d} />
-        </button>
+          type="text"
+        />
         {activeSessionId ? (
-          <button
-            className={lobeStyles.ub1dd3762}
-            onClick={handleDelete}
+          <Button
+            aria-label={t('write.agent.session.deleteTitle')}
+            danger
+            icon={Trash2}
+            onClick={() => void handleDelete()}
             title={t('write.agent.session.deleteTitle')}
-            type="button"
-          >
-            <Trash2 aria-hidden="true" className={lobeStyles.u783b0d9d} />
-          </button>
+            type="text"
+          />
         ) : null}
       </div>
     </div>

@@ -6,7 +6,7 @@ import { createFeatureCopy } from '~/i18n/feature-copy'
 const catalog = {
   cancel: { 'en-US': 'Cancel', 'zh-CN': '取消' },
   clearSearch: { 'en-US': 'Clear search', 'zh-CN': '清除搜索' },
-  columnCount: { 'en-US': 'Posts', 'zh-CN': '博文数' },
+  columnCount: { 'en-US': 'Posts', 'zh-CN': '文章数' },
   columnCreated: { 'en-US': 'Created', 'zh-CN': '创建' },
   columnName: { 'en-US': 'Name', 'zh-CN': '名称' },
   create: { 'en-US': 'New category', 'zh-CN': '新建分类' },
@@ -14,7 +14,7 @@ const catalog = {
   delete: { 'en-US': 'Delete', 'zh-CN': '删除' },
   deleteBlocked: {
     'en-US': 'Move its {count} posts to another category first.',
-    'zh-CN': '先把这 {count} 篇博文移到其他分类，再删除。',
+    'zh-CN': '先把这 {count} 篇文章移到其他分类，再删除。',
   },
   deleteBody: {
     'en-US': 'This cannot be undone.',
@@ -27,7 +27,7 @@ const catalog = {
   deleteHasPosts: {
     'en-US':
       '"{name}" still has posts. Move them to another category, then delete it.',
-    'zh-CN': '「{name}」下还有博文。把博文移到其他分类后再删除。',
+    'zh-CN': '「{name}」下还有文章。把文章移到其他分类后再删除。',
   },
   deleteLast: {
     'en-US':
@@ -42,7 +42,7 @@ const catalog = {
   },
   description: {
     'en-US': 'Group posts by topic. The slug appears in public URLs.',
-    'zh-CN': '按主题归档博文，slug 会出现在公开 URL 中。',
+    'zh-CN': '按主题归档文章，slug 会出现在公开 URL 中。',
   },
   detailLoadErrorTitle: {
     'en-US': 'This category did not load',
@@ -58,7 +58,7 @@ const catalog = {
   editTitle: { 'en-US': 'Edit category', 'zh-CN': '编辑分类' },
   emptyDescription: {
     'en-US': 'Create a category so posts can be filed under it.',
-    'zh-CN': '新建一个分类，博文就可以归到这里。',
+    'zh-CN': '新建一个分类，文章就可以归到这里。',
   },
   emptyTitle: { 'en-US': 'No categories yet', 'zh-CN': '还没有分类' },
   emptyValue: { 'en-US': '--', 'zh-CN': '--' },
@@ -84,7 +84,7 @@ const catalog = {
   nameRequired: { 'en-US': 'Enter a name', 'zh-CN': '填写名称' },
   noPosts: {
     'en-US': 'No posts in this category yet.',
-    'zh-CN': '这个分类下还没有博文。',
+    'zh-CN': '这个分类下还没有文章。',
   },
   notFoundDescription: {
     'en-US': 'It may have been deleted.',
@@ -118,11 +118,11 @@ const catalog = {
     'zh-CN': '分类没有刷新',
   },
   title: { 'en-US': 'Categories', 'zh-CN': '分类' },
-  viewPosts: { 'en-US': 'View {count} posts', 'zh-CN': '查看 {count} 篇博文' },
-  viewPostsOne: { 'en-US': 'View 1 post', 'zh-CN': '查看 1 篇博文' },
+  viewPosts: { 'en-US': 'View {count} posts', 'zh-CN': '查看 {count} 篇文章' },
+  viewPostsOne: { 'en-US': 'View 1 post', 'zh-CN': '查看 1 篇文章' },
   viewPostsTitle: {
     'en-US': 'Open the posts in this category',
-    'zh-CN': '查看这个分类下的博文',
+    'zh-CN': '查看这个分类下的文章',
   },
 } as const
 

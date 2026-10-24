@@ -1,0 +1,51 @@
+/* Modal and confirm footers render @lobehub/ui Button directly. Match the
+   site button: round, and the outlined default becomes the fill variant. */
+.lobe-button[data-shape='default'] {
+  border-radius: 999px;
+}
+
+.lobe-button[data-type='default']:not([data-ghost]) {
+  border-color: transparent;
+  background-color: var(--lobe-color-fill-tertiary);
+  background-image: none;
+  color: var(--lobe-color-text);
+}
+
+.lobe-button[data-type='default']:not([data-ghost]):hover:not(
+    :disabled,
+    [aria-disabled='true']
+  ) {
+  background-color: var(--lobe-color-fill-secondary);
+  background-image: none;
+}
+
+.lobe-button[data-type='default']:not([data-ghost]):active:not(
+    :disabled,
+    [aria-disabled='true']
+  ) {
+  background-color: var(--lobe-color-fill);
+  background-image: none;
+}
+
+.lobe-button[data-type='default'][data-danger]:not([data-ghost]) {
+  border-color: transparent;
+  background-color: color-mix(in srgb, var(--lobe-color-error) 12%, transparent);
+  background-image: none;
+  color: var(--lobe-color-error);
+}
+
+.lobe-button[data-type='default'][data-danger]:not([data-ghost]):hover:not(
+    :disabled,
+    [aria-disabled='true']
+  ) {
+  background-color: color-mix(in srgb, var(--lobe-color-error) 18%, transparent);
+  background-image: none;
+}
+
+.lobe-button[data-type='default'][data-danger]:not([data-ghost]):active:not(
+    :disabled,
+    [aria-disabled='true']
+  ) {
+  background-color: color-mix(in srgb, var(--lobe-color-error) 22%, transparent);
+  background-image: none;
+}

@@ -27,7 +27,7 @@ const coverageTasksKey = [
  * The overview endpoint pages by post and has no gap filter, so the matrix
  * loads every page and filters on the client.
  */
-async function fetchAllCoverage(): Promise<AiOverviewListRow[]> {
+export async function fetchAllCoverage(): Promise<AiOverviewListRow[]> {
   const rows: AiOverviewListRow[] = []
   for (let page = 1; page <= MAX_PAGES; page++) {
     const response = await getOverviewGrouped({

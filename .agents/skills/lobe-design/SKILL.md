@@ -1,6 +1,6 @@
 ---
 name: lobe-design
-version: 5.7.0
+version: 5.8.0
 description: >
   Single entry for LobeHub UI design work. Routes any instruction — macro ("重做这个后台", "整体打磨一下"),
   medium ("把列表页的交互和空态补齐") or fine ("这个按钮颜色不对", "修 K-07") — into a business-first, layered

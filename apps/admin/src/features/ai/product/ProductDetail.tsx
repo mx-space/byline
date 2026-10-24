@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Alert,
-  Button,
   type ContextMenuItem,
   createStaticStyles,
   DropdownMenu,
@@ -9,7 +8,7 @@ import {
   Flexbox,
   Segmented,
   Select,
-  SkeletonText,
+  Skeleton,
   Tag,
   toast,
 } from '@lobehub/ui'
@@ -24,6 +23,7 @@ import { useDocumentTitle } from '~/hooks/use-document-title'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { DetailPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
 import { useArticleGroupedRouteContext } from '../components/article-grouped/article-grouped-route-context'
 import type { AiProduct } from '../components/article-grouped/types'
@@ -197,9 +197,13 @@ export function ProductDetail() {
     return (
       <DetailDrawer onClose={ctx.onBack} title={copy('loadingPost')}>
         <DetailPane hideHeader>
-          <Flexbox aria-busy gap={24}>
-            <SkeletonText rows={2} />
-            <SkeletonText rows={6} />
+          <Flexbox aria-busy gap={16}>
+            <Skeleton height={20} width="48%" />
+            <Skeleton height={12} width="32%" />
+            <Skeleton.Text
+              rows={6}
+              width={['100%', '96%', '88%', '92%', '70%', '40%']}
+            />
           </Flexbox>
         </DetailPane>
       </DetailDrawer>

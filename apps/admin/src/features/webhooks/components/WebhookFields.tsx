@@ -1,6 +1,5 @@
 import {
   Alert,
-  Button,
   Checkbox,
   CopyButton,
   Input,
@@ -15,6 +14,7 @@ import { z } from 'zod'
 
 import { getWebhookEvents, type WebhookModel } from '~/api/webhooks'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
 import { isWebhookScope, scopeOptions } from '../constants'
 import { useWebhookCopy, type WebhookCopyKey } from '../copy'

@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Alert,
-  Button,
   type ContextMenuItem,
   cx,
   DropdownMenu,
@@ -27,6 +26,16 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import type { ArticleInfo } from '~/api/ai'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { emptyOr } from '~/ui/placeholders'
+import {
+  EXPAND_COLUMN_WIDTH,
+  pinEnd,
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
 import { groupedPageSize } from '../../constants'
 import { useAiCopy } from '../../copy'
@@ -75,6 +84,7 @@ export function ArticleGroupedRouteView<TItem>(props: {
 }) {
   const { config } = props
   const copy = useAiCopy()
+  const table = useRecordTable()
   const { format } = useI18n()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -257,7 +267,7 @@ export function ArticleGroupedRouteView<TItem>(props: {
       key: 'post',
       render: (_dom, row) => {
         const preview = row.item
-          ? config.getPreview(row.item) || copy('emptyValue')
+          ? emptyOr(config.getPreview(row.item))
           : copy(MISSING_LABEL[config.product])
         if (row.nested) {
           return <span className={hubStyles.childPreview}>{preview}</span>
@@ -274,6 +284,7 @@ export function ArticleGroupedRouteView<TItem>(props: {
         )
       },
       title: copy('columnPost'),
+      ...pinStart(table.pin),
     },
     {
       key: 'lang',
@@ -288,9 +299,10 @@ export function ArticleGroupedRouteView<TItem>(props: {
         return row.item ? (
           <Tag>{config.getLang(row.item)}</Tag>
         ) : (
-          copy('emptyValue')
+          <span>{emptyOr(null)}</span>
         )
       },
+      responsive: ['md'],
       title: copy('langLabel'),
       width: 112,
     },
@@ -325,7 +337,7 @@ export function ArticleGroupedRouteView<TItem>(props: {
       },
       responsive: ['md'],
       title: copy('columnStatus'),
-      width: 112,
+      width: 128,
     },
     {
       key: 'updated',
@@ -340,7 +352,7 @@ export function ArticleGroupedRouteView<TItem>(props: {
           : row.item
             ? config.getCreatedAt(row.item)
             : ''
-        if (!value) return copy('emptyValue')
+        if (!value) return emptyOr(null)
         return (
           <Tooltip title={format.dateTime(value)}>
             <span className={hubStyles.time}>{format.relativeTime(value)}</span>
@@ -349,7 +361,7 @@ export function ArticleGroupedRouteView<TItem>(props: {
       },
       responsive: ['md'],
       title: copy('columnUpdated'),
-      width: 120,
+      width: 128,
     },
     {
       align: 'right',
@@ -401,7 +413,8 @@ export function ArticleGroupedRouteView<TItem>(props: {
         )
       },
       title: '',
-      width: 112,
+      width: 128,
+      ...pinEnd(table.pin),
     },
   ]
 
@@ -488,8 +501,11 @@ export function ArticleGroupedRouteView<TItem>(props: {
           />
         ) : null}
         <ProTable<ArtefactRow<TItem>>
+          className={recordTableStyles.root}
           columnEmptyText={copy('emptyValue')}
           columns={columns}
+          scroll={recordTableScroll(columns, table, EXPAND_COLUMN_WIDTH)}
+          tableLayout="fixed"
           dataSource={rows}
           loading={listQuery.isFetching && listQuery.isPlaceholderData}
           locale={{ emptyText: emptyNode }}
@@ -516,7 +532,11 @@ export function ArticleGroupedRouteView<TItem>(props: {
             setting: false,
           }}
           pagination={false}
-          expandable={{ expandRowByClick: false, indentSize: 0 }}
+          expandable={{
+            columnWidth: EXPAND_COLUMN_WIDTH,
+            expandRowByClick: false,
+            indentSize: 0,
+          }}
           rowClassName={(row) =>
             cx(hubStyles.row, row.nested && hubStyles.childRow)
           }

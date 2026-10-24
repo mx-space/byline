@@ -1,12 +1,10 @@
 import {
   Alert,
-  Button,
   Center,
   confirmModal,
   Empty,
   Input,
   Modal,
-  Skeleton,
   Text,
   toast,
   Tooltip,
@@ -19,6 +17,8 @@ import { useNavigate } from 'react-router'
 
 import type { CategoryEntity } from '~/data/resources/category'
 import { saveCategory } from '~/data/resources/category.mutations'
+import { FormSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { useCategoryCopy } from '../copy'
 import {
@@ -294,8 +294,7 @@ export function CategoryModalState(props: {
     >
       {props.loading ? (
         <div className={categoryStyles.modalBody}>
-          <Skeleton height={32} width="100%" />
-          <Skeleton height={32} width="100%" />
+          <FormSkeleton rows={4} />
         </div>
       ) : (
         <Center paddingBlock={16}>

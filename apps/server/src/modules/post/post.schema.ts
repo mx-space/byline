@@ -79,6 +79,14 @@ export const PostPagerSchema = createPagerSchema([
 
 export type PostPagerDto = z.infer<typeof PostPagerSchema>
 
+export const PostSearchSchema = z.object({
+  keyword: z.string().trim().min(1).max(200),
+  page: zCoerceInt.min(1).optional(),
+  size: zCoerceInt.min(1).max(50).optional(),
+})
+
+export type PostSearchDto = z.infer<typeof PostSearchSchema>
+
 export const SetPostPublishStatusSchema = z.object({
   isPublished: z.boolean(),
 })

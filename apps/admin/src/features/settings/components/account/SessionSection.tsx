@@ -1,11 +1,9 @@
 import {
-  Button,
   confirmModal,
   createStaticStyles,
+  Empty,
   Flexbox,
-  SkeletonText,
   Tag,
-  Text,
   toast,
 } from '@lobehub/ui'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -14,6 +12,8 @@ import { useState } from 'react'
 import { resetAllCollections } from '~/data/resource/collection'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { ListSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 import { authClient, clearAuthBearerToken } from '~/utils/authjs/auth'
 
 import { settingsAccountCopy } from '../../copy'
@@ -24,13 +24,39 @@ import { SettingRow, SettingsGroup } from '../SettingsPrimitives'
 
 const VISIBLE_SESSIONS = 5
 
-const styles = createStaticStyles(({ css }) => ({
+const styles = createStaticStyles(({ css, cssVar }) => ({
   agent: css`
     overflow: hidden;
-    display: block;
-    max-width: 100%;
+    flex: 1;
+    min-width: 0;
+
     text-overflow: ellipsis;
     white-space: nowrap;
+  `,
+  agentLine: css`
+    min-width: 0;
+    max-width: 100%;
+  `,
+  row: css`
+    min-width: 0;
+
+    > label {
+      overflow: hidden;
+      flex: 1;
+      min-width: 0;
+    }
+
+    > div {
+      flex: none;
+    }
+
+    label .lobe-flex {
+      min-width: 0;
+      max-width: 100%;
+    }
+  `,
+  time: css`
+    color: ${cssVar.colorTextTertiary};
   `,
 }))
 
@@ -135,29 +161,40 @@ export function SessionSection() {
       title={t('settings.session.title')}
     >
       {sessionsQuery.isLoading ? (
-        <SkeletonText rows={3} />
+        <ListSkeleton label={t('settings.common.loading')} rows={3} />
       ) : sessions.length === 0 ? (
-        <Text type="secondary">{t('settings.session.empty')}</Text>
+        <Empty title={t('settings.session.empty')} />
       ) : (
         <>
           {visible.map((session, index) => (
             <SettingRow
-              desc={[
-                session.ip,
-                session.current
-                  ? t('settings.session.activeAt', {
-                      time: formatDateTime(session.lastActiveAt),
-                    })
-                  : t('settings.session.loginAt', {
-                      time: formatDateTime(session.lastActiveAt),
-                    }),
-              ]
-                .filter(Boolean)
-                .join(' · ')}
+              className={styles.row}
+              desc={
+                <span className={styles.time}>
+                  {[
+                    session.ip,
+                    session.current
+                      ? t('settings.session.activeAt', {
+                          time: formatDateTime(session.lastActiveAt),
+                        })
+                      : t('settings.session.loginAt', {
+                          time: formatDateTime(session.lastActiveAt),
+                        }),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              }
               divider={index > 0}
               key={session.token}
               label={
-                <Flexbox align="center" as="span" gap={8} horizontal>
+                <Flexbox
+                  align="center"
+                  allowShrink
+                  className={styles.agentLine}
+                  gap={8}
+                  horizontal
+                >
                   <span className={styles.agent} title={session.ua}>
                     {session.ua || copy('unknownDevice')}
                   </span>

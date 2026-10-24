@@ -6,7 +6,7 @@ export const metadata = defineMetadata({
   titleKey: 'routes.drafts.title',
   descriptionKey: 'routes.drafts.description',
   icon: FileClock,
-  order: 3,
+  order: 1,
 })
 
 export { DraftsRouteView as default } from '~/features/drafts/routes/DraftsRouteView'

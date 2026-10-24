@@ -2,7 +2,11 @@ import { Files, FileText, Gauge, Settings, Sparkles } from 'lucide-react'
 import type { SidebarNode, SidebarSection } from 'virtual:admin-routes'
 import { describe, expect, it } from 'vitest'
 
-import { toBreadcrumbItems, toConsoleNavigation } from './console-nav'
+import {
+  toBreadcrumbItems,
+  toConsoleNavigation,
+  withParentCrumb,
+} from './console-nav'
 
 const t = (key: string) => key
 
@@ -148,5 +152,33 @@ describe('toBreadcrumbItems', () => {
       { label: 'shell.nav.content', optional: true },
       { label: 'routes.categories.title' },
     ])
+  })
+})
+
+describe('withParentCrumb', () => {
+  it('puts a link to the list before the current page', () => {
+    expect(
+      withParentCrumb(
+        [
+          { label: 'shell.nav.content', optional: true },
+          { label: 'routes.writePost.title' },
+        ],
+        { href: '/posts', label: 'routes.posts.title' },
+      ),
+    ).toEqual([
+      { label: 'shell.nav.content', optional: true },
+      { href: '/posts', label: 'routes.posts.title' },
+      { label: 'routes.writePost.title' },
+    ])
+  })
+
+  it('leaves a trail that already links to the parent', () => {
+    const items = [
+      { href: '/posts', label: 'routes.posts.title' },
+      { label: 'routes.writePost.title' },
+    ]
+    expect(withParentCrumb(items, { href: '/posts', label: '文章' })).toBe(
+      items,
+    )
   })
 })

@@ -5,27 +5,25 @@ import { WEB_URL } from '~/constants/env'
 import { useI18n } from '~/i18n'
 import type { DraftShare } from '~/models/draft'
 import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
-import { Button } from '~/ui/primitives/button'
+import { Button } from '~/ui/site-button'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   ud7a8c834: css`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    border-bottom-width: 1px;
-    border-style: solid;
-    border-color: ${cssVar.colorBorderSecondary};
-    padding-inline: 0.75rem;
-    padding-block: 0.5rem;
+    gap: 8px;
+    padding-block: 12px;
+    padding-inline: 0;
+    border-block-end: 1px solid ${cssVar.colorBorderSecondary};
   `,
   u65056704: css`
-    min-width: 0px;
-    flex: 1 1 0%;
+    min-width: 0;
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     color: ${cssVar.colorTextSecondary};
   `,
   u6ecb3128: css`
@@ -57,8 +55,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     border-style: solid;
     border-color: ${cssVar.colorBorderSecondary};
     background-color: ${cssVar.colorPrimaryBg};
-    padding-inline: 0.75rem;
-    padding-block: 0.5rem;
+    padding-block: 12px;
   `,
   u6cfc7e6a: css`
     display: flex;
@@ -184,17 +181,11 @@ export function ShareBar(props: {
           {t('write.share.description')}
         </span>
         <Button
-          className={lobeStyles.u6ecb3128}
           disabled={props.pending}
+          icon={Link2}
           onClick={props.onCreate}
-          type="button"
-          variant="ghost"
+          type="text"
         >
-          {props.pending ? (
-            <Loader2 aria-hidden="true" className={lobeStyles.uf9dfa057} />
-          ) : (
-            <Link2 aria-hidden="true" className={lobeStyles.u783b0d9d} />
-          )}
           {t('write.share.create')}
         </Button>
       </div>
@@ -211,16 +202,15 @@ export function ShareBar(props: {
         <span className={lobeStyles.u799b9084}>{url}</span>
         <Button
           aria-label={t('write.share.copy')}
-          className={lobeStyles.u33d2fb84}
+          icon={Copy}
           onClick={() => {
             void navigator.clipboard.writeText(url)
             toast.success(t('write.share.copied'))
           }}
-          type="button"
-          variant="ghost"
-        >
-          <Copy aria-hidden="true" className={lobeStyles.u783b0d9d} />
-        </Button>
+          size="small"
+          title={t('write.share.copy')}
+          type="text"
+        />
         <DropdownMenu>
           <DropdownMenu.Trigger
             aria-label={t('write.share.moreActions')}

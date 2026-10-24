@@ -2,6 +2,19 @@
 
 版本规则见 learnings/README.md §6（patch 修误报 / minor 加规则或 WARN→FAIL / major 改 stage 与路由）。
 
+## 5.8.0 — 2026-10-24
+
+内容后台整体重做的回流（minor：新增两条 WARN lint 规则、一项结构检查，扩写已有 reference 编号；不删编号，不改 stage 与路由）。
+
+- **新增 `LOBE-HANDROLLED-TABLE`**（WARN，C-08，30-structure）：手拼表头 `role="columnheader"` / `"rowheader"`；记录列表用 `ProTable`。只认表头：主从页列表栏里可键盘导航的 `role="grid"` / `"row"` 不报。fixtures：`bad.tsx` 两行，`good.tsx` 的 grid 列表防误报。
+- **新增 `LOBE-REFETCH-OVERLAY`**（WARN，K-05，70-detail）：非按钮组件上的 `loading={isFetching && !…}` 且没有 `isPlaceholderData`，后台刷新会让表格周期性变暗。`Button` / `ActionIcon` 自己的 loading 不报（宿主实测 2 处刷新按钮）。
+- **结构检查 `review-coverage`**：80-review 输出模板新增「截图覆盖：<路由 → 截图 | 证据缺失>」，委托 / 并行产出的页面同样要亲自打开；检查清单第 8 条、evaluator「证据要求」加「覆盖」一行。
+- **P-02** 新增「工具栏 / 单元格 / 分组」三行与常见错法（集合超过 3 项写成计数或进度、同一对象多行收成父行、工具栏一行内分配宽度、列多时固定表格布局）；**P-03** 新增「主从两栏」（零记录时整页 `Empty`）；**P-05** 新增「功能开关 / 字段」（开关在分组标题行、开启后才出现配置，恢复默认是控件旁的图标）。
+- **K-05** 新增「后台刷新不盖遮罩」；**K-10** 新增「页面留白只由一层负责」（内边距写在滚动容器内部）；**T-31** 新增「状态词说真话」（未配置 ≠ 已齐 ≠ 未生成）与「指标和计数带对象」。
+- 30-structure / 40-flow / 70-detail / 75-copy 的「症状 → 规则」表登记对应症状。
+- **误报**：项目层适用性解析把业务描述里的「停用」「关闭」当成不适用标记（`| 系统 | 用户 | P-02 / P-05 | 邀请或停用账号 |` 会静默关掉 P-02、P-05）。表格行改为必须有一格整格是标记；散文行只认「不适用 / N/A / not applicable」。
+- learnings：LRN-20261024-01 … LRN-20261024-08。
+
 ## 5.7.0 — 2026-10-22
 
 按环境绑定的凭证先按环境分组（minor：新增 reference 编号 C-18；不删编号，不改 stage 与路由）。

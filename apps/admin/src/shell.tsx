@@ -1,39 +1,39 @@
-import {
-  Button,
-  createStaticStyles,
-  css,
-  cssVar,
-  cx,
-  Flexbox,
-  Hotkey,
-} from '@lobehub/ui'
+import { createStaticStyles, css, cssVar, cx, Flexbox } from '@lobehub/ui'
 import {
   Breadcrumb,
   ConsoleBrand,
   ConsoleNav,
   ConsoleShell,
-  PageLoading,
   SurfaceLinkProvider,
   type SurfaceRenderLink,
 } from '@lobehub/ui/dashboard'
 import { useQuery } from '@tanstack/react-query'
-import { Plus, Search } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { PropsWithChildren, ReactNode } from 'react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import type { SidebarNode, SidebarSection } from 'virtual:admin-routes'
 import { sidebarTree } from 'virtual:admin-routes'
 
 import { getAppInfo } from '~/api/system'
 import { failedTasksQuery } from '~/features/dashboard/queries'
-import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import { useI18n } from '~/i18n'
-import { useCommandPalette } from '~/ui/command-palette'
+import { GlobalSearch } from '~/ui/global-search'
 import { filterSidebarNode } from '~/ui/layout/filter-sidebar-node'
+import { PageLoadingFrame } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
 import faviconUrl from '../favicon.png'
 import { ConsoleFooter } from './layouts/console-footer'
-import { toBreadcrumbItems, toConsoleNavigation } from './layouts/console-nav'
+import {
+  toBreadcrumbItems,
+  toConsoleNavigation,
+  withParentCrumb,
+} from './layouts/console-nav'
+import {
+  type WriteTopbarSlots,
+  WriteTopbarSlotsContext,
+} from './layouts/write-topbar-slots'
 
 const styles = createStaticStyles(({ css }) => ({
   content: css`
@@ -63,11 +63,6 @@ const styles = createStaticStyles(({ css }) => ({
 
     min-block-size: 0;
   `,
-  search: css`
-    min-inline-size: 200px;
-    justify-content: space-between;
-    color: ${cssVar.colorTextTertiary};
-  `,
   shell: css`
     width: 100%;
     height: 100%;
@@ -78,60 +73,73 @@ const styles = createStaticStyles(({ css }) => ({
       padding: 0;
     }
   `,
+  shellWriting: css`
+    .lobe-dashboard-console-shell__topbar-main {
+      min-width: 0;
+    }
+  `,
+  writeIdentity: css`
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+  `,
+  writeTrail: css`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    min-width: 0;
+    max-width: 100%;
+
+    > nav {
+      flex: 0 1 auto;
+      width: auto;
+      min-width: 0;
+    }
+
+    > nav > span:last-child {
+      min-width: 0;
+    }
+
+    > nav [aria-current='page'] {
+      overflow: hidden;
+      display: block;
+
+      max-width: 240px;
+      min-width: 0;
+
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  `,
 }))
 
 const WRITE_PATH = '/posts/edit'
 
-function ShellTools() {
+const WRITE_BUTTON_PATHS = new Set(['/dashboard', '/posts'])
+
+function ShellTools(props: {
+  pathname: string
+  sections: readonly SidebarSection[]
+}) {
   const { t } = useI18n()
   const navigate = useNavigate()
-  const location = useLocation()
-  const palette = useCommandPalette()
-  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
-  const writing = location.pathname === WRITE_PATH
+  const showWrite = WRITE_BUTTON_PATHS.has(props.pathname)
 
   return (
     <Flexbox align="center" gap={8} horizontal>
-      {palette ? (
-        isDesktop ? (
-          <Button
-            className={styles.search}
-            icon={Search}
-            onClick={palette.open}
-            size="small"
-            type="default"
-          >
-            <Flexbox
-              align="center"
-              flex={1}
-              gap={8}
-              horizontal
-              justify="space-between"
-            >
-              <span>{t('common.search')}</span>
-              <Hotkey keys="mod+k" />
-            </Flexbox>
-          </Button>
-        ) : (
-          <Button
-            aria-label={t('common.search')}
-            icon={Search}
-            onClick={palette.open}
-            size="small"
-            type="default"
-          />
-        )
-      ) : null}
-      {writing ? null : (
+      <GlobalSearch sections={props.sections} />
+      {showWrite ? (
         <Button
           icon={Plus}
           onClick={() => navigate(WRITE_PATH)}
-          size="small"
+          shape="round"
           type="primary"
         >
           {t('routes.writePost.title')}
         </Button>
-      )}
+      ) : null}
     </Flexbox>
   )
 }
@@ -177,7 +185,7 @@ export function LayoutLoading(props: { label: string }) {
       storageKey={SHELL_STORAGE_KEY}
       loadingContent={
         <div className={styles.content}>
-          <PageLoading label={props.label} />
+          <PageLoadingFrame label={props.label} />
         </div>
       }
     />
@@ -228,6 +236,18 @@ function visibleSections(
 export function AdminShell(props: PropsWithChildren) {
   const location = useLocation()
   const { t } = useI18n()
+  const writing = location.pathname === WRITE_PATH
+  const [identitySlot, setIdentitySlot] = useState<HTMLDivElement | null>(null)
+  const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null)
+  const [pageTitle, setPageTitle] = useState<string | null>(null)
+  const topbarSlots = useMemo<WriteTopbarSlots>(
+    () => ({
+      actions: actionsSlot,
+      identity: identitySlot,
+      setPageTitle,
+    }),
+    [actionsSlot, identitySlot],
+  )
   const appInfoQuery = useQuery({
     queryFn: getAppInfo,
     queryKey: ['shell', 'app-info'],
@@ -250,10 +270,18 @@ export function AdminShell(props: PropsWithChildren) {
       ),
     [failedCount, sections, t],
   )
-  const breadcrumbItems = useMemo(
-    () => toBreadcrumbItems(sections, location.pathname, t),
-    [location.pathname, sections, t],
-  )
+  const breadcrumbItems = useMemo(() => {
+    const items = toBreadcrumbItems(sections, location.pathname, t)
+    if (location.pathname !== WRITE_PATH) return items
+    const trail = withParentCrumb(items, {
+      href: '/posts',
+      label: t('routes.posts.title'),
+    })
+    if (!pageTitle) return trail
+    return trail.map((item, index) =>
+      index === trail.length - 1 ? { ...item, label: pageTitle } : item,
+    )
+  }, [location.pathname, pageTitle, sections, t])
   const sectionDividerClass = navSectionDividerClass(
     navigation.dividerBefore.flatMap((key) => {
       const index = navigation.groups.findIndex((group) => group.key === key)
@@ -264,7 +292,7 @@ export function AdminShell(props: PropsWithChildren) {
 
   return (
     <ConsoleShell
-      className={styles.shell}
+      className={cx(styles.shell, writing && styles.shellWriting)}
       closeNavigationLabel={t('common.closeNavigation')}
       collapseLabel={t('ui.layout.collapseSidebar')}
       expandLabel={t('ui.layout.expandSidebar')}
@@ -272,10 +300,23 @@ export function AdminShell(props: PropsWithChildren) {
       openNavigationLabel={t('common.openNavigation')}
       skipToContentLabel={t('common.skipToContent')}
       storageKey={SHELL_STORAGE_KEY}
-      tools={<ShellTools />}
+      tools={
+        writing ? (
+          <div ref={setActionsSlot} />
+        ) : (
+          <ShellTools pathname={location.pathname} sections={sections} />
+        )
+      }
       brand={<ShellBrand />}
       breadcrumb={
-        <Breadcrumb items={breadcrumbItems} renderLink={renderRouterLink} />
+        writing ? (
+          <div className={styles.writeTrail}>
+            <Breadcrumb items={breadcrumbItems} renderLink={renderRouterLink} />
+            <div className={styles.writeIdentity} ref={setIdentitySlot} />
+          </div>
+        ) : (
+          <Breadcrumb items={breadcrumbItems} renderLink={renderRouterLink} />
+        )
       }
       navigation={
         <div className={cx(styles.navigation, sectionDividerClass)}>
@@ -291,9 +332,11 @@ export function AdminShell(props: PropsWithChildren) {
         </div>
       }
     >
-      <SurfaceLinkProvider renderLink={renderSurfaceLink}>
-        <div className={styles.content}>{props.children}</div>
-      </SurfaceLinkProvider>
+      <WriteTopbarSlotsContext.Provider value={topbarSlots}>
+        <SurfaceLinkProvider renderLink={renderSurfaceLink}>
+          <div className={styles.content}>{props.children}</div>
+        </SurfaceLinkProvider>
+      </WriteTopbarSlotsContext.Provider>
     </ConsoleShell>
   )
 }

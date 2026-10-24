@@ -1,10 +1,12 @@
-import { Alert, Button, Flexbox, SkeletonText, Text, toast } from '@lobehub/ui'
+import { Alert, Flexbox, Text, toast } from '@lobehub/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getOption, patchOption } from '~/api/options'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { FormSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { accountQueryKey, oauthProviders } from '../../constants'
 import { settingsAccountCopy, settingsCopy } from '../../copy'
@@ -228,7 +230,7 @@ export function OauthSection() {
         <Text type="secondary">{settingsAccountCopy(locale, 'oauthDesc')}</Text>
       </Flexbox>
       {oauthQuery.isLoading || (oauthQuery.data && !drafts) ? (
-        <SkeletonText rows={4} />
+        <FormSkeleton label={t('settings.common.loading')} rows={3} />
       ) : oauthQuery.isError || !drafts ? (
         <Alert
           action={

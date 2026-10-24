@@ -34,7 +34,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u6db1278a: css`
     display: grid;
     flex-shrink: 0;
-    grid-template-columns: minmax(0, 1fr) _auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     column-gap: 0.75rem;
     border-bottom-width: 1px;
     border-style: solid;

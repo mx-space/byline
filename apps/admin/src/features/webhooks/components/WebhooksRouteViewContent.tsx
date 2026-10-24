@@ -1,4 +1,4 @@
-import { Button, Empty } from '@lobehub/ui'
+import { Empty } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Webhook } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -10,6 +10,7 @@ import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { MasterDetailShell } from '~/ui/layout/master-detail-shell'
 import { DetailPlaceholder, Page } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
 import { useWebhookCopy } from '../copy'
 import { WebhookCreateModal } from './WebhookCreateModal'
@@ -68,6 +69,7 @@ export function WebhooksRouteViewContent() {
         <Page
           description={t('routes.webhooks.description')}
           title={t('routes.webhooks.title')}
+          width="wide"
         >
           <Empty
             action={

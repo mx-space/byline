@@ -8,7 +8,14 @@ import {
   Text,
   Tooltip,
 } from '@lobehub/ui'
-import { Ellipsis, ExternalLink, Pencil, Pin } from 'lucide-react'
+import {
+  Ellipsis,
+  ExternalLink,
+  Image as ImageIcon,
+  Pencil,
+  Pin,
+} from 'lucide-react'
+import { useState } from 'react'
 
 import { usePostScheduled } from '~/hooks/use-post-scheduled'
 import { useI18n } from '~/i18n'
@@ -35,29 +42,54 @@ export function PostStatusCell({ post }: { post: PostModel }) {
   )
 }
 
+function PostCover(props: { src?: string | null }) {
+  const src = props.src?.trim() ?? ''
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const show = src.length > 0 && failedSrc !== src
+  return (
+    <span aria-hidden className={styles.cover}>
+      {show ? (
+        <img
+          alt=""
+          className={styles.coverImage}
+          decoding="async"
+          loading="lazy"
+          onError={() => setFailedSrc(src)}
+          src={src}
+        />
+      ) : (
+        <Icon className={styles.coverIcon} icon={ImageIcon} size="small" />
+      )}
+    </span>
+  )
+}
+
 export function PostTitleCell(props: { post: PostModel }) {
   const copy = usePostCopy()
   const { post } = props
   const title = postTitle(post, copy('untitled'))
   return (
     <div className={styles.titleCell}>
-      <div className={styles.titleLine}>
-        {post.pinAt ? (
-          <Icon
-            aria-label={copy('pinned')}
-            className={styles.pin}
-            icon={Pin}
-            role="img"
-            size="small"
-          />
-        ) : null}
-        <span className={styles.titleText} title={title}>
-          {title}
+      <PostCover src={post.image} />
+      <div className={styles.titleBody}>
+        <div className={styles.titleLine}>
+          {post.pinAt ? (
+            <Icon
+              aria-label={copy('pinned')}
+              className={styles.pin}
+              icon={Pin}
+              role="img"
+              size="small"
+            />
+          ) : null}
+          <span className={styles.titleText} title={title}>
+            {title}
+          </span>
+        </div>
+        <span className={styles.slug}>
+          /{post.category?.slug ?? post.categoryId}/{post.slug}
         </span>
       </div>
-      <span className={styles.slug}>
-        /{post.category?.slug ?? post.categoryId}/{post.slug}
-      </span>
     </div>
   )
 }

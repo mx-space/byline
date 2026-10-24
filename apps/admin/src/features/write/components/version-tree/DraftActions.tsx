@@ -17,10 +17,10 @@ import { Button } from '~/ui/primitives/button'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   uee129b1d: css`
-    height: 1.75rem;
-    padding-inline: 0.5rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    height: 28px;
+    padding-inline: 8px;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
   `,
   u783b0d9d: css`
     width: 0.875rem;

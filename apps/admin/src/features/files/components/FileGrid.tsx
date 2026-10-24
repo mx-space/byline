@@ -10,6 +10,7 @@ import { Copy } from 'lucide-react'
 
 import type { FileItem } from '~/api/files'
 import { useI18n } from '~/i18n'
+import { EmptyValue } from '~/ui/placeholders'
 
 import { useFileCopy } from '../copy'
 import { formatUploadedAt } from '../utils/format'
@@ -159,7 +160,11 @@ export function FileGrid(props: {
           </Text>
           <Tooltip title={formatUploadedAt(item.created)}>
             <span className={styles.meta}>
-              {item.created ? format.relativeTime(item.created) : '--'}
+              {item.created ? (
+                format.relativeTime(item.created)
+              ) : (
+                <EmptyValue />
+              )}
             </span>
           </Tooltip>
         </div>

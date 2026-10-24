@@ -19,7 +19,7 @@ export const writeCopy = createFeatureCopy({
   },
   back: {
     'en-US': 'Back to posts',
-    'zh-CN': '返回博文',
+    'zh-CN': '返回文章',
   },
   byline: {
     'en-US': 'Byline',
@@ -53,6 +53,10 @@ export const writeCopy = createFeatureCopy({
     'en-US': 'Cover',
     'zh-CN': '封面',
   },
+  coverUnset: {
+    'en-US': 'Not set',
+    'zh-CN': '未配置',
+  },
   createCategory: {
     'en-US': 'Create category',
     'zh-CN': '创建分类',
@@ -79,7 +83,7 @@ export const writeCopy = createFeatureCopy({
   },
   loadFailed: {
     'en-US': 'This post did not load. Refresh and try again.',
-    'zh-CN': '博文没有载入。刷新后重试。',
+    'zh-CN': '文章没有载入。刷新后重试。',
   },
   matchesLive: {
     'en-US': 'Matches the live post. Nothing new to publish.',
@@ -113,13 +117,17 @@ export const writeCopy = createFeatureCopy({
     'en-US': 'Pin',
     'zh-CN': '置顶',
   },
+  publishDate: {
+    'en-US': 'Publish date',
+    'zh-CN': '发布日期',
+  },
   pinOrder: {
     'en-US': 'Pin order',
     'zh-CN': '置顶顺序',
   },
   post: {
     'en-US': 'Post',
-    'zh-CN': '博文',
+    'zh-CN': '文章',
   },
   publicPath: {
     'en-US': 'Public path',
@@ -162,8 +170,44 @@ export const writeCopy = createFeatureCopy({
     'zh-CN': '保存中',
   },
   slug: {
-    'en-US': 'Slug',
-    'zh-CN': 'Slug',
+    'en-US': 'URL',
+    'zh-CN': '路径',
+  },
+  copyPath: {
+    'en-US': 'Copy path',
+    'zh-CN': '复制路径',
+  },
+  copied: {
+    'en-US': 'Copied',
+    'zh-CN': '已复制',
+  },
+  coverEmpty: {
+    'en-US': 'None',
+    'zh-CN': '未设置',
+  },
+  coverSet: {
+    'en-US': 'Set',
+    'zh-CN': '已设置',
+  },
+  notConfigured: {
+    'en-US': 'Not configured',
+    'zh-CN': '未配置',
+  },
+  configured: {
+    'en-US': 'Configured',
+    'zh-CN': '已配置',
+  },
+  itemCountOne: {
+    'en-US': '1 item',
+    'zh-CN': '1 条',
+  },
+  itemCount: {
+    'en-US': '{count} items',
+    'zh-CN': '{count} 条',
+  },
+  backToSettings: {
+    'en-US': 'Back',
+    'zh-CN': '返回',
   },
   slugPlaceholder: {
     'en-US': 'post-title',
@@ -191,11 +235,15 @@ export const writeCopy = createFeatureCopy({
   },
   titlePlaceholder: {
     'en-US': 'Post title',
-    'zh-CN': '博文标题',
+    'zh-CN': '文章标题',
   },
   unpublish: {
     'en-US': 'Unpublish',
     'zh-CN': '撤回发布',
+  },
+  deletePost: {
+    'en-US': 'Delete post',
+    'zh-CN': '删除文章',
   },
   unsaved: {
     'en-US': 'Unsaved',
@@ -262,8 +310,8 @@ export const writeCopy = createFeatureCopy({
     'zh-CN': '发布',
   },
   sectionSeo: {
-    'en-US': 'Search engines',
-    'zh-CN': '搜索引擎',
+    'en-US': 'SEO',
+    'zh-CN': 'SEO',
   },
   sectionSummary: {
     'en-US': 'Summary and tags',

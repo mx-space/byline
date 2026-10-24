@@ -79,7 +79,7 @@ describe('PublishProcessDock', () => {
     await act(async () => {
       await vi.waitFor(() => {
         expect(getTasks).toHaveBeenCalledOnce()
-        expect(container.textContent).toContain('正在准备 AI 资源')
+        expect(container.textContent).toContain('正在准备产物')
         expect(container.textContent).toContain('42%')
       })
     })

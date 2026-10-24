@@ -242,6 +242,10 @@ export const usersCopy = createFeatureCopy({
     'en-US': '{count} more',
     'zh-CN': '还有 {count} 篇',
   },
+  postsEmptyTitle: {
+    'en-US': 'No posts under this byline',
+    'zh-CN': '还没有署名文章',
+  },
   postsTitle: {
     'en-US': 'Byline posts',
     'zh-CN': '署名文章',

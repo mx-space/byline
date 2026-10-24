@@ -45,6 +45,8 @@ dist
 dev/
 
 .eslintcache
+*.tsbuildinfo
+.vitest
 .superpowers/
 .worktrees/
 .claude/scheduled_tasks.lock

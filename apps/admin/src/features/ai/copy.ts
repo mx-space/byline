@@ -2,20 +2,20 @@ import { useI18n } from '~/i18n'
 import { createFeatureCopy } from '~/i18n/feature-copy'
 
 const catalog = {
-  hubTitle: { 'zh-CN': 'AI 内容', 'en-US': 'AI content' },
+  hubTitle: { 'zh-CN': '产物', 'en-US': 'Outputs' },
   hubDescription: {
-    'zh-CN': '查看每篇博文的译文、摘要、精读和朗读是否齐全，并补齐缺口。',
+    'zh-CN': '查看每篇文章的译文、摘要、精读和朗读是否齐全，并补齐缺口。',
     'en-US':
       'See which posts lack translations, summaries, close readings, or narration, and fill the gaps.',
   },
-  hubTabs: { 'zh-CN': 'AI 内容分区', 'en-US': 'AI content sections' },
+  hubTabs: { 'zh-CN': '产物', 'en-US': 'Outputs' },
   tabOverview: { 'zh-CN': '概览', 'en-US': 'Overview' },
   tabTranslation: { 'zh-CN': '翻译', 'en-US': 'Translation' },
   tabSummary: { 'zh-CN': '摘要', 'en-US': 'Summary' },
   tabInsights: { 'zh-CN': '精读', 'en-US': 'Close reading' },
   tabTts: { 'zh-CN': '朗读', 'en-US': 'Narration' },
   untitled: { 'zh-CN': '无标题', 'en-US': 'Untitled' },
-  columnPost: { 'zh-CN': '博文', 'en-US': 'Post' },
+  columnPost: { 'zh-CN': '文章', 'en-US': 'Post' },
   columnStatus: { 'zh-CN': '状态', 'en-US': 'Status' },
   columnUpdated: { 'zh-CN': '更新', 'en-US': 'Updated' },
   sourceUnknown: {
@@ -42,17 +42,15 @@ const catalog = {
   filterGapsLabel: { 'zh-CN': '缺口筛选', 'en-US': 'Gap filter' },
   filterCapabilityLabel: { 'zh-CN': '内容类型', 'en-US': 'Content type' },
   capabilityAll: { 'zh-CN': '全部类型', 'en-US': 'All types' },
-  metricGapPosts: { 'zh-CN': '有缺口的博文', 'en-US': 'Posts with gaps' },
   metricCapabilityGaps: {
     'zh-CN': '{capability}缺口',
     'en-US': '{capability} gaps',
   },
-  metricOfTotal: { 'zh-CN': '共 {total} 篇', 'en-US': 'of {total}' },
   metricItems: { 'zh-CN': '缺 {count} 项', 'en-US': '{count} missing' },
   fillGaps: { 'zh-CN': '补齐缺失', 'en-US': 'Fill gaps' },
   fillAll: { 'zh-CN': '补齐全部缺口', 'en-US': 'Fill all gaps' },
   fillTitle: {
-    'zh-CN': '补齐 {count} 篇博文的缺口',
+    'zh-CN': '补齐 {count} 篇文章的缺口',
     'en-US': 'Fill gaps in {count} posts',
   },
   fillLine: {
@@ -65,7 +63,7 @@ const catalog = {
       'Only missing languages are generated; existing output is kept. Target languages come from AI settings.',
   },
   fillNothing: {
-    'zh-CN': '选中的博文没有可补的缺口。',
+    'zh-CN': '选中的文章没有可补的缺口。',
     'en-US': 'The selected posts have no gaps to fill.',
   },
   fillConfirm: { 'zh-CN': '开始补齐', 'en-US': 'Start' },
@@ -83,12 +81,12 @@ const catalog = {
   },
   selectedPosts: { 'zh-CN': '已选 {count} 篇', 'en-US': '{count} selected' },
   clearSelection: { 'zh-CN': '取消选择', 'en-US': 'Clear selection' },
-  openPostOverview: { 'zh-CN': '打开博文概览', 'en-US': 'Open post overview' },
+  openPostOverview: { 'zh-CN': '打开文章概览', 'en-US': 'Open post overview' },
   more: { 'zh-CN': '更多', 'en-US': 'More' },
-  showAllPosts: { 'zh-CN': '查看全部博文', 'en-US': 'Show all posts' },
+  showAllPosts: { 'zh-CN': '查看全部文章', 'en-US': 'Show all posts' },
   noGapsTitle: { 'zh-CN': '没有缺口', 'en-US': 'No gaps' },
   noGapsBody: {
-    'zh-CN': '符合条件的博文都已齐全。',
+    'zh-CN': '符合条件的文章都已齐全。',
     'en-US': 'Every matching post is complete.',
   },
   listStale: {
@@ -97,26 +95,26 @@ const catalog = {
   },
   close: { 'zh-CN': '关闭', 'en-US': 'Close' },
   loadingPost: { 'zh-CN': '正在加载', 'en-US': 'Loading' },
-  editPost: { 'zh-CN': '编辑博文', 'en-US': 'Edit post' },
+  editPost: { 'zh-CN': '编辑文章', 'en-US': 'Edit post' },
   view: { 'zh-CN': '查看', 'en-US': 'View' },
   regenerate: { 'zh-CN': '重新生成', 'en-US': 'Regenerate' },
   delete: { 'zh-CN': '删除', 'en-US': 'Delete' },
   generateKind: { 'zh-CN': '生成{kind}', 'en-US': 'Generate {kind}' },
   sectionEmpty: { 'zh-CN': '还没有生成', 'en-US': 'Nothing generated yet' },
   translationPair: { 'zh-CN': '{from} → {to}', 'en-US': '{from} → {to}' },
-  totalPosts: { 'zh-CN': '共 {count} 篇博文', 'en-US': '{count} posts' },
-  searchPosts: { 'zh-CN': '搜索博文', 'en-US': 'Search posts' },
+  totalPosts: { 'zh-CN': '共 {count} 篇文章', 'en-US': '{count} posts' },
+  searchPosts: { 'zh-CN': '搜索文章', 'en-US': 'Search posts' },
   refresh: { 'zh-CN': '刷新', 'en-US': 'Refresh' },
   retryLoad: { 'zh-CN': '重试', 'en-US': 'Retry' },
   cancel: { 'zh-CN': '取消', 'en-US': 'Cancel' },
   back: { 'zh-CN': '返回列表', 'en-US': 'Back to list' },
-  emptyPostsTitle: { 'zh-CN': '还没有博文', 'en-US': 'No posts yet' },
+  emptyPostsTitle: { 'zh-CN': '还没有文章', 'en-US': 'No posts yet' },
   emptyPostsBody: {
-    'zh-CN': '发布后，博文会列在这里。',
+    'zh-CN': '发布后，文章会列在这里。',
     'en-US': 'Posts appear here after they are published.',
   },
   filterEmptyTitle: {
-    'zh-CN': '没有符合条件的博文',
+    'zh-CN': '没有符合条件的文章',
     'en-US': 'No posts match',
   },
   filterEmptyBody: {
@@ -125,14 +123,14 @@ const catalog = {
   },
   clearSearch: { 'zh-CN': '清除搜索', 'en-US': 'Clear search' },
   listFailedTitle: {
-    'zh-CN': '博文列表没有加载出来',
+    'zh-CN': '文章列表没有加载出来',
     'en-US': 'The post list did not load',
   },
   listFailedBody: {
     'zh-CN': '网络或服务暂时不可用。',
     'en-US': 'The network or service is unavailable.',
   },
-  post: { 'zh-CN': '博文', 'en-US': 'Post' },
+  post: { 'zh-CN': '文章', 'en-US': 'Post' },
   locked: { 'zh-CN': '锁定', 'en-US': 'Locked' },
   generating: { 'zh-CN': '生成中', 'en-US': 'Generating' },
   failed: { 'zh-CN': '失败', 'en-US': 'Failed' },
@@ -184,7 +182,7 @@ const catalog = {
   lockedBefore: { 'zh-CN': '锁定语言', 'en-US': 'Locked languages' },
   noLocked: { 'zh-CN': '没有锁定语言', 'en-US': 'No locked languages' },
   openKind: { 'zh-CN': '打开{kind}', 'en-US': 'Open {kind}' },
-  stale: { 'zh-CN': '基于旧版本', 'en-US': 'Based on an older version' },
+  stale: { 'zh-CN': '旧版', 'en-US': 'Stale' },
   sourceLang: { 'zh-CN': '原文语言 {lang}', 'en-US': 'Source language {lang}' },
   costLine: {
     'zh-CN': '费用 {usd} USD · {count} 次',
@@ -199,7 +197,7 @@ const catalog = {
       'That language code is invalid. Use a code such as zh-CN, en, or ja.',
   },
   detailFailedTitle: {
-    'zh-CN': '这篇博文的产物没有加载出来',
+    'zh-CN': '这篇文章的产物没有加载出来',
     'en-US': 'This post’s products did not load',
   },
   detailFailedBody: {
@@ -215,7 +213,7 @@ const catalog = {
     'en-US': 'Delete this {kind}?',
   },
   deleteAssetBody: {
-    'zh-CN': '删除后，这篇博文不再有该语言的{kind}。',
+    'zh-CN': '删除后，这篇文章不再有该语言的{kind}。',
     'en-US': 'This post will no longer have that {kind} for the language.',
   },
   deleteAsset: { 'zh-CN': '删除{kind}', 'en-US': 'Delete {kind}' },
@@ -256,12 +254,12 @@ const catalog = {
     'en-US': 'Delete this translation?',
   },
   deleteTranslationBody: {
-    'zh-CN': '删除后，这篇博文不再有该语言的译文。',
+    'zh-CN': '删除后，这篇文章不再有该语言的译文。',
     'en-US': 'This post will no longer have a translation in that language.',
   },
   deleteTranslation: { 'zh-CN': '删除译文', 'en-US': 'Delete translation' },
   translationEmptyTitle: {
-    'zh-CN': '这篇博文还没有译文',
+    'zh-CN': '这篇文章还没有译文',
     'en-US': 'This post has no translation',
   },
   translationEmptyBody: {
@@ -282,12 +280,12 @@ const catalog = {
     'en-US': 'Delete this summary?',
   },
   deleteSummaryBody: {
-    'zh-CN': '删除后，这篇博文不再有该语言的摘要。',
+    'zh-CN': '删除后，这篇文章不再有该语言的摘要。',
     'en-US': 'This post will no longer have a summary in that language.',
   },
   deleteSummary: { 'zh-CN': '删除摘要', 'en-US': 'Delete summary' },
   summaryEmptyTitle: {
-    'zh-CN': '这篇博文还没有摘要',
+    'zh-CN': '这篇文章还没有摘要',
     'en-US': 'This post has no summary',
   },
   summaryEmptyBody: {
@@ -315,12 +313,12 @@ const catalog = {
     'en-US': 'Delete this close reading?',
   },
   deleteInsightsBody: {
-    'zh-CN': '删除后，这篇博文不再有该语言的精读。',
+    'zh-CN': '删除后，这篇文章不再有该语言的精读。',
     'en-US': 'This post will no longer have a close reading in that language.',
   },
   deleteInsights: { 'zh-CN': '删除精读', 'en-US': 'Delete close reading' },
   insightsEmptyTitle: {
-    'zh-CN': '这篇博文还没有精读',
+    'zh-CN': '这篇文章还没有精读',
     'en-US': 'This post has no close reading',
   },
   insightsEmptyBody: {
@@ -347,7 +345,7 @@ const catalog = {
       'Narration is incomplete. Resume continues from the segments already made.',
   },
   ttsEmptyTitle: {
-    'zh-CN': '这篇博文还没有朗读',
+    'zh-CN': '这篇文章还没有朗读',
     'en-US': 'This post has no narration',
   },
   ttsEmptyBody: {
@@ -364,7 +362,7 @@ const catalog = {
     'en-US': 'Delete this narration?',
   },
   deleteTtsBody: {
-    'zh-CN': '删除后，这篇博文不再有该语言的朗读。',
+    'zh-CN': '删除后，这篇文章不再有该语言的朗读。',
     'en-US': 'This post will no longer have a narration in that language.',
   },
   deleteTts: { 'zh-CN': '删除朗读', 'en-US': 'Delete narration' },
@@ -409,7 +407,7 @@ const catalog = {
     'zh-CN': '正文不能为空',
     'en-US': 'The body cannot be empty',
   },
-  menuOverview: { 'zh-CN': '打开智能概览', 'en-US': 'Open overview' },
+  menuOverview: { 'zh-CN': '查看产物', 'en-US': 'Open outputs' },
   glossaryTitle: { 'zh-CN': '翻译词表', 'en-US': 'Translation glossary' },
   glossaryCount: { 'zh-CN': '{count} 条', 'en-US': '{count}' },
   generateEntries: { 'zh-CN': '生成词条', 'en-US': 'Generate entries' },
@@ -418,7 +416,7 @@ const catalog = {
   columnUsage: { 'zh-CN': '使用位置', 'en-US': 'Used in' },
   columnLang: { 'zh-CN': '语言', 'en-US': 'Language' },
   usageCategory: { 'zh-CN': '分类名称', 'en-US': 'Category name' },
-  usageTag: { 'zh-CN': '博文标签', 'en-US': 'Post tag' },
+  usageTag: { 'zh-CN': '文章标签', 'en-US': 'Post tag' },
   allUsage: { 'zh-CN': '全部位置', 'en-US': 'All locations' },
   langPlaceholder: { 'zh-CN': '语言', 'en-US': 'Language' },
   editEntry: { 'zh-CN': '修改译文', 'en-US': 'Edit translation' },

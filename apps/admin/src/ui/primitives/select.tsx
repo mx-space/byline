@@ -18,6 +18,7 @@ interface SelectFieldProps<TValue extends SelectValue = string> {
   popupClassName?: string
   triggerClassName?: string
   value: TValue
+  variant?: 'borderless' | 'filled' | 'outlined'
 }
 
 export function SelectField<TValue extends SelectValue = string>(
@@ -36,6 +37,7 @@ export function SelectField<TValue extends SelectValue = string>(
       options={props.options}
       popupClassName={props.popupClassName}
       value={props.value}
+      variant={props.variant}
     />
   )
 }

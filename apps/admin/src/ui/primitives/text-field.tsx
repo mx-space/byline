@@ -34,6 +34,7 @@ interface TextInputProps {
   style?: CSSProperties
   type?: TextInputType
   value: string
+  variant?: 'borderless' | 'filled' | 'outlined'
 }
 
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
@@ -61,6 +62,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
         style={props.style}
         type={props.type ?? 'text'}
         value={props.value}
+        variant={props.variant}
       />
     )
 
@@ -95,6 +97,7 @@ interface TextAreaProps {
   spellCheck?: boolean
   style?: CSSProperties
   value: string
+  variant?: 'borderless' | 'filled' | 'outlined'
 }
 
 export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
@@ -115,6 +118,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
         spellCheck={props.spellCheck}
         style={props.style}
         value={props.value}
+        variant={props.variant}
       />
     )
 

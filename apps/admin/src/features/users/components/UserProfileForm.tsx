@@ -1,5 +1,4 @@
 import {
-  Button,
   createStaticStyles,
   Descriptions,
   Flexbox,
@@ -17,9 +16,11 @@ import { z } from 'zod'
 import { uploadFile } from '~/api/files'
 import type { UserDetail, UserProfileInput } from '~/api/users'
 import { useI18n } from '~/i18n'
+import { emptyOr } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { useUsersCopy } from '../copy'
-import { getUserErrorMessage, showValue } from '../utils/users'
+import { getUserErrorMessage } from '../utils/users'
 import { UserAvatar } from './UserAvatar'
 
 const styles = createStaticStyles(({ css }) => ({
@@ -179,12 +180,12 @@ export function UserProfileForm(props: {
             column={1}
             items={[
               {
-                children: showValue(props.user?.email),
+                children: emptyOr(props.user?.email),
                 key: 'email',
                 label: copy('email'),
               },
               {
-                children: showValue(props.user?.username),
+                children: emptyOr(props.user?.username),
                 key: 'username',
                 label: copy('username'),
               },

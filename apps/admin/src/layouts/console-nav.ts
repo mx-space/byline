@@ -178,3 +178,17 @@ export function toBreadcrumbItems(
 
   return crumbs
 }
+
+export function withParentCrumb(
+  items: BreadcrumbItem[],
+  parent: { href: string; label: BreadcrumbItem['label'] },
+): BreadcrumbItem[] {
+  if (items.some((item) => item.href === parent.href)) return items
+  const current = items.at(-1)
+  const head = current ? items.slice(0, -1) : items
+  return [
+    ...head,
+    { href: parent.href, label: parent.label },
+    ...(current ? [{ label: current.label }] : []),
+  ]
+}

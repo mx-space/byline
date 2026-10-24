@@ -366,6 +366,8 @@ console.log('== platform (mobile / RN)');
   t('platform: parsePlatform 中文 / 英文 / 表格', parsePlatform('平台：mobile（主），web') === 'mobile' && parsePlatform('platform: web') === 'web' && parsePlatform('| 平台 | mobile |') === 'mobile');
   const off = parseApplicability('| C-01..C-03 | 不适用 | RN |\n| P-01 | 强调 |\nlint-off: LOBE-RAW-COLOR, D-11\n');
   t('platform: 适用性表展开区间 + lint-off', ['C-01', 'C-02', 'C-03', 'LOBE-RAW-COLOR', 'D-11'].every((x) => off.has(x)) && !off.has('P-01'), [...off].join(','));
+  const bizOff = parseApplicability('| 系统 | 用户、设置 | P-02 / P-05 | 邀请或停用账号 |\n| 不适用 | 营销页 | P-09 |\n| D-10 | 关闭 | 迁移中 |\n');
+  t('platform: 业务描述里的「停用」不关规则，整格标记才算', !bizOff.has('P-02') && !bizOff.has('P-05') && bizOff.has('P-09') && bizOff.has('D-10'), [...bizOff].join(','));
   const tmp = mkdtempSync(join(tmpdir(), 'ld-rn-'));
   try {
     cpSync(rn, tmp, { recursive: true });

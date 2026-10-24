@@ -20,12 +20,15 @@ export function DraftListSkeleton() {
     <div aria-hidden>
       {Array.from({ length: 8 }, (_, index) => (
         <div className={styles.row} key={index}>
-          <Flexbox gap={8}>
-            <Flexbox gap={12} horizontal justify="space-between">
-              <Skeleton height={16} width="60%" />
-              <Skeleton height={12} width={48} />
+          <Flexbox align="center" gap={12} horizontal>
+            <Skeleton height={40} width={64} />
+            <Flexbox flex={1} gap={8}>
+              <Flexbox gap={12} horizontal justify="space-between">
+                <Skeleton height={16} width="60%" />
+                <Skeleton height={12} width={48} />
+              </Flexbox>
+              <Skeleton height={12} width="40%" />
             </Flexbox>
-            <Skeleton height={12} width="40%" />
           </Flexbox>
         </div>
       ))}
@@ -35,7 +38,10 @@ export function DraftListSkeleton() {
 
 export function DraftDetailSkeleton() {
   return (
-    <DetailPane title={<Skeleton height={20} width={240} />}>
+    <DetailPane
+      contentWidth="article"
+      title={<Skeleton height={20} width={240} />}
+    >
       <Flexbox gap={32}>
         <SkeletonText rows={3} />
         <SkeletonText rows={8} />

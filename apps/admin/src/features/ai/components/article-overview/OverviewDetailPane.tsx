@@ -1,14 +1,12 @@
 import {
   ActionIcon,
   Alert,
-  Button,
   confirmModal,
   createStaticStyles,
   Empty,
   Flexbox,
   Icon,
   Input,
-  SkeletonText,
   Tag,
   Text,
   toast,
@@ -35,6 +33,8 @@ import { getArticleOverview } from '~/api/ai-overview'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { DetailPane } from '~/ui/page'
+import { emptyOr, ListSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { useAiCopy } from '../../copy'
 import { DetailDrawer } from '../../hub/DetailDrawer'
@@ -332,10 +332,7 @@ export function OverviewDetailPane(props: {
     return (
       <DetailDrawer onClose={props.onClose} title={copy('loadingPost')}>
         <DetailPane hideHeader>
-          <Flexbox aria-busy gap={24}>
-            <SkeletonText rows={3} />
-            <SkeletonText rows={3} />
-          </Flexbox>
+          <ListSkeleton rows={5} />
         </DetailPane>
       </DetailDrawer>
     )
@@ -527,9 +524,7 @@ export function OverviewDetailPane(props: {
                           </span>
                         </Tooltip>
                       </div>
-                      <p className={styles.preview}>
-                        {row.preview || copy('emptyValue')}
-                      </p>
+                      <p className={styles.preview}>{emptyOr(row.preview)}</p>
                     </div>
                     <Flexbox gap={2} horizontal>
                       <ActionIcon

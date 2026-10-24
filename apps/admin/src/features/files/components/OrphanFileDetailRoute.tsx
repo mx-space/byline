@@ -1,4 +1,4 @@
-import { Button, Empty, Flexbox, Skeleton, Text, Tooltip } from '@lobehub/ui'
+import { Empty, Flexbox, Skeleton, Text, Tooltip } from '@lobehub/ui'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router'
@@ -7,11 +7,13 @@ import type { OrphanFile } from '~/api/files'
 import { findInListCache } from '~/api/list-cache'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { useI18n } from '~/i18n'
+import { EmptyValue } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { filesQueryKey } from '../constants'
 import { useFileCopy } from '../copy'
 import { mimeOf } from '../utils/file-kind'
-import { EMPTY_VALUE, formatBytes, formatUploadedAt } from '../utils/format'
+import { formatBytes, formatUploadedAt } from '../utils/format'
 import { FileDetail, FileDetailState } from './FileDetail'
 import { useOrphanFilesRouteContext } from './orphan-files-route-context'
 import { OrphanStatusTag, wasReferenced } from './OrphanStatusTag'
@@ -112,14 +114,19 @@ export function OrphanFileDetailRoute() {
           {
             key: 'size',
             label: copy('fieldSize'),
-            value: formatBytes(raw.byteSize),
+            value:
+              raw.byteSize == null ? <EmptyValue /> : formatBytes(raw.byteSize),
           },
           {
             key: 'mime',
             label: copy('fieldMime'),
-            value: mimeOf(raw.fileName, raw.mimeType) ?? EMPTY_VALUE,
+            value: mimeOf(raw.fileName, raw.mimeType) ?? <EmptyValue />,
           },
-          { key: 'uploaded', label: copy('fieldUploaded'), value: uploaded },
+          {
+            key: 'uploaded',
+            label: copy('fieldUploaded'),
+            value: raw.createdAt ? uploaded : <EmptyValue />,
+          },
         ]}
         key={raw.id}
         meta={

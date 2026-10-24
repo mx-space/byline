@@ -1,4 +1,3 @@
-import { PageLoading } from '@lobehub/ui/dashboard'
 import { Suspense } from 'react'
 import type { RouteObject } from 'react-router'
 import { createHashRouter, Navigate, Outlet } from 'react-router'
@@ -9,6 +8,7 @@ import { DocumentTitleSync } from './hooks/use-document-title'
 import { useI18n } from './i18n'
 import { ProtectedLayout } from './layouts/protected-layout'
 import { LegacyStaticRedirect } from './lib/legacy-redirects'
+import { PageLoadingFrame } from './ui/page'
 
 function toRouteObject(route: AppRoute): RouteObject {
   return {
@@ -44,7 +44,7 @@ function RootLayout() {
 
 function RouteLoadingFallback() {
   const { t } = useI18n()
-  return <PageLoading label={t('common.loading')} />
+  return <PageLoadingFrame label={t('common.loading')} />
 }
 
 const routeTree: RouteObject[] = [

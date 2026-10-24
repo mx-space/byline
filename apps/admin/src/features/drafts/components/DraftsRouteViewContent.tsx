@@ -4,7 +4,7 @@ import { FileClock } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 
-import { deleteDraft, getDrafts } from '~/api/drafts'
+import { deleteDraft } from '~/api/drafts'
 import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import type { DraftModel } from '~/models/draft'
 import { DraftRefType } from '~/models/draft'
@@ -19,6 +19,7 @@ import type { DraftSort, DraftTypeFilter } from '../utils/draft-decision'
 import { draftTitle, sortDrafts } from '../utils/draft-decision'
 import { getEditPathForDraft } from '../utils/draft-edit-path'
 import { describeDraftError } from '../utils/errors'
+import { loadInboxDrafts } from '../utils/load-inbox-drafts'
 import { buildDraftActions } from './buildDraftActions'
 import { DRAFT_LIST_SCOPE_ID, DraftListPane } from './DraftListPane'
 import { DraftsRouteContext } from './drafts-route-context'
@@ -91,26 +92,35 @@ export function DraftsRouteViewContent() {
   const draftsQuery = useQuery({
     placeholderData: (previous) => previous,
     queryFn: () =>
-      getDrafts({
+      loadInboxDrafts({
         hasRef: filter === 'all' ? undefined : filter === 'changed',
-        page,
         refType: DraftRefType.Post,
         search: urlQuery || undefined,
-        size: DRAFT_PAGE_SIZE,
         ...sortParams[sort],
       }),
     queryKey: [
       ...adminQueryKeys.drafts.list(DraftRefType.Post),
-      { filter, page, q: urlQuery, sort },
+      'inbox',
+      { filter, q: urlQuery, sort },
     ],
   })
 
-  const pagination = draftsQuery.data?.pagination
-  const drafts = useMemo(
-    () =>
-      sortDrafts(draftsQuery.data?.data ?? [], sort, copy('untitled'), locale),
+  const inbox = useMemo(
+    () => sortDrafts(draftsQuery.data ?? [], sort, copy('untitled'), locale),
     [copy, draftsQuery.data, locale, sort],
   )
+  const total = draftsQuery.data ? inbox.length : null
+  const totalPages =
+    total == null || total === 0 ? 0 : Math.ceil(total / DRAFT_PAGE_SIZE)
+  const drafts = useMemo(() => {
+    const start = (page - 1) * DRAFT_PAGE_SIZE
+    return inbox.slice(start, start + DRAFT_PAGE_SIZE)
+  }, [inbox, page])
+
+  useEffect(() => {
+    if (total == null || totalPages === 0 || page <= totalPages) return
+    updateParams({ page: null })
+  }, [page, total, totalPages, updateParams])
   const selectionClearRef = useRef<(() => void) | null>(null)
 
   const listSearch = useCallback((id?: string) => {
@@ -164,62 +174,24 @@ export function DraftsRouteViewContent() {
     },
   })
 
-  const batchDeleteMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      const results = await Promise.allSettled(ids.map((id) => deleteDraft(id)))
-      return {
-        failedCount: results.filter((result) => result.status === 'rejected')
-          .length,
-        ids,
-        successCount: results.filter((result) => result.status === 'fulfilled')
-          .length,
-      }
-    },
-    onError: (error: unknown) =>
-      toast.error(describeDraftError(error, copy('deleteFailed'))),
-    onSuccess: async ({ failedCount, ids, successCount }) => {
-      selectionClearRef.current?.()
-      if (failedCount > 0) {
-        toast.warning(
-          copy('deletedPartial', {
-            failed: failedCount,
-            success: successCount,
-          }),
-        )
-      } else {
-        toast.success(copy('deleted'))
-      }
-      await refreshAfterDelete(Boolean(detailId && ids.includes(detailId)))
-    },
-  })
-
   const confirmAndDelete = useCallback(
     (targets: DraftModel[]) => {
-      if (targets.length === 0) return
-      const single = targets.length === 1 ? targets[0] : null
+      const draft = targets[0]
+      if (!draft) return
       confirmModal({
         cancelText: copy('cancel'),
-        content: single ? copy('confirmDeleteBody') : copy('confirmBatchBody'),
+        content: copy('confirmDeleteBody'),
         okButtonProps: { danger: true },
-        okText: single
-          ? copy('confirmDeleteConfirm')
-          : copy('confirmBatchConfirm', { count: targets.length }),
+        okText: copy('confirmDeleteConfirm'),
         onOk: async () => {
-          if (single)
-            await deleteMutation.mutateAsync(single.id).catch(() => {})
-          else
-            await batchDeleteMutation
-              .mutateAsync(targets.map((target) => target.id))
-              .catch(() => {})
+          await deleteMutation.mutateAsync(draft.id).catch(() => {})
         },
-        title: single
-          ? copy('confirmDeleteTitle', {
-              title: draftTitle(single, copy('untitled')),
-            })
-          : copy('confirmBatchTitle', { count: targets.length }),
+        title: copy('confirmDeleteTitle', {
+          title: draftTitle(draft, copy('untitled')),
+        }),
       })
     },
-    [batchDeleteMutation, copy, deleteMutation],
+    [copy, deleteMutation],
   )
 
   const actions = useMemo(
@@ -237,6 +209,7 @@ export function DraftsRouteViewContent() {
 
   const { selection } = useListKeyboard<DraftModel>({
     actions,
+    defaultExtras: false,
     getId: (draft) => draft.id,
     items: drafts,
     onItemFocus: (id) => {
@@ -250,21 +223,12 @@ export function DraftsRouteViewContent() {
 
   const routeContextValue = useMemo(
     () => ({
-      deleting: deleteMutation.isPending || batchDeleteMutation.isPending,
+      deleting: deleteMutation.isPending,
       onBack: closeDetail,
       onDelete: (draft: DraftModel) => confirmAndDelete([draft]),
     }),
-    [
-      batchDeleteMutation.isPending,
-      closeDetail,
-      confirmAndDelete,
-      deleteMutation.isPending,
-    ],
+    [closeDetail, confirmAndDelete, deleteMutation.isPending],
   )
-
-  const totalPages = pagination
-    ? pagination.totalPages || Math.ceil(pagination.total / DRAFT_PAGE_SIZE)
-    : 0
 
   return (
     <DraftsRouteContext.Provider value={routeContextValue}>
@@ -281,7 +245,6 @@ export function DraftsRouteViewContent() {
         list={
           <DraftListPane
             actions={actions}
-            batchDeleting={batchDeleteMutation.isPending}
             detailId={detailId}
             drafts={drafts}
             error={
@@ -293,9 +256,6 @@ export function DraftsRouteViewContent() {
             isFetching={draftsQuery.isFetching}
             isPending={draftsQuery.isPending}
             keyword={keyword}
-            onBatchDelete={() =>
-              confirmAndDelete(selection.getSelectedTargets())
-            }
             onClearSearch={() => setKeyword('')}
             onFilterChange={(next) =>
               updateParams({ page: null, type: next === 'all' ? null : next })
@@ -314,7 +274,7 @@ export function DraftsRouteViewContent() {
             searching={draftsQuery.isFetching && Boolean(urlQuery)}
             selection={selection}
             sort={sort}
-            total={pagination?.total ?? null}
+            total={total}
             totalPages={totalPages}
           />
         }

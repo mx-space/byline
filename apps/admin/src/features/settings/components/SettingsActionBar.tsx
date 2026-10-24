@@ -1,7 +1,8 @@
-import { Button, createStaticStyles, Flexbox, Text } from '@lobehub/ui'
+import { createStaticStyles, Flexbox, Text } from '@lobehub/ui'
 import { createContext, useContext } from 'react'
 
 import { useI18n } from '~/i18n'
+import { Button } from '~/ui/site-button'
 
 import { settingsCopy } from '../copy'
 

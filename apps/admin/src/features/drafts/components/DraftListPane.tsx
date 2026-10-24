@@ -1,9 +1,7 @@
 import {
   ActionIcon,
   Alert,
-  Button,
   Center,
-  Checkbox,
   createStaticStyles,
   Empty,
   Pagination,
@@ -11,17 +9,14 @@ import {
   Segmented,
   Select,
 } from '@lobehub/ui'
-import { FileClock, RefreshCw, SearchX, Trash2, X } from 'lucide-react'
+import { FileClock, RefreshCw, SearchX } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import type { DraftModel } from '~/models/draft'
 import { FocusScope } from '~/ui/focus-scope'
-import type {
-  ListAction,
-  ListRowSelectMode,
-  ListSelectionAPI,
-} from '~/ui/list-actions'
+import type { ListAction, ListSelectionAPI } from '~/ui/list-actions'
 import { ListPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
 import { DRAFT_PAGE_SIZE } from '../constants'
 import { useDraftCopy } from '../copy'
@@ -30,7 +25,7 @@ import { DraftListSkeleton } from './DraftListSkeleton'
 import { DraftRow } from './DraftRow'
 import { useDraftAuthors } from './use-draft-authors'
 
-const styles = createStaticStyles(({ css, cssVar }) => ({
+const styles = createStaticStyles(({ css }) => ({
   empty: css`
     height: 100%;
     padding: 24px;
@@ -48,23 +43,6 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
   search: css`
     flex: 1 1 100%;
   `,
-  selection: css`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    padding-block: 6px;
-    padding-inline: 8px 6px;
-    border-radius: ${cssVar.borderRadius};
-
-    background: ${cssVar.colorFillTertiary};
-  `,
-  selectionCount: css`
-    flex: 1;
-    font-size: ${cssVar.fontSizeSM};
-    font-variant-numeric: tabular-nums;
-    color: ${cssVar.colorTextSecondary};
-  `,
   scope: css`
     height: 100%;
     min-height: 0;
@@ -79,7 +57,6 @@ export const DRAFT_LIST_SCOPE_ID = 'drafts-list'
 
 export function DraftListPane(props: {
   actions: ReadonlyArray<ListAction<DraftModel>>
-  batchDeleting: boolean
   detailId: string | null
   drafts: DraftModel[]
   error: string | null
@@ -87,7 +64,6 @@ export function DraftListPane(props: {
   isFetching: boolean
   isPending: boolean
   keyword: string
-  onBatchDelete: () => void
   onClearSearch: () => void
   onFilterChange: (filter: DraftTypeFilter) => void
   onKeywordChange: (keyword: string) => void
@@ -106,17 +82,10 @@ export function DraftListPane(props: {
   const { copy } = useDraftCopy()
   const authorNames = useDraftAuthors()
   const { drafts, selection } = props
-  const selectedCount = selection.size
-  const allVisibleSelected =
-    drafts.length > 0 && drafts.every((draft) => selection.isSelected(draft.id))
 
-  const onRowSelect = (draft: DraftModel, mode: ListRowSelectMode) => {
-    if (mode === 'range') selection.selectRange(draft.id)
-    else if (mode === 'toggle') selection.toggleWithAnchor(draft.id)
-    else {
-      selection.setCursor(draft.id)
-      props.onOpen(draft)
-    }
+  const onRowSelect = (draft: DraftModel) => {
+    selection.setCursor(draft.id)
+    props.onOpen(draft)
   }
 
   const notices: ReactNode[] = []
@@ -136,42 +105,6 @@ export function DraftListPane(props: {
       />,
     )
   }
-  if (selectedCount > 0) {
-    notices.push(
-      <div className={styles.selection} key="selection">
-        <Checkbox
-          aria-label={copy('selectAll')}
-          checked={allVisibleSelected}
-          indeterminate={!allVisibleSelected}
-          onChange={(checked) => {
-            if (checked) selection.selectAll()
-            else selection.clear()
-          }}
-        />
-        <span className={styles.selectionCount}>
-          {copy('selectedCount', { count: selectedCount })}
-        </span>
-        <Button
-          danger
-          icon={Trash2}
-          loading={props.batchDeleting}
-          onClick={props.onBatchDelete}
-          size="small"
-          type="text"
-        >
-          {copy('bulkDelete')}
-        </Button>
-        <ActionIcon
-          aria-label={copy('clearSelection')}
-          icon={X}
-          onClick={() => selection.clear()}
-          size="small"
-          title={copy('clearSelection')}
-        />
-      </div>,
-    )
-  }
-
   const body = (() => {
     if (props.isPending && drafts.length === 0) return <DraftListSkeleton />
     if (props.error && drafts.length === 0) {
@@ -221,21 +154,16 @@ export function DraftListPane(props: {
       )
     }
     return (
-      <div
-        className={styles.rows}
-        data-selecting={selectedCount > 0 ? '' : undefined}
-      >
+      <div className={styles.rows}>
         {drafts.map((draft) => (
           <DraftRow
             actions={props.actions}
             authorNames={authorNames}
-            checked={selection.isSelected(draft.id)}
             cursor={selection.isCursor(draft.id)}
             draft={draft}
             isDetailTarget={props.detailId === draft.id}
             key={draft.id}
-            onCheck={() => selection.toggleWithAnchor(draft.id)}
-            onSelect={(mode) => onRowSelect(draft, mode)}
+            onSelect={() => onRowSelect(draft)}
           />
         ))}
       </div>

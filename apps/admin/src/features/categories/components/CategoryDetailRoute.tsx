@@ -1,4 +1,3 @@
-import { Button } from '@lobehub/ui'
 import { useLocation, useNavigate, useParams } from 'react-router'
 
 import { getCategory } from '~/api/categories'
@@ -10,6 +9,7 @@ import {
 import { categories } from '~/data/resources/category'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
 import { useCategoryCopy } from '../copy'
 import { isForbiddenError, isNotFoundError } from '../utils/errors'

@@ -1,4 +1,4 @@
-import { Avatar, Button, Input, Text, toast } from '@lobehub/ui'
+import { Avatar, Input, Text, toast } from '@lobehub/ui'
 import { Form, useForm, useWatch } from '@lobehub/ui/form'
 import { useQueryClient } from '@tanstack/react-query'
 import { ImagePlus } from 'lucide-react'
@@ -10,6 +10,7 @@ import { checkInit, createFirstUser } from '~/api/system'
 import { getMe, updateMe } from '~/api/users'
 import { SESSION_WITH_LOGIN } from '~/constants/keys'
 import { loggedStatusQueryKey } from '~/features/auth/constants'
+import { Button } from '~/ui/site-button'
 import { authClient } from '~/utils/authjs/auth'
 
 import { useSetupCopy } from '../copy'

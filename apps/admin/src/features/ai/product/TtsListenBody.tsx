@@ -1,9 +1,10 @@
-import { Button } from '@lobehub/ui'
 import { Pause, Play } from 'lucide-react'
 import { useMemo } from 'react'
 
 import type { AITtsRow } from '~/api/ai'
 import { useTtsPlayback } from '~/features/_shared/components/tts/use-tts-playback'
+import { emptyOr } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { useAiCopy } from '../copy'
 import { aiStyles } from '../shell/styles'
@@ -61,9 +62,7 @@ export function TtsListenBody(props: {
                 icon={playing ? Pause : Play}
                 onClick={() => playback.toggleSegment(index)}
               />
-              <p className={aiStyles.prose}>
-                {segment.text || copy('emptyValue')}
-              </p>
+              <p className={aiStyles.prose}>{emptyOr(segment.text)}</p>
             </div>
           )
         })}

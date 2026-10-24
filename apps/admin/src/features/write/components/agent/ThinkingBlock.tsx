@@ -1,5 +1,5 @@
 import type { ChatBubble } from '@haklex/rich-agent-core'
-import { createStaticStyles } from '@lobehub/ui'
+import { createStaticStyles, Highlighter } from '@lobehub/ui'
 import { ChevronRight, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -50,22 +50,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u90665ca6: css`
     font-style: italic;
   `,
-  u9b2d56a9: css`
-    margin: 0px;
-    margin-top: 0.25rem;
-    max-height: 16rem;
-    overflow: auto;
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
-    border-radius: 0.25rem;
-    background-color: ${cssVar.colorFillSecondary};
-    padding: 0.5rem;
-    font-family: ${cssVar.fontFamilyCode};
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    line-height: 1.625;
-    color: ${cssVar.colorTextSecondary};
-  `,
 }))
 
 type ThinkingBubble = Extract<ChatBubble, { type: 'thinking' }>
@@ -98,7 +82,17 @@ export function ThinkingBlock({ bubble }: ThinkingBlockProps) {
         <span className={lobeStyles.u90665ca6}>{label}</span>
       </button>
 
-      {open && text ? <pre className={lobeStyles.u9b2d56a9}>{text}</pre> : null}
+      {open && text ? (
+        <Highlighter
+          language="markdown"
+          showLanguage={false}
+          style={{ maxHeight: '16rem', overflow: 'auto' }}
+          variant="filled"
+          wrap
+        >
+          {text}
+        </Highlighter>
+      ) : null}
     </div>
   )
 }

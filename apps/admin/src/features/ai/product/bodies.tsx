@@ -1,9 +1,11 @@
-import { Button, Input, TextArea } from '@lobehub/ui'
+import { Input, TextArea } from '@lobehub/ui'
 import type { SerializedEditorState } from 'lexical'
 import { lazy, Suspense, useMemo, useState } from 'react'
 
 import type { AIInsights, AISummary, AITranslation } from '~/api/ai'
 import { SeoFields } from '~/features/write/components/PostBylineFields'
+import { emptyOr } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import type { ProductBodyProps } from '../components/article-grouped/types'
 import { useAiCopy } from '../copy'
@@ -142,9 +144,7 @@ export function TranslationBody(props: ProductBodyProps<AITranslation>) {
         </>
       ) : (
         <>
-          <h3 className={aiStyles.translationTitle}>
-            {item.title || copy('emptyValue')}
-          </h3>
+          <h3 className={aiStyles.translationTitle}>{emptyOr(item.title)}</h3>
           {item.subtitle ? (
             <p className={aiStyles.meta}>{item.subtitle}</p>
           ) : null}
@@ -161,7 +161,7 @@ export function TranslationBody(props: ProductBodyProps<AITranslation>) {
               />
             </Suspense>
           ) : (
-            <p className={aiStyles.prose}>{item.text || copy('emptyValue')}</p>
+            <p className={aiStyles.prose}>{emptyOr(item.text)}</p>
           )}
         </>
       )}
@@ -184,11 +184,7 @@ export function SummaryBody(props: ProductBodyProps<AISummary>) {
   }
 
   if (!props.editing) {
-    return (
-      <p className={aiStyles.summaryRead}>
-        {props.item.summary || copy('emptyValue')}
-      </p>
-    )
+    return <p className={aiStyles.summaryRead}>{emptyOr(props.item.summary)}</p>
   }
 
   return (
@@ -234,9 +230,7 @@ export function InsightsBody(props: ProductBodyProps<AIInsights>) {
             {copy('translatedFrom', { lang: props.item.sourceLang })}
           </p>
         ) : null}
-        <p className={aiStyles.insightsRead}>
-          {props.item.content || copy('emptyValue')}
-        </p>
+        <p className={aiStyles.insightsRead}>{emptyOr(props.item.content)}</p>
       </div>
     )
   }

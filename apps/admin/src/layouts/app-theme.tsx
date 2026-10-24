@@ -1,6 +1,7 @@
 import '@lobehub/ui/theme.css'
 import '@lobehub/ui/style.css'
 import '@lobehub/ui/global.css'
+import '~/lobe-button.css'
 
 import {
   ConfigProvider,

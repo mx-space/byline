@@ -1,14 +1,4 @@
-import {
-  ActionIcon,
-  Alert,
-  Button,
-  Center,
-  cx,
-  Empty,
-  Skeleton,
-  Tag,
-  Tooltip,
-} from '@lobehub/ui'
+import { ActionIcon, Alert, Center, cx, Empty, Tag, Tooltip } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, RefreshCw, Webhook } from 'lucide-react'
 
@@ -17,6 +7,8 @@ import { getWebhookDispatches, getWebhooks } from '~/api/webhooks'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { ListPane } from '~/ui/page'
+import { ListSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { useWebhookCopy } from '../copy'
 import {
@@ -94,13 +86,7 @@ export function WebhookListPane(props: {
       }
       title={text('listTitle')}
     >
-      {query.isPending ? (
-        <div className={styles.stack}>
-          {[0, 1, 2].map((index) => (
-            <Skeleton height={44} key={index} width="100%" />
-          ))}
-        </div>
-      ) : null}
+      {query.isPending ? <ListSkeleton rows={4} /> : null}
       {query.isError && !hasRows ? (
         <Center padding={24}>
           <Empty

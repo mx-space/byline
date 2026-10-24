@@ -34,20 +34,14 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u2b4c7bfc: css`
     display: flex;
-    min-height: 2.25rem;
+    min-height: 40px;
     align-items: center;
-    gap: 0.5rem;
-    border-radius: 10px;
-    padding-inline: 0.5rem;
-    transition:
-      color 0.15s ease,
-      background-color 0.15s ease,
-      border-color 0.15s ease;
+    gap: 8px;
+    border-radius: ${cssVar.borderRadius};
+    padding-inline: 4px;
+
     &:hover {
-      background-color: ${cssVar.colorFillSecondary};
-    }
-    &:focus-within {
-      background-color: ${cssVar.colorFillSecondary};
+      background: ${cssVar.colorFillTertiary};
     }
   `,
   u81f6cdce: css`
@@ -83,66 +77,46 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   ud91a43b0: css`
     flex-shrink: 0;
-    border-radius: 999px;
-    background-color: color-mix(
-      in srgb,
-      ${cssVar.colorWarning} 10%,
-      transparent
-    );
-    padding-inline: 0.5rem;
-    padding-block: 0.125rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    font-weight: 500;
     color: ${cssVar.colorWarning};
-    :where(.dark, .dark *) & {
-      color: ${cssVar.colorWarning};
-    }
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
   `,
   u1d6ed899: css`
     display: flex;
-    min-height: 2.25rem;
-    align-items: center;
-    gap: 0.5rem;
-    border-radius: 10px;
-    padding-inline: 0.5rem;
-    padding-block: 0.375rem;
-    transition:
-      color 0.15s ease,
-      background-color 0.15s ease,
-      border-color 0.15s ease;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: 0;
+    border-radius: ${cssVar.borderRadius};
+    padding-inline: 4px;
+
     &:hover {
-      background-color: ${cssVar.colorFillSecondary};
-    }
-    &:focus-within {
-      background-color: ${cssVar.colorFillSecondary};
+      background: ${cssVar.colorFillTertiary};
     }
   `,
+  titleRow: css`
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  `,
   u5ca20d2d: css`
-    min-width: 0px;
-    flex: 1 1 0%;
+    min-width: 0;
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.75rem;
-    line-height: 1.125rem;
-    color: ${cssVar.colorTextSecondary};
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
+    color: ${cssVar.colorText};
   `,
   uae1b9f6e: css`
     flex-shrink: 0;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     font-variant-numeric: tabular-nums;
     color: ${cssVar.colorTextTertiary};
-    .group:focus-within & {
-      display: none;
-    }
-    .group:hover & {
-      display: none;
-    }
-    .group:has([data-popup-open]) & {
-      display: none;
-    }
   `,
   ubf4fc73f: css`
     display: none;
@@ -164,53 +138,28 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   ub4707f16: css`
     flex-shrink: 0;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     font-variant-numeric: tabular-nums;
     color: ${cssVar.colorTextTertiary};
-    .group:focus-within & {
-      display: none;
-    }
-    .group:hover & {
-      display: none;
-    }
   `,
   uf5c139e2: css`
-    display: none;
+    display: inline-flex;
+    align-self: flex-start;
     flex-shrink: 0;
     align-items: center;
-    gap: 0.25rem;
-    border-radius: 8px;
-    padding-inline: 0.375rem;
-    padding-block: 0.125rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    color: ${cssVar.colorPrimary};
-    transition:
-      color 0.15s ease,
-      background-color 0.15s ease,
-      border-color 0.15s ease;
+    gap: 4px;
+    margin-block: 0 4px;
+    border-radius: ${cssVar.borderRadius};
+    padding-inline: 8px;
+    padding-block: 4px;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+    color: ${cssVar.colorTextSecondary};
+
     &:hover {
-      background-color: ${cssVar.colorPrimaryBg};
-    }
-    &:focus-visible {
-      outline: none;
-    }
-    &:focus-visible {
-      box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
-    }
-    &:focus-visible {
-      box-shadow: 0 0 0 3px
-        color-mix(in srgb, ${cssVar.colorPrimary} 15%, transparent);
-    }
-    .group:focus-within & {
-      display: flex;
-    }
-    .group:hover & {
-      display: flex;
-    }
-    @media (pointer: coarse) {
-      display: flex;
+      background: ${cssVar.colorFillSecondary};
+      color: ${cssVar.colorText};
     }
   `,
 }))
@@ -287,17 +236,19 @@ export function RevisionLine(props: {
 
   return (
     <div className={`${lobeStyles.u1d6ed899} group`}>
-      {props.shared ? <ShareMark /> : null}
-      <span className={lobeStyles.u5ca20d2d}>
-        {props.node.revision.title || t('write.editor.untitled')}
-      </span>
-      <span className={lobeStyles.ub4707f16}>
-        {props.node.publishedAt
-          ? t('write.versionTree.publishedAt', {
-              time: format.relativeTime(props.node.publishedAt),
-            })
-          : format.relativeTime(props.node.revision.createdAt)}
-      </span>
+      <div className={lobeStyles.titleRow}>
+        {props.shared ? <ShareMark /> : null}
+        <span className={lobeStyles.u5ca20d2d}>
+          {props.node.revision.title || t('write.editor.untitled')}
+        </span>
+        <span className={lobeStyles.ub4707f16}>
+          {props.node.publishedAt
+            ? t('write.versionTree.publishedAt', {
+                time: format.relativeTime(props.node.publishedAt),
+              })
+            : format.relativeTime(props.node.revision.createdAt)}
+        </span>
+      </div>
       <button
         className={lobeStyles.uf5c139e2}
         onClick={props.onShare}

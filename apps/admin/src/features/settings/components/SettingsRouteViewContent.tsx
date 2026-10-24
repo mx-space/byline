@@ -1,6 +1,5 @@
 import {
   Alert,
-  Button,
   confirmModal,
   createStaticStyles,
   Flexbox,
@@ -20,6 +19,7 @@ import { adminQueryKeys } from '~/query/keys'
 import { FocusScope, useScopeArrowNav } from '~/ui/focus-scope'
 import { MasterDetailShell } from '~/ui/layout/master-detail-shell'
 import { DetailPlaceholder, ListPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
 import { accountGroups } from '../constants'
 import { settingsCopy } from '../copy'

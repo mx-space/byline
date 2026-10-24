@@ -1,10 +1,4 @@
-import {
-  Button,
-  createStaticStyles,
-  SkeletonText,
-  Tag,
-  Tooltip,
-} from '@lobehub/ui'
+import { createStaticStyles, SkeletonText, Tag, Tooltip } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
@@ -14,6 +8,7 @@ import type { ContentRevision, DraftModel } from '~/models/draft'
 import { adminQueryKeys } from '~/query/keys'
 import { FocusScope, useScopeArrowNav } from '~/ui/focus-scope'
 import { ListRow } from '~/ui/list-actions'
+import { Button } from '~/ui/site-button'
 
 import { useDraftCopy } from '../copy'
 import {

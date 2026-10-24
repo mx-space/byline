@@ -91,7 +91,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u51eb3793: css`
     display: grid;
-    grid-template-columns: minmax(7rem, 0.7fr) _repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(7rem, 0.7fr) repeat(3, minmax(0, 1fr));
     border-bottom-width: 1px;
     border-style: solid;
     border-color: ${cssVar.colorBorderSecondary};
@@ -105,7 +105,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   ue48f419d: css`
     display: grid;
-    grid-template-columns: minmax(7rem, 0.7fr) _minmax(0, 1fr) _minmax(0, 1fr);
+    grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1fr) minmax(0, 1fr);
     border-bottom-width: 1px;
     border-style: solid;
     border-color: ${cssVar.colorBorderSecondary};
@@ -119,7 +119,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u41c7b4f4: css`
     display: grid;
-    grid-template-columns: minmax(7rem, 0.7fr) _repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(7rem, 0.7fr) repeat(3, minmax(0, 1fr));
     border-bottom-width: 1px;
     border-style: solid;
     border-color: ${cssVar.colorBorderSecondary};
@@ -134,7 +134,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u54bce6c5: css`
     display: grid;
-    grid-template-columns: minmax(7rem, 0.7fr) _minmax(0, 1fr) _minmax(0, 1fr);
+    grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1fr) minmax(0, 1fr);
     border-bottom-width: 1px;
     border-style: solid;
     border-color: ${cssVar.colorBorderSecondary};

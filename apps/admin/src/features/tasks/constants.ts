@@ -33,6 +33,12 @@ export const taskTypeLabelKeys: Record<AITaskType, TranslationKey> = {
   [AITaskType.Tts]: 'tasks.taskType.tts',
 }
 
+export const extraTaskTypeLabelKeys: Record<string, TranslationKey> = {
+  'ai:summary:translation': 'tasks.taskType.summaryTranslation',
+  'cron:clean-temp-directory': 'tasks.taskType.cleanTempDirectory',
+  'cron:delete-expired-jwt': 'tasks.taskType.deleteExpiredJwt',
+}
+
 export const taskStatusLabelKeys: Record<AITaskStatus, TranslationKey> = {
   [AITaskStatus.Pending]: 'tasks.taskStatus.pending',
   [AITaskStatus.Running]: 'tasks.taskStatus.running',

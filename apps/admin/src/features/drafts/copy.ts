@@ -14,56 +14,52 @@ export const draftCopy = createFeatureCopy({
   },
   behindDetail: {
     'en-US':
-      'The published post is newer than this draft. Check the diff before you continue.',
-    'zh-CN': '已发布版比这篇草稿新。继续编辑前先看正文差异。',
+      'The published article is newer than this draft. Check the diff before you continue.',
+    'zh-CN': '已发布文章比这篇草稿新。继续编辑前先看正文差异。',
   },
   bodyTitle: {
     'en-US': 'Body',
     'zh-CN': '正文',
-  },
-  bulkDelete: {
-    'en-US': 'Delete',
-    'zh-CN': '删除',
   },
   cancel: {
     'en-US': 'Cancel',
     'zh-CN': '取消',
   },
   changeBehind: {
-    'en-US': 'Behind published',
-    'zh-CN': '落后于已发布版',
+    'en-US': 'Behind',
+    'zh-CN': '落后',
   },
   changeChanged: {
-    'en-US': 'Unpublished changes',
-    'zh-CN': '有未发布改动',
+    'en-US': 'Changed',
+    'zh-CN': '有改动',
+  },
+  changeChangedDetail: {
+    'en-US': 'This draft has changes that are not published yet.',
+    'zh-CN': '这篇草稿有还没发布的改动。',
   },
   changeNew: {
-    'en-US': 'New post',
-    'zh-CN': '新博文',
+    'en-US': 'New',
+    'zh-CN': '新文章',
+  },
+  changeNewDetail: {
+    'en-US': 'This article has never been published.',
+    'zh-CN': '这篇文章还没有发布过。',
   },
   changeSame: {
-    'en-US': 'Matches published',
-    'zh-CN': '与已发布版相同',
+    'en-US': 'Same',
+    'zh-CN': '相同',
   },
   changesNone: {
-    'en-US': 'Nothing differs from the published post.',
-    'zh-CN': '与已发布版相同，没有未发布改动。',
+    'en-US': 'Nothing differs from the published article.',
+    'zh-CN': '与已发布文章相同，没有未发布的改动。',
   },
   changesTitle: {
     'en-US': 'Changes since published',
     'zh-CN': '相对已发布版的改动',
   },
-  checkboxAria: {
-    'en-US': 'Select draft "{title}"',
-    'zh-CN': '选择草稿「{title}」',
-  },
   clearSearch: {
     'en-US': 'Clear search',
     'zh-CN': '清除搜索',
-  },
-  clearSelection: {
-    'en-US': 'Clear selection',
-    'zh-CN': '取消选择',
   },
   conflict: {
     'en-US': 'Conflict',
@@ -73,23 +69,11 @@ export const draftCopy = createFeatureCopy({
     'en-US':
       'This draft and the published post both changed. Continue editing to merge them. Deleting the draft leaves the published post unchanged.',
     'zh-CN':
-      '草稿和已发布版各自有改动。继续编辑可在写作页合并。删除草稿不会改动已发布的博文。',
-  },
-  confirmBatchBody: {
-    'en-US': 'This cannot be undone. Published posts stay.',
-    'zh-CN': '删除后无法恢复。已发布的博文不会被删除。',
-  },
-  confirmBatchConfirm: {
-    'en-US': 'Delete {count} drafts',
-    'zh-CN': '删除 {count} 篇草稿',
-  },
-  confirmBatchTitle: {
-    'en-US': 'Delete {count} drafts?',
-    'zh-CN': '删除 {count} 篇草稿？',
+      '草稿和已发布版各自有改动。继续编辑可在写作页合并。删除草稿不会改动已发布的文章。',
   },
   confirmDeleteBody: {
     'en-US': 'This cannot be undone. The published post stays.',
-    'zh-CN': '删除后无法恢复。已发布的博文不会被删除。',
+    'zh-CN': '删除后无法恢复。已发布的文章不会被删除。',
   },
   confirmDeleteConfirm: {
     'en-US': 'Delete draft',
@@ -118,10 +102,6 @@ export const draftCopy = createFeatureCopy({
   deleted: {
     'en-US': 'Draft deleted',
     'zh-CN': '已删除草稿',
-  },
-  deletedPartial: {
-    'en-US': 'Deleted {success}. {failed} failed',
-    'zh-CN': '已删除 {success} 篇，{failed} 篇失败',
   },
   detailErrorBody: {
     'en-US': 'The network or service is unavailable.',
@@ -249,7 +229,7 @@ export const draftCopy = createFeatureCopy({
   },
   filterNew: {
     'en-US': 'New posts',
-    'zh-CN': '新博文',
+    'zh-CN': '新文章',
   },
   historyCount: {
     'en-US': 'History · {count}',
@@ -273,7 +253,7 @@ export const draftCopy = createFeatureCopy({
   },
   listEmptyAction: {
     'en-US': 'Write a post',
-    'zh-CN': '写博文',
+    'zh-CN': '写文章',
   },
   listEmptyBody: {
     'en-US': 'The editor saves drafts here as you write.',
@@ -326,14 +306,6 @@ export const draftCopy = createFeatureCopy({
   searchPlaceholder: {
     'en-US': 'Search title or body',
     'zh-CN': '搜索标题或正文',
-  },
-  selectAll: {
-    'en-US': 'Select page',
-    'zh-CN': '全选当前页',
-  },
-  selectedCount: {
-    'en-US': '{count} selected',
-    'zh-CN': '已选 {count} 篇',
   },
   sortLabel: {
     'en-US': 'Sort',

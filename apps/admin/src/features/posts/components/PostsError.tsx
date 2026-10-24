@@ -1,5 +1,7 @@
-import { Button, Empty } from '@lobehub/ui'
+import { Empty } from '@lobehub/ui'
 import { FileText } from 'lucide-react'
+
+import { Button } from '~/ui/site-button'
 
 import { usePostCopy } from '../copy'
 import { styles } from './styles'

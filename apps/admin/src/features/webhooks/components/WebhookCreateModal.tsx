@@ -1,10 +1,11 @@
-import { Alert, Button, confirmModal, Flexbox, Modal, toast } from '@lobehub/ui'
+import { Alert, confirmModal, Flexbox, Modal, toast } from '@lobehub/ui'
 import { Form, useForm } from '@lobehub/ui/form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 
 import { createWebhook, getWebhooks } from '~/api/webhooks'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
 import { webhooksQueryKey } from '../constants'
 import { useWebhookCopy } from '../copy'

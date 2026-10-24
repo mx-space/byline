@@ -35,8 +35,7 @@ const lobeStyles = createStaticStyles(({ css }) => ({
     flex: 1 1 0%;
   `,
   u44bd673a: css`
-    padding-inline: 0.75rem;
-    padding-block: 1rem;
+    padding-block: 4px 12px;
   `,
 }))
 

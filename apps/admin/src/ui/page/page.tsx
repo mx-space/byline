@@ -4,6 +4,9 @@ import type { ReactNode } from 'react'
 
 export type PageWidth = 'default' | 'full' | 'narrow' | 'wide'
 
+export const PAGE_CONTENT_MAX_WIDTH = '1440px'
+export const ARTICLE_MAX_WIDTH = '740px'
+
 const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
   body: css`
     display: flex;
@@ -53,6 +56,7 @@ const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
     display: flex;
     flex-direction: column;
 
+    width: 100%;
     height: 100%;
     min-height: 0;
     min-width: 0;
@@ -62,25 +66,19 @@ const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
   scroll: css`
     overflow: auto;
   `,
-  widthDefault: css`
-    max-width: 1120px;
+  widthBounded: css`
+    max-width: ${PAGE_CONTENT_MAX_WIDTH};
   `,
   widthFull: css`
     max-width: none;
   `,
-  widthNarrow: css`
-    max-width: 800px;
-  `,
-  widthWide: css`
-    max-width: 1440px;
-  `,
 }))
 
 const widthClass: Record<PageWidth, string> = {
-  default: styles.widthDefault,
+  default: styles.widthBounded,
   full: styles.widthFull,
-  narrow: styles.widthNarrow,
-  wide: styles.widthWide,
+  narrow: styles.widthBounded,
+  wide: styles.widthBounded,
 }
 
 export interface PageProps {

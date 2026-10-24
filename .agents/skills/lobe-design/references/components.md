@@ -346,7 +346,7 @@ BackBottom                        ← 浮层，指向滚动容器
 - 卡片放在非默认页面底上（例如自定义画布色）时，在外层设 `--lobe-surface-canvas`，固定列等需要不透明底的地方才能算对。
 - 卡片头里的控件（`Segmented`、`ActionIcon`、`Select`）用紧凑尺寸：`Segmented size="small"`、`ActionIcon size="small"`。头部行高固定在标题行，大控件不会撑高卡片但会溢出显得挤；同一行卡片有的带控件有的不带时，标题、数字和图表仍应横向对齐。
 - 应用里确实要自己画卡片状的边框或分割线时，用 `colorFillSecondary`（悬停 / 聚焦用 `colorFill`），不要用实色 `colorBorder` / `colorBorderSecondary`。布局容器（`ConsoleShell`、`ConsoleNav`、`FilterSidebar` 分栏线）不在此列。
-- 表格选型：数据已经加载好、只做展示和简单排序 / 筛选，用 `Table`；数据由接口按页码、搜索条件、排序拉取，并需要查询表单、刷新、密度、列设置等工具栏能力的增删改查列表，用 `ProTable`。不要用 `Table` 手拼查询表单 + 请求 + 工具栏。
+- 表格选型：数据已经加载好、只做展示和简单排序 / 筛选，用 `Table`；数据由接口按页码、搜索条件、排序拉取，并需要查询表单、刷新、密度、列设置等工具栏能力的增删改查列表，用 `ProTable`。不要用 `Table` 手拼查询表单 + 请求 + 工具栏，更不要用 div 网格加 `role="columnheader"` 手拼一张表（lint：`LOBE-HANDROLLED-TABLE`）。
 - `Table` / `ProTable` 的 `variant` 按所处容器选：放在 `Surface`、卡片等已有边框的容器里用 `borderless`（默认），独立放在页面上没有外框时用 `outlined`，不要在带框容器里再给表格加一圈框。
 - `ProTable` 筛选形态：字段少（约 4 个以内）、选完即查、和标题工具栏同一行即可的，用 `search={{ filterType: 'light' }}`；字段多、需要标签、校验或显式「查询 / 重置」的，用默认查询表单（`filterType: 'query'`）；只按一个关键字搜时用工具栏 `options.search`，不要另开表单。
 - 不要在应用里覆盖 lobe-ui 主题变量（如 `--lobe-color-border`、`--lobe-color-border-secondary` 加 `!important`）。看起来不对就修 lobe-ui 上游组件。

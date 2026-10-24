@@ -1,7 +1,8 @@
-import { Button, createModal, useModalContext } from '@lobehub/ui'
+import { createModal, useModalContext } from '@lobehub/ui'
 import type { ReactNode } from 'react'
 
 import { translate } from '~/i18n/translate'
+import { Button } from '~/ui/site-button'
 
 export interface ConfirmDialogOptions {
   title: ReactNode

@@ -4,54 +4,31 @@ import type { GraphRow } from './layout'
 import { MAX_LANE } from './layout'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
-  u62bc683e: css`
-    width: 0.625rem;
-    height: 0.625rem;
+  dot: css`
+    position: absolute;
+    box-sizing: border-box;
+    width: 8px;
+    height: 8px;
     border-radius: 999px;
-    background-color: ${cssVar.colorWarning};
-    box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, ${cssVar.colorWarning} 20%, transparent);
+    background: ${cssVar.colorBgContainer};
+  `,
+  u62bc683e: css`
+    background: ${cssVar.colorWarning};
   `,
   u88b28b5a: css`
-    width: 0.625rem;
-    height: 0.625rem;
-    border-radius: 999px;
-    background-color: ${cssVar.colorPrimary};
-    box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, ${cssVar.colorPrimary} 25%, transparent);
+    background: ${cssVar.colorText};
   `,
   u117e152e: css`
-    width: 0.625rem;
-    height: 0.625rem;
-    border-radius: 999px;
-    border-width: 0.5rem;
-    border-color: ${cssVar.colorPrimary};
-    background-color: ${cssVar.colorBgLayout};
+    border: 2px solid ${cssVar.colorText};
   `,
   u8084dc2e: css`
-    width: 0.75rem;
-    height: 0.75rem;
-    border-radius: 999px;
-    background-color: ${cssVar.colorSuccess};
-    box-shadow: 0 0 0 3px ${cssVar.colorPrimary};
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, ${cssVar.colorSuccess} 25%, transparent);
+    background: ${cssVar.colorSuccess};
   `,
   uc2780701: css`
-    width: 0.625rem;
-    height: 0.625rem;
-    border-radius: 999px;
-    background-color: ${cssVar.colorTextTertiary};
+    background: ${cssVar.colorTextTertiary};
   `,
   u925d9134: css`
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 999px;
-    border-width: 0.5rem;
-    border-color: ${cssVar.colorBorder};
-    background-color: ${cssVar.colorBgLayout};
+    border: 2px solid ${cssVar.colorBorder};
   `,
   ud452ad70: css`
     position: relative;
@@ -59,15 +36,15 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   uefbb9c95: css`
     position: absolute;
-    inset: 0px;
+    inset: 0;
     width: 100%;
     height: 100%;
-    color: ${cssVar.colorBorder};
+    color: ${cssVar.colorBorderSecondary};
   `,
 }))
 
 const LANE_WIDTH = 16
-const LANE_INSET = 9
+const LANE_INSET = 4
 const MERGE_RADIUS = 8
 
 export const laneX = (lane: number) =>
@@ -128,7 +105,7 @@ export function VersionRail(props: {
       </svg>
 
       <span
-        className={`absolute ${DOT_CLASS[props.tone]}`}
+        className={`${lobeStyles.dot} ${DOT_CLASS[props.tone]}`}
         style={{
           left: x,
           top: dotY,

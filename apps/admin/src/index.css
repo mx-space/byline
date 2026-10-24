@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-
 @layer base {
   *,
   ::after,
@@ -23,55 +21,6 @@
   :where(.dark, .dark *) textarea::placeholder {
     color: var(--lobe-color-text-quaternary);
   }
-}
-
-body,
-html {
-  margin: 0;
-  padding: 0;
-
-  --sans-font:
-    'Inter', -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI',
-    system-ui, sans-serif;
-
-  font-family: var(--sans-font);
-  background: var(--lobe-color-bg-layout);
-}
-
-body {
-  min-height: 100dvh;
-  background: var(--lobe-color-bg-layout);
-  font-size: 0.875rem;
-  -webkit-font-smoothing: antialiased;
-  font-feature-settings: 'ss01', 'cv11';
-  overflow: hidden;
-}
-
-/* Suppress grid-template-columns transition while user drags the sidebar handle. */
-body[data-sidebar-resizing='true'] {
-  cursor: col-resize;
-  user-select: none;
-}
-body[data-sidebar-resizing='true'] main {
-  transition: none !important;
-}
-
-@layer base {
-  body a {
-    color: var(--lobe-color-primary);
-    transition: color 0.15s ease;
-    text-decoration: none;
-  }
-
-  body a:hover {
-    color: var(--lobe-color-primary-hover);
-  }
-
-  /* 按钮样式重置 - 针对自定义按钮组件 */
-  button:focus,
-  button {
-    outline: unset;
-  }
 
   button {
     border: none;
@@ -83,75 +32,6 @@ body[data-sidebar-resizing='true'] main {
   }
 }
 
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-*::-webkit-scrollbar-thumb {
-  background-clip: padding-box;
-  border: 3px solid transparent;
-  border-radius: 5px;
-}
-
-html:not(.dark) *::-webkit-scrollbar-thumb {
-  background-color: rgba(120, 119, 116, 0.4);
-}
-
-html:not(.dark) *::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(120, 119, 116, 0.6);
-}
-
-html.dark *::-webkit-scrollbar-thumb {
-  background-color: rgba(168, 162, 158, 0.3);
-}
-
-html.dark *::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(168, 162, 158, 0.5);
-}
-
-html:not(.dark) *::-webkit-scrollbar-corner {
-  background: var(--color-surface-page);
-}
-
-html.dark *::-webkit-scrollbar-corner {
-  background: var(--color-surface-page);
-}
-
-.modal-card {
-  width: 60rem;
-  max-width: 90vw;
-}
-
-.modal-card.sm {
-  width: 40rem;
-}
-
-.modal-card.xs {
-  width: 30rem;
-}
-
-* {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-text-size-adjust: 100%;
-}
-
-@keyframes dock-sweep {
-  from {
-    background-position: 180% 0;
-  }
-  to {
-    background-position: -80% 0;
-  }
-}
-
-@keyframes dock-mark {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+body {
+  overflow: hidden;
 }

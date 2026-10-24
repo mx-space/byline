@@ -1,4 +1,4 @@
-import { Alert, Button, Select, Text, toast } from '@lobehub/ui'
+import { Alert, Select, Skeleton, Text, toast } from '@lobehub/ui'
 import { Form, useForm } from '@lobehub/ui/form'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
@@ -6,6 +6,7 @@ import { useRef, useState } from 'react'
 import { getModelsByCapability } from '~/api/ai'
 import type { AIProviderCapability } from '~/features/settings/types/settings'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
 import { type SetupCopyKey, useSetupCopy } from '../copy'
 import {
@@ -184,7 +185,11 @@ export function AiModelsStep(props: {
         >
           <div className={wizardStyles.stack}>
             {modelsLoading || configQuery.isPending ? (
-              <Text type="secondary">{copy('modelsLoading')}</Text>
+              <Skeleton.Text
+                aria-label={copy('modelsLoading')}
+                rows={1}
+                width="42%"
+              />
             ) : null}
             {modelsError || configQuery.isError ? (
               <Alert showIcon title={copy('modelsLoadError')} type="error" />

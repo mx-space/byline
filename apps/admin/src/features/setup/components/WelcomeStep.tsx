@@ -1,10 +1,11 @@
-import { Alert, Button, Text } from '@lobehub/ui'
+import { Alert, Skeleton } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 
 import { getAppInfo } from '~/api/system'
 import { API_URL } from '~/constants/env'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
 import { useSetupCopy } from '../copy'
 import {
@@ -67,7 +68,11 @@ export function WelcomeStep(props: {
             type={props.connected ? 'success' : 'error'}
           />
           {props.connected && infoQuery.isPending ? (
-            <Text type="secondary">{copy('welcomeLoading')}</Text>
+            <Skeleton.Text
+              aria-label={copy('welcomeLoading')}
+              rows={1}
+              width="42%"
+            />
           ) : null}
           {props.connected && infoQuery.isError ? (
             <Alert showIcon title={copy('welcomeLoadError')} type="warning" />

@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  Button,
   createStaticStyles,
   Flexbox,
   Input,
@@ -12,6 +11,7 @@ import { Copy } from 'lucide-react'
 
 import { API_URL } from '~/constants/env'
 import { useI18n } from '~/i18n'
+import { Button } from '~/ui/site-button'
 import { authClient } from '~/utils/authjs/auth'
 
 import { settingsAccountCopy } from '../../copy'

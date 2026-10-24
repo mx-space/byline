@@ -1,5 +1,7 @@
-import { Alert, Button } from '@lobehub/ui'
+import { Alert } from '@lobehub/ui'
 import type { ReactNode } from 'react'
+
+import { Button } from '~/ui/site-button'
 
 import { authStyles } from './auth-styles'
 

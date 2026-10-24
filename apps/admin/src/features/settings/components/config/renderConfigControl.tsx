@@ -1,13 +1,7 @@
-import {
-  Button,
-  Input,
-  InputNumber,
-  Select,
-  Switch,
-  TextArea,
-} from '@lobehub/ui'
+import { Input, InputNumber, Select, Switch, TextArea } from '@lobehub/ui'
 
 import type { ConfigFormField } from '~/api/options'
+import { Button } from '~/ui/site-button'
 
 import { stringValue } from '../../utils/settings'
 import { isSecretField } from '../../utils/settings-risk'

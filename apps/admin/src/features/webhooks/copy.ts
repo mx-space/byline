@@ -41,7 +41,7 @@ const catalog = {
   },
   deliveryEmptyDescription: {
     'en-US': 'Send a test, or publish a post, and the result shows up here.',
-    'zh-CN': '发送一次测试或发布博文后，结果会出现在这里。',
+    'zh-CN': '发送一次测试或发布文章后，结果会出现在这里。',
   },
   deliveryEmptyTitle: {
     'en-US': 'No deliveries yet',

@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  Button,
   createStaticStyles,
   Empty,
   Flexbox,
@@ -14,6 +13,7 @@ import type { ReactNode } from 'react'
 import { useState } from 'react'
 
 import { useI18n } from '~/i18n'
+import { Button } from '~/ui/site-button'
 
 import { settingsCopy } from '../copy'
 
@@ -63,7 +63,7 @@ export function FieldShell(props: { children: ReactNode; label: string }) {
 export function EmptyState(props: { icon: ReactNode; label: string }) {
   return (
     <div className={styles.empty}>
-      <Empty description={props.label} image={props.icon} />
+      <Empty image={props.icon} title={props.label} />
     </div>
   )
 }
@@ -89,6 +89,7 @@ export function SettingsGroup(props: {
 
 export function SettingRow(props: {
   children: ReactNode
+  className?: string
   desc?: ReactNode
   divider?: boolean
   error?: string
@@ -112,6 +113,7 @@ export function SettingRow(props: {
 
   return (
     <Form.Field
+      className={props.className}
       desc={props.desc}
       divider={props.divider}
       extra={footer}

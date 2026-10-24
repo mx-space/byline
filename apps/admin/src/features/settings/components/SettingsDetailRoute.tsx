@@ -1,4 +1,4 @@
-import { createStaticStyles, SkeletonText } from '@lobehub/ui'
+import { createStaticStyles } from '@lobehub/ui'
 import { SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router'
@@ -6,6 +6,7 @@ import { useParams } from 'react-router'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { useI18n } from '~/i18n'
 import { DetailPane, DetailPlaceholder } from '~/ui/page'
+import { FormSkeleton } from '~/ui/placeholders'
 
 import { settingsCopy } from '../copy'
 import { getGroupDescription, getGroupTitle } from '../utils/settings'
@@ -70,7 +71,9 @@ export function SettingsDetailRoute() {
         title={title}
       >
         <div className={styles.content}>
-          {!activeGroup ? <SkeletonText rows={8} /> : null}
+          {!activeGroup ? (
+            <FormSkeleton label={t('settings.common.loading')} rows={6} />
+          ) : null}
           {activeGroup?.type === 'user' ? <ProfileSettings /> : null}
           {activeGroup?.type === 'account' ? <AccountSettings /> : null}
           {activeGroup?.type === 'system' && activeGroup.systemGroup ? (

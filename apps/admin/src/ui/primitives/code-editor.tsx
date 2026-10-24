@@ -187,7 +187,7 @@ export function CodeEditor({
   }
 
   return (
-    <div className={cn(`${lobeStyles.u4fabfdf6} dark:bg-[#0d1117]`, className)}>
+    <div className={cn(lobeStyles.u4fabfdf6, className)}>
       <div className={lobeStyles.u96bb274c}>
         <div className={lobeStyles.u6a00a25d}>
           <Code2 aria-hidden="true" className={lobeStyles.ub481f7c2} />

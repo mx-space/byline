@@ -1,4 +1,4 @@
-import { Alert, Button, createStaticStyles, Progress } from '@lobehub/ui'
+import { Alert, createStaticStyles, Progress } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router'
 
@@ -6,6 +6,7 @@ import type { AITask } from '~/api/tasks'
 import { getTasksByGroupId } from '~/api/tasks'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
 import { taskStatusLabelKeys } from '../constants'
 import { useTaskCopy } from '../copy'

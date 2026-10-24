@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Alert,
-  Button,
   Flexbox,
   Modal,
   Tag,
@@ -16,13 +15,14 @@ import { useState } from 'react'
 import type { UserInvite } from '~/api/users'
 import { getInvites, revokeInvite } from '~/api/users'
 import { adminQueryKeys } from '~/query/keys'
+import { emptyOr } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { useUsersCopy } from '../copy'
 import {
   EMPTY_VALUE,
   formatAdminTime,
   getUserErrorMessage,
-  showValue,
 } from '../utils/users'
 
 export function PendingInvites() {
@@ -89,13 +89,13 @@ export function PendingInvites() {
             <Flexbox allowShrink flex={1} gap={4}>
               <Flexbox align="center" gap={8} horizontal>
                 <Text ellipsis={{ tooltipWhenOverflow: true }}>
-                  {showValue(invite.displayName || invite.email)}
+                  {emptyOr(invite.displayName || invite.email)}
                 </Text>
                 {invite.userId ? <Tag>{copy('linked')}</Tag> : null}
                 {expired ? <Tag color="warning">{copy('expired')}</Tag> : null}
               </Flexbox>
               <Text ellipsis={{ tooltipWhenOverflow: true }} type="secondary">
-                {invite.displayName ? showValue(invite.email) : null}
+                {invite.displayName ? emptyOr(invite.email) : null}
                 {invite.displayName && !expired && time !== EMPTY_VALUE
                   ? ' · '
                   : null}

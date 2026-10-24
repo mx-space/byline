@@ -1,5 +1,5 @@
 import type { TagSize } from '@lobehub/ui'
-import { Tag } from '@lobehub/ui'
+import { Tag, Tooltip } from '@lobehub/ui'
 
 import type { DraftModel } from '~/models/draft'
 
@@ -21,12 +21,23 @@ const kindLabel = {
   same: 'changeSame',
 } as const
 
+const kindDetail = {
+  behind: 'behindDetail',
+  changed: 'changeChangedDetail',
+  new: 'changeNewDetail',
+  same: 'changesNone',
+} as const
+
 export function DraftKindTag(props: { draft: DraftModel; size?: TagSize }) {
   const { copy } = useDraftCopy()
   const kind = draftChangeKind(props.draft)
   return (
-    <Tag color={kindColor[kind]} size={props.size}>
-      {copy(kindLabel[kind])}
-    </Tag>
+    <Tooltip title={copy(kindDetail[kind])}>
+      <span>
+        <Tag color={kindColor[kind]} size={props.size}>
+          {copy(kindLabel[kind])}
+        </Tag>
+      </span>
+    </Tooltip>
   )
 }

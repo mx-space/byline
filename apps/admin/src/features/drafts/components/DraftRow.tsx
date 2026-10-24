@@ -1,4 +1,6 @@
-import { Checkbox, createStaticStyles, cx, Tag, Tooltip } from '@lobehub/ui'
+import { createStaticStyles, cx, Icon, Tag, Tooltip } from '@lobehub/ui'
+import { Image as ImageIcon } from 'lucide-react'
+import { useState } from 'react'
 
 import type { DraftModel } from '~/models/draft'
 import type { ListAction, ListRowSelectMode } from '~/ui/list-actions'
@@ -17,6 +19,7 @@ import { DraftKindTag } from './DraftKindTag'
 const styles = createStaticStyles(({ css, cssVar }) => ({
   body: css`
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
@@ -29,11 +32,27 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     text-overflow: ellipsis;
     white-space: nowrap;
   `,
-  check: css`
+  cover: css`
     display: flex;
-    padding-block-start: 2px;
-    opacity: 0;
-    transition: opacity 0.15s ease;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+
+    width: 64px;
+    height: 40px;
+    border-radius: ${cssVar.borderRadiusXS};
+
+    background: ${cssVar.colorFillTertiary};
+  `,
+  coverIcon: css`
+    color: ${cssVar.colorTextQuaternary};
+  `,
+  coverImage: css`
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   `,
   line: css`
     display: flex;
@@ -44,13 +63,12 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
   row: css`
     cursor: pointer;
 
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 8px;
-    align-items: start;
+    display: flex;
+    gap: 12px;
+    align-items: center;
 
     margin-inline: 8px;
-    padding-block: 12px;
+    padding-block: 10px;
     padding-inline: 8px 12px;
     border-radius: ${cssVar.borderRadius};
 
@@ -60,13 +78,6 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
 
     &[aria-current='true'] {
       background: ${cssVar.colorFillSecondary};
-    }
-
-    &:hover [data-row-check],
-    &:focus-within [data-row-check],
-    &[data-selected] [data-row-check],
-    [data-selecting] & [data-row-check] {
-      opacity: 1;
     }
   `,
   time: css`
@@ -94,14 +105,38 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
   `,
 }))
 
+function draftCoverSrc(draft: DraftModel) {
+  const image = draft.headRevision.typeSpecificData?.image
+  return typeof image === 'string' ? image.trim() : ''
+}
+
+function DraftCover(props: { src: string }) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const show = props.src.length > 0 && failedSrc !== props.src
+  return (
+    <span aria-hidden className={styles.cover}>
+      {show ? (
+        <img
+          alt=""
+          className={styles.coverImage}
+          decoding="async"
+          loading="lazy"
+          onError={() => setFailedSrc(props.src)}
+          src={props.src}
+        />
+      ) : (
+        <Icon className={styles.coverIcon} icon={ImageIcon} size="small" />
+      )}
+    </span>
+  )
+}
+
 export function DraftRow(props: {
   actions: ReadonlyArray<ListAction<DraftModel>>
   authorNames: (ids: string[]) => string
-  checked: boolean
   cursor?: boolean
   draft: DraftModel
   isDetailTarget: boolean
-  onCheck: () => void
   onSelect: (mode: ListRowSelectMode) => void
 }) {
   const { copy, format } = useDraftCopy()
@@ -117,20 +152,11 @@ export function DraftRow(props: {
       className={styles.row}
       cursor={props.cursor}
       dataId={props.draft.id}
-      leading={
-        <span className={styles.check} data-row-check="">
-          <Checkbox
-            aria-label={copy('checkboxAria', { title })}
-            checked={props.checked}
-            onChange={() => props.onCheck()}
-          />
-        </span>
-      }
       menuItems={() => buildMenuItemsFromActions(props.actions, props.draft)}
       onSelect={props.onSelect}
       role="row"
-      selected={props.checked}
     >
+      <DraftCover src={draftCoverSrc(props.draft)} />
       <div className={styles.body}>
         <div className={styles.line}>
           <h3

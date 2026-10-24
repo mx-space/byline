@@ -1,4 +1,3 @@
-import { Button } from '@lobehub/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileQuestion, RefreshCw } from 'lucide-react'
 import { useParams } from 'react-router'
@@ -9,6 +8,7 @@ import { useDocumentTitle } from '~/hooks/use-document-title'
 import type { DraftModel } from '~/models/draft'
 import { adminQueryKeys } from '~/query/keys'
 import { DetailPane, DetailPlaceholder } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
 import { useDraftCopy } from '../copy'
 import { draftTitle } from '../utils/draft-decision'
@@ -45,6 +45,7 @@ export function DraftDetailRoute() {
     return (
       <DetailPane
         backLabel={copy('title')}
+        contentWidth="article"
         onBack={ctx.onBack}
         title={copy('title')}
       >
@@ -70,6 +71,7 @@ export function DraftDetailRoute() {
     return (
       <DetailPane
         backLabel={copy('title')}
+        contentWidth="article"
         onBack={ctx.onBack}
         title={copy('title')}
       >

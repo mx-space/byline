@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Alert,
-  Button,
   confirmModal,
   createStaticStyles,
   Empty,
@@ -29,17 +28,34 @@ import {
   UploadCloud,
 } from 'lucide-react'
 import type { ChangeEvent, HTMLAttributes, ReactNode } from 'react'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Outlet, useNavigate, useParams } from 'react-router'
 
 import type { FileItem } from '~/api/files'
 import { deleteFileByTypeAndName } from '~/api/files'
 import { useLocalStorageState } from '~/hooks/use-local-storage-state'
 import { useI18n } from '~/i18n'
+import {
+  alphaFirst,
+  compareText,
+  compareTime,
+  type HeaderSortOrder,
+  newestFirst,
+  orderedBy,
+  readFilterValues,
+} from '~/ui/data/table-header'
 import { FocusScope } from '~/ui/focus-scope'
 import type { ListAction } from '~/ui/list-actions'
 import { useListKeyboard } from '~/ui/list-actions'
 import { Page } from '~/ui/page'
+import {
+  pinEnd,
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
 import type { FilesView } from '../constants'
 import {
@@ -63,20 +79,15 @@ import { FilesTabs } from './FilesTabs'
 import { FileThumb } from './FileThumb'
 import { UploadStatus } from './UploadStatus'
 
-const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
+const styles = createStaticStyles(({ css, cssVar }) => ({
   actions: css`
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 2px;
-
-    opacity: 0;
-
-    transition: opacity 0.12s ease;
-
-    ${responsive.md} {
-      opacity: 1;
-    }
+  `,
+  headerTitle: css`
+    white-space: nowrap;
   `,
   drop: css`
     pointer-events: none;
@@ -104,6 +115,16 @@ const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
     width: 1px;
     height: 1px;
     opacity: 0;
+  `,
+  cardSkeleton: css`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid ${cssVar.colorFillSecondary};
+    border-radius: ${cssVar.borderRadiusLG};
   `,
   gridSkeleton: css`
     display: grid;
@@ -135,12 +156,6 @@ const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
   `,
   row: css`
     cursor: pointer;
-
-    &:hover [data-row-actions],
-    &:focus-within [data-row-actions],
-    &[data-cursor] [data-row-actions] {
-      opacity: 1;
-    }
 
     &[data-cursor] > td {
       background: ${cssVar.colorFillTertiary};
@@ -193,6 +208,7 @@ function isInteractiveTarget(target: EventTarget) {
 
 export function FilesLibraryPage() {
   const copy = useFileCopy()
+  const table = useRecordTable()
   const { format } = useI18n()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -212,7 +228,48 @@ export function FilesLibraryPage() {
 
   const getName = useMemo(() => (item: FileItem) => item.name, [])
   const fileSearch = useFileSearch(allFiles, getName)
-  const filtered = fileSearch.items
+  const [extensions, setExtensions] = useState<string[]>([])
+  const [columnSort, setColumnSort] = useState<{
+    key: 'created' | 'name' | 'type'
+    order: HeaderSortOrder
+  } | null>(null)
+
+  useEffect(() => {
+    setExtensions([])
+  }, [fileType])
+
+  const extensionOptions = useMemo(() => {
+    const found = new Set<string>()
+    for (const item of allFiles) {
+      const extension = extensionOf(item.name)
+      if (extension) found.add(extension)
+    }
+    return [...found].sort(compareText)
+  }, [allFiles])
+
+  const rows = useMemo(() => {
+    const selected = new Set(extensions)
+    const narrowed =
+      selected.size === 0
+        ? fileSearch.items
+        : fileSearch.items.filter((item) => {
+            const extension = extensionOf(item.name)
+            return extension ? selected.has(extension) : false
+          })
+    if (!columnSort) return narrowed
+    const compare = {
+      created: (left: FileItem, right: FileItem) =>
+        compareTime(left.created, right.created),
+      name: (left: FileItem, right: FileItem) =>
+        compareText(left.name, right.name),
+      type: (left: FileItem, right: FileItem) =>
+        compareText(
+          extensionOf(left.name) ?? '',
+          extensionOf(right.name) ?? '',
+        ),
+    }[columnSort.key]
+    return orderedBy(narrowed, columnSort.order, compare)
+  }, [columnSort, extensions, fileSearch.items])
   const firstLoad = filesQuery.isPending && allFiles.length === 0
   const failedEmpty = filesQuery.isError && allFiles.length === 0
   const showStale = filesQuery.isError && allFiles.length > 0
@@ -299,12 +356,12 @@ export function FilesLibraryPage() {
   const { selection } = useListKeyboard<FileItem>({
     actions,
     getId: (item) => item.name,
-    items: filtered,
-    resetOn: [fileType, fileSearch.query, view],
+    items: rows,
+    resetOn: [columnSort, extensions, fileType, fileSearch.query, view],
     scopeId: FOCUS_SCOPE_ID,
   })
   const cursorId =
-    filtered.find((item) => selection.isCursor(item.name))?.name ?? null
+    rows.find((item) => selection.isCursor(item.name))?.name ?? null
 
   const onUploadChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? [])
@@ -345,17 +402,34 @@ export function FilesLibraryPage() {
           </div>
         </Flexbox>
       ),
+      sortDirections: alphaFirst,
+      sortOrder: columnSort?.key === 'name' ? columnSort.order : null,
+      sorter: true,
       title: copy('columnName'),
+      ...pinStart(table.pin),
     },
     {
       dataIndex: 'type',
+      filterSearch: extensionOptions.length > 7,
+      filteredValue: extensions.length > 0 ? extensions : null,
+      filters:
+        extensionOptions.length > 0
+          ? extensionOptions.map((extension) => ({
+              text: extension.toUpperCase(),
+              value: extension,
+            }))
+          : undefined,
+      onFilter: false,
       render: (_dom, item) => {
         const ext = extensionOf(item.name)
         return ext ? <Tag>{ext.toUpperCase()}</Tag> : '--'
       },
       responsive: ['md'],
-      title: copy('fieldType'),
-      width: 96,
+      sortDirections: alphaFirst,
+      sortOrder: columnSort?.key === 'type' ? columnSort.order : null,
+      sorter: true,
+      title: <span className={styles.headerTitle}>{copy('fieldType')}</span>,
+      width: 128,
     },
     {
       dataIndex: 'created',
@@ -367,8 +441,13 @@ export function FilesLibraryPage() {
         </Tooltip>
       ),
       responsive: ['md'],
-      title: copy('fieldUploaded'),
-      width: 128,
+      sortDirections: newestFirst,
+      sortOrder: columnSort?.key === 'created' ? columnSort.order : null,
+      sorter: true,
+      title: (
+        <span className={styles.headerTitle}>{copy('fieldUploaded')}</span>
+      ),
+      width: 152,
     },
     {
       align: 'right',
@@ -401,7 +480,8 @@ export function FilesLibraryPage() {
         </div>
       ),
       title: '',
-      width: 112,
+      width: 120,
+      ...pinEnd(table.pin),
     },
   ]
 
@@ -415,11 +495,16 @@ export function FilesLibraryPage() {
       description={copy('loadFailedBody')}
       title={copy('loadFailedTitle')}
     />
-  ) : fileSearch.query ? (
+  ) : fileSearch.query || extensions.length > 0 ? (
     <Empty
       action={
-        <Button onClick={() => fileSearch.setQuery('')}>
-          {copy('clearSearch')}
+        <Button
+          onClick={() => {
+            if (extensions.length > 0) setExtensions([])
+            if (fileSearch.query) fileSearch.setQuery('')
+          }}
+        >
+          {fileSearch.query ? copy('clearSearch') : copy('clearFilters')}
         </Button>
       }
       title={copy('emptySearchTitle')}
@@ -439,17 +524,24 @@ export function FilesLibraryPage() {
   let content: ReactNode
   if (view === 'grid') {
     content = firstLoad ? (
-      <div className={styles.gridSkeleton}>
+      <div aria-busy="true" className={styles.gridSkeleton}>
         {Array.from({ length: 8 }, (_, index) => (
-          <Skeleton height={180} key={index} />
+          <div className={styles.cardSkeleton} key={index}>
+            <Skeleton
+              style={{ aspectRatio: '4 / 3', height: 'auto' }}
+              width="100%"
+            />
+            <Skeleton height={14} width="70%" />
+            <Skeleton height={12} width="40%" />
+          </div>
         ))}
       </div>
-    ) : filtered.length === 0 ? (
+    ) : rows.length === 0 ? (
       <div className={styles.state}>{emptyNode}</div>
     ) : (
       <FileGrid
         cursorId={cursorId}
-        items={filtered}
+        items={rows}
         menuItems={(item) => buildFileMenuItems(actions, item)}
         onCopy={copyLink}
         onOpen={(item) => {
@@ -462,9 +554,29 @@ export function FilesLibraryPage() {
   } else {
     content = (
       <ProTable<FileItem>
+        className={recordTableStyles.root}
         columnEmptyText="--"
         columns={columns}
-        dataSource={filtered}
+        scroll={recordTableScroll(columns, table)}
+        tableLayout="fixed"
+        dataSource={rows}
+        onChange={(_pagination, filters, sorter, extra) => {
+          if (extra.action === 'filter') {
+            setExtensions(readFilterValues(filters, 'type'))
+            return
+          }
+          if (extra.action !== 'sort') return
+          const info = Array.isArray(sorter) ? sorter[0] : sorter
+          const key = info?.columnKey == null ? '' : String(info.columnKey)
+          if (
+            !info?.order ||
+            (key !== 'name' && key !== 'type' && key !== 'created')
+          ) {
+            setColumnSort(null)
+            return
+          }
+          setColumnSort({ key, order: info.order })
+        }}
         loading={filesQuery.isFetching && filesQuery.isPlaceholderData}
         locale={{ emptyText: emptyNode }}
         onRow={(item) =>

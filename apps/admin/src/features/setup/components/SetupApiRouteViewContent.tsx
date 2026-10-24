@@ -1,6 +1,8 @@
-import { Button, Input, Switch, toast } from '@lobehub/ui'
+import { Input, Switch, toast } from '@lobehub/ui'
 import { Form, useForm } from '@lobehub/ui/form'
 import { useMemo, useRef, useState } from 'react'
+
+import { Button } from '~/ui/site-button'
 
 import { useSetupCopy } from '../copy'
 import { SetupPage } from './OnboardingShell'

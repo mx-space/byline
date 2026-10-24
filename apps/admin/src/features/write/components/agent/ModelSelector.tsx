@@ -19,9 +19,9 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u3c0e9874: css`
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    gap: 4px;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     color: ${cssVar.colorTextSecondary};
     transition:
       color 0.15s ease,

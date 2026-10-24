@@ -36,7 +36,7 @@ export interface ButtonLinkProps extends Omit<
 function lobeType(variant: ButtonVariant): LobeButtonProps['type'] {
   if (variant === 'primary') return 'primary'
   if (variant === 'ghost') return 'text'
-  return 'default'
+  return 'fill'
 }
 
 export function Button({
@@ -52,6 +52,7 @@ export function Button({
         ...props,
         className,
         htmlType: type,
+        shape: 'round',
         size: iconOnly ? 'small' : 'middle',
         type: lobeType(variant),
       } as LobeButtonProps)}
@@ -70,6 +71,7 @@ export function ButtonLink({
     <LobeButton
       className={className}
       href={typeof to === 'string' ? to : undefined}
+      shape="round"
       size={iconOnly ? 'small' : 'middle'}
       type={lobeType(variant)}
     >

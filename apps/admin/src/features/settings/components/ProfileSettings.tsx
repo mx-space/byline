@@ -1,4 +1,4 @@
-import { Alert, Button, Flexbox, SkeletonText, Text, toast } from '@lobehub/ui'
+import { Alert, Flexbox, Text, toast } from '@lobehub/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getMe, updateMe } from '~/api/users'
@@ -6,6 +6,8 @@ import { UserProfileForm } from '~/features/users/components/UserProfileForm'
 import { getUserErrorMessage } from '~/features/users/utils/users'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { FormSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { settingsCopy } from '../copy'
 import { formatDateTime, getErrorMessage } from '../utils/settings'
@@ -18,7 +20,9 @@ export function ProfileSettings() {
     queryKey: adminQueryKeys.users.me(),
   })
 
-  if (meQuery.isLoading) return <SkeletonText rows={6} />
+  if (meQuery.isLoading) {
+    return <FormSkeleton label={t('settings.common.loading')} rows={5} />
+  }
 
   if (!meQuery.data) {
     return (

@@ -1,11 +1,4 @@
-import {
-  Button,
-  type ButtonProps,
-  Input,
-  InputPassword,
-  Text,
-  toast,
-} from '@lobehub/ui'
+import { Input, InputPassword, Text, toast } from '@lobehub/ui'
 import { Form, useForm } from '@lobehub/ui/form'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { KeyRound } from 'lucide-react'
@@ -14,6 +7,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 
 import { type AllowLoginResponse, getAllowLogin } from '~/api/users'
 import { SESSION_WITH_LOGIN } from '~/constants/keys'
+import { Button, type ButtonProps } from '~/ui/site-button'
 import { authClient } from '~/utils/authjs/auth'
 
 import {

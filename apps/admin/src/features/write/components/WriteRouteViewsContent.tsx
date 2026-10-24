@@ -1,5 +1,5 @@
 import { projectAgentDiffNodesToFactualState } from '@haklex/rich-ext-ai-agent/static'
-import { Button, Drawer, Skeleton, toast } from '@lobehub/ui'
+import { Drawer, Skeleton, toast } from '@lobehub/ui'
 import { createMxLitexmlRegistry, mxLexicalToMarkdown } from '@mx-space/editor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SerializedEditorState } from 'lexical'
@@ -36,7 +36,7 @@ import {
 import { uploadFile, uploadFileWithProgress } from '~/api/files'
 import { ApiRequestError } from '~/api/http'
 import { getOption } from '~/api/options'
-import { getPostById } from '~/api/posts'
+import { deletePost, getPostById } from '~/api/posts'
 import type { PublishAiResourceRequest, PublishTask } from '~/api/publish-jobs'
 import { createPublishJob } from '~/api/publish-jobs'
 import { AITaskStatus, getTask } from '~/api/tasks'
@@ -96,6 +96,7 @@ import { adminQueryKeys } from '~/query/keys'
 import { subscribeDraftUpdate } from '~/socket/draft-update-signal'
 import type { DraftUpdatePayload } from '~/socket/types'
 import { confirmDialog } from '~/ui/feedback/confirm'
+import { Button } from '~/ui/site-button'
 import type {
   RichEditorWithAgentProps,
   RichEditorWithAgentRef,
@@ -123,6 +124,7 @@ interface WriteFormState extends PostBylineState {
   meta: Record<string, unknown>
   pin: boolean
   pinOrder: string
+  publishedAt: string
   slug: string
   summary: string
   tags: string
@@ -151,6 +153,7 @@ const emptyState: WriteFormState = {
   meta: {},
   pin: false,
   pinOrder: '1',
+  publishedAt: '',
   slug: '',
   summary: '',
   tags: '',
@@ -844,6 +847,21 @@ function WritePage(props: { kind: WriteKind }) {
     enabled: !isEditing,
     queryFn: () => getNewDrafts(draftRefType),
     queryKey: adminQueryKeys.drafts.newDraft(draftRefType),
+  })
+  const deletePostMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) return
+      await deletePost(id)
+    },
+    onError: (error: unknown) =>
+      toast.error(getErrorMessage(error, t('write.toast.saveFailed'))),
+    onSuccess: async () => {
+      toast.success(t('write.toast.postDeleted'))
+      await queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.write.contentRoot(props.kind),
+      })
+      navigate(POST_LIST_PATH)
+    },
   })
   const publicationMutation = useMutation({
     mutationFn: async (published: boolean) => {
@@ -1541,10 +1559,20 @@ function WritePage(props: { kind: WriteKind }) {
             ) : null}
           </>
         }
-        onBack={() => navigate(POST_LIST_PATH)}
         onCloseAi={() => setAgentOpen(false)}
         onCloseMeta={() => setMetaOpen(false)}
         onCloseRevisions={closeDraftsPanel}
+        deletePending={deletePostMutation.isPending}
+        onDelete={() => {
+          void confirmDialog({
+            confirmText: t('write.publication.deleteAction'),
+            description: t('write.publication.deleteDescription'),
+            destructive: true,
+            title: t('write.publication.deleteTitle'),
+          }).then((confirmed) => {
+            if (confirmed) deletePostMutation.mutate()
+          })
+        }}
         onGenerate={generateTitleOrSlug}
         onOpenAi={() => setAgentOpen(true)}
         onOpenMeta={() => setMetaOpen(true)}
@@ -1820,6 +1848,7 @@ function fromModel(_kind: WriteKind, post: WriteModel): WriteFormState {
     meta: asRecord(post.meta),
     pin: Boolean(post.pinAt),
     pinOrder: String(post.pinOrder ?? 1),
+    publishedAt: post.createdAt ?? '',
     slug: post.slug,
     summary: post.summary ?? '',
     tags: post.tags.join(', '),
@@ -1851,6 +1880,10 @@ function fromRevision(
       typeof specific.pinOrder === 'number'
         ? String(specific.pinOrder)
         : previous.pinOrder,
+    publishedAt:
+      typeof specific.created === 'string'
+        ? specific.created
+        : previous.publishedAt,
     slug: typeof specific.slug === 'string' ? specific.slug : previous.slug,
     summary:
       'summary' in specific
@@ -2058,6 +2091,7 @@ function toDraftData(
       categoryId: state.categoryId,
       pin: state.pin,
       pinOrder: state.pin ? Number(state.pinOrder) || 1 : undefined,
+      ...(state.publishedAt ? { created: state.publishedAt } : {}),
       slug: state.slug,
       summary: state.summary || null,
       tags: state.tags

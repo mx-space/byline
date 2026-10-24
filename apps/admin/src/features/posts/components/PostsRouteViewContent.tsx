@@ -1,6 +1,5 @@
 import {
   Alert,
-  Button,
   confirmModal,
   SearchBar,
   Select,
@@ -10,7 +9,6 @@ import {
 } from '@lobehub/ui'
 import { TableSkeleton } from '@lobehub/ui/dashboard'
 import { type ProColumns, ProTable } from '@lobehub/ui/pro-table'
-import { Trash2, X } from 'lucide-react'
 import {
   type HTMLAttributes,
   type ReactNode,
@@ -23,9 +21,18 @@ import { useNavigate } from 'react-router'
 import { useAiQuickActionsBuilder } from '~/features/ai/hooks/use-ai-quick-actions'
 import { useI18n } from '~/i18n'
 import type { PostModel } from '~/models/post'
+import { newestFirst, readSingleFilter } from '~/ui/data/table-header'
 import { FocusScope } from '~/ui/focus-scope'
 import { type ListSelectionAPI, useListKeyboard } from '~/ui/list-actions'
 import { Page } from '~/ui/page'
+import {
+  pinEnd,
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
 import { allCategoriesValue, postsPageSize } from '../constants'
 import { usePostCopy } from '../copy'
@@ -96,6 +103,7 @@ function isInteractiveTarget(target: EventTarget) {
 
 export function PostsRouteViewContent() {
   const copy = usePostCopy()
+  const table = useRecordTable()
   const { format, t } = useI18n()
   const navigate = useNavigate()
   const buildAiItems = useAiQuickActionsBuilder()
@@ -223,25 +231,40 @@ export function PostsRouteViewContent() {
   const filtered = Boolean(keyword) || categoryId !== allCategoriesValue
   const emptyKind = filtered ? 'filter' : page > 1 ? 'page' : 'first'
   const searchActive = Boolean(keyword)
-  const selectedCount = selection.size
-  const deleting = batchDeleteMutation.isPending || deleteMutation.isPending
+  const [dateSortOn, setDateSortOn] = useState(
+    () => sortKey === 'createdAt' && sortOrder !== 'desc',
+  )
 
   const columns: ProColumns<PostModel>[] = [
     {
       dataIndex: 'title',
       render: (_dom, post) => <PostTitleCell post={post} />,
       title: copy('columnTitle'),
+      ...pinStart(table.pin),
     },
     {
       dataIndex: 'authors',
       render: (_dom, post) => <PostBylineCell post={post} />,
       responsive: ['lg'],
       title: copy('byline'),
-      width: 200,
+      width: 168,
     },
     {
       dataIndex: 'category',
       ellipsis: true,
+      ...(searchActive || categories.length === 0
+        ? {}
+        : {
+            filterMultiple: false as const,
+            filterSearch: categories.length > 7,
+            filteredValue:
+              categoryId === allCategoriesValue ? null : [categoryId],
+            filters: categories.map((category) => ({
+              text: category.name,
+              value: category.id,
+            })),
+            onFilter: false as const,
+          }),
       render: (_dom, post) => (
         <Text type="secondary">
           {post.category?.name ?? copy('uncategorized')}
@@ -249,7 +272,7 @@ export function PostsRouteViewContent() {
       ),
       responsive: ['lg'],
       title: copy('categoryLabel'),
-      width: 140,
+      width: 128,
     },
     {
       dataIndex: 'isPublished',
@@ -259,20 +282,31 @@ export function PostsRouteViewContent() {
       width: 96,
     },
     {
-      dataIndex: 'modifiedAt',
-      render: (_dom, post) => {
-        const value = post.modifiedAt ?? post.createdAt
-        return (
-          <Tooltip title={formatUpdatedAt(value, copy('emptyValue'))}>
-            <span className={styles.time}>
-              {value ? format.relativeTime(value) : copy('emptyValue')}
-            </span>
-          </Tooltip>
-        )
-      },
+      dataIndex: 'createdAt',
+      ...(searchActive
+        ? {}
+        : {
+            sortDirections: newestFirst,
+            sortOrder:
+              dateSortOn && sortKey === 'createdAt'
+                ? sortOrder === 'asc'
+                  ? ('ascend' as const)
+                  : ('descend' as const)
+                : null,
+            sorter: true,
+          }),
+      render: (_dom, post) => (
+        <Tooltip title={formatUpdatedAt(post.createdAt, copy('emptyValue'))}>
+          <span className={styles.time}>
+            {post.createdAt
+              ? format.relativeTime(post.createdAt)
+              : copy('emptyValue')}
+          </span>
+        </Tooltip>
+      ),
       responsive: ['md'],
-      title: copy('updated'),
-      width: 120,
+      title: copy('publishedAt'),
+      width: 132,
     },
     {
       align: 'right',
@@ -286,6 +320,7 @@ export function PostsRouteViewContent() {
       ),
       title: '',
       width: 112,
+      ...pinEnd(table.pin),
     },
   ]
 
@@ -332,27 +367,6 @@ export function PostsRouteViewContent() {
       <Tooltip title={searchActive ? copy('filterDisabled') : undefined}>
         <span>
           <Select
-            aria-label={copy('categoryLabel')}
-            disabled={searchActive}
-            onChange={(value) => {
-              if (typeof value !== 'string') return
-              setCategoryId(value)
-            }}
-            options={[
-              { label: copy('allCategories'), value: allCategoriesValue },
-              ...categories.map((category) => ({
-                label: category.name,
-                value: category.id,
-              })),
-            ]}
-            popupMatchSelectWidth={false}
-            value={categoryId}
-          />
-        </span>
-      </Tooltip>
-      <Tooltip title={searchActive ? copy('filterDisabled') : undefined}>
-        <span>
-          <Select
             aria-label={copy('sortLabel')}
             disabled={searchActive}
             onChange={(value) => {
@@ -361,6 +375,7 @@ export function PostsRouteViewContent() {
                 (choice) => sortValue(choice.sortKey, choice.order) === value,
               )
               if (!next) return
+              setDateSortOn(next.sortKey === 'createdAt')
               setSort({ field: next.sortKey, order: next.order })
             }}
             options={sortChoices.map((choice) => ({
@@ -451,10 +466,34 @@ export function PostsRouteViewContent() {
           </div>
         ) : null}
         <ProTable<PostModel>
+          className={recordTableStyles.root}
           columnEmptyText={copy('emptyValue')}
           columns={columns}
+          scroll={recordTableScroll(columns, table)}
+          tableLayout="fixed"
           dataSource={posts}
-          loading={postsQuery.isFetching && !initialLoading}
+          onChange={(_pagination, filters, sorter, extra) => {
+            if (extra.action === 'filter') {
+              setCategoryId(
+                readSingleFilter(filters, 'category') ?? allCategoriesValue,
+              )
+              return
+            }
+            if (extra.action !== 'sort' || searchActive) return
+            const info = Array.isArray(sorter) ? sorter[0] : sorter
+            if (
+              info?.columnKey != null &&
+              String(info.columnKey) !== 'createdAt'
+            ) {
+              return
+            }
+            setDateSortOn(true)
+            setSort({
+              field: 'createdAt',
+              order: info?.order === 'ascend' ? 'asc' : 'desc',
+            })
+          }}
+          loading={postsQuery.isFetching && postsQuery.isPlaceholderData}
           locale={{ emptyText: emptyNode }}
           onRow={(post) =>
             ({
@@ -464,10 +503,7 @@ export function PostsRouteViewContent() {
               onClick: (event) => {
                 if (isInteractiveTarget(event.target)) return
                 selection.setCursor(post.id)
-                if (event.shiftKey) selection.selectRange(post.id)
-                else if (event.metaKey || event.ctrlKey)
-                  selection.toggleWithAnchor(post.id)
-                else openEdit(post)
+                openEdit(post)
               },
               onContextMenu: (event) => {
                 event.preventDefault()
@@ -494,50 +530,7 @@ export function PostsRouteViewContent() {
           }}
           rowClassName={() => styles.row}
           rowKey="id"
-          rowSelection={{
-            onChange: (keys) => {
-              const next = new Set(keys.map(String))
-              for (const post of posts) {
-                if (next.has(post.id) !== selection.isSelected(post.id)) {
-                  selection.toggle(post.id)
-                }
-              }
-            },
-            selectedRowKeys: [...selection.selectedIds],
-          }}
           search={false}
-          tableAlertOptionRender={() => (
-            <div className={styles.selectionBar}>
-              <Button
-                danger
-                htmlType="button"
-                icon={Trash2}
-                loading={deleting}
-                onClick={() =>
-                  confirmAndDelete(
-                    toDeleteTargets(selection.getSelectedTargets()),
-                  )
-                }
-                size="small"
-              >
-                {copy('bulkDelete')}
-              </Button>
-              <Button
-                htmlType="button"
-                icon={X}
-                onClick={() => selection.clear()}
-                size="small"
-                type="text"
-              >
-                {copy('clearSelection')}
-              </Button>
-            </div>
-          )}
-          tableAlertRender={() => (
-            <Text weight={500}>
-              {copy('selected', { count: selectedCount })}
-            </Text>
-          )}
           tableRender={(_props, dom) => {
             if (initialLoading && showSlow) {
               return (

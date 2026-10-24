@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  Button,
   createStaticStyles,
   type DropdownItem,
   DropdownMenu,
@@ -15,6 +14,7 @@ import { useNavigate } from 'react-router'
 import type { AITask } from '~/api/tasks'
 import { AITaskStatus } from '~/api/tasks'
 import { useI18n } from '~/i18n'
+import { Button } from '~/ui/site-button'
 
 import { useTaskCopy } from '../copy'
 import {
@@ -32,7 +32,7 @@ import {
   getTaskProgressLabel,
 } from '../utils/tasks'
 
-export const cellStyles = createStaticStyles(({ css, cssVar, responsive }) => ({
+export const cellStyles = createStaticStyles(({ css, cssVar }) => ({
   actions: css`
     display: flex;
     align-items: center;
@@ -43,14 +43,6 @@ export const cellStyles = createStaticStyles(({ css, cssVar, responsive }) => ({
     display: flex;
     align-items: center;
     gap: 2px;
-
-    opacity: 0;
-
-    transition: opacity 0.12s ease;
-
-    ${responsive.md} {
-      opacity: 1;
-    }
   `,
   error: css`
     color: ${cssVar.colorErrorText};
@@ -64,11 +56,6 @@ export const cellStyles = createStaticStyles(({ css, cssVar, responsive }) => ({
   `,
   row: css`
     cursor: pointer;
-
-    &:hover [data-row-actions],
-    &:focus-within [data-row-actions] {
-      opacity: 1;
-    }
   `,
   subjectCell: css`
     display: flex;

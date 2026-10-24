@@ -18,7 +18,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     flex: 1 1 0%;
   `,
   ueb6e8b88: css`
-    padding: 0.75rem;
+    padding-block: 12px;
   `,
   ue023fdc0: css`
     display: flex;
@@ -26,8 +26,8 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     color: ${cssVar.colorTextSecondary};
   `,
   uf9dfa057: css`
@@ -41,9 +41,9 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     animation: byline-spin 1s linear infinite;
   `,
   u0f0df7aa: css`
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    line-height: 1.25rem;
+    margin: 0;
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
     color: ${cssVar.colorTextSecondary};
   `,
   u6ed543e2: css`

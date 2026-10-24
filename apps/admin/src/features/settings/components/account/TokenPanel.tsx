@@ -5,6 +5,7 @@ import { Key, Plus, Trash2 } from 'lucide-react'
 import { deleteToken, getTokens } from '~/api/auth'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { ListSkeleton } from '~/ui/placeholders'
 import { Button } from '~/ui/primitives/button'
 import { Scroll } from '~/ui/primitives/scroll'
 
@@ -20,12 +21,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u36e579c0: css`
     flex: 1 1 0%;
-  `,
-  uf01b33ec: css`
-    padding: 1rem;
-    font-size: 0.75rem;
-    line-height: 1.125rem;
-    color: ${cssVar.colorTextSecondary};
   `,
   ucc46d0fa: css`
     width: 1.75rem;
@@ -121,9 +116,7 @@ export function TokenPanel() {
   return (
     <Scroll className={lobeStyles.u36e579c0}>
       {tokensQuery.isLoading ? (
-        <div className={lobeStyles.uf01b33ec}>
-          {t('settings.common.loading')}
-        </div>
+        <ListSkeleton label={t('settings.common.loading')} rows={3} />
       ) : (tokensQuery.data ?? []).length === 0 ? (
         <EmptyState
           icon={<Key className={lobeStyles.ucc46d0fa} />}

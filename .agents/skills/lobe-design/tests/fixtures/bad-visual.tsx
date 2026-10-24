@@ -1,8 +1,8 @@
 // BAD fixture (rules introduced in 2.1.0): every `expect:` id must be reported by lint-lobe.mjs on that line.
-import { createStaticStyles, keyframes } from '@lobehub/ui'
-import { Button } from '@lobehub/ui'
+import { createStaticStyles, keyframes } from '@lobehub/ui';
+import { Button } from '@lobehub/ui';
 
-const fadeUp = keyframes`from { opacity: 0 } to { opacity: 1 }` // expect: LOBE-REDUCED-MOTION
+const fadeUp = keyframes`from { opacity: 0 } to { opacity: 1 }`; // expect: LOBE-REDUCED-MOTION
 
 export const styles = createStaticStyles(({ css, cssVar }) => ({
   title: css`
@@ -18,23 +18,17 @@ export const styles = createStaticStyles(({ css, cssVar }) => ({
     animation: ${fadeUp} 200ms ease-out;
     width: 960px; /* expect: LOBE-FIXED-WIDTH */
   `,
-  a: css`
-    background: ${cssVar.gradientAnimation};
-  `,
-  b: css`
-    background: ${cssVar.gradientAnimation};
-  `,
-  c: css`
-    background: ${cssVar.gradientAnimation};
-  ` /* expect: LOBE-GRADIENT-ANIMATION-OVERUSE */,
-}))
+  a: css`background: ${cssVar.gradientAnimation};`,
+  b: css`background: ${cssVar.gradientAnimation};`,
+  c: css`background: ${cssVar.gradientAnimation};`, /* expect: LOBE-GRADIENT-ANIMATION-OVERUSE */
+}));
 
 export const Hero = () => (
   <div className={styles.title}>
     <Button type="primary">开始试用</Button>
     <Button type="primary">预约演示</Button> {/* expect: LOBE-MULTI-PRIMARY */}
   </div>
-)
+);
 
 // An ignore without a `: reason` does not suppress anything and is itself reported.
-const legacy = '#ff6a00' // lobe-design-ignore LOBE-RAW-COLOR   expect: LOBE-IGNORE-NO-REASON LOBE-RAW-COLOR
+const legacy = '#ff6a00'; // lobe-design-ignore LOBE-RAW-COLOR   expect: LOBE-IGNORE-NO-REASON LOBE-RAW-COLOR

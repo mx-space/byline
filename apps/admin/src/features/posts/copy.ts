@@ -8,7 +8,7 @@ const catalog = {
   backToFirst: { 'en-US': 'Back to page 1', 'zh-CN': '回到第 1 页' },
   batchDeleted: {
     'en-US': 'Deleted {count} posts',
-    'zh-CN': '已删除 {count} 篇博文',
+    'zh-CN': '已删除 {count} 篇文章',
   },
   batchPartialDescription: {
     'en-US': 'Deleted posts leave the list. Retry only the failed ones.',
@@ -27,7 +27,7 @@ const catalog = {
   cancel: { 'en-US': 'Cancel', 'zh-CN': '取消' },
   categoriesFailedDescription: {
     'en-US': 'The post list is still available. Retry category loading.',
-    'zh-CN': '博文列表仍可用。分类筛选可以重试。',
+    'zh-CN': '文章列表仍可用。分类筛选可以重试。',
   },
   categoriesFailedTitle: {
     'en-US': 'Categories did not load',
@@ -62,11 +62,11 @@ const catalog = {
   countOther: { 'en-US': '{count} posts', 'zh-CN': '{count} 篇' },
   deleteBatchOk: {
     'en-US': 'Delete {count} posts',
-    'zh-CN': '删除 {count} 篇博文',
+    'zh-CN': '删除 {count} 篇文章',
   },
   deleteBatchTitle: {
     'en-US': 'Delete {count} posts?',
-    'zh-CN': '删除 {count} 篇博文？',
+    'zh-CN': '删除 {count} 篇文章？',
   },
   deleteBody: {
     'en-US':
@@ -77,10 +77,10 @@ const catalog = {
     'en-US': 'Delete did not finish. Retry.',
     'zh-CN': '删除没有完成。可以重试。',
   },
-  deleteOk: { 'en-US': 'Delete post', 'zh-CN': '删除博文' },
-  deletePost: { 'en-US': 'Delete post', 'zh-CN': '删除博文' },
+  deleteOk: { 'en-US': 'Delete post', 'zh-CN': '删除文章' },
+  deletePost: { 'en-US': 'Delete post', 'zh-CN': '删除文章' },
   deleteTitle: { 'en-US': 'Delete "{title}"?', 'zh-CN': '删除「{title}」？' },
-  deleted: { 'en-US': 'Post deleted', 'zh-CN': '已删除博文' },
+  deleted: { 'en-US': 'Post deleted', 'zh-CN': '已删除文章' },
   draft: { 'en-US': 'Draft', 'zh-CN': '草稿' },
   scheduled: { 'en-US': 'Scheduled', 'zh-CN': '待公开' },
   edit: { 'en-US': 'Edit', 'zh-CN': '编辑' },
@@ -89,7 +89,7 @@ const catalog = {
     'en-US': 'The service did not return the list. Retry.',
     'zh-CN': '服务暂时没有返回列表。可以重试。',
   },
-  errorTitle: { 'en-US': 'Posts did not load', 'zh-CN': '博文没有载入' },
+  errorTitle: { 'en-US': 'Posts did not load', 'zh-CN': '文章没有载入' },
   filterDisabled: {
     'en-US': 'Category and sort stay off during keyword search.',
     'zh-CN': '正在按关键词搜索，分类和排序暂不生效。',
@@ -100,14 +100,14 @@ const catalog = {
   },
   filterEmptyTitle: {
     'en-US': 'No posts match',
-    'zh-CN': '没有符合条件的博文',
+    'zh-CN': '没有符合条件的文章',
   },
   firstEmptyDescription: {
     'en-US':
-      'After you write one, decide here whether to edit it or check the byline and updated time.',
-    'zh-CN': '写一篇之后，从这里决定修改，或先看署名和更新时间。',
+      'After you write one, decide here whether to edit it or check the byline and publish date.',
+    'zh-CN': '写一篇之后，从这里决定修改，或先看署名和发布日期。',
   },
-  firstEmptyTitle: { 'en-US': 'No posts yet', 'zh-CN': '还没有博文' },
+  firstEmptyTitle: { 'en-US': 'No posts yet', 'zh-CN': '还没有文章' },
   id: { 'en-US': 'ID', 'zh-CN': 'ID' },
   more: { 'en-US': 'More actions', 'zh-CN': '更多操作' },
   openLink: { 'en-US': 'Open link', 'zh-CN': '打开链接' },
@@ -117,7 +117,7 @@ const catalog = {
   },
   pageEmptyTitle: {
     'en-US': 'This page has no posts',
-    'zh-CN': '这一页没有博文',
+    'zh-CN': '这一页没有文章',
   },
   pinFailed: {
     'en-US': 'Pin did not change. Retry.',
@@ -134,7 +134,7 @@ const catalog = {
   refresh: { 'en-US': 'Refresh list', 'zh-CN': '刷新列表' },
   retry: { 'en-US': 'Retry', 'zh-CN': '重试' },
   retryFailed: { 'en-US': 'Retry delete', 'zh-CN': '重试删除' },
-  searchLabel: { 'en-US': 'Search posts', 'zh-CN': '搜索博文' },
+  searchLabel: { 'en-US': 'Search posts', 'zh-CN': '搜索文章' },
   searchPlaceholder: { 'en-US': 'Title or byline', 'zh-CN': '标题或署名' },
   selectAll: { 'en-US': 'Select page', 'zh-CN': '选择本页' },
   selected: { 'en-US': '{count} selected', 'zh-CN': '已选 {count} 项' },
@@ -163,11 +163,11 @@ const catalog = {
   },
   staleTitle: { 'en-US': 'Refresh did not finish', 'zh-CN': '刷新没有成功' },
   status: { 'en-US': 'Status', 'zh-CN': '状态' },
-  title: { 'en-US': 'Posts', 'zh-CN': '博文' },
+  title: { 'en-US': 'Published', 'zh-CN': '已发布' },
   uncategorized: { 'en-US': 'Uncategorized', 'zh-CN': '未分类' },
   untitled: { 'en-US': 'Untitled', 'zh-CN': '无标题' },
-  updated: { 'en-US': 'Updated', 'zh-CN': '更新时间' },
-  write: { 'en-US': 'Write post', 'zh-CN': '写博文' },
+  publishedAt: { 'en-US': 'Publish date', 'zh-CN': '发布日期' },
+  write: { 'en-US': 'Write post', 'zh-CN': '写文章' },
 } satisfies FeatureCatalog<string>
 
 export const postCopy = createFeatureCopy(catalog)

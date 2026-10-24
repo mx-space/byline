@@ -39,6 +39,10 @@ export function draftHasConflict(draft: DraftModel) {
   return draft.relationToPublished === 'diverged'
 }
 
+export function isPublishedIdenticalDraft(draft: DraftModel) {
+  return draftChangeKind(draft) === 'same'
+}
+
 export function parentPostLabel(
   draft: DraftModel,
   unpublished: string,

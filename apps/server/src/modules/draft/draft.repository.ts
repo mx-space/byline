@@ -7,6 +7,7 @@ import {
   ilike,
   inArray,
   isNull,
+  ne,
   or,
   type SQL,
   sql,
@@ -597,6 +598,14 @@ export class DraftRepository extends BaseRepository {
     if (filter.refType) {
       conditions.push(eq(contentDocuments.refType, filter.refType))
     }
+    // A head that is the published revision has no unpublished changes, so it
+    // is not a draft. Direct reads and the version tree still return it.
+    conditions.push(
+      or(
+        isNull(contentDocuments.publishedRevisionId),
+        ne(drafts.headRevisionId, contentDocuments.publishedRevisionId),
+      )!,
+    )
     if (filter.hasRef !== undefined) {
       conditions.push(
         filter.hasRef

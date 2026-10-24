@@ -1,4 +1,4 @@
-import { createStaticStyles, ScrollArea, Tag } from '@lobehub/ui'
+import { createStaticStyles, Highlighter, Tag } from '@lobehub/ui'
 import type { ReactNode } from 'react'
 
 import type { AITaskStatus } from '~/api/tasks'
@@ -31,21 +31,6 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     text-overflow: ellipsis;
     vertical-align: baseline;
     white-space: nowrap;
-  `,
-  json: css`
-    background: ${cssVar.colorFillSecondary};
-    border-radius: ${cssVar.borderRadius};
-    max-height: 18rem;
-  `,
-  jsonBody: css`
-    color: ${cssVar.colorText};
-    font-family: ${cssVar.fontFamilyCode};
-    font-size: ${cssVar.fontSizeSM};
-    line-height: 1.5;
-    margin: 0;
-    padding: 12px;
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
   `,
 }))
 
@@ -107,12 +92,23 @@ export function Code(props: { children: ReactNode }) {
   return <code className={styles.code}>{props.children}</code>
 }
 
+function formatJsonBlock(value: unknown) {
+  try {
+    return JSON.stringify(value, null, 2) ?? ''
+  } catch {
+    return String(value)
+  }
+}
+
 export function JsonBlock(props: { value: unknown }) {
   return (
-    <ScrollArea className={styles.json} scrollFade="vertical">
-      <pre className={styles.jsonBody}>
-        {JSON.stringify(props.value, null, 2)}
-      </pre>
-    </ScrollArea>
+    <Highlighter
+      language="json"
+      style={{ maxHeight: '18rem', overflow: 'auto' }}
+      variant="filled"
+      wrap
+    >
+      {formatJsonBlock(props.value)}
+    </Highlighter>
   )
 }

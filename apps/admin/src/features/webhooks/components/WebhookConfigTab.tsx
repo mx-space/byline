@@ -1,4 +1,4 @@
-import { Alert, Button, Text, toast } from '@lobehub/ui'
+import { Alert, Text, toast } from '@lobehub/ui'
 import { Form, useForm } from '@lobehub/ui/form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { WebhookModel } from '~/api/webhooks'
 import { updateWebhook } from '~/api/webhooks'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
 import { webhooksQueryKey } from '../constants'
 import { useWebhookCopy } from '../copy'

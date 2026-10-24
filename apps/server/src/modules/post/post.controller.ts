@@ -35,6 +35,8 @@ import {
   PostDetailQuerySchema,
   type PostPagerDto,
   PostPagerSchema,
+  type PostSearchDto,
+  PostSearchSchema,
   type PostSlugDto,
   PostSlugSchema,
   type SetPostPublishStatusDto,
@@ -258,6 +260,29 @@ export class PostController {
       {} as any,
       isAuthenticated,
       lang,
+    )
+  }
+
+  @Get('/search')
+  @Auth()
+  async search(@Query({ schema: PostSearchSchema }) query: PostSearchDto) {
+    const res = await this.postService.listPaginated({
+      keyword: query.keyword,
+      metaOnly: true,
+      page: query.page,
+      size: query.size,
+    })
+    return withMeta(
+      res.data,
+      new MetaObjectBuilder()
+        .view('card')
+        .pagination({
+          page: res.pagination.currentPage,
+          size: res.pagination.size,
+          total: res.pagination.total,
+          totalPages: res.pagination.totalPage,
+        })
+        .build(),
     )
   }
 

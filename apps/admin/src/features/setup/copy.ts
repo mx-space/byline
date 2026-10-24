@@ -33,7 +33,7 @@ const catalog = {
   },
   accountDescription: {
     'en-US': 'Sign in with this account and write the first post.',
-    'zh-CN': '用这个账号登录，并写第一篇博文。',
+    'zh-CN': '用这个账号登录，并写第一篇文章。',
   },
   accountEmail: {
     'en-US': 'Email',
@@ -92,7 +92,7 @@ const catalog = {
   apiDescription: {
     'en-US':
       'Point this admin at a Byline API. A wrong address makes sign-in and posts fail.',
-    'zh-CN': '把这个后台接到 Byline 的 API。地址写错后，登录和博文都会失败。',
+    'zh-CN': '把这个后台接到 Byline 的 API。地址写错后，登录和文章都会失败。',
   },
   apiGateway: {
     'en-US': 'Gateway URL',
@@ -140,7 +140,7 @@ const catalog = {
   apiUrlHint: {
     'en-US':
       'The admin reads and writes posts at this address. A wrong address makes sign-in and posts fail.',
-    'zh-CN': '后台用这个地址读写博文。写错后，登录和博文都会失败。',
+    'zh-CN': '后台用这个地址读写文章。写错后，登录和文章都会失败。',
   },
   back: {
     'en-US': 'Back',
@@ -165,7 +165,7 @@ const catalog = {
   featuresDescription: {
     'en-US':
       'Publishing runs these tasks. They can be changed later in settings.',
-    'zh-CN': '发布博文时按这些开关生成产物。可稍后在设置里改。',
+    'zh-CN': '发布文章时按这些开关生成产物。可稍后在设置里改。',
   },
   featuresInsights: {
     'en-US': 'Insights',
@@ -209,7 +209,7 @@ const catalog = {
     'en-US':
       'Translates the post so readers can switch language. With no target language, publishing does not produce a translation.',
     'zh-CN':
-      '把博文翻成其他语言，读者可以切换。不选目标语言时，发布不会生成译文。',
+      '把文章翻成其他语言，读者可以切换。不选目标语言时，发布不会生成译文。',
   },
   featuresTts: {
     'en-US': 'Speech',
@@ -217,7 +217,7 @@ const catalog = {
   },
   featuresTtsHint: {
     'en-US': 'Builds spoken audio for the post.',
-    'zh-CN': '为博文生成朗读音频。',
+    'zh-CN': '为文章生成朗读音频。',
   },
   featuresTtsUnavailable: {
     'en-US':
@@ -314,7 +314,7 @@ const catalog = {
   modelsSummaryHint: {
     'en-US':
       'Builds the summary when a post is published. A wrong model writes that summary.',
-    'zh-CN': '发布博文时生成摘要。选错后，摘要由这个模型生成。',
+    'zh-CN': '发布文章时生成摘要。选错后，摘要由这个模型生成。',
   },
   modelsTitle: {
     'en-US': 'Assign a model to each feature',
@@ -384,7 +384,7 @@ const catalog = {
   providersDescription: {
     'en-US':
       'Posts can be written without AI. A key is saved only after it verifies, and this page does not reveal it.',
-    'zh-CN': '不接入也能写博文。密钥验证通过后才保存，此页不回显。',
+    'zh-CN': '不接入也能写文章。密钥验证通过后才保存，此页不回显。',
   },
   providersEmpty: {
     'en-US': 'No provider yet. Add a key, or skip AI.',
@@ -473,7 +473,7 @@ const catalog = {
   },
   readyConnectHint: {
     'en-US': 'Read posts with @mx-space/byline-api-client',
-    'zh-CN': '用 @mx-space/byline-api-client 读取博文',
+    'zh-CN': '用 @mx-space/byline-api-client 读取文章',
   },
   readyDescription: {
     'en-US':
@@ -522,11 +522,11 @@ const catalog = {
   },
   readyTitle: {
     'en-US': 'The site is ready for a first post',
-    'zh-CN': '可以开始写博文',
+    'zh-CN': '可以开始写文章',
   },
   readyWrite: {
     'en-US': 'Write the first post',
-    'zh-CN': '写第一篇博文',
+    'zh-CN': '写第一篇文章',
   },
   readyWriteHint: {
     'en-US': 'Opens the editor',

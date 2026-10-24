@@ -7,6 +7,7 @@ import { AITaskStatus, AITaskType } from '~/api/tasks'
 import {
   buildFillJobs,
   buildMatrixRows,
+  compareMatrixRows,
   countGaps,
   groupActiveTasks,
   hasGap,
@@ -39,6 +40,33 @@ const task = (overrides: Partial<AITask>): AITask => ({
   status: AITaskStatus.Running,
   type: AITaskType.Translation,
   ...overrides,
+})
+
+describe('compareMatrixRows', () => {
+  it('orders titles alphabetically and failed capabilities after done ones', () => {
+    const rows = buildMatrixRows(
+      [
+        row('b', coverage()),
+        row(
+          'a',
+          coverage({
+            translation: { applicable: true, expected: ['en'], langs: ['en'] },
+          }),
+        ),
+      ],
+      new Map(),
+    )
+    expect(
+      [...rows]
+        .sort((left, right) => compareMatrixRows(left, right, 'post'))
+        .map((item) => item.article.id),
+    ).toEqual(['a', 'b'])
+    expect(
+      [...rows]
+        .sort((left, right) => compareMatrixRows(left, right, 'translation'))
+        .map((item) => item.article.id),
+    ).toEqual(['a', 'b'])
+  })
 })
 
 describe('summarizeCapability', () => {

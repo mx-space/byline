@@ -1,4 +1,6 @@
-import { Alert, Button } from '@lobehub/ui'
+import { Alert } from '@lobehub/ui'
+
+import { Button } from '~/ui/site-button'
 
 export function DeskRetryNotice(props: {
   fetching: boolean

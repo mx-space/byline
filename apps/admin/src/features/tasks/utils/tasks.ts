@@ -5,7 +5,11 @@ import { AITaskStatus, AITaskType } from '~/api/tasks'
 import type { TranslationKey, TranslationValues } from '~/i18n/types'
 
 import type { TaskStatusCategory } from '../constants'
-import { statusCategoryOptionKeys, taskTypeLabelKeys } from '../constants'
+import {
+  extraTaskTypeLabelKeys,
+  statusCategoryOptionKeys,
+  taskTypeLabelKeys,
+} from '../constants'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u0e55306e: css`
@@ -27,8 +31,9 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
 
 type Translator = (key: TranslationKey, values?: TranslationValues) => string
 
-export function getTaskTypeLabel(type: AITask['type'], t: Translator): string {
-  const key = taskTypeLabelKeys[type]
+export function getTaskTypeLabel(type: string, t: Translator): string {
+  const key =
+    taskTypeLabelKeys[type as AITaskType] ?? extraTaskTypeLabelKeys[type]
   if (key) return t(key)
   const separatorIndex = type.indexOf(':')
   return separatorIndex > 0 ? type.slice(separatorIndex + 1) : type
@@ -98,10 +103,19 @@ export function getTaskSummary(task: AITask, t: Translator) {
       t('tasks.task.tts.task')
     )
   }
+  if ((task.type as string) === 'cron:clean-temp-directory') {
+    return t('tasks.task.cleanTempDirectory')
+  }
+  if ((task.type as string) === 'cron:delete-expired-jwt') {
+    return t('tasks.task.deleteExpiredJwt')
+  }
+  if ((task.type as string) === 'ai:summary:translation') {
+    return t('tasks.task.summaryTranslation')
+  }
 
   const refId = task.payload.refId
   if (typeof refId === 'string' && refId) return refId
-  return task.type
+  return getTaskTypeLabel(task.type, t)
 }
 
 export function getTaskProgressLabel(task: AITask) {

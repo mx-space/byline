@@ -11,6 +11,7 @@ import {
   draftFieldChanges,
   draftHasConflict,
   draftTitle,
+  isPublishedIdenticalDraft,
   parentPostLabel,
   sortDrafts,
 } from './draft-decision'
@@ -105,6 +106,12 @@ describe('draft decision', () => {
       relationToPublished: 'diverged',
     })
     expect(draftChangeKind(diverged)).toBe('changed')
+    expect(isPublishedIdenticalDraft(diverged)).toBe(false)
+    expect(
+      isPublishedIdenticalDraft(
+        draft({ ...diverged, relationToPublished: 'same' }),
+      ),
+    ).toBe(true)
     expect(draftHasConflict(diverged)).toBe(true)
     expect(parentPostLabel(diverged, '尚未发布', '--')).toBe('已发布标题')
   })

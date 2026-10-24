@@ -1,13 +1,4 @@
-import {
-  Alert,
-  Button,
-  Flexbox,
-  Input,
-  Modal,
-  Select,
-  Text,
-  toast,
-} from '@lobehub/ui'
+import { Alert, Flexbox, Input, Modal, Select, Text, toast } from '@lobehub/ui'
 import { Form, useForm, useWatch } from '@lobehub/ui/form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -16,6 +7,8 @@ import { z } from 'zod'
 import type { CreatedUserInvite, UserDetail } from '~/api/users'
 import { createInvite, getUsers, inviteExistingUser } from '~/api/users'
 import { adminQueryKeys } from '~/query/keys'
+import { FormSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { useUsersCopy } from '../copy'
 import {
@@ -192,7 +185,7 @@ function InviteBody(props: {
         <Input type="email" />
       </Form.Field>
       {target ? null : authorsQuery.isLoading ? (
-        <Text type="secondary">{copy('loadingAuthors')}</Text>
+        <FormSkeleton label={copy('loadingAuthors')} rows={1} />
       ) : authorsQuery.isError ? (
         <Alert
           action={

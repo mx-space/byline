@@ -1,4 +1,4 @@
-import { Button, Center, Empty, Skeleton } from '@lobehub/ui'
+import { Center, Empty, Skeleton } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router'
 
@@ -6,6 +6,7 @@ import { getWebhooks } from '~/api/webhooks'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { adminQueryKeys } from '~/query/keys'
 import { DetailPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
 import { useWebhookCopy } from '../copy'
 import { endpointUrl, errorText } from '../utils/webhooks'

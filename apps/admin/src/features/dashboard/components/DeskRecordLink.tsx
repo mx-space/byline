@@ -19,9 +19,8 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
   link: css`
     display: flex;
     flex: 1;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 4px 12px;
+    gap: 12px;
 
     min-width: 0;
 
@@ -30,14 +29,13 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
   `,
   meta: css`
     display: flex;
-    flex-wrap: wrap;
+    flex: none;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
 
-    max-width: 100%;
-
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   `,
   row: css`
     display: flex;

@@ -20,7 +20,6 @@ import { GalleryEditRenderer } from '@haklex/rich-ext-gallery'
 import { GALLERY_NODE_KEY } from '@haklex/rich-ext-gallery/node'
 import { AlertEditRenderer } from '@haklex/rich-renderer-alert'
 import { BannerEditRenderer } from '@haklex/rich-renderer-banner'
-import { CodeBlockEditRenderer } from '@haklex/rich-renderer-codeblock'
 import { FileEditRenderer } from '@haklex/rich-renderer-file'
 import { ImageEditRenderer } from '@haklex/rich-renderer-image'
 import { MentionEditRenderer } from '@haklex/rich-renderer-mention'
@@ -29,6 +28,7 @@ import { RubyEditRenderer } from '@haklex/rich-renderer-ruby'
 import { VideoEditRenderer } from '@haklex/rich-renderer-video'
 
 import { enhancedRendererConfig } from './enhanced-renderer-config'
+import { LobeCodeBlockEditRenderer } from './LobeCodeBlock'
 import { TagEditRenderer } from './TagEditRenderer'
 
 export const enhancedEditRendererConfig: RendererConfig = {
@@ -36,7 +36,7 @@ export const enhancedEditRendererConfig: RendererConfig = {
   [ALERT_NODE_KEY]: AlertEditRenderer,
   [BANNER_NODE_KEY]: BannerEditRenderer,
   [CHAT_NODE_KEY]: ChatEditRenderer,
-  [CODE_BLOCK_NODE_KEY]: CodeBlockEditRenderer,
+  [CODE_BLOCK_NODE_KEY]: LobeCodeBlockEditRenderer,
   [CODE_SNIPPET_NODE_KEY]: CodeSnippetEditRenderer,
   [FOOTNOTE_NODE_KEY]: FootnoteRenderer,
   [GALLERY_NODE_KEY]: GalleryEditRenderer,

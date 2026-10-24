@@ -1,13 +1,12 @@
 import {
   Alert,
-  Button,
   createStaticStyles,
   Descriptions,
   Drawer,
   Empty,
   Flexbox,
   Modal,
-  SkeletonText,
+  Skeleton,
   Text,
   toast,
   Tooltip,
@@ -26,6 +25,8 @@ import {
 } from '~/api/users'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { adminQueryKeys } from '~/query/keys'
+import { EmptyValue, FormSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { useUsersCopy } from '../copy'
 import {
@@ -103,7 +104,13 @@ export function UserDetailRoute() {
     userQuery.error instanceof ApiRequestError && userQuery.error.status === 404
   const status = user ? getUserStatus(user) : null
   const isSelf = user?.id === ctx.currentUserId
-  const name = user ? getUserDisplayName(user) : copy('loading')
+  const name = user
+    ? getUserDisplayName(user)
+    : userQuery.isLoading
+      ? null
+      : notFound
+        ? copy('notFound')
+        : copy('detailError')
 
   return (
     <Drawer
@@ -119,17 +126,18 @@ export function UserDetailRoute() {
               size={28}
             />
           ) : null}
-          <Text ellipsis={{ tooltipWhenOverflow: true }}>{name}</Text>
+          {name ? (
+            <Text ellipsis={{ tooltipWhenOverflow: true }}>{name}</Text>
+          ) : (
+            <Skeleton height={16} width={140} />
+          )}
           {status ? <UserStatusTag status={status} /> : null}
         </Flexbox>
       }
       width="min(400px, 100%)"
     >
       {userQuery.isLoading ? (
-        <Flexbox gap={8}>
-          <Text type="secondary">{copy('loading')}</Text>
-          <SkeletonText />
-        </Flexbox>
+        <FormSkeleton label={copy('loading')} rows={5} />
       ) : userQuery.isError || !user || !status ? (
         notFound || !userQuery.isError ? (
           <Empty title={copy('notFound')} />
@@ -171,7 +179,11 @@ export function UserDetailRoute() {
             column={1}
             items={[
               {
-                children: formatAdminTime(user.lastLoginAt),
+                children: user.lastLoginAt ? (
+                  formatAdminTime(user.lastLoginAt)
+                ) : (
+                  <EmptyValue />
+                ),
                 key: 'lastLogin',
                 label: copy('lastLogin'),
               },
@@ -228,7 +240,7 @@ export function UserDetailRoute() {
             }}
             onOk={() => deactivate.mutate()}
             open={confirmOpen}
-            title={copy('deactivateTitle', { name })}
+            title={copy('deactivateTitle', { name: name ?? '' })}
             width="min(400px, 100%)"
           >
             <Flexbox gap={12}>

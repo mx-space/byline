@@ -1,4 +1,4 @@
-import { Alert, Button, Collapsible, Input, Text, toast } from '@lobehub/ui'
+import { Alert, Collapsible, Input, Skeleton, Text, toast } from '@lobehub/ui'
 import { Form, useForm, useWatch } from '@lobehub/ui/form'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -7,6 +7,7 @@ import { getOption, getUrlOptions, patchOption } from '~/api/options'
 import { API_URL } from '~/constants/env'
 import { LanguageSelect } from '~/features/settings/components/config/LanguageSelect'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
 import { useSetupCopy } from '../copy'
 import { deriveServiceUrls } from '../utils/onboarding'
@@ -182,7 +183,11 @@ export function SiteStep(props: {
         >
           <div className={wizardStyles.stack}>
             {siteQuery.isPending || urlQuery.isPending ? (
-              <Text type="secondary">{copy('siteLoading')}</Text>
+              <Skeleton.Text
+                aria-label={copy('siteLoading')}
+                rows={1}
+                width="42%"
+              />
             ) : null}
             {siteQuery.isError || urlQuery.isError ? (
               <Alert

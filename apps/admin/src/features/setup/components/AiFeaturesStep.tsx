@@ -1,8 +1,10 @@
-import { Alert, Button, Flexbox, Switch, Text, toast } from '@lobehub/ui'
+import { Alert, Flexbox, Skeleton, Switch, Text, toast } from '@lobehub/ui'
 import { Form, useForm } from '@lobehub/ui/form'
 import { Check } from 'lucide-react'
 import type { PropsWithChildren } from 'react'
 import { useEffect, useRef, useState } from 'react'
+
+import { Button } from '~/ui/site-button'
 
 import { useSetupCopy } from '../copy'
 import {
@@ -115,7 +117,11 @@ export function AiFeaturesStep(props: {
         >
           <div className={wizardStyles.stack}>
             {configQuery.isPending ? (
-              <Text type="secondary">{copy('featuresBlocked')}</Text>
+              <Skeleton.Text
+                aria-label={copy('featuresBlocked')}
+                rows={1}
+                width="42%"
+              />
             ) : null}
             {configQuery.isError ? (
               <Alert showIcon title={copy('providersLoadError')} type="error" />

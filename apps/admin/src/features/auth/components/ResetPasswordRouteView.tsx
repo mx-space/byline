@@ -1,8 +1,9 @@
-import { Button, Input, InputPassword, Text, toast } from '@lobehub/ui'
+import { Input, InputPassword, Text, toast } from '@lobehub/ui'
 import { Form, useForm } from '@lobehub/ui/form'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
+import { Button } from '~/ui/site-button'
 import { authClient } from '~/utils/authjs/auth'
 
 import { useAuthCopy } from '../use-auth-copy'

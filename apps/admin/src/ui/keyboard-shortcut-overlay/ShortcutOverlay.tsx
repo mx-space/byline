@@ -175,8 +175,7 @@ function flattenEntries(
 /**
  * Comments-agnostic overlay — knows only the {group, key, label, hint}
  * registry shape. Esc closes; the backdrop click closes; the X button
- * closes. Tokens come from DS v2 (`bg-surface-overlay`, `rounded-xl`,
- * `shadow-lg`).
+ * closes.
  */
 export function ShortcutOverlay(props: ShortcutOverlayProps) {
   const { open, entries, onClose } = props

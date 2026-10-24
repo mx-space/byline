@@ -2,7 +2,7 @@ import { createStaticStyles } from '@lobehub/ui'
 
 import { useI18n } from '~/i18n'
 import type { DraftModel, VersionTreeNode } from '~/models/draft'
-import { Button } from '~/ui/primitives/button'
+import { Button } from '~/ui/site-button'
 
 import { DraftNode } from './DraftNode'
 import type { GraphRow } from './layout'
@@ -15,6 +15,11 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   ub301630e: css`
     display: flex;
     flex-direction: column;
+
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
   `,
   u90dd1311: css`
     display: grid;
@@ -26,66 +31,43 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     padding-bottom: 0.25rem;
   `,
   u28c4a725: css`
-    border-radius: 12px;
-    border-width: 1px;
-    border-style: solid;
-    border-color: color-mix(in srgb, ${cssVar.colorSuccess} 30%, transparent);
-    background-color: color-mix(
-      in srgb,
-      ${cssVar.colorSuccess} NaN%,
-      transparent
-    );
-    padding-inline: 0.75rem;
-    padding-block: 0.5rem;
+    border-radius: ${cssVar.borderRadius};
+    background: ${cssVar.colorFillTertiary};
+    padding-inline: 12px;
+    padding-block: 8px;
   `,
   u6cfc7e6a: css`
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    gap: 8px;
   `,
   u5e33fcc4: css`
-    border-radius: 999px;
-    background-color: color-mix(
-      in srgb,
-      ${cssVar.colorSuccess} 10%,
-      transparent
-    );
-    padding-inline: 0.5rem;
-    padding-block: 0.125rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    font-weight: 500;
+    flex-shrink: 0;
     color: ${cssVar.colorSuccess};
-    :where(.dark, .dark *) & {
-      color: ${cssVar.colorSuccess};
-    }
-  `,
-  u36b7e556: css`
-    margin-left: auto;
-    height: 1.75rem;
-    padding-inline: 0.5rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
   `,
   u789b22f9: css`
     overflow: hidden;
+    margin: 2px 0 0;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.75rem;
-    line-height: 1.125rem;
-    font-weight: 500;
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
     color: ${cssVar.colorText};
   `,
   ud756d144: css`
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    margin: 0;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     font-variant-numeric: tabular-nums;
-    color: ${cssVar.colorTextSecondary};
+    color: ${cssVar.colorTextTertiary};
   `,
 }))
 
-const CARD_DOT_Y = 21
-const LINE_DOT_Y = 18
+const CARD_DOT_Y = 22
+const LINE_DOT_Y = 20
 
 const toneOf = (row: GraphRow, currentDraftId: string): RailTone => {
   if (row.kind !== 'draft') return row.kind
@@ -194,12 +176,7 @@ function OnlineCard(props: {
         <span className={lobeStyles.u5e33fcc4}>
           {t('write.versionTree.currentOnline')}
         </span>
-        <Button
-          className={lobeStyles.u36b7e556}
-          onClick={props.onViewOnline}
-          type="button"
-          variant="ghost"
-        >
+        <Button onClick={props.onViewOnline} type="text">
           {t('write.branch.viewOnline')}
         </Button>
       </div>

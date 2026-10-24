@@ -66,117 +66,16 @@ select: (res: any) => Array.isArray(res) ? res : res?.data ?? []
 After modifying code, run focused type checking and linting on the changed files only.
 Run a production build before reporting completion for broad application changes.
 
-### Gray Scale Colors
-
-All gray colors MUST use `neutral` instead of `gray` to match the Vercel-style design:
-- Good: `text-neutral-500`, `bg-neutral-800`, `border-neutral-200`
-- Bad: `text-gray-500`, `bg-gray-800`, `border-gray-200`
-
-This rule applies only to raw color usage. For app surfaces, foregrounds, and borders
-prefer the Design System v2 semantic tokens documented below.
-
 ### Typography
 
-Do NOT use arbitrary font sizes (e.g. `text-[11px]`, `text-[13px]`). Use standard
-Tailwind classes:
+Text, surfaces, and borders use `@lobehub/ui` `cssVar` tokens. Do not add Tailwind
+utilities (`text-*`, `bg-*`, `text-neutral-*`) or one-off pixel font sizes.
 
-| Purpose | Class | Size | Use Case |
-|---------|-------|------|----------|
-| Page title | `text-2xl` | 24px | Main page titles |
-| Section title | `text-xl` | 20px | Section headers |
-| Card title | `text-lg` | 18px | Card titles |
-| Modal header | `text-base` | 16px | Modal headers |
-| Secondary title | `text-base` | 16px | Sub-headings, stats |
-| Body text | `text-sm` | 14px | List items, form labels, buttons |
-| Metadata | `text-xs` | 12px | Timestamps, badges, descriptions |
+## Color
 
-## Design System v2
-
-The admin uses a token-driven Design System v2 (Notion-warm aesthetic, larger radii,
-cobalt accent). Tokens live in `apps/admin/src/styles/tokens.css` (`@theme` block plus
-`.dark { … }` overrides). Spec: `docs/superpowers/specs/2026-05-30-admin-ui-softening-design.md`.
-
-### Surface stack
-
-Three-layer surface model. Always reach for these tokens before raw `bg-white` /
-`bg-neutral-*`.
-
-| Token | Tailwind | Purpose |
-|---|---|---|
-| `--color-surface-page` | `bg-surface-page` | Outer shell, html background |
-| `--color-surface-card` | `bg-surface-card` | Primary content containers |
-| `--color-surface-inset` | `bg-surface-inset` | Empty states, code blocks, hover tint, in-card panels |
-| `--color-surface-overlay` | `bg-surface-overlay` | Popovers, dropdowns, tooltips |
-
-### Foreground
-
-| Token | Tailwind | Use |
-|---|---|---|
-| `--color-fg` | `text-fg` | Main copy, titles |
-| `--color-fg-muted` | `text-fg-muted` | Labels, sub-copy, meta |
-| `--color-fg-subtle` | `text-fg-subtle` | Placeholders, disabled, decorative dots/icons |
-
-### Borders
-
-| Token | Tailwind | Use |
-|---|---|---|
-| `--color-border` | `border-border` | Card edges, inputs, dividers (soft hairline rgba) |
-| `--color-border-strong` | `border-border-strong` | Hover, active, focus emphasis |
-
-### Accent
-
-Warm cobalt blue. Used for primary CTAs, links, focus rings, selected-row tints.
-
-| Token | Tailwind | Use |
-|---|---|---|
-| `--color-accent` | `bg-accent`, `text-accent`, `ring-accent` | Primary CTA bg, link/focus color |
-| `--color-accent-hover` | `bg-accent-hover` | Hover for primary CTA |
-| `--color-accent-soft` | `bg-accent-soft` | Selected row tint, soft accent fills |
-
-### Radii scale
-
-| Tailwind | Value | Use |
-|---|---|---|
-| `rounded-xs` | 6px | Tiny chips |
-| `rounded-sm` | 8px | Buttons, inputs, dropdown items |
-| `rounded-md` | 10px | List rows, code blocks, large inputs, tooltip cards |
-| `rounded-lg` | 12px | Cards, modals, drawers, popovers |
-| `rounded-xl` | 14px | Empty states, hero cards |
-| `rounded-full` | pill | Status pills, tags, badges |
-
-### Shadow scale
-
-| Tailwind | Use |
-|---|---|
-| `shadow-xs` | Input rest, ghost lift |
-| `shadow-sm` | Cards, panels, mobile row cards |
-| `shadow-md` | Popovers, dropdowns, chart tooltip |
-| `shadow-lg` | Modals, drawers |
-
-### Focus ring rule
-
-Single rule, applied via:
-
-```
-focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-accent/15
-```
-
-No `ring-offset-*`. The 3px soft-glow replaces the older 2px solid frame.
-
-### Status pill
-
-Import from `~/ui/data/StatusPill`. Six semantic tones — use only for these states:
-
-- `live`, `draft`, `error`, `scheduled`, `archived`, `pending`
-
-```tsx
-import { StatusPill } from '~/ui/data/StatusPill'
-
-<StatusPill tone="live">Published</StatusPill>
-```
-
-For app-specific labels (whispers, language tags, role badges, etc.) keep inline `<Badge />`
-or custom chips — `StatusPill` is reserved for the six standard publication-lifecycle tones.
+Surfaces, text, borders, and accents come from `@lobehub/ui` (`cssVar` / `--lobe-color-*`).
+Do not reintroduce `apps/admin/src/styles/tokens.css` or the old `--color-surface-*`,
+`--color-fg*`, and `--color-accent*` theme.
 
 ### Empty state
 
@@ -186,47 +85,35 @@ Import from `~/ui/patterns/EmptyState` for standard "nothing here" surfaces:
 import { EmptyState } from '~/ui/patterns/EmptyState'
 
 <EmptyState
-  icon={<Inbox className="size-6" />}
+  icon={Inbox}
   title="No drafts yet"
   description="Drafts you save will appear here."
   action={<Button>Write something</Button>}
 />
 ```
 
-Layout is `--surface-inset` background, `rounded-xl`, icon tile on `--surface-card`
-with `shadow-xs`. Two-line copy (title + helper), optional CTA below.
+It wraps `@lobehub/ui`'s `Empty`. Two-line copy (title + helper), optional CTA below.
 
 ### Legacy aliases
 
-`--color-primary`, `--color-primary-shallow`, `--color-primary-deep` remain as
-aliases pointing at the new accent palette so older code keeps working. They are
-written by `installThemeTokens()` in `src/theme.ts`. **New code uses
-`--color-accent*` directly**; do not introduce new `--color-primary*` references.
+`--color-primary`, `--color-primary-shallow`, and `--color-primary-deep` are legacy
+aliases written by `installThemeTokens()` in `src/theme.ts`. Do not add new references
+to them.
 
 ### Notes
 
-- `StatusPill`'s `archived` tone uses `neutral-{100,700}` (admin convention) instead
-  of the spec's `gray-{100,600}`. This is intentional — admin neutral-over-gray rule
-  applies even to the pattern.
-- Inter is loaded via Google Fonts CDN (`@import url(...)` in `index.css`) rather than
-  self-hosted, per the PR1 deferral. Self-hosting (Latin subset, ~80KB local woff2) is
-  a future polish.
 - Sidebar nav has a right-aligned tabular count column plumbed in the component, but
   the route data model does not yet carry per-route counts. Populate when the model
   surfaces them.
 
 ## Layout Conventions
 
-New admin views must follow the master-detail / content-layout convention. The reusable
-shells live in `apps/admin/src/ui/layout/`:
-
-- `content-layout.tsx` — list+detail pages (drafts, files, tasks)
-- `page-layout.tsx` — page shell with header
-- companion pieces in the same dir (`header-back-button.tsx`, `sidebar-*`)
+New admin views use `MasterDetailShell` in `apps/admin/src/ui/layout/master-detail-shell.tsx`
+for list and detail. Page headers come from `@lobehub/ui/dashboard`.
 
 ## Configuration Files
 
-- `apps/admin/vite.config.mts` — Vite + react-compiler + Tailwind + checker; `base` uses
+- `apps/admin/vite.config.mts` — Vite + react-compiler + checker; `base` uses
   `VITE_APP_PUBLIC_URL` in production (empty = relative paths, the safe default); the html
   plugin injects `WEB_URL`/`GATEWAY`/`BASE_API` into `window.injectData`
 - `apps/admin/src/constants/env.ts` — resolves API/web/gateway URLs (injected env first,

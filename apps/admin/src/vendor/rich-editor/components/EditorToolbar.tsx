@@ -45,13 +45,20 @@ import {
   Underline,
   Undo,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { useMemo } from 'react'
+import {
+  Fragment,
+  type ReactNode,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import { DropdownMenu } from '~/ui/overlay/dropdown-menu'
+import { Button } from '~/ui/site-button'
 import { cn } from '~/utils/cn'
 
-import { presentEditorDebugDialog } from './EditorDebugDialog'
+import { EditorDebugDialog } from './EditorDebugDialog'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u783b0d9d: css`
@@ -64,33 +71,20 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   uc82b67c8: css`
     text-decoration: underline;
   `,
-  ufb56d9cf: css`
-    margin-inline-start: auto;
-  `,
   u2f41b8fa: css`
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
 
-    width: 28px;
-    height: 28px;
-    border-radius: ${cssVar.borderRadiusSM};
+    width: 32px;
+    height: 32px;
+    border-radius: ${cssVar.borderRadius};
 
-    color: ${cssVar.colorTextSecondary};
-
-    transition:
-      color 0.15s ease,
-      background-color 0.15s ease;
+    color: ${cssVar.colorText};
 
     &:hover {
-      color: ${cssVar.colorText};
       background-color: ${cssVar.colorFillTertiary};
-    }
-
-    &:disabled {
-      pointer-events: none;
-      opacity: 0.4;
     }
 
     &[data-popup-open] {
@@ -98,8 +92,17 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     }
   `,
   uc79576d9: css`
-    color: ${cssVar.colorText};
-    background-color: ${cssVar.colorFillSecondary};
+    &[aria-pressed='true'] {
+      background-color: ${cssVar.colorFillSecondary};
+    }
+  `,
+  debug: css`
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 8px;
+
+    height: 32px;
+    margin-block: auto;
   `,
   u8ffe2f5b: css`
     flex-shrink: 0;
@@ -114,14 +117,13 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     gap: 4px;
     align-items: center;
 
-    height: 28px;
-    padding-inline: 6px;
-    border-radius: ${cssVar.borderRadiusSM};
+    height: 32px;
+    padding-inline: 8px;
+    border-radius: ${cssVar.borderRadius};
 
-    font-size: ${cssVar.fontSizeSM};
-    font-weight: 500;
-    line-height: ${cssVar.lineHeightSM};
-    color: ${cssVar.colorTextSecondary};
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
+    color: ${cssVar.colorText};
 
     transition:
       color 0.15s ease,
@@ -173,12 +175,15 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     inset-block-start: 0;
 
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 2px;
     align-items: center;
+    justify-content: center;
 
+    box-sizing: border-box;
     width: 100%;
-    padding-block: 6px;
+    height: 48px;
+    min-width: 0;
     padding-inline: 8px;
     border-block-end: 1px solid ${cssVar.colorBorderSecondary};
 
@@ -197,6 +202,14 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
       height: 14px;
     }
   `,
+  slot: css`
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+  `,
+  withDebug: css`
+    padding-inline-end: 44px;
+  `,
   ub893c6dc: css`
     display: inline-flex;
     flex-shrink: 0;
@@ -213,7 +226,12 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
 }))
 
-const MAX_INLINE_INSERT_ITEMS = 5
+interface ToolbarSlot {
+  key: string
+  bar: ReactNode
+  leadingDivider?: boolean
+  menu: ReactNode
+}
 
 interface BlockOption {
   type: BlockType
@@ -255,182 +273,356 @@ export function EditorToolbar(props: { className?: string }) {
       ),
     [editor],
   )
-  const inlineInsertItems = insertItems.slice(0, MAX_INLINE_INSERT_ITEMS)
-  const overflowInsertItems = insertItems.slice(MAX_INLINE_INSERT_ITEMS)
+  const slots = useMemo<ToolbarSlot[]>(() => {
+    const icon = (entry: {
+      key: string
+      active?: boolean
+      disabled?: boolean
+      icon: LucideIcon | null
+      iconNode?: ReactNode
+      label: string
+      leadingDivider?: boolean
+      shortcut?: string
+      onClick: () => void
+    }): ToolbarSlot => ({
+      key: entry.key,
+      leadingDivider: entry.leadingDivider,
+      bar: (
+        <ToolbarIconButton
+          active={entry.active}
+          disabled={entry.disabled}
+          icon={entry.icon}
+          iconNode={entry.iconNode}
+          label={entry.label}
+          onClick={entry.onClick}
+          shortcut={entry.shortcut}
+        />
+      ),
+      menu: (
+        <ToolbarMenuItem onClick={entry.onClick}>
+          <SlotIcon icon={entry.icon} iconNode={entry.iconNode} />
+          {entry.label}
+        </ToolbarMenuItem>
+      ),
+    })
 
-  return (
-    <div
-      aria-label="编辑器工具栏"
-      className={cn(lobeStyles.u68f02d14, props.className)}
-      role="toolbar"
-    >
-      <FontFamilyMenu activeValue={state.fontFamily} editor={editor} />
-
-      <ToolbarDivider />
-
-      <BlockMenu activeIcon={ActiveBlockIcon} label={activeBlock.label}>
-        {BLOCK_OPTIONS.map((option) => {
+    return [
+      {
+        key: 'font',
+        bar: <FontFamilyMenu activeValue={state.fontFamily} editor={editor} />,
+        menu: FONT_FAMILIES.map((def) => (
+          <ToolbarMenuItem
+            active={state.fontFamily === def.value}
+            key={def.label}
+            onClick={() => applyFontFamily(editor, def.value)}
+          >
+            {def.label}
+          </ToolbarMenuItem>
+        )),
+      },
+      {
+        key: 'block',
+        leadingDivider: true,
+        bar: (
+          <BlockMenu activeIcon={ActiveBlockIcon} label={activeBlock.label}>
+            {BLOCK_OPTIONS.map((option) => {
+              const Icon = option.icon
+              return (
+                <ToolbarMenuItem
+                  active={state.blockType === option.type}
+                  key={option.type}
+                  onClick={() => applyBlockType(editor, option.type)}
+                >
+                  <Icon aria-hidden className={lobeStyles.u783b0d9d} />
+                  {option.label}
+                </ToolbarMenuItem>
+              )
+            })}
+          </BlockMenu>
+        ),
+        menu: BLOCK_OPTIONS.map((option) => {
           const Icon = option.icon
           return (
             <ToolbarMenuItem
-              key={option.type}
               active={state.blockType === option.type}
+              key={option.type}
               onClick={() => applyBlockType(editor, option.type)}
             >
-              <Icon aria-hidden="true" className={lobeStyles.u783b0d9d} />
+              <Icon aria-hidden className={lobeStyles.u783b0d9d} />
               {option.label}
             </ToolbarMenuItem>
           )
-        })}
-      </BlockMenu>
+        }),
+      },
+      icon({
+        key: 'undo',
+        leadingDivider: true,
+        disabled: !state.canUndo,
+        icon: Undo,
+        label: '撤销',
+        onClick: () => editor.dispatchCommand(UNDO_COMMAND, undefined),
+        shortcut: '⌘Z',
+      }),
+      icon({
+        key: 'redo',
+        disabled: !state.canRedo,
+        icon: Redo,
+        label: '重做',
+        onClick: () => editor.dispatchCommand(REDO_COMMAND, undefined),
+        shortcut: '⌘⇧Z',
+      }),
+      icon({
+        key: 'bold',
+        leadingDivider: true,
+        active: state.isBold,
+        icon: Bold,
+        label: '粗体',
+        onClick: () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold'),
+        shortcut: '⌘B',
+      }),
+      icon({
+        key: 'italic',
+        active: state.isItalic,
+        icon: Italic,
+        label: '斜体',
+        onClick: () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic'),
+        shortcut: '⌘I',
+      }),
+      icon({
+        key: 'underline',
+        active: state.isUnderline,
+        icon: Underline,
+        label: '下划',
+        onClick: () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline'),
+        shortcut: '⌘U',
+      }),
+      icon({
+        key: 'strike',
+        active: state.isStrikethrough,
+        icon: Strikethrough,
+        label: '删除线',
+        onClick: () =>
+          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough'),
+      }),
+      icon({
+        key: 'code',
+        active: state.isCode,
+        icon: Code,
+        label: '行内代码',
+        onClick: () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code'),
+      }),
+      icon({
+        key: 'highlight',
+        leadingDivider: true,
+        active: state.isHighlight,
+        icon: Highlighter,
+        label: '高亮',
+        onClick: () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'highlight'),
+      }),
+      icon({
+        key: 'spoiler',
+        active: state.isSpoiler,
+        icon: EyeOff,
+        label: '剧透遮罩',
+        onClick: () => editor.update($toggleSpoilerSelection),
+      }),
+      icon({
+        key: 'bullet',
+        leadingDivider: true,
+        active: state.blockType === 'bullet',
+        icon: List,
+        label: '无序列表',
+        onClick: () => applyBlockType(editor, 'bullet'),
+      }),
+      icon({
+        key: 'number',
+        active: state.blockType === 'number',
+        icon: ListOrdered,
+        label: '有序列表',
+        onClick: () => applyBlockType(editor, 'number'),
+      }),
+      icon({
+        key: 'check',
+        active: state.blockType === 'check',
+        icon: ListChecks,
+        label: '待办列表',
+        onClick: () => applyBlockType(editor, 'check'),
+      }),
+      {
+        key: 'align',
+        leadingDivider: true,
+        bar: (
+          <AlignMenu
+            activeFormat={state.elementFormat || 'left'}
+            onSelect={(format) =>
+              editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, format)
+            }
+          />
+        ),
+        menu: ALIGN_OPTIONS.map((option) => {
+          const Icon = option.icon
+          return (
+            <ToolbarMenuItem
+              active={(state.elementFormat || 'left') === option.format}
+              key={option.format}
+              onClick={() =>
+                editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, option.format)
+              }
+            >
+              <Icon aria-hidden className={lobeStyles.u783b0d9d} />
+              {option.label}
+            </ToolbarMenuItem>
+          )
+        }),
+      },
+      ...insertItems.map((item, index) =>
+        icon({
+          key: `insert:${item.title}`,
+          icon: null,
+          iconNode: item.icon,
+          label: item.title,
+          leadingDivider: index === 0,
+          onClick: () => item.onSelect(editor, ''),
+          shortcut: item.shortcut,
+        }),
+      ),
+    ]
+  }, [
+    ActiveBlockIcon,
+    activeBlock.label,
+    editor,
+    insertItems,
+    state.blockType,
+    state.canRedo,
+    state.canUndo,
+    state.elementFormat,
+    state.fontFamily,
+    state.isBold,
+    state.isCode,
+    state.isHighlight,
+    state.isItalic,
+    state.isSpoiler,
+    state.isStrikethrough,
+    state.isUnderline,
+  ])
+  const barRef = useRef<HTMLDivElement>(null)
+  const widths = useRef(new Map<string, number>())
+  const [visibleCount, setVisibleCount] = useState(slots.length)
+  const [debugJson, setDebugJson] = useState<string | null>(null)
 
-      <ToolbarDivider />
+  useLayoutEffect(() => {
+    const bar = barRef.current
+    if (!bar) return
 
-      <ToolbarIconButton
-        disabled={!state.canUndo}
-        icon={Undo}
-        label="撤销"
-        shortcut="⌘Z"
-        onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
-      />
-      <ToolbarIconButton
-        disabled={!state.canRedo}
-        icon={Redo}
-        label="重做"
-        shortcut="⌘⇧Z"
-        onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
-      />
-
-      <ToolbarDivider />
-
-      <ToolbarIconButton
-        active={state.isBold}
-        icon={Bold}
-        label="粗体"
-        shortcut="⌘B"
-        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
-      />
-      <ToolbarIconButton
-        active={state.isItalic}
-        icon={Italic}
-        label="斜体"
-        shortcut="⌘I"
-        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')}
-      />
-      <ToolbarIconButton
-        active={state.isUnderline}
-        icon={Underline}
-        label="下划"
-        shortcut="⌘U"
-        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')}
-      />
-      <ToolbarIconButton
-        active={state.isStrikethrough}
-        icon={Strikethrough}
-        label="删除线"
-        onClick={() =>
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough')
+    const measure = () => {
+      if (bar.clientWidth === 0) {
+        setVisibleCount(slots.length)
+        return
+      }
+      for (const el of bar.querySelectorAll<HTMLElement>(
+        '[data-toolbar-item]',
+      )) {
+        const key = el.dataset.toolbarItem
+        if (key && el.offsetWidth > 0) widths.current.set(key, el.offsetWidth)
+      }
+      const style = getComputedStyle(bar)
+      const available =
+        bar.clientWidth -
+        parseFloat(style.paddingLeft) -
+        parseFloat(style.paddingRight)
+      const gap = 2
+      const more = 32 + gap
+      let used = 0
+      let next = slots.length
+      for (let index = 0; index < slots.length; index += 1) {
+        const width = widths.current.get(slots[index].key)
+        if (!width) {
+          next = slots.length
+          break
         }
-      />
-      <ToolbarIconButton
-        active={state.isCode}
-        icon={Code}
-        label="行内代码"
-        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code')}
-      />
-
-      <ToolbarDivider />
-
-      <ToolbarIconButton
-        active={state.isHighlight}
-        icon={Highlighter}
-        label="高亮"
-        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'highlight')}
-      />
-      <ToolbarIconButton
-        active={state.isSpoiler}
-        icon={EyeOff}
-        label="剧透遮罩"
-        onClick={() => editor.update($toggleSpoilerSelection)}
-      />
-
-      <ToolbarDivider />
-
-      <ToolbarIconButton
-        active={state.blockType === 'bullet'}
-        icon={List}
-        label="无序列表"
-        onClick={() => applyBlockType(editor, 'bullet')}
-      />
-      <ToolbarIconButton
-        active={state.blockType === 'number'}
-        icon={ListOrdered}
-        label="有序列表"
-        onClick={() => applyBlockType(editor, 'number')}
-      />
-      <ToolbarIconButton
-        active={state.blockType === 'check'}
-        icon={ListChecks}
-        label="待办列表"
-        onClick={() => applyBlockType(editor, 'check')}
-      />
-
-      <ToolbarDivider />
-
-      <AlignMenu
-        activeFormat={state.elementFormat || 'left'}
-        onSelect={(format) =>
-          editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, format)
+        const reserve = index === slots.length - 1 ? 0 : more
+        if (used + width > available - reserve) {
+          next = index
+          break
         }
-      />
+        used += width + gap
+      }
+      setVisibleCount((current) => (current === next ? current : next))
+    }
 
-      {insertItems.length > 0 ? (
-        <>
-          <ToolbarDivider />
-          {inlineInsertItems.map((item) => (
-            <ToolbarIconButton
-              key={item.title}
-              icon={null}
-              iconNode={item.icon}
-              label={item.title}
-              shortcut={item.shortcut}
-              onClick={() => item.onSelect(editor, '')}
-            />
-          ))}
-          {overflowInsertItems.length > 0 ? (
-            <InsertOverflowMenu
-              items={overflowInsertItems.map((item) => ({
-                icon: item.icon,
-                label: item.title,
-                onClick: () => item.onSelect(editor, ''),
-              }))}
-            />
-          ) : null}
-        </>
-      ) : null}
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(bar)
+    return () => observer.disconnect()
+  }, [slots])
 
-      {import.meta.env.DEV ? (
-        <>
-          <div aria-hidden="true" className={lobeStyles.ufb56d9cf} />
-          <button
-            aria-label="调试 · 导出 Editor State"
-            className={lobeStyles.u2f41b8fa}
-            onClick={() => {
-              const json = JSON.stringify(
-                editor.getEditorState().toJSON(),
-                null,
-                2,
-              )
-              presentEditorDebugDialog(json)
-            }}
-            title="调试 · 导出 Editor State"
-            type="button"
+  const shown = slots.slice(0, visibleCount)
+  const overflow = slots.slice(visibleCount)
+
+  return (
+    <>
+      <div
+        aria-label="编辑器工具栏"
+        className={cn(
+          lobeStyles.u68f02d14,
+          import.meta.env.DEV && lobeStyles.withDebug,
+          props.className,
+        )}
+        ref={barRef}
+        role="toolbar"
+      >
+        {shown.map((slot) => (
+          <span
+            className={lobeStyles.slot}
+            data-toolbar-item={slot.key}
+            key={slot.key}
           >
-            <Bug aria-hidden="true" className={lobeStyles.u783b0d9d} />
-          </button>
-        </>
+            {slot.leadingDivider ? <ToolbarDivider /> : null}
+            {slot.bar}
+          </span>
+        ))}
+        {overflow.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenu.Trigger>
+              <button
+                aria-label="更多"
+                className={lobeStyles.u2f41b8fa}
+                title="更多"
+                type="button"
+              >
+                <MoreHorizontal aria-hidden size={14} />
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end" className={lobeStyles.ue8f85260}>
+              {overflow.map((slot) => (
+                <Fragment key={slot.key}>{slot.menu}</Fragment>
+              ))}
+            </DropdownMenu.Content>
+          </DropdownMenu>
+        ) : null}
+        {import.meta.env.DEV ? (
+          <Button
+            aria-label="调试 · 导出 Editor State"
+            className={lobeStyles.debug}
+            icon={Bug}
+            onClick={() => {
+              setDebugJson(
+                JSON.stringify(editor.getEditorState().toJSON(), null, 2),
+              )
+            }}
+            onMouseDown={(event) => event.preventDefault()}
+            title="调试 · 导出 Editor State"
+            type="text"
+          />
+        ) : null}
+      </div>
+      {import.meta.env.DEV ? (
+        <EditorDebugDialog
+          json={debugJson}
+          onClose={() => setDebugJson(null)}
+        />
       ) : null}
-    </div>
+    </>
   )
 }
 
@@ -445,28 +637,27 @@ function ToolbarIconButton(props: {
 }) {
   const Icon = props.icon
   return (
-    <button
+    <Button
       aria-label={props.label}
       aria-pressed={props.active}
-      className={cn(lobeStyles.u2f41b8fa, props.active && lobeStyles.uc79576d9)}
+      className={props.active ? lobeStyles.uc79576d9 : undefined}
       disabled={props.disabled}
+      icon={
+        Icon ?? (
+          <span aria-hidden className={lobeStyles.u9580bd2e}>
+            {props.iconNode}
+          </span>
+        )
+      }
+      onClick={props.onClick}
       onMouseDown={(event) => {
         event.preventDefault()
       }}
-      onClick={props.onClick}
       title={
         props.shortcut ? `${props.label} (${props.shortcut})` : props.label
       }
-      type="button"
-    >
-      {Icon ? (
-        <Icon aria-hidden="true" className={lobeStyles.u783b0d9d} />
-      ) : (
-        <span aria-hidden="true" className={lobeStyles.u9580bd2e}>
-          {props.iconNode}
-        </span>
-      )}
-    </button>
+      type="text"
+    />
   )
 }
 
@@ -583,31 +774,14 @@ function ToolbarMenuItem(props: {
   )
 }
 
-function InsertOverflowMenu(props: {
-  items: Array<{ icon?: ReactNode; label: string; onClick: () => void }>
-}) {
+function SlotIcon(props: { icon: LucideIcon | null; iconNode?: ReactNode }) {
+  if (props.icon) {
+    const Icon = props.icon
+    return <Icon aria-hidden className={lobeStyles.u783b0d9d} />
+  }
   return (
-    <DropdownMenu>
-      <DropdownMenu.Trigger
-        aria-label="更多插入"
-        className={lobeStyles.u2f41b8fa}
-        title="更多"
-        type="button"
-      >
-        <MoreHorizontal aria-hidden="true" className={lobeStyles.u783b0d9d} />
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="end" className={lobeStyles.ue8f85260}>
-        {props.items.map((item) => (
-          <ToolbarMenuItem key={item.label} onClick={item.onClick}>
-            {item.icon ? (
-              <span aria-hidden="true" className={lobeStyles.ub893c6dc}>
-                {item.icon}
-              </span>
-            ) : null}
-            {item.label}
-          </ToolbarMenuItem>
-        ))}
-      </DropdownMenu.Content>
-    </DropdownMenu>
+    <span aria-hidden className={lobeStyles.u9580bd2e}>
+      {props.iconNode}
+    </span>
   )
 }

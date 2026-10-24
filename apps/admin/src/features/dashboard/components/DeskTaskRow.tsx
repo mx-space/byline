@@ -1,11 +1,4 @@
-import {
-  Button,
-  createStaticStyles,
-  cssVar,
-  Progress,
-  Tag,
-  Text,
-} from '@lobehub/ui'
+import { createStaticStyles, cssVar, Progress, Tag, Text } from '@lobehub/ui'
 import { RotateCcw } from 'lucide-react'
 
 import type { AITask } from '~/api/tasks'
@@ -13,6 +6,7 @@ import { useTaskLabels } from '~/features/tasks/hooks/use-task-labels'
 import type { TaskSubject } from '~/features/tasks/utils/task-subject'
 import { getProgress } from '~/features/tasks/utils/tasks'
 import { useI18n } from '~/i18n'
+import { Button } from '~/ui/site-button'
 
 import { useDashboardCopy } from '../copy'
 import { displayDeskTime, taskRecordPath } from '../utils/desk'

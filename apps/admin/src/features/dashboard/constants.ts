@@ -4,12 +4,17 @@ export const dashboardQueryKeys = {
   aiCoverage: [...adminQueryKeys.ai.overviewListRoot, 'dashboard'] as const,
   appInfo: adminQueryKeys.dashboard.appInfo(),
   drafts: adminQueryKeys.dashboard.drafts(),
-  recentPosts: adminQueryKeys.dashboard.recentPosts(),
+  draftCounts: [...adminQueryKeys.dashboard.drafts(), 'counts'] as const,
+  latestPublished: [
+    ...adminQueryKeys.posts.root,
+    'dashboard-latest-published',
+  ] as const,
+  postCounts: [...adminQueryKeys.posts.root, 'dashboard-counts'] as const,
 }
 
 export const deskWritingItemLimit = 5
 
-export const deskRecentPostLimit = 6
+export const deskLatestPublishedLimit = 7
 
 export const deskAiCoverageSize = 20
 

@@ -1,16 +1,15 @@
 import {
-  Button,
   Drawer,
   Empty,
+  Flexbox,
   Input,
   Pagination,
-  Select,
-  Skeleton,
-  Table,
   Tag,
   TextArea,
   toast,
 } from '@lobehub/ui'
+import { LoadingAnnouncer, TableSkeleton } from '@lobehub/ui/dashboard'
+import { type ProColumns, ProTable } from '@lobehub/ui/pro-table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -24,7 +23,17 @@ import {
 } from '~/api/ai'
 import { useUrlListState } from '~/features/_shared/hooks/use-url-list-state'
 import { adminQueryKeys } from '~/query/keys'
+import { readSingleFilter } from '~/ui/data/table-header'
 import { confirmDialog } from '~/ui/feedback/confirm'
+import { Page } from '~/ui/page'
+import { emptyOr } from '~/ui/placeholders'
+import {
+  pinEnd,
+  recordTableScroll,
+  recordTableStyles,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
 import { translationEntryKeyPathOptions } from '../constants'
 import { useAiCopy } from '../copy'
@@ -66,6 +75,7 @@ function usageLabel(
 
 export function AiTranslationEntriesRouteView() {
   const copy = useAiCopy()
+  const table = useRecordTable()
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState<TranslationEntry | null>(null)
   const [draft, setDraft] = useState('')
@@ -157,6 +167,72 @@ export function AiTranslationEntriesRouteView() {
     if (ok) deleteMutation.mutate(entry.id)
   }
 
+  const glossaryColumns: ProColumns<TranslationEntry>[] = [
+    {
+      dataIndex: 'sourceText',
+      title: copy('columnSource'),
+    },
+    {
+      dataIndex: 'translatedText',
+      render: (_dom, entry) => emptyOr(entry.translatedText),
+      title: copy('columnTranslated'),
+      width: 220,
+    },
+    {
+      dataIndex: 'lang',
+      render: (_dom, entry) => <Tag>{entry.lang}</Tag>,
+      responsive: ['md'],
+      title: copy('columnLang'),
+      width: 96,
+    },
+    {
+      dataIndex: 'keyPath',
+      filterMultiple: false,
+      filteredValue: keyPath ? [keyPath] : null,
+      filters: translationEntryKeyPathOptions.map((option) => ({
+        text: usageLabel(option, copy),
+        value: option,
+      })),
+      onFilter: false,
+      render: (_dom, entry) => (
+        <span>
+          {usageLabel(entry.keyPath, copy)}
+          <span className={aiStyles.meta}> {entry.keyPath}</span>
+        </span>
+      ),
+      responsive: ['lg'],
+      title: copy('columnUsage'),
+      width: 200,
+    },
+    {
+      align: 'right',
+      key: 'actions',
+      render: (_dom, entry) => (
+        <div className={aiStyles.actions}>
+          <Button
+            htmlType="button"
+            onClick={() => {
+              setDraft(entry.translatedText)
+              setEditing(entry)
+            }}
+          >
+            {copy('editEntry')}
+          </Button>
+          <Button
+            danger
+            htmlType="button"
+            onClick={() => void confirmAndDelete(entry)}
+          >
+            {copy('deleteEntry')}
+          </Button>
+        </div>
+      ),
+      title: '',
+      width: 180,
+      ...pinEnd(table.pin),
+    },
+  ]
+
   const status =
     query.isLoading && entries.length === 0
       ? 'loading'
@@ -169,14 +245,8 @@ export function AiTranslationEntriesRouteView() {
           : 'ready'
 
   return (
-    <div className={aiStyles.page}>
-      <header className={aiStyles.pageHead}>
-        <div>
-          <h1 className={aiStyles.title}>{copy('glossaryTitle')}</h1>
-          <p className={aiStyles.meta}>
-            {copy('glossaryCount', { count: total })}
-          </p>
-        </div>
+    <Page
+      actions={
         <Button
           htmlType="button"
           loading={generateMutation.isPending}
@@ -185,28 +255,12 @@ export function AiTranslationEntriesRouteView() {
         >
           {copy('generateEntries')}
         </Button>
-      </header>
-      <div className={aiStyles.filters}>
-        <Select
-          aria-label={copy('columnUsage')}
-          className={aiStyles.filterControl}
-          onChange={(value) => {
-            const next = typeof value === 'string' ? value : ''
-            setUrlState((current) => ({
-              ...current,
-              keyPath: isKeyPath(next) ? next : '',
-              page: 1,
-            }))
-          }}
-          options={[
-            { label: copy('allUsage'), value: '' },
-            ...translationEntryKeyPathOptions.map((option) => ({
-              label: usageLabel(option, copy),
-              value: option,
-            })),
-          ]}
-          value={keyPath}
-        />
+      }
+      count={copy('glossaryCount', { count: total })}
+      title={copy('glossaryTitle')}
+      width="wide"
+    >
+      <Flexbox align="center" gap={8} horizontal>
         <Input
           allowClear
           aria-label={copy('columnLang')}
@@ -225,112 +279,74 @@ export function AiTranslationEntriesRouteView() {
           loading={query.isFetching}
           onClick={() => void query.refetch()}
         />
-      </div>
-      <div className={aiStyles.tableWrap}>
-        {status === 'loading' ? (
-          <div aria-busy="true" className={aiStyles.stack}>
-            <p className={aiStyles.meta}>{copy('glossaryLoading')}</p>
-            <Skeleton height={40} />
-            <Skeleton height={40} />
-            <Skeleton height={40} />
-          </div>
-        ) : null}
-        {status === 'error' ? (
-          <Empty
-            action={
-              <Button htmlType="button" onClick={() => void query.refetch()}>
-                {copy('retryLoad')}
-              </Button>
-            }
-            description={copy('glossaryFailedBody')}
-            title={copy('glossaryFailedTitle')}
-          />
-        ) : null}
-        {status === 'empty' ? (
-          <Empty
-            description={copy('glossaryEmptyBody')}
-            title={copy('glossaryEmptyTitle')}
-          />
-        ) : null}
-        {status === 'filter-empty' ? (
-          <Empty
-            action={
-              <Button
-                htmlType="button"
-                onClick={() => setUrlState({ keyPath: '', lang: '', page: 1 })}
-              >
-                {copy('clearFilters')}
-              </Button>
-            }
-            description={copy('glossaryFilterBody')}
-            title={copy('glossaryFilterTitle')}
-          />
-        ) : null}
-        {status === 'ready' ? (
-          <Table<TranslationEntry>
-            columns={[
-              {
-                dataIndex: 'sourceText',
-                key: 'sourceText',
-                title: copy('columnSource'),
-              },
-              {
-                dataIndex: 'translatedText',
-                key: 'translatedText',
-                render: (value: string) => value || copy('emptyValue'),
-                title: copy('columnTranslated'),
-              },
-              {
-                dataIndex: 'lang',
-                key: 'lang',
-                render: (value: string) => <Tag>{value}</Tag>,
-                title: copy('columnLang'),
-              },
-              {
-                dataIndex: 'keyPath',
-                key: 'keyPath',
-                render: (value: TranslationEntryKeyPath) => (
-                  <span>
-                    {usageLabel(value, copy)}
-                    <span className={aiStyles.meta}> {value}</span>
-                  </span>
-                ),
-                title: copy('columnUsage'),
-              },
-              {
-                key: 'actions',
-                render: (_value: unknown, entry: TranslationEntry) => (
-                  <div className={aiStyles.actions}>
+      </Flexbox>
+      {status === 'loading' ? (
+        <div aria-busy="true">
+          <LoadingAnnouncer label={copy('glossaryLoading')} />
+          <TableSkeleton rows={6} />
+        </div>
+      ) : null}
+      {status === 'error' ? (
+        <Empty
+          action={
+            <Button htmlType="button" onClick={() => void query.refetch()}>
+              {copy('retryLoad')}
+            </Button>
+          }
+          description={copy('glossaryFailedBody')}
+          title={copy('glossaryFailedTitle')}
+        />
+      ) : null}
+      {status === 'empty' || status === 'filter-empty' || status === 'ready' ? (
+        <ProTable<TranslationEntry>
+          className={recordTableStyles.root}
+          columnEmptyText={copy('emptyValue')}
+          columns={glossaryColumns}
+          dataSource={entries}
+          tableLayout="fixed"
+          locale={{
+            emptyText:
+              status === 'filter-empty' ? (
+                <Empty
+                  action={
                     <Button
                       htmlType="button"
-                      onClick={() => {
-                        setDraft(entry.translatedText)
-                        setEditing(entry)
-                      }}
+                      onClick={() =>
+                        setUrlState({ keyPath: '', lang: '', page: 1 })
+                      }
                     >
-                      {copy('editEntry')}
+                      {copy('clearFilters')}
                     </Button>
-                    <Button
-                      danger
-                      htmlType="button"
-                      onClick={() => void confirmAndDelete(entry)}
-                    >
-                      {copy('deleteEntry')}
-                    </Button>
-                  </div>
-                ),
-                title: '',
-              },
-            ]}
-            dataSource={entries}
-            pagination={false}
-            rowKey="id"
-            scroll={{ x: true }}
-          />
-        ) : null}
-      </div>
+                  }
+                  description={copy('glossaryFilterBody')}
+                  title={copy('glossaryFilterTitle')}
+                />
+              ) : (
+                <Empty
+                  description={copy('glossaryEmptyBody')}
+                  title={copy('glossaryEmptyTitle')}
+                />
+              ),
+          }}
+          onChange={(_pagination, filters, _sorter, extra) => {
+            if (extra.action !== 'filter') return
+            const next = readSingleFilter(filters, 'keyPath') ?? ''
+            setUrlState((current) => ({
+              ...current,
+              keyPath: isKeyPath(next) ? next : '',
+              page: 1,
+            }))
+          }}
+          options={false}
+          pagination={false}
+          rowKey="id"
+          scroll={recordTableScroll(glossaryColumns, table)}
+          search={false}
+          variant="outlined"
+        />
+      ) : null}
       {status === 'ready' && pageCount > 1 ? (
-        <div className={aiStyles.pager}>
+        <Flexbox align="center" horizontal justify="space-between">
           <span className={aiStyles.meta}>{copy('pageIndex', { page })}</span>
           <Pagination
             current={page}
@@ -338,7 +354,7 @@ export function AiTranslationEntriesRouteView() {
             pageSize={PAGE_SIZE}
             total={total}
           />
-        </div>
+        </Flexbox>
       ) : null}
       <Drawer
         onClose={() => setEditing(null)}
@@ -382,6 +398,6 @@ export function AiTranslationEntriesRouteView() {
           </form>
         ) : null}
       </Drawer>
-    </div>
+    </Page>
   )
 }

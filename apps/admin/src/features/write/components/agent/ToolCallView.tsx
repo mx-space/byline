@@ -1,5 +1,5 @@
 import type { ToolCallGroupItem } from '@haklex/rich-agent-core'
-import { createStaticStyles } from '@lobehub/ui'
+import { createStaticStyles, Highlighter } from '@lobehub/ui'
 import { Check, ChevronRight, Loader2, X } from 'lucide-react'
 import { useState } from 'react'
 
@@ -57,35 +57,8 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     letter-spacing: 0.025em;
     color: ${cssVar.colorTextSecondary};
   `,
-  u474a96b4: css`
-    margin: 0px;
-    max-height: 12rem;
-    overflow: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
-    border-radius: 0.25rem;
-    padding: 0.375rem;
-    font-family: ${cssVar.fontFamilyCode};
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-  `,
-  uaff4ee69: css`
-    background-color: ${cssVar.colorErrorBg};
-    color: ${cssVar.colorError};
-    :where(.dark, .dark *) & {
-      background-color: color-mix(
-        in srgb,
-        ${cssVar.colorError} 20%,
-        transparent
-      );
-    }
-    :where(.dark, .dark *) & {
-      color: ${cssVar.colorError};
-    }
-  `,
-  u07345add: css`
-    background-color: ${cssVar.colorFillSecondary};
-    color: ${cssVar.colorTextSecondary};
+  errorCode: css`
+    outline: 1px solid ${cssVar.colorErrorBorder};
   `,
   u032458a7: css`
     display: flex;
@@ -221,18 +194,32 @@ function StatusIcon({ status }: { status: ItemStatus }) {
   )
 }
 
+function detailLanguage(text: string) {
+  const trimmed = text.trim()
+  if (
+    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+    (trimmed.startsWith('[') && trimmed.endsWith(']'))
+  ) {
+    return 'json'
+  }
+  return 'plaintext'
+}
+
 function DetailBlock(props: { label: string; text: string; tone?: 'error' }) {
   return (
     <div className={lobeStyles.u7e0b7cdf}>
       <div className={lobeStyles.u560b44ca}>{props.label}</div>
-      <pre
-        className={cn(
-          lobeStyles.u474a96b4,
-          props.tone === 'error' ? lobeStyles.uaff4ee69 : lobeStyles.u07345add,
-        )}
+      <Highlighter
+        className={props.tone === 'error' ? lobeStyles.errorCode : undefined}
+        language={
+          props.tone === 'error' ? 'plaintext' : detailLanguage(props.text)
+        }
+        style={{ maxHeight: '12rem', overflow: 'auto' }}
+        variant="filled"
+        wrap
       >
         {props.text}
-      </pre>
+      </Highlighter>
     </div>
   )
 }

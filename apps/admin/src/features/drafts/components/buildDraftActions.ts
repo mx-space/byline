@@ -35,7 +35,6 @@ export function buildDraftActions(
       icon: Trash2,
       key: 'delete',
       label: copy('deleteDraft'),
-      multi: true,
       run: (targets) => handlers.deleteMany(targets),
       shortcut: 'Backspace',
       shortcutLabel: '⌫',

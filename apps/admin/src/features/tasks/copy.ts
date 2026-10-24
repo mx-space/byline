@@ -61,8 +61,8 @@ export const taskCopy = createFeatureCopy({
   tokens: { 'en-US': 'Tokens', 'zh-CN': 'Token 数' },
   typeFilter: { 'en-US': 'Type', 'zh-CN': '类型' },
   livePaused: {
-    'en-US': 'Live updates paused',
-    'zh-CN': '实时更新已暂停',
+    'en-US': 'Live paused',
+    'zh-CN': '实时暂停',
   },
   listLoadTitle: {
     'en-US': 'The task list did not load',

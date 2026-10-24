@@ -1,6 +1,8 @@
-import { Button, type ButtonProps, cx } from '@lobehub/ui'
+import { cx } from '@lobehub/ui'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+
+import { Button, type ButtonProps } from '~/ui/site-button'
 
 import { authStyles } from './auth-styles'
 

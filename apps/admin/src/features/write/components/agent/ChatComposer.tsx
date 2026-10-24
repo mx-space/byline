@@ -23,8 +23,8 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     border-color: ${cssVar.colorBorderSecondary};
   `,
   u372da0ea: css`
-    margin-inline: 0.5rem;
-    margin-top: 0.5rem;
+    margin-inline: 0;
+    margin-top: 8px;
     display: flex;
     align-items: center;
     gap: 0.375rem;
@@ -32,8 +32,8 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     background-color: ${cssVar.colorFillSecondary};
     padding-inline: 0.625rem;
     padding-block: 0.375rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     color: ${cssVar.colorTextSecondary};
   `,
   u67bab313: css`
@@ -62,11 +62,11 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   ua71b422a: css`
     display: flex;
     align-items: center;
-    gap: 0.375rem;
-    padding-inline: 0.75rem;
-    padding-block: 0.375rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    gap: 8px;
+    padding-inline: 0;
+    padding-block: 8px;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     color: ${cssVar.colorTextTertiary};
   `,
   u283e42fb: css`
@@ -96,16 +96,13 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u1e764368: css`
     outline: none;
-    min-height: 5rem;
+    min-height: 44px;
     width: 100%;
     resize: none;
     background-color: transparent;
-    padding-inline: 0.75rem;
-    padding-bottom: 0.25rem;
-    padding-top: 0.625rem;
-    font-size: 0.75rem;
-    line-height: 1.125rem;
-    line-height: 1.625;
+    padding: 12px 0 4px;
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
     color: ${cssVar.colorText};
     &::placeholder {
       color: ${cssVar.colorTextTertiary};
@@ -116,8 +113,8 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    padding-inline: 0.5rem;
-    padding-bottom: 0.5rem;
+    padding-inline: 0;
+    padding-block: 8px 12px;
   `,
   u6cfc7e6a: css`
     display: flex;
@@ -125,8 +122,8 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     gap: 0.5rem;
   `,
   u59d40084: css`
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     color: ${cssVar.colorTextTertiary};
   `,
   u1ee5d488: css`

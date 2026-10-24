@@ -1,6 +1,5 @@
 import {
   Alert,
-  Button,
   createStaticStyles,
   cx,
   Empty,
@@ -31,14 +30,17 @@ import type { UserDetail, UserStatusFilter } from '~/api/users'
 import { getMe, getUsers } from '~/api/users'
 import { adminQueryKeys } from '~/query/keys'
 import { Page } from '~/ui/page'
+import { emptyOr } from '~/ui/placeholders'
+import {
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
 import { useUsersCopy } from '../copy'
-import {
-  getUserDisplayName,
-  getUserStatus,
-  parseUserStatusFilter,
-  showValue,
-} from '../utils/users'
+import { getUserStatus, parseUserStatusFilter, showValue } from '../utils/users'
 import { CreateAuthorModal } from './CreateAuthorModal'
 import { InviteUserModal } from './InviteUserModal'
 import { PendingInvites } from './PendingInvites'
@@ -61,6 +63,9 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
 
     min-width: 0;
   `,
+  headerTitle: css`
+    white-space: nowrap;
+  `,
   row: css`
     cursor: pointer;
   `,
@@ -79,6 +84,7 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
 
 export function UsersRouteViewContent() {
   const copy = useUsersCopy()
+  const table = useRecordTable()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const params = useParams<{ id?: string }>()
@@ -181,7 +187,7 @@ export function UsersRouteViewContent() {
               }}
             >
               <Text ellipsis={{ tooltipWhenOverflow: true }}>
-                {getUserDisplayName(user)}
+                {emptyOr(user.displayName || user.username)}
               </Text>
             </Link>
             {user.id === meQuery.data?.id ? (
@@ -190,6 +196,7 @@ export function UsersRouteViewContent() {
           </Flexbox>
         ),
         title: copy('columnName'),
+        ...pinStart(table.pin),
       },
       {
         dataIndex: 'email',
@@ -200,15 +207,18 @@ export function UsersRouteViewContent() {
         ),
         responsive: ['md'],
         title: copy('columnEmail'),
+        width: 240,
       },
       {
         dataIndex: 'status',
         render: (_dom, user) => <UserStatusTag status={getUserStatus(user)} />,
-        title: copy('columnStatus'),
-        width: 140,
+        title: (
+          <span className={styles.headerTitle}>{copy('columnStatus')}</span>
+        ),
+        width: 160,
       },
     ],
-    [copy, meQuery.data?.id, search],
+    [copy, meQuery.data?.id, search, table.pin],
   )
 
   const filtered = status !== 'all' || q.trim().length > 0
@@ -273,9 +283,12 @@ export function UsersRouteViewContent() {
         <PendingInvites />
         <div className={styles.table}>
           <ProTable<UserDetail>
+            className={recordTableStyles.root}
             actionRef={actionRef}
             columnEmptyText="--"
             columns={columns}
+            scroll={recordTableScroll(columns, table)}
+            tableLayout="fixed"
             locale={{ emptyText: emptyNode }}
             onLoad={(rows) => {
               hasRows.current = rows.length > 0

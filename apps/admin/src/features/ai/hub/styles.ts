@@ -1,6 +1,6 @@
 import { createStaticStyles } from '@lobehub/ui'
 
-export const hubStyles = createStaticStyles(({ css, cssVar, responsive }) => ({
+export const hubStyles = createStaticStyles(({ css, cssVar }) => ({
   alerts: css`
     display: flex;
     flex-direction: column;
@@ -42,27 +42,17 @@ export const hubStyles = createStaticStyles(({ css, cssVar, responsive }) => ({
 
     min-width: 0;
   `,
+  headerTitle: css`
+    white-space: nowrap;
+  `,
   row: css`
     cursor: pointer;
-
-    &:hover [data-row-actions],
-    &:focus-within [data-row-actions] {
-      opacity: 1;
-    }
   `,
   rowActions: css`
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 2px;
-
-    opacity: 0;
-
-    transition: opacity 0.12s ease;
-
-    ${responsive.md} {
-      opacity: 1;
-    }
   `,
   search: css`
     flex: 1 1 16rem;

@@ -1,11 +1,9 @@
 import {
   Alert,
-  Button,
   createStaticStyles,
   cx,
   Empty,
   Segmented,
-  Select,
   Tag,
 } from '@lobehub/ui'
 import { TableSkeleton } from '@lobehub/ui/dashboard'
@@ -24,7 +22,16 @@ import {
 } from '~/features/dashboard/queries'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { readSingleFilter } from '~/ui/data/table-header'
 import { Page } from '~/ui/page'
+import {
+  pinEnd,
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
 import type { TaskStatusCategory } from '../constants'
 import {
@@ -80,14 +87,8 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
 
     min-width: 0;
   `,
-  type: css`
-    flex: none;
-    width: auto;
-    min-width: 9rem;
-  `,
 }))
 
-const ALL_TYPES = '__all__'
 const ALL_STATUS = '__all__'
 const TASKS_BASE_PATH = '/tasks'
 
@@ -128,6 +129,7 @@ function isInteractiveTarget(target: EventTarget) {
 export function TasksRouteView() {
   const { format, t } = useI18n()
   const copy = useTaskCopy()
+  const table = useRecordTable()
   const navigate = useNavigate()
   const params = useParams<{ id?: string }>()
   const labels = useTaskLabels()
@@ -184,22 +186,23 @@ export function TasksRouteView() {
     )
   }
 
-  const typeOptions = [
-    { label: copy('typeAll'), value: ALL_TYPES },
-    ...filterableTaskTypes.map((value) => ({
-      label: labels.type(value),
-      value,
-    })),
-  ]
-
   const columns: ProColumns<AITask>[] = [
     {
       dataIndex: 'payload',
       render: (_dom, task) => <TaskSubjectCell subject={subjectOf(task)} />,
       title: copy('columnSubject'),
+      ...pinStart(table.pin),
     },
     {
       dataIndex: 'type',
+      filterMultiple: false,
+      filterSearch: filterableTaskTypes.length > 7,
+      filteredValue: type ? [type] : null,
+      filters: filterableTaskTypes.map((value) => ({
+        text: labels.type(value),
+        value,
+      })),
+      onFilter: false,
       render: (_dom, task) => <Tag>{labels.type(task.type)}</Tag>,
       responsive: ['md'],
       title: copy('columnType'),
@@ -209,7 +212,7 @@ export function TasksRouteView() {
       dataIndex: 'status',
       render: (_dom, task) => <TaskStatusTag task={task} />,
       title: copy('columnStatus'),
-      width: 104,
+      width: 112,
     },
     {
       dataIndex: 'progress',
@@ -223,7 +226,7 @@ export function TasksRouteView() {
       render: (_dom, task) => <TaskTimeCell timestamp={task.createdAt} />,
       responsive: ['md'],
       title: copy('columnCreated'),
-      width: 120,
+      width: 128,
     },
     {
       dataIndex: 'completedAt',
@@ -234,7 +237,7 @@ export function TasksRouteView() {
       ),
       responsive: ['lg'],
       title: copy('columnElapsed'),
-      width: 104,
+      width: 112,
     },
     {
       align: 'right',
@@ -250,6 +253,7 @@ export function TasksRouteView() {
       ),
       title: '',
       width: 140,
+      ...pinEnd(table.pin),
     },
   ]
 
@@ -349,9 +353,21 @@ export function TasksRouteView() {
         />
       ) : null}
       <ProTable<AITask>
+        className={recordTableStyles.root}
         columnEmptyText="--"
         columns={columns}
+        scroll={recordTableScroll(columns, table)}
+        tableLayout="fixed"
         dataSource={tasks}
+        onChange={(_pagination, filters, _sorter, extra) => {
+          if (extra.action !== 'filter') return
+          const next = readSingleFilter(filters, 'type')
+          setListState((current) => ({
+            ...current,
+            page: 1,
+            type: next && filterableTaskTypes.includes(next) ? next : '',
+          }))
+        }}
         loading={
           tasksQuery.isFetching &&
           !initialLoading &&
@@ -409,21 +425,6 @@ export function TasksRouteView() {
                 value: value || ALL_STATUS,
               }))}
               value={status || ALL_STATUS}
-            />
-            <Select
-              aria-label={copy('typeFilter')}
-              className={styles.type}
-              onChange={(value) => {
-                if (typeof value !== 'string') return
-                setListState((current) => ({
-                  ...current,
-                  page: 1,
-                  type: value === ALL_TYPES ? '' : value,
-                }))
-              }}
-              options={typeOptions}
-              popupMatchSelectWidth={false}
-              value={type || ALL_TYPES}
             />
             {socketConnected ? null : <Tag>{copy('livePaused')}</Tag>}
           </div>,

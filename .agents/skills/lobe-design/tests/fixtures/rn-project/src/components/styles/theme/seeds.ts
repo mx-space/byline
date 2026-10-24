@@ -1,3 +1,3 @@
-import { colorScales, neutralColorScales } from '@lobehub/ui/es/styles'
+import { colorScales, neutralColorScales } from '@lobehub/ui/es/styles';
 
-export const seeds = { colorScales, neutralColorScales }
+export const seeds = { colorScales, neutralColorScales };

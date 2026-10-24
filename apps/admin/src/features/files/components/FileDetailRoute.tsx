@@ -1,4 +1,4 @@
-import { Button, Empty, Flexbox, Skeleton, Text, Tooltip } from '@lobehub/ui'
+import { Empty, Flexbox, Skeleton, Text, Tooltip } from '@lobehub/ui'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useParams } from 'react-router'
@@ -7,11 +7,13 @@ import type { FileItem } from '~/api/files'
 import { findInListCache } from '~/api/list-cache'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { useI18n } from '~/i18n'
+import { EmptyValue } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { filesQueryKey } from '../constants'
 import { useFileCopy } from '../copy'
 import { mimeOf } from '../utils/file-kind'
-import { EMPTY_VALUE, formatUploadedAt } from '../utils/format'
+import { formatUploadedAt } from '../utils/format'
 import { FileDetail, FileDetailState } from './FileDetail'
 import { useFilesRouteContext } from './files-route-context'
 
@@ -84,9 +86,13 @@ export function FileDetailRoute() {
           {
             key: 'mime',
             label: copy('fieldMime'),
-            value: mimeOf(raw.name) ?? EMPTY_VALUE,
+            value: mimeOf(raw.name) ?? <EmptyValue />,
           },
-          { key: 'uploaded', label: copy('fieldUploaded'), value: uploaded },
+          {
+            key: 'uploaded',
+            label: copy('fieldUploaded'),
+            value: raw.created ? uploaded : <EmptyValue />,
+          },
         ]}
         key={raw.url}
         meta={

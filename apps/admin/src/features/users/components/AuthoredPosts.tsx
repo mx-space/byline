@@ -1,17 +1,13 @@
-import {
-  Alert,
-  Button,
-  createStaticStyles,
-  Flexbox,
-  SkeletonText,
-  Text,
-} from '@lobehub/ui'
+import { Alert, createStaticStyles, Empty, Flexbox, Text } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 
+import { emptyOr, ListSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
+
 import { getPostsByAuthor } from '../api'
 import { useUsersCopy } from '../copy'
-import { bylinePlace, showValue } from '../utils/users'
+import { bylinePlace } from '../utils/users'
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
   link: css`
@@ -28,7 +24,9 @@ export function AuthoredPosts(props: { userId: string }) {
     queryKey: ['users', 'authored-posts', props.userId],
   })
 
-  if (postsQuery.isLoading) return <SkeletonText />
+  if (postsQuery.isLoading) {
+    return <ListSkeleton label={copy('loading')} rows={3} />
+  }
 
   if (postsQuery.isError) {
     return (
@@ -45,7 +43,9 @@ export function AuthoredPosts(props: { userId: string }) {
   }
 
   const posts = postsQuery.data?.data ?? []
-  if (posts.length === 0) return null
+  if (posts.length === 0) {
+    return <Empty title={copy('postsEmptyTitle')} />
+  }
 
   const total = postsQuery.data?.pagination.total ?? posts.length
   const remaining = Math.max(total - posts.length, 0)
@@ -64,7 +64,7 @@ export function AuthoredPosts(props: { userId: string }) {
               to={`/posts/edit?id=${encodeURIComponent(post.id)}`}
             >
               <Text ellipsis={{ tooltipWhenOverflow: true }}>
-                {showValue(post.title)}
+                {emptyOr(post.title)}
               </Text>
             </Link>
             {place ? (

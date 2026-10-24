@@ -1,6 +1,5 @@
 import {
   Alert,
-  Button,
   createStaticStyles,
   Drawer,
   Flexbox,
@@ -18,6 +17,7 @@ import { AITaskType, getTask } from '~/api/tasks'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { adminQueryKeys } from '~/query/keys'
 import { DetailPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
 import {
   fallbackPollingIntervalMs,

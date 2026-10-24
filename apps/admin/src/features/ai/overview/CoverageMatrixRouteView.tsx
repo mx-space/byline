@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Alert,
-  Button,
   DropdownMenu,
   Empty,
   SearchBar,
@@ -21,6 +20,21 @@ import { useNavigate, useSearchParams } from 'react-router'
 import type { AiOverviewCapability } from '~/api/ai-overview'
 import { AI_OVERVIEW_CAPABILITIES } from '~/api/ai-overview'
 import { adminQueryKeys } from '~/query/keys'
+import {
+  alphaFirst,
+  type HeaderSortOrder,
+  newestFirst,
+  orderedBy,
+} from '~/ui/data/table-header'
+import {
+  pinEnd,
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  SELECTION_COLUMN_WIDTH,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
 import { useAiCopy } from '../copy'
 import { useAiQuickActionsBuilder } from '../hooks/use-ai-quick-actions'
@@ -29,7 +43,12 @@ import { toLobeMenuItems } from '../hub/menu'
 import { hubStyles } from '../hub/styles'
 import { CAPABILITY_LABEL } from './capability-label'
 import type { MatrixRow } from './coverage'
-import { countGaps, hasGap, MATRIX_CAPABILITIES } from './coverage'
+import {
+  compareMatrixRows,
+  countGaps,
+  hasGap,
+  MATRIX_CAPABILITIES,
+} from './coverage'
 import { CapabilityCell } from './CoverageCells'
 import { FillGapsModal } from './FillGapsModal'
 import { useCoverageData } from './use-coverage-data'
@@ -54,6 +73,7 @@ function isInteractiveTarget(target: EventTarget) {
 
 export function CoverageMatrixRouteView() {
   const copy = useAiCopy()
+  const table = useRecordTable()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const buildAiItems = useAiQuickActionsBuilder()
@@ -63,6 +83,10 @@ export function CoverageMatrixRouteView() {
   const capability = parseCapability(searchParams.get('capability'))
   const [draft, setDraft] = useState(q)
   const [page, setPage] = useState(1)
+  const [headerSort, setHeaderSort] = useState<{
+    key: string
+    order: HeaderSortOrder
+  } | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [fill, setFill] = useState<{
     clearSelection: boolean
@@ -111,7 +135,23 @@ export function CoverageMatrixRouteView() {
     [capability, gapsOnly, keyword, rows],
   )
   const counts = useMemo(() => countGaps(rows), [rows])
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const activeSort =
+    !headerSort ||
+    headerSort.key === 'post' ||
+    !capability ||
+    headerSort.key === capability
+      ? headerSort
+      : null
+  const sorted = useMemo(
+    () =>
+      activeSort
+        ? orderedBy(filtered, activeSort.order, (left, right) =>
+            compareMatrixRows(left, right, activeSort.key),
+          )
+        : filtered,
+    [activeSort, filtered],
+  )
+  const pageRows = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const fillableRows = filtered.filter((row) => hasGap(row, capability))
   const selectedRows = rows.filter((row) =>
     selectedIds.includes(row.article.id),
@@ -141,8 +181,15 @@ export function CoverageMatrixRouteView() {
       />
     ),
     responsive: key === 'translation' ? ['md'] : ['lg'],
-    title: copy(CAPABILITY_LABEL[key]),
-    width: key === 'translation' ? 144 : 112,
+    sortDirections: newestFirst,
+    sortOrder: activeSort?.key === key ? activeSort.order : null,
+    sorter: true,
+    title: (
+      <span className={hubStyles.headerTitle}>
+        {copy(CAPABILITY_LABEL[key])}
+      </span>
+    ),
+    width: 168,
   })
 
   const columns: ProColumns<MatrixRow>[] = [
@@ -160,7 +207,11 @@ export function CoverageMatrixRouteView() {
           </span>
         </div>
       ),
+      sortDirections: alphaFirst,
+      sortOrder: activeSort?.key === 'post' ? activeSort.order : null,
+      sorter: true,
       title: copy('columnPost'),
+      ...pinStart(table.pin),
     },
     ...visibleCapabilities.map(capabilityColumn),
     {
@@ -197,7 +248,8 @@ export function CoverageMatrixRouteView() {
         </div>
       ),
       title: '',
-      width: 112,
+      width: 128,
+      ...pinEnd(table.pin),
     },
   ]
 
@@ -261,30 +313,21 @@ export function CoverageMatrixRouteView() {
       count={rows.length || undefined}
     >
       <MetricStrip
-        items={[
-          {
-            hint: copy('metricOfTotal', { total: rows.length }),
-            label: copy('metricGapPosts'),
-            onClick: () => updateParams({ capability: null, gaps: '1' }),
-            value: counts.posts,
-            valueTone: counts.posts ? 'warning' : undefined,
-          },
-          ...MATRIX_CAPABILITIES.map((key) => ({
-            hint: counts.byCapability[key].items
-              ? copy('metricItems', { count: counts.byCapability[key].items })
-              : rows.length &&
-                  rows.every((row) =>
-                    ['na', 'none'].includes(row.capabilities[key].state),
-                  )
-                ? copy('stateNone')
-                : copy('stateDone'),
-            label: copy('metricCapabilityGaps', {
-              capability: copy(CAPABILITY_LABEL[key]),
-            }),
-            onClick: () => updateParams({ capability: key, gaps: '1' }),
-            value: counts.byCapability[key].posts,
-          })),
-        ]}
+        items={MATRIX_CAPABILITIES.map((key) => ({
+          hint: counts.byCapability[key].items
+            ? copy('metricItems', { count: counts.byCapability[key].items })
+            : rows.length &&
+                rows.every((row) =>
+                  ['na', 'none'].includes(row.capabilities[key].state),
+                )
+              ? copy('stateNone')
+              : copy('stateDone'),
+          label: copy('metricCapabilityGaps', {
+            capability: copy(CAPABILITY_LABEL[key]),
+          }),
+          onClick: () => updateParams({ capability: key, gaps: '1' }),
+          value: counts.byCapability[key].posts,
+        }))}
         loading={initialLoading}
       />
       {listQuery.isError && rows.length ? (
@@ -299,9 +342,25 @@ export function CoverageMatrixRouteView() {
         />
       ) : null}
       <ProTable<MatrixRow>
+        className={recordTableStyles.root}
         columnEmptyText={copy('emptyValue')}
         columns={columns}
+        scroll={recordTableScroll(columns, table, SELECTION_COLUMN_WIDTH)}
         dataSource={pageRows}
+        onChange={(_pagination, _filters, sorter, extra) => {
+          if (extra.action !== 'sort') return
+          const info = Array.isArray(sorter) ? sorter[0] : sorter
+          const key = info?.columnKey == null ? '' : String(info.columnKey)
+          const visible =
+            key === 'post' ||
+            visibleCapabilities.includes(key as AiOverviewCapability)
+          if (!info?.order || !visible) {
+            setHeaderSort(null)
+          } else {
+            setHeaderSort({ key, order: info.order })
+          }
+          setPage(1)
+        }}
         locale={{ emptyText: emptyNode }}
         onRow={(row) =>
           ({
@@ -335,6 +394,7 @@ export function CoverageMatrixRouteView() {
         rowClassName={() => hubStyles.row}
         rowKey={(row) => row.article.id}
         rowSelection={{
+          columnWidth: SELECTION_COLUMN_WIDTH,
           onChange: (keys) => {
             const pageIds = new Set(pageRows.map((row) => row.article.id))
             const kept = selectedIds.filter((id) => !pageIds.has(id))

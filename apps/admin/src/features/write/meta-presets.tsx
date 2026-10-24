@@ -1,4 +1,13 @@
-import { createStaticStyles, toast } from '@lobehub/ui'
+import {
+  ActionIcon,
+  createStaticStyles,
+  Empty,
+  Highlighter,
+  Input,
+  Segmented,
+  TextArea as LobeTextArea,
+  toast,
+} from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, Plus, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -13,13 +22,14 @@ import type {
   MetaPresetScope,
 } from '~/models/meta-preset'
 import { Modal, ModalFooter, ModalHeader } from '~/ui/feedback/modal'
+import { FormSkeleton } from '~/ui/placeholders'
 import { Button } from '~/ui/primitives/button'
 import { Checkbox } from '~/ui/primitives/checkbox'
 import { CodeEditor } from '~/ui/primitives/code-editor'
-import { Scroll } from '~/ui/primitives/scroll'
 import { SelectField } from '~/ui/primitives/select'
 import { FormSwitch } from '~/ui/primitives/switch'
 import { TextArea, TextInput } from '~/ui/primitives/text-field'
+import { Button as LobeButton } from '~/ui/site-button'
 import { cn } from '~/utils/cn'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
@@ -29,50 +39,26 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u1b728c04: css`
     display: flex;
-    width: 100%;
     align-items: center;
-    gap: 0.5rem;
-    border-radius: 0.25rem;
-    border-width: 1px;
-    border-style: solid;
-    border-color: ${cssVar.colorFillSecondary};
-    padding-right: 0.5rem;
-    :where(.dark, .dark *) & {
-      border-color: ${cssVar.colorText};
-    }
+    gap: 8px;
   `,
   ue5746cdf: css`
     display: flex;
-    flex: 1 1 0%;
+    flex: 1;
     align-items: center;
     justify-content: space-between;
-    border-top-left-radius: 0.25rem;
-    border-bottom-left-radius: 0.25rem;
-    padding-inline: 0.75rem;
-    padding-block: 0.5rem;
-    text-align: left;
-    font-size: 0.75rem;
-    line-height: 1.125rem;
+    min-width: 0;
+
+    padding-block: 6px;
+
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
     color: ${cssVar.colorText};
-    transition:
-      color 0.15s ease,
-      background-color 0.15s ease,
-      border-color 0.15s ease;
-    &:hover {
-      background-color: ${cssVar.colorFillSecondary};
-    }
-    :where(.dark, .dark *) & {
-      color: ${cssVar.colorFillSecondary};
-    }
-    :where(.dark, .dark *) &:hover {
-      background-color: ${cssVar.colorText};
-    }
+    text-align: left;
   `,
   u34fbabce: css`
-    margin-left: 0.5rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    color: ${cssVar.colorTextSecondary};
+    margin-inline-start: 8px;
+    color: ${cssVar.colorTextTertiary};
   `,
   ua005bc18: css`
     width: 1rem;
@@ -91,13 +77,29 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     line-height: 0.875rem;
   `,
   u2ad29a22: css`
-    border-radius: 0.25rem;
-    border-width: 1px;
-    border-style: solid;
-    border-color: ${cssVar.colorFillSecondary};
-    padding: 0.75rem;
-    :where(.dark, .dark *) & {
-      border-color: ${cssVar.colorText};
+    display: grid;
+    gap: 12px;
+  `,
+  kvField: css`
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+
+    > * {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+    }
+  `,
+  kvKey: css`
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+
+    > :first-child {
+      flex: 1;
+      min-width: 0;
     }
   `,
   u048ab586: css`
@@ -155,28 +157,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
       color: ${cssVar.colorFillSecondary};
     }
   `,
-  u659766e6: css`
-    & > :not([hidden]) ~ :not([hidden]) {
-      margin-top: 0.5rem;
-    }
-    padding-block: 0.25rem;
-  `,
-  u59e73608: css`
-    height: 2rem;
-    animation: byline-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    border-radius: 0.25rem;
-    background-color: ${cssVar.colorFillSecondary};
-    :where(.dark, .dark *) & {
-      background-color: ${cssVar.colorText};
-    }
-  `,
-  u2e70e559: css`
-    padding-block: 0.75rem;
-    text-align: center;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    color: ${cssVar.colorTextSecondary};
-  `,
   u3c4c1a59: css`
     display: grid;
     gap: 1rem;
@@ -190,18 +170,15 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     gap: 0.125rem;
   `,
   u3a98e768: css`
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     font-weight: 500;
     color: ${cssVar.colorTextSecondary};
-    :where(.dark, .dark *) & {
-      color: ${cssVar.colorFillSecondary};
-    }
   `,
   ud43cf347: css`
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    color: ${cssVar.colorTextSecondary};
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
+    color: ${cssVar.colorTextTertiary};
   `,
   u6a9369f3: css`
     height: 2.25rem;
@@ -323,9 +300,9 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     color: ${cssVar.colorTextSecondary};
   `,
   u6cfc7e6a: css`
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    display: grid;
+    gap: 8px;
+    min-width: 0;
   `,
   ub7192aed: css`
     display: inline-flex;
@@ -388,19 +365,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u558f6434: css`
     max-height: 12rem;
-  `,
-  u7744a19b: css`
-    overflow: auto;
-    padding-inline: 0.75rem;
-    padding-bottom: 0.75rem;
-    font-family: ${cssVar.fontFamilyCode};
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    line-height: 1.25rem;
-    color: ${cssVar.colorText};
-    :where(.dark, .dark *) & {
-      color: ${cssVar.colorFillSecondary};
-    }
   `,
   u2b5fa9a9: css`
     min-height: 0px;
@@ -618,7 +582,6 @@ export function MetaPresetSection(props: MetaPresetSectionProps) {
           />
         </button>
         <Button
-          className={lobeStyles.u6ecb3128}
           onClick={() => setShowJsonModal(true)}
           type="button"
           variant="ghost"
@@ -629,28 +592,15 @@ export function MetaPresetSection(props: MetaPresetSectionProps) {
 
       {expanded ? (
         <div className={lobeStyles.u2ad29a22}>
-          <div className={lobeStyles.u048ab586}>
-            {(
-              [
-                ['preset', t('write.meta.tab.preset')],
-                ['json', t('write.meta.tab.json')],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                className={cn(
-                  lobeStyles.u084b1e36,
-                  activeTab === key
-                    ? lobeStyles.ua94dd009
-                    : lobeStyles.ub7819fc6,
-                )}
-                key={key}
-                onClick={() => setActiveTab(key)}
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            block
+            onChange={(value) => setActiveTab(value as 'preset' | 'json')}
+            options={[
+              { label: t('write.meta.tab.preset'), value: 'preset' },
+              { label: t('write.meta.tab.json'), value: 'json' },
+            ]}
+            value={activeTab}
+          />
 
           {activeTab === 'preset' ? (
             <PresetFieldList
@@ -691,18 +641,10 @@ function PresetFieldList(props: {
 }) {
   const { t } = useI18n()
   if (props.loading) {
-    return (
-      <div className={lobeStyles.u659766e6}>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div className={lobeStyles.u59e73608} key={i} />
-        ))}
-      </div>
-    )
+    return <FormSkeleton label={t('common.loading')} rows={3} />
   }
   if (props.presets.length === 0) {
-    return (
-      <p className={lobeStyles.u2e70e559}>{t('write.meta.preset.empty')}</p>
-    )
+    return <Empty title={t('write.meta.preset.empty')} />
   }
   return (
     <div className={lobeStyles.u3c4c1a59}>
@@ -1199,62 +1141,52 @@ function KeyValuePairList(props: {
           <p className={lobeStyles.u327cfeab}>{t('write.meta.kvList.empty')}</p>
         ) : (
           pairs.map((pair) => (
-            <div className={lobeStyles.u6cfc7e6a} key={pair.id}>
-              <TextInput
-                controlClassName={lobeStyles.ub8a627aa}
-                onChange={(value) => updatePair(pair.id, { key: value })}
-                placeholder={t('write.meta.kvList.keyPlaceholder')}
-                value={pair.key}
-              />
-              <TextInput
-                controlClassName={lobeStyles.ub8a627aa}
-                onChange={(value) => updatePair(pair.id, { value })}
+            <div className={lobeStyles.kvField} key={pair.id}>
+              <div className={lobeStyles.kvKey}>
+                <Input
+                  onChange={(event) =>
+                    updatePair(pair.id, { key: event.target.value })
+                  }
+                  placeholder={t('write.meta.kvList.keyPlaceholder')}
+                  value={pair.key}
+                />
+                <ActionIcon
+                  aria-label={t('write.meta.kvList.deleteFieldAria')}
+                  icon={X}
+                  onClick={() => removePair(pair.id)}
+                  size="small"
+                />
+              </div>
+              <LobeTextArea
+                autoSize={{ maxRows: 8, minRows: 3 }}
+                onChange={(event) =>
+                  updatePair(pair.id, { value: event.target.value })
+                }
                 placeholder={t('write.meta.kvList.valuePlaceholder')}
                 value={pair.value}
               />
-              <button
-                aria-label={t('write.meta.kvList.deleteFieldAria')}
-                className={lobeStyles.ub7192aed}
-                onClick={() => removePair(pair.id)}
-                type="button"
-              >
-                <X aria-hidden="true" className={lobeStyles.uf7b5fa97} />
-              </button>
             </div>
           ))
         )}
-        <Button onClick={addPair} type="button" variant="subtle">
-          <Plus aria-hidden="true" className={lobeStyles.uf7b5fa97} />
+        <LobeButton icon={Plus} onClick={addPair} type="text">
           {t('write.meta.kvList.addField')}
-        </Button>
+        </LobeButton>
       </div>
 
       {hasMeta ? (
-        <div className={lobeStyles.u5a1fe526}>
-          <button
+        <div>
+          <LobeButton
             aria-expanded={props.previewOpen}
-            className={lobeStyles.u780c0472}
+            icon={ChevronDown}
             onClick={props.onTogglePreview}
-            type="button"
+            type="text"
           >
-            <span>{t('write.meta.kvList.previewJson')}</span>
-            <ChevronDown
-              aria-hidden="true"
-              className={cn(
-                lobeStyles.ua005bc18,
-                props.previewOpen && lobeStyles.u3350916b,
-              )}
-            />
-          </button>
+            {t('write.meta.kvList.previewJson')}
+          </LobeButton>
           {props.previewOpen ? (
-            <Scroll
-              className={lobeStyles.u558f6434}
-              viewportClassName={lobeStyles.u558f6434}
-            >
-              <pre className={lobeStyles.u7744a19b}>
-                {JSON.stringify(props.meta, null, 2)}
-              </pre>
-            </Scroll>
+            <Highlighter language="json" variant="filled" wrap>
+              {JSON.stringify(props.meta, null, 2)}
+            </Highlighter>
           ) : null}
         </div>
       ) : null}

@@ -1,13 +1,8 @@
-import {
-  Alert,
-  Button,
-  createStaticStyles,
-  Icon,
-  ScrollArea,
-} from '@lobehub/ui'
+import { Alert, createStaticStyles, Icon, ScrollArea } from '@lobehub/ui'
 import { RefreshCw } from 'lucide-react'
 
 import type { AITaskLog } from '~/api/tasks'
+import { Button } from '~/ui/site-button'
 
 import { useTaskCopy } from '../copy'
 import { TaskLogRow } from './TaskLogRow'

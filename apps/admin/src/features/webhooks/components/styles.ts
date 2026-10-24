@@ -1,23 +1,6 @@
 import { createStaticStyles } from '@lobehub/ui'
 
 export const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
-  code: css`
-    overflow: auto;
-
-    max-height: 320px;
-    margin: 0;
-    padding: 12px;
-    border-radius: ${cssVar.borderRadius};
-
-    font-family: ${cssVar.fontFamilyCode};
-    font-size: ${cssVar.fontSizeSM};
-    line-height: 1.6;
-    color: ${cssVar.colorText};
-    word-break: break-all;
-    white-space: pre-wrap;
-
-    background: ${cssVar.colorFillQuaternary};
-  `,
   dot: css`
     flex: none;
 
@@ -224,21 +207,10 @@ export const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
   `,
   tableRow: css`
     cursor: pointer;
-
-    &:hover [data-row-actions],
-    &:focus-within [data-row-actions] {
-      opacity: 1;
-    }
   `,
   tableActions: css`
     display: flex;
     justify-content: flex-end;
-    opacity: 0;
-    transition: opacity 0.12s ease;
-
-    ${responsive.md} {
-      opacity: 1;
-    }
   `,
   tabs: css`
     flex: none;

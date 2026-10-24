@@ -1,4 +1,4 @@
-import { Button, Divider, Empty, Tag, Text } from '@lobehub/ui'
+import { Divider, Empty, Tag, Text } from '@lobehub/ui'
 import { Section } from '@lobehub/ui/dashboard'
 import { useQuery } from '@tanstack/react-query'
 import { CircleCheck } from 'lucide-react'
@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router'
 import { useTaskActions } from '~/features/tasks/hooks/use-task-actions'
 import { useTaskSubjects } from '~/features/tasks/hooks/use-task-subjects'
 import { useI18n } from '~/i18n'
+import { Button } from '~/ui/site-button'
 
 import { deskAiGapPreviewLimit, deskWritingItemLimit } from '../constants'
 import { useDashboardCopy } from '../copy'

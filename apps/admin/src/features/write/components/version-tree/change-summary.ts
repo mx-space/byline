@@ -6,6 +6,7 @@ const FIELD_LABEL: Record<string, TranslationKey> = {
   categoryId: 'write.recovery.field.category',
   pin: 'write.recovery.field.pin',
   pinOrder: 'write.recovery.field.pinOrder',
+  created: 'write.recovery.field.publishedAt',
   slug: 'write.recovery.field.slug',
   summary: 'write.recovery.field.summary',
   tags: 'write.recovery.field.tags',

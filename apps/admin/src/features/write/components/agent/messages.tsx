@@ -9,6 +9,7 @@ import { Check, X } from 'lucide-react'
 import remarkGfm from 'remark-gfm'
 
 import { useI18n } from '~/i18n'
+import { streamCodeComponents } from '~/ui/markdown/stream-code'
 import { Button } from '~/ui/primitives/button'
 
 import { ThinkingBlock } from './ThinkingBlock'
@@ -174,6 +175,7 @@ export function AgentMessageItem(props: AgentMessageItemProps) {
       return (
         <div className={lobeStyles.u823a1374}>
           <Streamdown
+            components={streamCodeComponents}
             content={bubble.content}
             granularity="char"
             remarkPlugins={remarkPlugins}

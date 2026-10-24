@@ -1,12 +1,13 @@
 import { createStaticStyles } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronRight, Loader2 } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { getDraftRevisions } from '~/api/drafts'
 import { useI18n } from '~/i18n'
 import type { DraftModel, VersionTreeNode } from '~/models/draft'
 import { adminQueryKeys } from '~/query/keys'
+import { ListSkeleton } from '~/ui/placeholders'
 import { cn } from '~/utils/cn'
 
 import { ChangeSummary, TitleChangeLine } from './ChangeSummary'
@@ -16,11 +17,8 @@ import { ShareMark } from './RevisionLine'
 
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u80cb9444: css`
-    border-radius: 12px;
-    border-width: 1px;
-    border-style: solid;
-    border-color: color-mix(in srgb, ${cssVar.colorPrimary} 40%, transparent);
-    background-color: ${cssVar.colorPrimaryBg};
+    border-radius: ${cssVar.borderRadius};
+    background: ${cssVar.colorFillTertiary};
   `,
   u81f6cdce: css`
     pointer-events: none;
@@ -54,24 +52,15 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   `,
   u1b6f84de: css`
     flex-shrink: 0;
-    border-radius: 999px;
-    background-color: color-mix(
-      in srgb,
-      ${cssVar.colorPrimary} 10%,
-      transparent
-    );
-    padding-inline: 0.5rem;
-    padding-block: 0.125rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    font-weight: 500;
-    color: ${cssVar.colorPrimary};
+    color: ${cssVar.colorText};
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
   `,
   uedb88331: css`
-    margin-left: auto;
+    margin-inline-start: auto;
     flex-shrink: 0;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     font-variant-numeric: tabular-nums;
     color: ${cssVar.colorTextTertiary};
   `,
@@ -137,18 +126,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     border-color: ${cssVar.colorBorderSecondary};
     padding-block: 0.25rem;
     padding-left: 0.75rem;
-  `,
-  u31ae88a0: css`
-    margin-block: 0.5rem;
-    width: 0.875rem;
-    height: 0.875rem;
-    @keyframes byline-spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-    animation: byline-spin 1s linear infinite;
-    color: ${cssVar.colorTextSecondary};
   `,
   u6d654e40: css`
     padding-block: 0.25rem;
@@ -269,10 +246,7 @@ function DraftAutosaves(props: {
       {open ? (
         <div className={lobeStyles.uc8c630a3}>
           {revisionsQuery.isLoading ? (
-            <Loader2
-              aria-label={t('common.loading')}
-              className={lobeStyles.u31ae88a0}
-            />
+            <ListSkeleton label={t('common.loading')} rows={2} />
           ) : (
             hiddenRevisions.map((revision) => (
               <div className={lobeStyles.u6d654e40} key={revision.id}>

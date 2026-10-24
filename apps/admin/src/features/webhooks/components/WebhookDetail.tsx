@@ -1,12 +1,4 @@
-import {
-  Button,
-  confirmModal,
-  Flexbox,
-  Switch,
-  Tabs,
-  Text,
-  toast,
-} from '@lobehub/ui'
+import { confirmModal, Flexbox, Switch, Tabs, Text, toast } from '@lobehub/ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Send, Trash2 } from 'lucide-react'
 import { useSearchParams } from 'react-router'
@@ -16,6 +8,7 @@ import { deleteWebhook, updateWebhook } from '~/api/webhooks'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
 import { DetailPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
 import { webhooksQueryKey } from '../constants'
 import { useWebhookCopy } from '../copy'

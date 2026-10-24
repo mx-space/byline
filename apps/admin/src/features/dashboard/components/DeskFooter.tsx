@@ -1,7 +1,8 @@
-import { Button, Flexbox, Text } from '@lobehub/ui'
+import { Flexbox, Text } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 
 import { useI18n } from '~/i18n'
+import { Button } from '~/ui/site-button'
 
 import { useDashboardCopy } from '../copy'
 import { appInfoQuery } from '../queries'

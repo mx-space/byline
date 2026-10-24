@@ -5,6 +5,7 @@ import type {
   ArticleCoverage,
 } from '~/api/ai-overview'
 import type { AITask } from '~/api/tasks'
+import { compareText } from '~/ui/data/table-header'
 
 import { resolveCell } from '../components/article-overview/coverage-cells'
 
@@ -211,6 +212,33 @@ export function buildMatrixRows(
       gapCount,
     }
   })
+}
+
+const capabilityStateRank: Record<CapabilityState, number> = {
+  done: 0,
+  na: 1,
+  none: 2,
+  pending: 3,
+  gap: 4,
+  failed: 5,
+}
+
+export function compareMatrixRows(
+  left: MatrixRow,
+  right: MatrixRow,
+  columnKey: string,
+) {
+  if (columnKey === 'post') {
+    return compareText(left.article.title, right.article.title)
+  }
+  if ((MATRIX_CAPABILITIES as readonly string[]).includes(columnKey)) {
+    const key = columnKey as (typeof MATRIX_CAPABILITIES)[number]
+    return (
+      capabilityStateRank[left.capabilities[key].state] -
+      capabilityStateRank[right.capabilities[key].state]
+    )
+  }
+  return 0
 }
 
 export function hasGap(row: MatrixRow, capability?: AiOverviewCapability) {

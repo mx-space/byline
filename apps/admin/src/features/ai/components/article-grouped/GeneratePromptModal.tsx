@@ -1,9 +1,10 @@
-import { Button, Checkbox, Input, Tag, toast } from '@lobehub/ui'
+import { Checkbox, Input, Tag, toast } from '@lobehub/ui'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 
 import { ModalFooter, ModalHeader } from '~/ui/feedback/modal'
 import { present, useModal } from '~/ui/feedback/modal-imperative'
+import { Button } from '~/ui/site-button'
 
 import { useAiCopy } from '../../copy'
 import { aiStyles } from '../../shell/styles'

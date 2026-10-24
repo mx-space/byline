@@ -32,7 +32,11 @@ describe('translation seo fields', () => {
 
   it('clears seo when every field is blank', () => {
     expect(
-      seoFromFields({ seoDescription: '', seoImage: ' ', seoTitle: '' }),
+      seoFromFields({
+        seoDescription: '',
+        seoImage: ' ',
+        seoTitle: '',
+      }),
     ).toBeNull()
   })
 })

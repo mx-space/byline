@@ -1,4 +1,4 @@
-import { createStaticStyles } from '@lobehub/ui'
+import { createStaticStyles, Highlighter } from '@lobehub/ui'
 import { useEffect, useRef, useState } from 'react'
 
 import type { AITask } from '~/api/tasks'
@@ -80,16 +80,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     max-height: 18rem;
     overflow: auto;
   `,
-  ue28bbfc6: css`
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
-    padding: 0.75rem;
-    font-family: ${cssVar.fontFamilyCode};
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    line-height: 1.25rem;
-    color: ${cssVar.colorText};
-  `,
   uedeca61f: css`
     & > :not([hidden]) ~ :not([hidden]) {
       border-top-width: 1px;
@@ -113,14 +103,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     line-height: 0.875rem;
     font-weight: 500;
     color: ${cssVar.colorTextSecondary};
-  `,
-  uc0492334: css`
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
-    font-family: ${cssVar.fontFamilyCode};
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    line-height: 1.25rem;
   `,
 }))
 
@@ -266,7 +248,9 @@ function MarkdownStream(props: { chunks: string[] }) {
 
   return (
     <div className={lobeStyles.uff4d2db0} ref={scrollViewportRef}>
-      <pre className={lobeStyles.ue28bbfc6}>{text}</pre>
+      <Highlighter language="markdown" variant="borderless" wrap>
+        {text}
+      </Highlighter>
     </div>
   )
 }
@@ -281,9 +265,9 @@ function LexicalSegments(props: { segments: Array<[string, LexicalSegment]> }) {
             <div className={lobeStyles.ucd6c15f2}>
               {copy('streamSegment', { segmentId })}
             </div>
-            <pre className={lobeStyles.uc0492334}>
+            <Highlighter language="json" variant="borderless" wrap>
               {safeStringify(segment.partial)}
-            </pre>
+            </Highlighter>
           </li>
         ))}
       </ul>

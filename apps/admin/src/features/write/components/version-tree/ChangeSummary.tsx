@@ -8,11 +8,12 @@ import { formatCharCount, summarizeRevisionChange } from './change-summary'
 const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   ud764cbe7: css`
     display: flex;
-    min-width: 0px;
+    min-width: 0;
+    flex: 1;
     align-items: baseline;
-    gap: 0.375rem;
-    font-size: 0.75rem;
-    line-height: 1.125rem;
+    gap: 6px;
+    font-size: ${cssVar.fontSize};
+    line-height: ${cssVar.lineHeight};
     color: ${cssVar.colorText};
   `,
   ud548d54f: css`
@@ -44,8 +45,8 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
+    font-size: ${cssVar.fontSizeSM};
+    line-height: ${cssVar.lineHeightSM};
     color: ${cssVar.colorTextSecondary};
   `,
 }))

@@ -1,5 +1,4 @@
 import {
-  Button,
   createStaticStyles,
   Descriptions,
   Drawer,
@@ -11,6 +10,8 @@ import {
 import { Copy, Download, ExternalLink, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useRef, useState } from 'react'
+
+import { Button } from '~/ui/site-button'
 
 import { useFileCopy } from '../copy'
 import { fileKindOf } from '../utils/file-kind'

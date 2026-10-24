@@ -1,4 +1,4 @@
-import { Button, Flexbox, Icon, Text } from '@lobehub/ui'
+import { Flexbox, Icon, Text } from '@lobehub/ui'
 import { AuthLayout } from '@lobehub/ui/dashboard'
 import { Check, ChevronLeft } from 'lucide-react'
 import type { PropsWithChildren, ReactNode } from 'react'
@@ -6,6 +6,7 @@ import type { PropsWithChildren, ReactNode } from 'react'
 import { AuthTools } from '~/features/auth/components/auth-tools'
 import { AuthScreen } from '~/features/auth/components/AuthScreen'
 import { FloatLayerProvider } from '~/ui/overlay/floating-layer'
+import { Button } from '~/ui/site-button'
 
 import faviconUrl from '../../../../favicon.png'
 import { type SetupCopyKey, useSetupCopy } from '../copy'

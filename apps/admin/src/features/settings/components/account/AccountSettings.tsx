@@ -1,4 +1,4 @@
-import { Button, createStaticStyles, Flexbox, toast } from '@lobehub/ui'
+import { createStaticStyles, Flexbox, toast } from '@lobehub/ui'
 import { Form, useForm } from '@lobehub/ui/form'
 import { useQueryClient } from '@tanstack/react-query'
 import { Fingerprint, Key, Lock } from 'lucide-react'
@@ -7,6 +7,7 @@ import { useSearchParams } from 'react-router'
 
 import { useI18n } from '~/i18n'
 import { Drawer } from '~/ui/feedback/drawer'
+import { Button } from '~/ui/site-button'
 import { authClient } from '~/utils/authjs/auth'
 
 import { accountQueryKey } from '../../constants'

@@ -1,10 +1,11 @@
-import { Alert, Button, Text } from '@lobehub/ui'
+import { Alert, Text } from '@lobehub/ui'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 
 import { getUrlOptions } from '~/api/options'
 import { getMe } from '~/api/users'
 import { adminQueryKeys } from '~/query/keys'
+import { Button } from '~/ui/site-button'
 
 import { useSetupCopy } from '../copy'
 import { useOnboardingAiConfig } from '../hooks/use-onboarding-ai'

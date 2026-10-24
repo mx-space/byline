@@ -305,33 +305,6 @@ importers:
       '@better-auth/passkey':
         specifier: 1.6.27
         version: 1.6.27(@better-auth/core@1.6.27(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.27(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.1)(sql.js@1.15.1))(pg@8.23.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@5.0.5))(better-call@1.4.0(zod@4.6.5))(nanostores@1.5.5)
-      '@codemirror/commands':
-        specifier: 6.11.1
-        version: 6.11.1
-      '@codemirror/lang-markdown':
-        specifier: 6.5.2
-        version: 6.5.2
-      '@codemirror/language':
-        specifier: 6.13.1
-        version: 6.13.1
-      '@codemirror/language-data':
-        specifier: 6.5.2
-        version: 6.5.2
-      '@codemirror/search':
-        specifier: 6.7.2
-        version: 6.7.2
-      '@codemirror/state':
-        specifier: 6.7.6
-        version: 6.7.6
-      '@codemirror/theme-one-dark':
-        specifier: 6.1.3
-        version: 6.1.3
-      '@codemirror/view':
-        specifier: 6.43.14
-        version: 6.43.14
-      '@ddietr/codemirror-themes':
-        specifier: 1.5.2
-        version: 1.5.2
       '@excalidraw/excalidraw':
         specifier: ^0.18.1
         version: 0.18.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -446,9 +419,6 @@ importers:
       '@lexical/rich-text':
         specifier: 0.52.0
         version: 0.52.0(typescript@6.0.3)
-      '@lezer/highlight':
-        specifier: 1.2.5
-        version: 1.2.5
       '@lobehub/charts':
         specifier: ^6.0.1
         version: 6.0.1(@lobehub/ui@6.6.0)(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -482,9 +452,6 @@ importers:
       '@tanstack/react-query':
         specifier: 5.104.1
         version: 5.104.1(react@19.3.1)
-      '@types/canvas-confetti':
-        specifier: 1.9.0
-        version: 1.9.0
       '@uswriting/exiftool':
         specifier: ^1.0.9
         version: 1.0.9
@@ -494,15 +461,9 @@ importers:
       buffer:
         specifier: 6.0.3
         version: 6.0.3
-      canvas-confetti:
-        specifier: 1.9.4
-        version: 1.9.4
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      date-fns:
-        specifier: 4.4.0
-        version: 4.4.0
       es-toolkit:
         specifier: 1.52.0
         version: 1.52.0
@@ -1604,9 +1565,6 @@ packages:
   '@codemirror/lint@6.9.7':
     resolution: {integrity: sha512-28/+iWLYxKxsvGYhSYL7zaCZqLz5+FFFDq9tVsvGv9kv8RY4fFAchJ5WX9M3YrrRlTIsECjsXPqeNgnSmNP2dg==}
 
-  '@codemirror/search@6.7.2':
-    resolution: {integrity: sha512-gUYkYhT2+n/+VGZ+8EzE5WFkYZUZYm1VOKDudIsNqh42uRVQJ0a6Yss9sdKT3MeOYfuL1N6AZA57oza0Oyr0LA==}
-
   '@codemirror/state@6.7.6':
     resolution: {integrity: sha512-kAz+AncRtKuIknedxT1bq4XwXv4UowhbkHU1myPrtVb/jZtImWuV5BXzv5vK6i3kYACsdiZiQKFQQ5Mq7elW8w==}
 
@@ -1626,9 +1584,6 @@ packages:
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
     engines: {node: '>=12'}
-
-  '@ddietr/codemirror-themes@1.5.2':
-    resolution: {integrity: sha512-hynMyioOgFM5FHqGtFcaH3kFFluo9KD2sKpDc/l86oGryahZWaKbOv46d8oPAoCmbggMm8WP5m9b64ZzIrPTDA==}
 
   '@dmsnell/diff-match-patch@1.1.0':
     resolution: {integrity: sha512-yejLPmM5pjsGvxS9gXablUSbInW7H976c/FJ4iQxWIm7/38xBySRemTPDe34lhg1gVLbJntX0+sH0jYfU+PN9A==}
@@ -4941,9 +4896,6 @@ packages:
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
 
-  '@types/canvas-confetti@1.9.0':
-    resolution: {integrity: sha512-aBGj/dULrimR1XDZLtG9JwxX1b4HPRF6CX9Yfwh3NvstZEm1ZL7RBnel4keCPSqs1ANRu1u2Aoz9R+VmtjYuTg==}
-
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
@@ -6144,9 +6096,6 @@ packages:
 
   caniuse-lite@1.0.30001818:
     resolution: {integrity: sha512-XJbgo4adscw7R4MZU4/qVFkoMyPaNUAWmdNY4o/k9x7fFwmv4frIlndI9lWuaxviW9ObiZel9LuncnQPn6hQ5A==}
-
-  canvas-confetti@1.9.4:
-    resolution: {integrity: sha512-yxQbJkAVrFXWNbTUjPqjF7G+g6pDotOUHGbkZq2NELZUMDpiJ85rIEazVb8GTaAptNW2miJAXbs1BtioA251Pw==}
 
   canvas-roundrect-polyfill@0.0.1:
     resolution: {integrity: sha512-yWq+R3U3jE+coOeEb3a3GgE2j/0MMiDKM/QpLb6h9ihf5fGY9UXtvK9o4vNqjWXoZz7/3EaSVU3IX53TvFFUOw==}
@@ -12216,12 +12165,6 @@ snapshots:
       '@codemirror/view': 6.43.14
       crelt: 1.0.7
 
-  '@codemirror/search@6.7.2':
-    dependencies:
-      '@codemirror/state': 6.7.6
-      '@codemirror/view': 6.43.14
-      crelt: 1.0.7
-
   '@codemirror/state@6.7.6':
     dependencies:
       '@marijn/find-cluster-break': 1.0.4
@@ -12248,13 +12191,6 @@ snapshots:
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
-
-  '@ddietr/codemirror-themes@1.5.2':
-    dependencies:
-      '@codemirror/language': 6.13.1
-      '@codemirror/state': 6.7.6
-      '@codemirror/view': 6.43.14
-      '@lezer/highlight': 1.2.5
 
   '@dmsnell/diff-match-patch@1.1.0': {}
 
@@ -15775,8 +15711,6 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.8
 
-  '@types/canvas-confetti@1.9.0': {}
-
   '@types/chai@5.2.3':
     dependencies:
       '@types/deep-eql': 4.0.2
@@ -16950,8 +16884,6 @@ snapshots:
   camelcase@6.3.0: {}
 
   caniuse-lite@1.0.30001818: {}
-
-  canvas-confetti@1.9.4: {}
 
   canvas-roundrect-polyfill@0.0.1: {}
 

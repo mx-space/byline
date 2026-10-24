@@ -1,11 +1,4 @@
-import {
-  ActionIcon,
-  Alert,
-  Button,
-  Empty,
-  SearchBar,
-  Tooltip,
-} from '@lobehub/ui'
+import { ActionIcon, Alert, Empty, SearchBar, Tooltip } from '@lobehub/ui'
 import { TableSkeleton } from '@lobehub/ui/dashboard'
 import { type ProColumns, ProTable } from '@lobehub/ui/pro-table'
 import { FolderOpen, Pencil, Plus, Trash2 } from 'lucide-react'
@@ -23,7 +16,22 @@ import { useCollectionListQuery, useEntityList } from '~/data/resource/hooks'
 import type { CategoryEntity } from '~/data/resources/category'
 import { categories } from '~/data/resources/category'
 import { adminQueryKeys } from '~/query/keys'
+import {
+  alphaFirst,
+  compareNumber,
+  compareText,
+  compareTime,
+  newestFirst,
+} from '~/ui/data/table-header'
 import { Page } from '~/ui/page'
+import {
+  pinEnd,
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
 import { useCategoryCopy } from '../copy'
 import { useConfirmDeleteCategory } from '../hooks/use-category-mutations'
@@ -45,6 +53,7 @@ export function CategoriesRouteViewContent() {
   const location = useLocation()
   const navigate = useNavigate()
   const { format, text } = useCategoryCopy()
+  const table = useRecordTable()
   const [params, setParams] = useSearchParams()
   const queryText = params.get('q') ?? ''
   const [creating, setCreating] = useState(false)
@@ -101,7 +110,10 @@ export function CategoriesRouteViewContent() {
           <span className={categoryStyles.slug}>/{category.slug}</span>
         </div>
       ),
+      sortDirections: alphaFirst,
+      sorter: (left, right) => compareText(left.name, right.name),
       title: text('columnName'),
+      ...pinStart(table.pin),
     },
     {
       align: 'right',
@@ -123,8 +135,14 @@ export function CategoriesRouteViewContent() {
           </Link>
         )
       },
-      title: text('columnCount'),
-      width: 96,
+      sortDirections: newestFirst,
+      sorter: (left, right) => compareNumber(left.count, right.count),
+      title: (
+        <span className={categoryStyles.headerTitle}>
+          {text('columnCount')}
+        </span>
+      ),
+      width: 128,
     },
     {
       dataIndex: 'createdAt',
@@ -140,6 +158,8 @@ export function CategoriesRouteViewContent() {
         </Tooltip>
       ),
       responsive: ['md'],
+      sortDirections: newestFirst,
+      sorter: (left, right) => compareTime(left.createdAt, right.createdAt),
       title: text('columnCreated'),
       width: 140,
     },
@@ -171,7 +191,8 @@ export function CategoriesRouteViewContent() {
         )
       },
       title: '',
-      width: 88,
+      width: 96,
+      ...pinEnd(table.pin),
     },
   ]
 
@@ -224,6 +245,7 @@ export function CategoriesRouteViewContent() {
       }
       description={text('description')}
       title={text('title')}
+      width="wide"
     >
       {showStale ? (
         <Alert
@@ -238,8 +260,11 @@ export function CategoriesRouteViewContent() {
         />
       ) : null}
       <ProTable<CategoryEntity>
+        className={recordTableStyles.root}
         columnEmptyText={text('emptyValue')}
         columns={columns}
+        scroll={recordTableScroll(columns, table)}
+        tableLayout="fixed"
         dataSource={filtered}
         loading={
           categoriesQuery.isFetching && categoriesQuery.isPlaceholderData

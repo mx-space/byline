@@ -1,4 +1,4 @@
-import { Button as LobeButton, createStaticStyles } from '@lobehub/ui'
+import { createStaticStyles } from '@lobehub/ui'
 import { AlertCircle, Bot, Clock, Lock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -14,6 +14,7 @@ import { Modal, ModalFooter, ModalHeader } from '~/ui/feedback/modal'
 import { Button } from '~/ui/primitives/button'
 import { Checkbox } from '~/ui/primitives/checkbox'
 import { SegmentedControl } from '~/ui/primitives/segmented-control'
+import { Button as LobeButton } from '~/ui/site-button'
 import { cn } from '~/utils/cn'
 
 import {
@@ -219,7 +220,7 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
   u39950462: css`
     margin-top: 0.75rem;
     display: grid;
-    grid-template-columns: auto_1fr;
+    grid-template-columns: auto 1fr;
     column-gap: 0.75rem;
     row-gap: 0.25rem;
     border-radius: 12px;

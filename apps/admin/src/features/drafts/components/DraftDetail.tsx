@@ -1,11 +1,4 @@
-import {
-  Alert,
-  Button,
-  createStaticStyles,
-  Segmented,
-  Tag,
-  Tooltip,
-} from '@lobehub/ui'
+import { Alert, createStaticStyles, Segmented, Tag, Tooltip } from '@lobehub/ui'
 import { Pencil, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
@@ -13,6 +6,7 @@ import { useNavigate } from 'react-router'
 
 import type { DraftModel } from '~/models/draft'
 import { DetailPane } from '~/ui/page'
+import { Button } from '~/ui/site-button'
 
 import { useDraftCopy } from '../copy'
 import {
@@ -162,6 +156,7 @@ export function DraftDetail(props: {
           {slug ? <span className={styles.slug}>/{slug}</span> : null}
         </>
       }
+      contentWidth="article"
       onBack={props.onBack}
       status={
         <>

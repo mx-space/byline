@@ -12,6 +12,7 @@ export interface GetPostsParams {
   size: number
   sort_by?: PostSortKey
   sort_order?: PostSortOrder
+  truncate?: number
 }
 
 export interface SearchPostsParams {
@@ -30,13 +31,14 @@ export function getPosts(params: GetPostsParams) {
     categoryIds: params.categoryIds,
     page: params.page,
     size: params.size,
+    truncate: params.truncate,
     sort_by: params.sort_by,
     sort_order: params.sort_order,
   })
 }
 
 export function searchPosts(params: SearchPostsParams) {
-  return getJson<PaginateResult<PostModel>>('/search/post', {
+  return getJson<PaginateResult<PostModel>>('/posts/search', {
     keyword: params.keyword,
     page: params.page,
     size: params.size,

@@ -1,4 +1,4 @@
-import { Alert, Button, SkeletonText, toast } from '@lobehub/ui'
+import { Alert, toast } from '@lobehub/ui'
 import { Form, useForm } from '@lobehub/ui/form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Mail } from 'lucide-react'
@@ -13,6 +13,8 @@ import type {
 import { getAllOptions, patchOption } from '~/api/options'
 import { useI18n } from '~/i18n'
 import { adminQueryKeys } from '~/query/keys'
+import { FormSkeleton } from '~/ui/placeholders'
+import { Button } from '~/ui/site-button'
 
 import { settingsQueryKey } from '../constants'
 import { settingsCopy } from '../copy'
@@ -296,7 +298,7 @@ export function SystemSettings(props: {
   useEffect(() => () => setDirtyAction(null), [setDirtyAction])
 
   if (!props.schema || optionsQuery.isLoading) {
-    return <SkeletonText rows={8} />
+    return <FormSkeleton label={t('settings.common.loading')} rows={6} />
   }
 
   if (optionsQuery.isError && !optionsQuery.data) {

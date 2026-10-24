@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Alert,
-  Button,
   confirmModal,
   createStaticStyles,
   Empty,
@@ -33,6 +32,15 @@ import { FocusScope } from '~/ui/focus-scope'
 import type { ListAction } from '~/ui/list-actions'
 import { useListKeyboard } from '~/ui/list-actions'
 import { Page } from '~/ui/page'
+import {
+  pinEnd,
+  pinStart,
+  recordTableScroll,
+  recordTableStyles,
+  SELECTION_COLUMN_WIDTH,
+  useRecordTable,
+} from '~/ui/record-table'
+import { Button } from '~/ui/site-button'
 
 import {
   FILES_PAGE_SIZE,
@@ -60,20 +68,12 @@ import {
   runReferenceReconcileFlow,
 } from './ReferenceReconcilePreview'
 
-const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
+const styles = createStaticStyles(({ css, cssVar }) => ({
   actions: css`
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 2px;
-
-    opacity: 0;
-
-    transition: opacity 0.12s ease;
-
-    ${responsive.md} {
-      opacity: 1;
-    }
   `,
   nameCell: css`
     display: flex;
@@ -104,12 +104,6 @@ const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
   `,
   row: css`
     cursor: pointer;
-
-    &:hover [data-row-actions],
-    &:focus-within [data-row-actions],
-    &[data-cursor] [data-row-actions] {
-      opacity: 1;
-    }
 
     &[data-cursor] > td {
       background: ${cssVar.colorFillTertiary};
@@ -159,6 +153,7 @@ function sumBytes(items: OrphanFile[]) {
 
 export function OrphanFilesPage() {
   const copy = useFileCopy()
+  const table = useRecordTable()
   const { format } = useI18n()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -441,6 +436,7 @@ export function OrphanFilesPage() {
         </Flexbox>
       ),
       title: copy('columnName'),
+      ...pinStart(table.pin),
     },
     {
       dataIndex: 'status',
@@ -457,7 +453,7 @@ export function OrphanFilesPage() {
       },
       responsive: ['lg'],
       title: copy('fieldType'),
-      width: 96,
+      width: 112,
     },
     {
       align: 'right',
@@ -480,7 +476,7 @@ export function OrphanFilesPage() {
       ),
       responsive: ['md'],
       title: copy('fieldUploaded'),
-      width: 128,
+      width: 140,
     },
     {
       align: 'right',
@@ -504,7 +500,8 @@ export function OrphanFilesPage() {
         </div>
       ),
       title: '',
-      width: 88,
+      width: 96,
+      ...pinEnd(table.pin),
     },
   ]
 
@@ -591,8 +588,11 @@ export function OrphanFilesPage() {
             />
           ) : null}
           <ProTable<OrphanFile>
+            className={recordTableStyles.root}
             columnEmptyText="--"
             columns={columns}
+            scroll={recordTableScroll(columns, table, SELECTION_COLUMN_WIDTH)}
+            tableLayout="fixed"
             dataSource={filtered}
             loading={orphansQuery.isFetching && orphansQuery.isPlaceholderData}
             locale={{ emptyText: emptyNode }}
@@ -639,6 +639,7 @@ export function OrphanFilesPage() {
             }
             rowKey="id"
             rowSelection={{
+              columnWidth: SELECTION_COLUMN_WIDTH,
               onChange: (keys) => {
                 setSelectAllAcross(false)
                 const next = new Set(keys.map(String))

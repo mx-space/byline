@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Alert,
-  Button,
   createStaticStyles,
   type DropdownItem,
   DropdownMenu,
@@ -15,6 +14,7 @@ import { useNavigate } from 'react-router'
 import type { AITask } from '~/api/tasks'
 import { AITaskStatus } from '~/api/tasks'
 import { useI18n } from '~/i18n'
+import { Button } from '~/ui/site-button'
 
 import { useTaskCopy } from '../copy'
 import {

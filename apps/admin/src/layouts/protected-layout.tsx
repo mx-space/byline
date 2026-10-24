@@ -1,5 +1,3 @@
-import { createStaticStyles } from '@lobehub/ui'
-import { PageLoading } from '@lobehub/ui/dashboard'
 import { useQuery } from '@tanstack/react-query'
 import { Suspense } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
@@ -10,21 +8,8 @@ import { PublishProcessDock } from '~/features/write/components/PublishProcessDo
 import { useI18n } from '~/i18n'
 import { AdminShell, LayoutLoading } from '~/shell'
 import { SocketBridge } from '~/socket/SocketBridge'
-import { CommandPaletteProvider } from '~/ui/command-palette'
 import { KeyboardShortcutsProvider } from '~/ui/keyboard-shortcut-overlay'
-
-const styles = createStaticStyles(({ css, responsive }) => ({
-  loader: css`
-    height: 100%;
-    padding-block: 28px 40px;
-    padding-inline: 32px;
-
-    ${responsive.md} {
-      padding-block: 16px 24px;
-      padding-inline: 16px;
-    }
-  `,
-}))
+import { PageLoadingFrame } from '~/ui/page'
 
 export function ProtectedLayout() {
   const location = useLocation()
@@ -52,24 +37,18 @@ export function ProtectedLayout() {
 
   return (
     <KeyboardShortcutsProvider>
-      <CommandPaletteProvider>
-        <AdminShell>
-          <SocketBridge />
-          <Suspense fallback={<ShellContentLoader />}>
-            <Outlet />
-          </Suspense>
-          <PublishProcessDock />
-        </AdminShell>
-      </CommandPaletteProvider>
+      <AdminShell>
+        <SocketBridge />
+        <Suspense fallback={<ShellContentLoader />}>
+          <Outlet />
+        </Suspense>
+        <PublishProcessDock />
+      </AdminShell>
     </KeyboardShortcutsProvider>
   )
 }
 
 function ShellContentLoader() {
   const { t } = useI18n()
-  return (
-    <div className={styles.loader}>
-      <PageLoading label={t('common.loading')} />
-    </div>
-  )
+  return <PageLoadingFrame label={t('common.loading')} />
 }

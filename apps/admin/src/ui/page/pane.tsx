@@ -13,6 +13,8 @@ import type { ReactNode } from 'react'
 
 import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 
+import { ARTICLE_MAX_WIDTH } from './page'
+
 const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
   actions: css`
     display: flex;
@@ -35,6 +37,9 @@ const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
       padding-block: 16px 24px;
       padding-inline: 16px;
     }
+  `,
+  contentArticle: css`
+    max-width: ${ARTICLE_MAX_WIDTH};
   `,
   contentDefault: css`
     max-width: 960px;
@@ -226,8 +231,8 @@ export interface DetailPaneProps {
   backLabel?: string
   children?: ReactNode
   className?: string
-  /** `full` lets tables and diffs use the whole pane. */
-  contentWidth?: 'default' | 'full' | 'narrow'
+  /** `full` uses the pane. `article` is the draft reading column. */
+  contentWidth?: 'article' | 'default' | 'full' | 'narrow'
   /** Small label above the title, such as the object type. */
   footer?: ReactNode
   /**
@@ -286,7 +291,9 @@ export function DetailPane(props: DetailPaneProps) {
                 ? styles.contentFull
                 : width === 'narrow'
                   ? styles.contentNarrow
-                  : styles.contentDefault,
+                  : width === 'article'
+                    ? styles.contentArticle
+                    : styles.contentDefault,
             )}
           >
             {props.children}

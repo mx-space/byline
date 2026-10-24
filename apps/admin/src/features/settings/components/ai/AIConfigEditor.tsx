@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  Button,
   confirmModal,
   DropdownMenu,
   Empty,
@@ -19,6 +18,7 @@ import { useState } from 'react'
 import { getModelsByCapability } from '~/api/ai'
 import { useI18n } from '~/i18n'
 import type { TranslationKey } from '~/i18n/types'
+import { Button } from '~/ui/site-button'
 
 import {
   type AIProviderPreset,
