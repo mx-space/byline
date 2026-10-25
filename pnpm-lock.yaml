@@ -213,7 +213,7 @@ overrides:
   '@lexical/utils': 0.52.0
   '@lexical/yjs': 0.52.0
   '@mx-space/ai>@haklex/rich-headless': 0.54.4
-  '@mx-space/editor>@haklex/rich-headless': 0.54.3
+  '@mx-space/editor>@haklex/rich-headless': 0.54.4
   '@mx-space/editor>@haklex/rich-litexml': 0.54.3
   '@esbuild-kit/core-utils>esbuild': 0.25.12
   '@cloudflare/workers-types': 5.20261005.1
@@ -14317,7 +14317,7 @@ snapshots:
 
   '@mx-space/editor@0.4.0(typescript@6.0.3)':
     dependencies:
-      '@haklex/rich-headless': 0.54.3(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
+      '@haklex/rich-headless': 0.54.4(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
       '@haklex/rich-litexml': 0.54.3(typescript@6.0.3)
       '@lexical/headless': 0.52.0(typescript@6.0.3)
       '@lexical/markdown': 0.52.0(typescript@6.0.3)
