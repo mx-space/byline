@@ -931,8 +931,8 @@ importers:
   packages/cli:
     dependencies:
       '@haklex/rich-headless':
-        specifier: 0.54.3
-        version: 0.54.3(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
+        specifier: 0.58.0
+        version: 0.58.0(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
       '@lexical/headless':
         specifier: 0.52.0
         version: 0.52.0(typescript@6.0.3)
@@ -2558,6 +2558,11 @@ packages:
 
   '@haklex/rich-headless@0.54.4':
     resolution: {integrity: sha512-b4U1j2hmKA2Feqh8+IU9FX/9sdEMJlmzP8vhUn/CgTEFUskZCl06fULjuzhnWviGUTIoHsdT6AWSwAWD/vYwcA==}
+    peerDependencies:
+      lexical: 0.52.0
+
+  '@haklex/rich-headless@0.58.0':
+    resolution: {integrity: sha512-PqAGp2RefHLGXDZ5gZAFWL5+lIPfKFiDY3CetNnC9z9db8bFBo+j+4RgRMgVwtfsjhMM48KEk9q+3m/d0DvSrg==}
     peerDependencies:
       lexical: 0.52.0
 
@@ -13501,6 +13506,19 @@ snapshots:
       - typescript
 
   '@haklex/rich-headless@0.54.4(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)':
+    dependencies:
+      '@lexical/code-core': 0.52.0(typescript@6.0.3)
+      '@lexical/extension': 0.52.0(typescript@6.0.3)
+      '@lexical/link': 0.52.0(typescript@6.0.3)
+      '@lexical/list': 0.52.0(typescript@6.0.3)
+      '@lexical/markdown': 0.52.0(typescript@6.0.3)
+      '@lexical/rich-text': 0.52.0(typescript@6.0.3)
+      '@lexical/table': 0.52.0(typescript@6.0.3)
+      lexical: 0.52.0(typescript@6.0.3)
+    transitivePeerDependencies:
+      - typescript
+
+  '@haklex/rich-headless@0.58.0(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)':
     dependencies:
       '@lexical/code-core': 0.52.0(typescript@6.0.3)
       '@lexical/extension': 0.52.0(typescript@6.0.3)
