@@ -6,7 +6,7 @@ import { mockFetch, type RecordedCall } from './helpers'
 const draftRow = (overrides: Record<string, unknown> = {}) => ({
   id: '10',
   head_revision_id: '11',
-  relation_to_published: null,
+  relation: 'fresh',
   document: { id: '12', ref_id: null, published_revision_id: null },
   ...overrides,
 })
@@ -155,7 +155,6 @@ describe('posts', () => {
       branchId: '10',
       revisionId: '11',
       expectedPublishedRevisionId: null,
-      confirmDiverged: false,
       aiResources: [],
     })
   })
@@ -184,7 +183,7 @@ describe('posts', () => {
           return {
             body: {
               data: draftRow({
-                relation_to_published: 'descendant',
+                relation: 'in_sync',
                 document: {
                   id: '12',
                   ref_id: '7',
@@ -215,6 +214,7 @@ describe('posts', () => {
     expect(calls[1].body).toMatchObject({
       refId: '7',
       baseRevisionId: '50',
+      ifInSync: true,
       data: {
         title: 'New',
         text: 'old',
@@ -224,8 +224,33 @@ describe('posts', () => {
     })
     expect(calls[2].body).toMatchObject({
       expectedPublishedRevisionId: '50',
-      confirmDiverged: true,
     })
+    expect(calls[2].body).not.toHaveProperty('confirmDiverged')
+  })
+
+  it('writes into a working copy that is ahead when it does not publish', async () => {
+    const { fetch, calls } = mockFetch((call) => {
+      if (route(call) === 'GET /drafts/context/post/7') {
+        return {
+          body: {
+            data: {
+              published_revision: {
+                id: '50',
+                title: 'Old',
+                text: 'old',
+                content: '{"root":{}}',
+                type_specific_data: {},
+              },
+            },
+          },
+        }
+      }
+      return { body: { data: draftRow({ relation: 'ahead' }) } }
+    })
+    const client = createClient({ endpoint: 'http://x', fetch })
+    await client.posts.revise('7', { title: 'New' }, { publish: false })
+    expect(calls).toHaveLength(2)
+    expect(calls[1].body).not.toHaveProperty('ifInSync')
   })
 
   it('surfaces a failed publish task', async () => {

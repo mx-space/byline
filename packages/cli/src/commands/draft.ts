@@ -9,7 +9,12 @@ import {
   hasFields,
   toWriteData,
 } from '../writing/fields'
-import { formatDraft, formatDraftRow, printJson } from '../writing/format'
+import {
+  formatDiscarded,
+  formatDraft,
+  formatDraftRow,
+  printJson,
+} from '../writing/format'
 import { readWriteInput, WRITE_HELP, WRITE_OPTIONS } from '../writing/input'
 
 export const DRAFT_HELP = `Usage: byline draft <command> [options]
@@ -18,7 +23,7 @@ Commands:
   list                     list post drafts (--page, --size, --new for unpublished ones)
   get <id>                 show a draft
   update <id>              append a revision; fields and body not given are kept
-  delete <id>              delete a draft
+  delete <id>              delete a new draft, or discard unpublished changes to a post
 
 Create drafts with "byline post create".
 
@@ -115,10 +120,9 @@ export const runDraft = async (argv: string[]): Promise<number> => {
     }
     case 'delete': {
       const client = (await connect(values, { required: true }))!
+      const { data: draft } = await client.drafts.get(id!)
       await client.drafts.delete(id!)
-      process.stdout.write(
-        `Deleted draft ${id} (the server keeps it archived)\n`,
-      )
+      process.stdout.write(`${formatDiscarded(draft)}\n`)
       return 0
     }
     default: {

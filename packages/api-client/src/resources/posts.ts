@@ -192,6 +192,7 @@ export class PostsResource {
       refId: id,
       baseRevisionId: base.id,
       data: mergeSnapshot(base, toDraftData(input)),
+      ...(options.publish === false ? {} : { ifInSync: true }),
     })
     return this.finish(draft, options)
   }
@@ -208,9 +209,6 @@ export class PostsResource {
         branchId: draft.id,
         revisionId: draft.headRevisionId,
         expectedPublishedRevisionId: draft.document.publishedRevisionId,
-        confirmDiverged:
-          draft.relationToPublished === 'descendant' ||
-          draft.relationToPublished === 'diverged',
         aiResources: options.aiResources,
         regenerateLockedTranslations: options.regenerateLockedTranslations,
       },

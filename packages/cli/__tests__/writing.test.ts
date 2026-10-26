@@ -2,11 +2,12 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-import type { BylineClient } from '@mx-space/byline-api-client'
+import type { BylineClient, DraftBranch } from '@mx-space/byline-api-client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { buildContent } from '../src/writing/content'
 import { applyPatch, Directory, toWriteData } from '../src/writing/fields'
+import { formatDiscarded } from '../src/writing/format'
 import { readWriteInput } from '../src/writing/input'
 
 let dir: string
@@ -157,5 +158,27 @@ describe('toWriteData', () => {
       text: 'old body',
       typeSpecificData: { slug: 'kept', authors: ['2', '1'] },
     })
+  })
+})
+
+describe('formatDiscarded', () => {
+  const draft = (relation: DraftBranch['relation'], refId: string | null) =>
+    ({
+      document: { refId },
+      headRevision: { title: 'Notes' },
+      id: 'd1',
+      relation,
+    }) as unknown as DraftBranch
+
+  it('says a fresh draft is gone for good', () => {
+    expect(formatDiscarded(draft('fresh', null))).toBe(
+      'Deleted draft d1 (Notes)',
+    )
+  })
+
+  it('says unpublished changes were dropped and the post kept', () => {
+    expect(formatDiscarded(draft('ahead', '7'))).toBe(
+      'Discarded unpublished changes to post 7 (Notes); the published post is unchanged',
+    )
   })
 })

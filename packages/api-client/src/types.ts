@@ -253,7 +253,6 @@ export interface PostWriteInput {
 }
 
 export type DraftRefType = 'post'
-export type RevisionRelation = 'same' | 'ancestor' | 'descendant' | 'diverged'
 
 export interface RevisionSnapshot {
   content: string | null
@@ -283,6 +282,8 @@ export interface ContentDocument {
   updatedAt: string | null
 }
 
+export type DraftRelation = 'ahead' | 'fresh' | 'in_sync'
+
 export interface DraftBranch {
   id: string
   documentId: string
@@ -293,7 +294,7 @@ export interface DraftBranch {
   headRevision: ContentRevision
   baseRevision: ContentRevision
   publishedRevision: ContentRevision | null
-  relationToPublished: RevisionRelation | null
+  relation: DraftRelation
   createdAt: string
   updatedAt: string | null
 }
@@ -320,6 +321,7 @@ export interface CreateDraftInput {
   refId?: string
   baseRevisionId?: string | null
   data: DraftWriteData
+  ifInSync?: boolean
 }
 
 export type PublishAiResource =

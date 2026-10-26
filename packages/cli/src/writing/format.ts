@@ -26,6 +26,13 @@ export const formatDraftRow = (draft: DraftBranch) => {
   return `${draft.id}  ${date(draft.updatedAt ?? draft.createdAt)}  ${state.padEnd(24)} ${titleOf(head.title)}${slug ? ` (${slug})` : ''}`
 }
 
+export const formatDiscarded = (draft: DraftBranch) => {
+  const title = titleOf(draft.headRevision.title)
+  return draft.document.refId
+    ? `Discarded unpublished changes to post ${draft.document.refId} (${title}); the published post is unchanged`
+    : `Deleted draft ${draft.id} (${title})`
+}
+
 export const formatDraft = (
   draft: DraftBranch,
   extra: { authors: string[]; category?: string },

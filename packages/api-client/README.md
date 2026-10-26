@@ -82,8 +82,10 @@ const admin = createClient({ endpoint, apiKey: process.env.BYLINE_API_KEY })
 
 `posts.create` and `posts.revise` go through the draft and publish-job flow the admin
 uses: they save a draft revision, start a publish job and wait for it. `revise`
-branches from the post's published revision, so fields you omit keep their current
-values.
+writes into the post's working copy on top of its published revision, so fields you
+omit keep their current values. When it publishes, `revise` refuses with
+`DRAFT_WORKING_COPY_AHEAD` (409) if someone has unpublished changes in the working
+copy; pass `{ publish: false }` to write into the working copy without publishing.
 
 ```ts
 const { postId } = await admin.posts.create(

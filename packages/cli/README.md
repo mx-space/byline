@@ -57,7 +57,7 @@ byline draft list --new
 byline draft get <id>
 byline draft update <id> --authors grace,ada --summary "…"
 byline draft update <id> --content - < body.xml
-byline draft delete <id>
+byline draft delete <id>                # deletes a new draft; on a post, discards unpublished changes
 byline post list
 byline post get <slug-or-id>
 ```
