@@ -91,7 +91,7 @@ export async function bootstrap() {
 
   await app.listen(
     {
-      host: '0.0.0.0',
+      host: '::',
       port: +PORT,
     },
     async () => {
