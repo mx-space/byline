@@ -11,6 +11,7 @@ import {
 } from '~/common/decorators/fastify-route-options.decorator'
 import { ADMIN_MOUNT_PATH } from '~/constants/path.constant'
 import { getIp } from '~/utils/ip.util'
+import { stripApiTrailingSlash } from '~/utils/trailing-slash.util'
 
 const logger = new Logger('Fastify')
 
@@ -46,6 +47,10 @@ const resolveTrustProxy = ():
 const app: FastifyAdapter = new FastifyAdapter({
   trustProxy: resolveTrustProxy(),
   logger: false,
+  // mxs requests collection routes with a trailing slash (`/ai/summaries/`).
+  // `ignoreTrailingSlash` would also apply to the static admin routes, so only
+  // API paths are rewritten.
+  rewriteUrl: (req) => stripApiTrailingSlash(req.url ?? '/'),
 })
 export { app as fastifyApp }
 
