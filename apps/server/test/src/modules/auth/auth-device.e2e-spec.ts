@@ -5,6 +5,7 @@ import { APIError } from 'better-auth/api'
 import { bearer, deviceAuthorization } from 'better-auth/plugins'
 
 import {
+  BYLINE_CLI_CLIENT_ID,
   DEVICE_AUTHORIZATION_CLIENT_IDS,
   MXS_CLI_CLIENT_ID,
   SPACE_IOS_CLIENT_ID,
@@ -91,6 +92,14 @@ describe('deviceAuthorization plugin (e2e)', () => {
     })
     expect(res.device_code).toBeTruthy()
     expect(res.user_code).toHaveLength(8)
+  })
+
+  test('accepts the Byline CLI client', async () => {
+    const { auth } = buildAuth()
+    const res = await auth.api.deviceCode({
+      body: { client_id: BYLINE_CLI_CLIENT_ID, scope: 'openid' },
+    })
+    expect(res.device_code).toBeTruthy()
   })
 
   test('issues a device code, verification uri, and polling interval', async () => {

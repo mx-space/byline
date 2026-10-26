@@ -53,10 +53,12 @@ const isBcryptHash = (value?: string | null) =>
 
 export const MXS_CLI_CLIENT_ID = 'mxs-cli'
 export const SPACE_IOS_CLIENT_ID = 'space-ios'
+export const BYLINE_CLI_CLIENT_ID = 'byline-cli'
 
 export const DEVICE_AUTHORIZATION_CLIENT_IDS: ReadonlySet<string> = new Set([
   MXS_CLI_CLIENT_ID,
   SPACE_IOS_CLIENT_ID,
+  BYLINE_CLI_CLIENT_ID,
 ])
 
 const deviceUserCodeAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
