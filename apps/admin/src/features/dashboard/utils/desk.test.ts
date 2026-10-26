@@ -27,7 +27,7 @@ function draft(over: {
   documentId: string
   id: string
   refId?: string | null
-  relation?: DraftModel['relationToPublished']
+  relation?: DraftModel['relation']
   text?: string
   updatedAt: string
 }): DraftModel {
@@ -43,28 +43,21 @@ function draft(over: {
       title: over.id,
     },
     id: over.id,
-    relationToPublished: over.relation ?? null,
+    relation: over.relation ?? 'fresh',
     status: 'active',
     updatedAt: over.updatedAt,
   } as unknown as DraftModel
 }
 
 describe('buildWritingItems', () => {
-  it('collapses branches per document and drops published-identical drafts', () => {
+  it('lists each working copy that is ahead or fresh, newest first', () => {
     const items = buildWritingItems([
       draft({
         documentId: 'doc-a',
         id: 'a1',
         refId: 'p1',
-        relation: 'descendant',
+        relation: 'ahead',
         updatedAt: '2026-09-14',
-      }),
-      draft({
-        documentId: 'doc-a',
-        id: 'a2',
-        refId: 'p1',
-        relation: 'diverged',
-        updatedAt: '2026-09-10',
       }),
       draft({
         documentId: 'doc-b',
@@ -76,15 +69,13 @@ describe('buildWritingItems', () => {
         documentId: 'doc-c',
         id: 'c1',
         refId: 'p3',
-        relation: 'same',
+        relation: 'in_sync',
         updatedAt: '2026-09-13',
       }),
     ])
-    expect(
-      items.map((item) => [item.id, item.status, item.branchCount]),
-    ).toEqual([
-      ['doc-a', 'modified', 2],
-      ['doc-b', 'unpublished', 1],
+    expect(items.map((item) => [item.id, item.status])).toEqual([
+      ['doc-a', 'modified'],
+      ['doc-b', 'unpublished'],
     ])
     expect(items[0].draftId).toBe('a1')
   })
@@ -107,33 +98,26 @@ describe('aiGapRows', () => {
 })
 
 describe('countUnpublishedDrafts', () => {
-  it('counts new drafts and behind drafts, and skips published changes', () => {
+  it('counts fresh drafts and working copies ahead of published', () => {
     expect(
       countUnpublishedDrafts([
         draft({ documentId: 'n', id: 'n1', updatedAt: '2026-10-01' }),
         draft({
-          documentId: 'b',
-          id: 'b1',
-          refId: 'p1',
-          relation: 'ancestor',
-          updatedAt: '2026-10-02',
-        }),
-        draft({
           documentId: 'c',
           id: 'c1',
           refId: 'p2',
-          relation: 'descendant',
+          relation: 'ahead',
           updatedAt: '2026-10-03',
         }),
         draft({
           documentId: 's',
           id: 's1',
           refId: 'p3',
-          relation: 'same',
+          relation: 'in_sync',
           updatedAt: '2026-10-04',
         }),
       ]),
-    ).toEqual({ behind: 1, drafts: 1 })
+    ).toEqual({ changes: 1, drafts: 1 })
   })
 })
 

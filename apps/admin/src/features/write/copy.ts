@@ -109,10 +109,6 @@ export const writeCopy = createFeatureCopy({
     'en-US': 'Open AI chat',
     'zh-CN': '打开 AI 对话',
   },
-  openRevisions: {
-    'en-US': 'View revisions',
-    'zh-CN': '查看修订',
-  },
   pin: {
     'en-US': 'Pin',
     'zh-CN': '置顶',
@@ -148,14 +144,6 @@ export const writeCopy = createFeatureCopy({
   retry: {
     'en-US': 'Retry',
     'zh-CN': '重试',
-  },
-  revisions: {
-    'en-US': 'Revisions',
-    'zh-CN': '修订',
-  },
-  revisionsCount: {
-    'en-US': 'Revisions, {count}',
-    'zh-CN': '修订 {count}',
   },
   save: {
     'en-US': 'Save',
@@ -213,10 +201,6 @@ export const writeCopy = createFeatureCopy({
     'en-US': 'post-title',
     'zh-CN': 'post-title',
   },
-  statusConflict: {
-    'en-US': 'This draft was changed elsewhere. Resolve it before publishing.',
-    'zh-CN': '草稿已被修改。先处理冲突，再发布。',
-  },
   submitted: {
     'en-US': 'Submitted. The task is still running.',
     'zh-CN': '已提交，任务还在跑。',
@@ -260,10 +244,6 @@ export const writeCopy = createFeatureCopy({
   viewTask: {
     'en-US': 'View task',
     'zh-CN': '查看任务',
-  },
-  conflictShort: {
-    'en-US': 'Conflict',
-    'zh-CN': '有冲突',
   },
   hideSettings: {
     'en-US': 'Hide post settings',

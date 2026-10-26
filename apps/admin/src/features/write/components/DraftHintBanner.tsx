@@ -1,6 +1,6 @@
 import { createStaticStyles } from '@lobehub/ui'
 import type { LucideIcon } from 'lucide-react'
-import { AlertCircle, CloudDownload, History, X } from 'lucide-react'
+import { AlertCircle, History, X } from 'lucide-react'
 
 import { useI18n } from '~/i18n'
 import { Button } from '~/ui/primitives/button'
@@ -64,9 +64,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     :where(.dark, .dark *) &:hover {
       color: ${cssVar.colorWarningBg};
     }
-  `,
-  ua82a1496: css`
-    color: ${cssVar.colorPrimary};
   `,
   u5ad81ca6: css`
     display: flex;
@@ -180,14 +177,12 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
 }))
 
 interface DraftHintBannerProps {
-  variant: 'list' | 'recovery' | 'remote-update'
+  variant: 'list' | 'recovery'
   message: string
   actionLabel: string
   onAction: () => void
   onDelete?: () => void
   onDismiss?: () => void
-  onSecondaryAction?: () => void
-  secondaryActionLabel?: string
 }
 
 const variantConfig: Record<
@@ -216,14 +211,6 @@ const variantConfig: Record<
     messageClass: lobeStyles.ufddad14f,
     actionVariant: 'primary',
     dismissClass: lobeStyles.u0b4bebd9,
-  },
-  'remote-update': {
-    icon: CloudDownload,
-    cardClass: lobeStyles.u016f2eea,
-    iconClass: lobeStyles.ua82a1496,
-    messageClass: lobeStyles.ucfc6e672,
-    actionVariant: 'primary',
-    dismissClass: lobeStyles.u02064bce,
   },
 }
 
@@ -259,16 +246,6 @@ export function DraftHintBanner(props: DraftHintBannerProps) {
         >
           {props.actionLabel}
         </Button>
-        {props.onSecondaryAction && props.secondaryActionLabel ? (
-          <Button
-            className={lobeStyles.uca068657}
-            onClick={props.onSecondaryAction}
-            type="button"
-            variant="secondary"
-          >
-            {props.secondaryActionLabel}
-          </Button>
-        ) : null}
         {props.onDelete ? (
           <Button
             className={lobeStyles.ua3b6e7b1}

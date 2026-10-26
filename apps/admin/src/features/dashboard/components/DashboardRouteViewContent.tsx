@@ -83,11 +83,11 @@ function DeskMetrics() {
   const publishedCount = posts.data?.published
   const latestPublishedAt = posts.data?.latestPublishedAt
   const draftCount = draftCounts.data?.drafts
-  const behindCount = draftCounts.data?.behind
+  const changesCount = draftCounts.data?.changes
   const unpublishedCount =
-    draftCount === undefined || behindCount === undefined
+    draftCount === undefined || changesCount === undefined
       ? undefined
-      : draftCount + behindCount
+      : draftCount + changesCount
   const translationGaps = translations.data
     ? translationGapSummary(translations.data)
     : undefined
@@ -136,10 +136,10 @@ function DeskMetrics() {
         },
         {
           hint:
-            draftCount === undefined || behindCount === undefined
+            draftCount === undefined || changesCount === undefined
               ? undefined
               : copy('metricUnpublishedHint', {
-                  behind: behindCount,
+                  changes: changesCount,
                   drafts: draftCount,
                 }),
           href: draftsPath,

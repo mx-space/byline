@@ -12,8 +12,8 @@ export const dashboardCopy = createFeatureCopy({
   metricPublished: { 'en-US': 'Published', 'zh-CN': '已发布' },
   metricUnpublished: { 'en-US': 'Unpublished', 'zh-CN': '未发布' },
   metricUnpublishedHint: {
-    'en-US': '{drafts} drafts · {behind} changes',
-    'zh-CN': '{drafts} 篇草稿 · {behind} 篇改动',
+    'en-US': '{drafts} drafts · {changes} changes',
+    'zh-CN': '{drafts} 篇草稿 · {changes} 篇改动',
   },
   metricTranslationGaps: {
     'en-US': 'Missing translations',
@@ -90,7 +90,6 @@ export const dashboardCopy = createFeatureCopy({
     'zh-CN': '有改动',
   },
   writingUnpublished: { 'en-US': 'New', 'zh-CN': '新文章' },
-  writingBranches: { 'en-US': '{count} branches', 'zh-CN': '{count} 个分支' },
   draftsError: {
     'en-US': 'Drafts did not load.',
     'zh-CN': '草稿没有加载出来。',

@@ -9,6 +9,16 @@ export enum DraftRefType {
 
 export type RevisionRelation = 'same' | 'ancestor' | 'descendant' | 'diverged'
 
+export type DraftRelation = 'ahead' | 'fresh' | 'in_sync'
+
+export interface CrdtOpId {
+  counter: number
+  peer: `${number}`
+}
+
+export type CheckpointKind =
+  'import' | 'legacy-save' | 'publish' | 'restore' | 'save' | 'undo'
+
 export interface RevisionSnapshot {
   content: string | null
   contentFormat: 'lexical'
@@ -22,8 +32,39 @@ export interface RevisionSnapshot {
 export interface ContentRevision extends RevisionSnapshot {
   createdAt: string
   documentId: string
+  frontiers?: CrdtOpId[] | null
   id: string
+  kind?: CheckpointKind | null
   parentRevisionId: string | null
+}
+
+export type DraftCheckpoint = Pick<
+  ContentRevision,
+  | 'contentFormat'
+  | 'createdAt'
+  | 'frontiers'
+  | 'id'
+  | 'kind'
+  | 'parentRevisionId'
+  | 'title'
+>
+
+export interface DraftChange {
+  deps: CrdtOpId[]
+  id: CrdtOpId
+  lamport: number
+  message?: string
+  timestamp: number
+}
+
+export interface DraftHistory {
+  changes: DraftChange[]
+  checkpoints: DraftCheckpoint[]
+}
+
+export interface DraftFields {
+  meta: Record<string, unknown> | null
+  typeSpecificData: Record<string, unknown> | null
 }
 
 export interface ContentDocument {
@@ -48,6 +89,7 @@ export interface DraftModel {
   headRevisionId: string
   id: string
   publishedRevision: ContentRevision | null
+  relation: DraftRelation
   relationToPublished: RevisionRelation | null
   status: 'active' | 'archived'
   updatedAt: string | null
@@ -70,23 +112,6 @@ export interface VersionContext {
   branches: DraftModel[]
   document: ContentDocument
   publishedRevision: ContentRevision | null
-  versionTree: VersionTreeNode[]
-}
-
-export interface VersionTreeNode {
-  branchBaseIds: string[]
-  branchHeadIds: string[]
-  collapsedRevisionCount: number
-  parentNodeId: string | null
-  publishedAt: string | null
-  revision: ContentRevision
-}
-
-export interface RevisionComparison {
-  commonAncestorRevisionId: string | null
-  left: ContentRevision
-  relation: RevisionRelation
-  right: ContentRevision
 }
 
 export interface DraftResponse {

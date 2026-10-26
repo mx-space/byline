@@ -9,7 +9,6 @@ import {
   draftAuthorIds,
   draftChangeKind,
   draftFieldChanges,
-  draftHasConflict,
   draftRevertsChanges,
   draftTitle,
   isPublishedIdenticalDraft,
@@ -60,6 +59,7 @@ function draft(patch: Partial<DraftModel> = {}): DraftModel {
     headRevisionId: 'head',
     id: 'draft-1',
     publishedRevision: null,
+    relation: 'fresh',
     relationToPublished: null,
     status: 'active',
     updatedAt: '2026-10-02T00:00:00.000Z',
@@ -73,21 +73,21 @@ describe('draft decision', () => {
       '删除草稿「晨记」？',
     )
     expect(draftCopy('zh-CN', 'confirmDeleteBody')).toContain('无法恢复')
-    expect(draftCopy('zh-CN', 'changeBehind')).toBe('改动')
     expect(draftCopy('zh-CN', 'confirmRevertTitle', { title: '晨记' })).toBe(
       '撤销「晨记」的改动？',
     )
     expect(draftCopy('zh-CN', 'confirmRevertBody')).toContain('已发布的文章')
   })
 
-  it('reads title, parent post, change, and conflict from the draft', () => {
+  it('classifies a draft by its working copy relation to published', () => {
     const fresh = draft()
     expect(draftTitle(fresh, '无标题')).toBe('晨记')
     expect(draftChangeKind(fresh)).toBe('new')
+    expect(draftRevertsChanges(fresh)).toBe(false)
     expect(parentPostLabel(fresh, '尚未发布', '--')).toBe('尚未发布')
     expect(draftAuthorIds(fresh)).toEqual(['u1', 'u2'])
 
-    const diverged = draft({
+    const ahead = draft({
       document: {
         createdAt: '2026-10-01T00:00:00.000Z',
         id: 'doc',
@@ -109,24 +109,18 @@ describe('draft decision', () => {
         title: '已发布标题',
         typeSpecificData: null,
       },
-      relationToPublished: 'diverged',
+      relation: 'ahead',
+      relationToPublished: 'descendant',
     })
-    expect(draftChangeKind(diverged)).toBe('changed')
-    expect(draftRevertsChanges(diverged)).toBe(false)
-    expect(draftRevertsChanges(fresh)).toBe(false)
-    expect(
-      draftRevertsChanges(
-        draft({ ...diverged, relationToPublished: 'ancestor' }),
-      ),
-    ).toBe(true)
-    expect(isPublishedIdenticalDraft(diverged)).toBe(false)
-    expect(
-      isPublishedIdenticalDraft(
-        draft({ ...diverged, relationToPublished: 'same' }),
-      ),
-    ).toBe(true)
-    expect(draftHasConflict(diverged)).toBe(true)
-    expect(parentPostLabel(diverged, '尚未发布', '--')).toBe('已发布标题')
+    expect(draftChangeKind(ahead)).toBe('changed')
+    expect(draftRevertsChanges(ahead)).toBe(true)
+    expect(isPublishedIdenticalDraft(ahead)).toBe(false)
+    expect(parentPostLabel(ahead, '尚未发布', '--')).toBe('已发布标题')
+
+    const inSync = draft({ ...ahead, relation: 'in_sync' })
+    expect(draftChangeKind(inSync)).toBe('same')
+    expect(isPublishedIdenticalDraft(inSync)).toBe(true)
+    expect(draftRevertsChanges(inSync)).toBe(false)
   })
 
   it('counts CJK characters and latin words, ignoring links and images', () => {

@@ -72,39 +72,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     height: 1rem;
     flex-shrink: 0;
   `,
-  u0772a9f6: css`
-    margin-bottom: 1rem;
-    display: flex;
-    gap: 0.5rem;
-    border-radius: 12px;
-    border-width: 1px;
-    border-style: solid;
-    border-color: color-mix(in srgb, ${cssVar.colorWarning} 30%, transparent);
-    background-color: color-mix(
-      in srgb,
-      ${cssVar.colorWarning} 10%,
-      transparent
-    );
-    padding: 0.75rem;
-    font-size: 0.75rem;
-    line-height: 1.125rem;
-    color: ${cssVar.colorWarning};
-    :where(.dark, .dark *) & {
-      color: ${cssVar.colorWarningBg};
-    }
-  `,
-  u2dd4fdfa: css`
-    margin-bottom: 1rem;
-    border-radius: 12px;
-    border-width: 1px;
-    border-style: solid;
-    border-color: ${cssVar.colorBorderSecondary};
-    background-color: ${cssVar.colorFillSecondary};
-    padding: 0.75rem;
-    font-size: 0.75rem;
-    line-height: 1.125rem;
-    color: ${cssVar.colorTextSecondary};
-  `,
   ua7dc705b: css`
     display: flex;
     align-items: center;
@@ -243,7 +210,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
 
 export function PublishConfirmationDialog(props: {
   aiConfig?: AIConfig
-  diverged: boolean
   lockedTranslationLangs?: string[]
   failureMessage?: string | null
   onClose: () => void
@@ -251,8 +217,6 @@ export function PublishConfirmationDialog(props: {
     resources: PublishAiResourceRequest[],
     options: { regenerateLockedTranslations: boolean },
   ) => void
-  onReviewDiff?: () => void
-  otherBranchCount: number
   open: boolean
   operation: PublishTaskPayload['operation']
   pending: boolean
@@ -340,23 +304,6 @@ export function PublishConfirmationDialog(props: {
           <div className={lobeStyles.ue25ab85b}>
             <AlertCircle aria-hidden="true" className={lobeStyles.ufd7f88e1} />
             <span>{props.validationError}</span>
-          </div>
-        ) : null}
-
-        {props.diverged ? (
-          <div className={lobeStyles.u0772a9f6}>
-            <AlertCircle aria-hidden="true" className={lobeStyles.ufd7f88e1} />
-            <span>
-              {t('write.publishConfirm.diverged', {
-                count: props.otherBranchCount,
-              })}
-            </span>
-          </div>
-        ) : props.otherBranchCount > 0 ? (
-          <div className={lobeStyles.u2dd4fdfa}>
-            {t('write.publishConfirm.otherBranchesPreserved', {
-              count: props.otherBranchCount,
-            })}
           </div>
         ) : null}
 
@@ -457,15 +404,6 @@ export function PublishConfirmationDialog(props: {
         </section>
       </div>
       <ModalFooter>
-        {props.diverged && props.onReviewDiff ? (
-          <Button
-            onClick={props.onReviewDiff}
-            type="button"
-            variant="secondary"
-          >
-            {t('write.recovery.compareAction')}
-          </Button>
-        ) : null}
         <Button
           disabled={props.pending}
           onClick={props.onClose}

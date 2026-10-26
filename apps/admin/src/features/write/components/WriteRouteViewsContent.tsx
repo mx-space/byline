@@ -1,8 +1,7 @@
-import { projectAgentDiffNodesToFactualState } from '@haklex/rich-ext-ai-agent/static'
 import { Drawer, Skeleton, toast } from '@lobehub/ui'
-import { createMxLitexmlRegistry, mxLexicalToMarkdown } from '@mx-space/editor'
+import { createMxLitexmlRegistry } from '@mx-space/editor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { SerializedEditorState } from 'lexical'
+import type { LexicalEditor, SerializedEditorState } from 'lexical'
 import type { CSSProperties, Dispatch, SetStateAction } from 'react'
 import {
   lazy,
@@ -24,14 +23,15 @@ import { AiQueryType, getTranslationsByRef, writerGenerate } from '~/api/ai'
 import { getCategories, getTags } from '~/api/categories'
 import type { DraftWriteData } from '~/api/drafts'
 import {
-  compareRevisions,
   createDraft,
-  deleteDraft,
+  createDraftCheckpoint,
   getDraftById,
   getDraftContext,
   getNewDrafts,
   getRevision,
+  openWorkingCopy,
   updateDraft,
+  updateDraftFields,
 } from '~/api/drafts'
 import { uploadFile, uploadFileWithProgress } from '~/api/files'
 import { ApiRequestError } from '~/api/http'
@@ -48,7 +48,6 @@ import {
   useEntity,
   useEntityList,
 } from '~/data/resource/hooks'
-import { serializeListKey } from '~/data/resource/key'
 import type { CategoryEntity } from '~/data/resources/category'
 import { categories as categoriesCollection } from '~/data/resources/category'
 import { posts as postsCollection } from '~/data/resources/post'
@@ -57,47 +56,44 @@ import type { AIConfig } from '~/features/settings/types/settings'
 import { useTaskDetailSubscription } from '~/features/tasks/hooks/useTaskSubscription'
 import { hasPermission, Permission } from '~/features/users/utils/permissions'
 import { AgentPanel, useWriteAgent } from '~/features/write/components/agent'
-import { DraftConflictBanner } from '~/features/write/components/DraftConflictBanner'
-import { DraftConflictDialog } from '~/features/write/components/DraftConflictDialog'
 import { DraftHintBanner } from '~/features/write/components/DraftHintBanner'
-import {
-  DraftRecoveryReview,
-  type DraftRecoveryReviewData,
-} from '~/features/write/components/DraftRecoveryReview'
 import {
   normalizeTaskAiResources,
   publishAiResourceLabels,
 } from '~/features/write/components/publish-ai-choices'
 import { PublishConfirmationDialog } from '~/features/write/components/PublishConfirmationDialog'
 import { openPublishProcessDock } from '~/features/write/components/PublishProcessDock'
-import { VersionTreePanel } from '~/features/write/components/VersionTreePanel'
-import { draftFingerprint } from '~/features/write/utils/draft-fingerprint'
-import type { DraftMergeConflict } from '~/features/write/utils/merge-draft-conflict'
-import { mergeDraftConflict } from '~/features/write/utils/merge-draft-conflict'
-import type { PostBylineState } from '~/features/write/utils/post-byline-state'
+import { TimelinePanel } from '~/features/write/components/TimelinePanel'
+import type { PresenceUser } from '~/features/write/crdt/collab-presence'
+import { diffDraftFields } from '~/features/write/crdt/draft-fields'
+import { createReadyGate } from '~/features/write/crdt/ready-gate'
+import { resyncRejectedDraft } from '~/features/write/crdt/resync-rejected'
 import {
-  emptyPostBylineState,
-  postBylineFromModel,
-  postBylineFromSpecific,
-  postBylineToSpecific,
-} from '~/features/write/utils/post-byline-state'
+  type CrdtDraftController,
+  useCrdtDraft,
+} from '~/features/write/crdt/use-crdt-draft'
+import { draftFingerprint } from '~/features/write/utils/draft-fingerprint'
+import { postBylineFromModel } from '~/features/write/utils/post-byline-state'
+import {
+  asRecord,
+  emptyState,
+  fieldsOf,
+  formFieldsOf,
+  fromRevision,
+  toDraftData,
+  type WriteFormState,
+  type WriteKind,
+} from '~/features/write/utils/write-form'
 import { useDocumentTitle } from '~/hooks/use-document-title'
 import { useI18n } from '~/i18n'
 import { translate } from '~/i18n/translate'
-import type { TranslationKey } from '~/i18n/types'
 import type { Image as ImageModel } from '~/models/base'
-import type {
-  DraftModel,
-  RevisionSnapshot,
-  VersionTreeNode,
-} from '~/models/draft'
+import type { DraftFields, DraftModel } from '~/models/draft'
 import { DraftRefType } from '~/models/draft'
 import type { PostModel } from '~/models/post'
 import { adminQueryKeys } from '~/query/keys'
 import { subscribeDraftUpdate } from '~/socket/draft-update-signal'
-import type { DraftUpdatePayload } from '~/socket/types'
 import { confirmDialog } from '~/ui/feedback/confirm'
-import { Button } from '~/ui/site-button'
 import type {
   RichEditorWithAgentProps,
   RichEditorWithAgentRef,
@@ -115,23 +111,8 @@ import { writeCopy } from '../copy'
 import { writeChromeStyles as editorStyles } from './chrome/styles'
 import type { WriteDockTone } from './chrome/WriteChrome'
 import { WriteChrome } from './chrome/WriteChrome'
-
-type WriteKind = 'post'
-
-interface WriteFormState extends PostBylineState {
-  categoryId: string
-  content: string
-  images: NonNullable<RevisionSnapshot['images']>
-  meta: Record<string, unknown>
-  pin: boolean
-  pinOrder: string
-  publishedAt: string
-  slug: string
-  summary: string
-  tags: string
-  text: string
-  title: string
-}
+import { PeerAvatars } from './collab/PeerAvatars'
+import { RemoteCarets } from './collab/RemoteCarets'
 
 interface DraftSaveVariables {
   baseDraft: DraftModel | null
@@ -139,27 +120,6 @@ interface DraftSaveVariables {
   draftId: string
   explicit?: boolean
   fingerprint: string
-}
-
-interface ActiveDraftConflict {
-  conflicts: DraftMergeConflict[]
-  remote: DraftModel
-}
-
-const emptyState: WriteFormState = {
-  ...emptyPostBylineState,
-  categoryId: '',
-  content: '',
-  images: [],
-  meta: {},
-  pin: false,
-  pinOrder: '1',
-  publishedAt: '',
-  slug: '',
-  summary: '',
-  tags: '',
-  text: '',
-  title: '',
 }
 
 const RichEditorWithAgent = lazy(() =>
@@ -213,6 +173,21 @@ function WritePageRoute(props: { kind: WriteKind }) {
   return <WritePage key={`${props.kind}:${documentId}`} kind={props.kind} />
 }
 
+const FIELDS_RETRY_MS = 2000
+
+// The editor and its Loro session are bound to the discarded draft id; a full reload is the
+// only way to drop both and open the article's new working copy cleanly.
+const reloadWithoutDraft = (published: boolean) => {
+  const url = new URL(window.location.href)
+  const [path = '', query = ''] = url.hash.slice(1).split('?')
+  const params = new URLSearchParams(query)
+  params.delete('draftId')
+  url.hash = published ? `${path}?${params}` : '/drafts'
+  window.history.replaceState(null, '', url)
+  window.location.reload()
+}
+const CRDT_READY_TIMEOUT_MS = 10_000
+
 function useDraftSession(options: {
   baseRevisionId: string | null
   data: DraftWriteData
@@ -234,26 +209,126 @@ function useDraftSession(options: {
   const acceptedFingerprintRef = useRef('')
   const acceptedDraftRef = useRef<DraftModel | null>(null)
   const latestDataRef = useRef(options.data)
+  const formStateRef = useRef(options.state)
+  formStateRef.current = options.state
   const latestFingerprintRef = useRef(options.fingerprint)
   const autosaveTimerRef = useRef<number | null>(null)
   const [acceptedFingerprint, setAcceptedFingerprint] = useState('')
-  const [remoteUpdateStale, setRemoteUpdateStale] = useState(false)
-  const [conflict, setConflict] = useState<ActiveDraftConflict | null>(null)
-  const [conflictDialogOpen, setConflictDialogOpen] = useState(false)
-  const [resolvingConflict, setResolvingConflict] = useState(false)
+  const ackedFieldsRef = useRef<DraftFields | null>(null)
+  const fieldsTimerRef = useRef<number | null>(null)
+  const fieldsInFlightRef = useRef<Promise<void> | null>(null)
+  const meQuery = useQuery({
+    queryFn: getMe,
+    queryKey: adminQueryKeys.users.me(),
+    staleTime: 5 * 60_000,
+  })
+  const me = meQuery.data
+  const presenceUser = useMemo<PresenceUser>(
+    () => ({
+      avatar: me?.avatar || null,
+      id: me?.id ?? '',
+      name: me?.displayName || me?.username || '',
+    }),
+    [me],
+  )
+  const crdt = useCrdtDraft({
+    author: me?.id ? `human:${me.id}` : undefined,
+    draftId,
+    enabled: Boolean(me?.id),
+    onRejected: async () => {
+      if (!draftId) return
+      try {
+        const draft = await resyncRejectedDraft({
+          checkpoint: () => createDraftCheckpoint(draftId, 'save'),
+          data: latestDataRef.current,
+          update: (data, expectedHeadRevisionId) =>
+            updateDraft(draftId, { data, expectedHeadRevisionId }),
+        })
+        acceptedDraftRef.current = draft
+        toast.info(t('write.toast.draftResynced'))
+      } catch (error) {
+        toast.error(getErrorMessage(error, t('write.toast.draftSaveFailed')))
+      }
+    },
+    onRemoteTitle: (title) =>
+      options.setState((previous) =>
+        previous.title === title ? previous : { ...previous, title },
+      ),
+    onRevoked: (reason) => {
+      if (reason !== 'deleted') return
+      toast.error(
+        t(
+          options.isEditing
+            ? 'write.toast.draftDiscarded'
+            : 'write.toast.draftDeleted',
+        ),
+      )
+      reloadWithoutDraft(options.isEditing)
+    },
+  })
+  const crdtRef = useRef(crdt)
+  crdtRef.current = crdt
+
+  const sendFields = useCallback(async () => {
+    if (fieldsTimerRef.current !== null) {
+      window.clearTimeout(fieldsTimerRef.current)
+      fieldsTimerRef.current = null
+    }
+    await fieldsInFlightRef.current
+    const acked = ackedFieldsRef.current
+    if (!crdtRef.current.active || !draftId || !acked) return
+    const next = fieldsOf(latestDataRef.current)
+    const patch = diffDraftFields(acked, next)
+    if (!patch) return
+    const request = updateDraftFields(draftId, patch).then(
+      () => {
+        ackedFieldsRef.current = next
+      },
+      (error: unknown) => {
+        if (fieldsTimerRef.current === null) {
+          fieldsTimerRef.current = window.setTimeout(() => {
+            fieldsTimerRef.current = null
+            void sendFieldsRef.current().catch(() => undefined)
+          }, FIELDS_RETRY_MS)
+        }
+        throw error
+      },
+    )
+    fieldsInFlightRef.current = request.finally(() => {
+      fieldsInFlightRef.current = null
+    })
+    await request
+  }, [draftId])
+  const sendFieldsRef = useRef(sendFields)
+  sendFieldsRef.current = sendFields
+
+  const flushCrdt = useCallback(async () => {
+    await crdtRef.current.flush()
+    await sendFields()
+  }, [sendFields])
 
   useEffect(() => {
     latestDataRef.current = options.data
     latestFingerprintRef.current = options.fingerprint
   }, [options.data, options.fingerprint])
 
-  const hasUnsavedChanges = useCallback(
-    () =>
+  const hasUnsavedChanges = useCallback(() => {
+    if (crdtRef.current.active) {
+      const acked = ackedFieldsRef.current
+      return (
+        crdtRef.current.pending() ||
+        fieldsTimerRef.current !== null ||
+        fieldsInFlightRef.current !== null ||
+        (acked !== null &&
+          diffDraftFields(acked, fieldsOf(latestDataRef.current)) !== null)
+      )
+    }
+    return (
       dirtyRef.current &&
       options.hasContent &&
-      latestFingerprintRef.current !== acceptedFingerprintRef.current,
-    [options.hasContent],
-  )
+      latestFingerprintRef.current !== acceptedFingerprintRef.current
+    )
+  }, [options.hasContent])
 
   const accept = useCallback(
     (
@@ -266,6 +341,9 @@ function useDraftSession(options: {
       },
     ) => {
       acceptedDraftRef.current = draft
+      ackedFieldsRef.current = draft
+        ? formFieldsOf(options.kind, draft.headRevision, formStateRef.current)
+        : null
       acceptedFingerprintRef.current = fingerprint
       if (!settings?.preserveLatest) {
         latestFingerprintRef.current = fingerprint
@@ -274,195 +352,23 @@ function useDraftSession(options: {
       setAcceptedFingerprint(fingerprint)
       if (settings?.draftId !== undefined) setDraftId(settings.draftId)
     },
-    [],
+    [options.kind],
   )
 
   const markDirty = useCallback((dirty = true) => {
     dirtyRef.current = dirty
   }, [])
 
-  /**
-   * Reconcile a head that moved while we were looking at it: fetch the current
-   * remote head and merge it into the local content. Both the save-conflict
-   * handler (DRAFT_HEAD_CONFLICT) and the realtime `draft.update` banner go
-   * through here, so a merge behaves identically however it was triggered.
-   */
-  const reconcileWithRemote = useCallback(
-    async (input: { base: DraftModel | null; remoteId: string }) => {
-      const remote = await getDraftById(input.remoteId)
-      const local = latestDataRef.current
-      acceptedDraftRef.current = remote
-      setDraftId(remote.id)
-
-      if (!input.base) {
-        setConflict({
-          conflicts: [
-            {
-              base: null,
-              kind: 'field',
-              local,
-              path: 'draft',
-              remote,
-            },
-          ],
-          remote,
-        })
-        dirtyRef.current = true
-        return
-      }
-
-      const merged = mergeDraftConflict({
-        base: input.base,
-        local,
-        remote,
-      })
-      options.setState((previous) =>
-        fromRevision(options.kind, merged.data, previous),
-      )
-      dirtyRef.current = true
-
-      if (merged.conflicts.length > 0) {
-        setConflict({ conflicts: merged.conflicts, remote })
-        toast.error(
-          t('write.toast.draftConflictNeedsReview', {
-            count: merged.conflicts.length,
-          }),
-        )
-      } else {
-        setConflict(null)
-        toast.success(
-          t('write.toast.draftAutoMerged', {
-            count: merged.autoMergedChanges,
-          }),
-        )
-      }
-    },
-    [options, t],
-  )
-
-  /**
-   * Adopt a freshly read remote head as the editor's content, through the same
-   * accept path a normal load uses. Anything unsaved is gone — callers must
-   * have established that this is what the user wants.
-   */
-  const adoptRemoteDraft = useCallback(
-    (remote: DraftModel) => {
-      const nextState = fromRevision(
-        options.kind,
-        remote.headRevision,
-        options.state,
-      )
-      const refId = options.isEditing ? options.id : undefined
-      const fingerprint = getDraftFingerprint(options.kind, nextState, refId)
-      options.setState(nextState)
-      latestDataRef.current = toDraftData(options.kind, nextState, refId)
-      accept(remote, fingerprint, { draftId: remote.id })
-      setConflict(null)
-      setRemoteUpdateStale(false)
-      queryClient.setQueryData(adminQueryKeys.drafts.detail(remote.id), remote)
-      toast.success(t('write.toast.draftRemoteUpdateLoaded'))
-    },
-    [accept, options, queryClient, t],
-  )
-
-  /**
-   * Read the draft we currently have open. `force` is set only by the banner's
-   * explicit "Use new version": it adopts whatever the server has, while the
-   * automatic (realtime) path backs off whenever the editor moved on — a save
-   * of ours in flight, a head we already hold, or edits typed while this read
-   * was in flight. A save that is already in flight reconciles itself through
-   * its own onSuccess/onError.
-   */
-  const adoptLatestRemoteDraft = useCallback(
-    async (force: boolean) => {
-      const remoteId = acceptedDraftRef.current?.id ?? draftId
-      if (!remoteId) return
-
-      try {
-        const remote = await getDraftById(remoteId)
-        if (!force) {
-          // The server broadcasts the new head before the save response reaches
-          // us, so our own save can land here first; the response-first order
-          // is caught by the head comparison.
-          if (mutationRef.current.isPending) return
-          if (
-            remote.headRevisionId === acceptedDraftRef.current?.headRevisionId
-          )
-            return
-          if (hasUnsavedChanges()) {
-            setRemoteUpdateStale(true)
-            return
-          }
-        }
-        adoptRemoteDraft(remote)
-      } catch (error) {
-        toast.error(
-          getErrorMessage(error, t('write.toast.draftConflictLoadFailed')),
-        )
-      }
-    },
-    [adoptRemoteDraft, draftId, hasUnsavedChanges, t],
-  )
-
-  /**
-   * "Use new version" — one click replaces the open draft with the server head.
-   * Only unsaved local edits are worth a prompt; with a clean editor the click
-   * is the same silent adoption the realtime path performs.
-   */
-  const useRemoteUpdate = useCallback(async () => {
-    if (
-      hasUnsavedChanges() &&
-      !(await confirmDialog({
-        confirmText: t('write.remoteUpdate.useNew'),
-        description: t('write.remoteUpdate.confirm.description'),
-        destructive: true,
-        title: t('write.remoteUpdate.confirm.title'),
-      }))
-    ) {
-      return
-    }
-
-    await adoptLatestRemoteDraft(true)
-  }, [adoptLatestRemoteDraft, hasUnsavedChanges, t])
-
-  const mergeRemoteUpdate = useCallback(async () => {
-    const remoteId = acceptedDraftRef.current?.id ?? draftId
-    if (!remoteId) return
-
-    try {
-      await reconcileWithRemote({ base: acceptedDraftRef.current, remoteId })
-      setRemoteUpdateStale(false)
-    } catch (error) {
-      toast.error(
-        getErrorMessage(error, t('write.toast.draftConflictLoadFailed')),
-      )
-    }
-  }, [draftId, reconcileWithRemote, t])
-
-  const dismissRemoteUpdate = useCallback(() => {
-    setRemoteUpdateStale(false)
-  }, [])
-
-  // Realtime "this draft moved elsewhere" signal, published by SocketBridge.
-  // Only the draft this page has open matters, and a payload carrying the head
-  // we already adopted is our own save echoed back.
-  const onRemoteUpdate = (payload: DraftUpdatePayload) => {
-    const openDraft = acceptedDraftRef.current
-    const currentDraftId = openDraft?.id ?? draftId
-    if (!currentDraftId || payload.branchId !== currentDraftId) return
-    if (payload.headRevisionId === openDraft?.headRevisionId) return
-
-    void adoptLatestRemoteDraft(false)
-  }
-  // The subscription is installed once and reads the handler through a ref.
-  // Depending on the handler's identity would re-subscribe on every render —
-  // i.e. on every keystroke — which both costs work and briefly opens a window
-  // where an update lands with no subscriber attached.
-  const onRemoteUpdateRef = useRef(onRemoteUpdate)
-  onRemoteUpdateRef.current = onRemoteUpdate
   useEffect(
-    () => subscribeDraftUpdate((payload) => onRemoteUpdateRef.current(payload)),
-    [],
+    () =>
+      subscribeDraftUpdate((payload) => {
+        const session = crdtRef.current
+        if (payload.branchId !== draftId || !session.active || session.live()) {
+          return
+        }
+        void session.pull()
+      }),
+    [draftId],
   )
 
   const buildSaveVariables = useCallback(
@@ -480,7 +386,14 @@ function useDraftSession(options: {
   )
 
   const mutation = useMutation<DraftModel, unknown, DraftSaveVariables>({
-    mutationFn: (variables) => {
+    mutationFn: async (variables) => {
+      if (variables.draftId && crdtRef.current.active) {
+        await flushCrdt()
+        return createDraftCheckpoint(variables.draftId, 'save')
+      }
+      if (variables.draftId && crdtRef.current.locked) {
+        throw new Error(t('write.toast.draftSyncPending'))
+      }
       if (!variables.draftId) {
         return createDraft({
           baseRevisionId: options.baseRevisionId,
@@ -500,45 +413,32 @@ function useDraftSession(options: {
     onError: (error, variables) => {
       if (
         !(error instanceof ApiRequestError) ||
-        error.code !== 'DRAFT_HEAD_CONFLICT'
+        error.code !== 'DRAFT_HEAD_CONFLICT' ||
+        !variables.draftId
       ) {
         toast.error(getErrorMessage(error, t('write.toast.draftSaveFailed')))
         return
       }
 
-      setResolvingConflict(true)
-      void (async () => {
-        try {
-          const errorDraftId =
-            typeof error.details?.id === 'string' ? error.details.id : ''
-          const remoteId = variables.draftId || errorDraftId
-          if (!remoteId) {
-            toast.error(t('write.toast.draftConflictLoadFailed'))
-            return
-          }
-
-          await reconcileWithRemote({
-            base: variables.baseDraft,
-            remoteId,
+      void getDraftById(variables.draftId).then(
+        (remote) => {
+          accept(remote, acceptedFingerprintRef.current, {
+            dirty: true,
+            preserveLatest: true,
           })
-          setRemoteUpdateStale(false)
-        } catch (loadError) {
+          toast.info(t('write.toast.draftHeadReloaded'))
+        },
+        (loadError: unknown) =>
           toast.error(
-            getErrorMessage(
-              loadError,
-              t('write.toast.draftConflictLoadFailed'),
-            ),
-          )
-        } finally {
-          setResolvingConflict(false)
-        }
-      })()
+            getErrorMessage(loadError, t('write.toast.draftSaveFailed')),
+          ),
+      )
     },
     onSuccess: async (draft, variables) => {
       const isFirstDraftSave = !variables.draftId
+      if (isFirstDraftSave) crdtRef.current.adoptEditorOnBind()
       acceptedDraftRef.current = draft
       setDraftId(draft.id)
-      setConflict(null)
       acceptedFingerprintRef.current = variables.fingerprint
       setAcceptedFingerprint(variables.fingerprint)
       dirtyRef.current = latestFingerprintRef.current !== variables.fingerprint
@@ -563,11 +463,36 @@ function useDraftSession(options: {
   const mutationRef = useRef(mutation)
   mutationRef.current = mutation
 
+  const [crdtGate] = useState(() =>
+    createReadyGate(() => crdtRef.current.active),
+  )
+  useEffect(() => {
+    if (crdt.active) crdtGate.release()
+  }, [crdt.active, crdtGate])
+
+  const ensureCrdt = useCallback(
+    () =>
+      crdtGate.once(async () => {
+        if (crdtRef.current.active) return true
+        if (!draftId && !mutationRef.current.isPending) {
+          if (!options.hasContent) {
+            toast.error(t('write.toast.contentEmptyForDraft'))
+            return false
+          }
+          try {
+            await mutationRef.current.mutateAsync(buildSaveVariables(true))
+          } catch {
+            return false
+          }
+        }
+        const ready = await crdtGate.wait(CRDT_READY_TIMEOUT_MS)
+        if (!ready) toast.error(t('write.toast.draftSyncPending'))
+        return ready
+      }),
+    [buildSaveVariables, crdtGate, draftId, options.hasContent, t],
+  )
+
   const saveNow = useCallback(() => {
-    if (conflict || resolvingConflict) {
-      toast.error(t('write.toast.draftConflictNeedsResolution'))
-      return
-    }
     if (!options.hasContent) {
       toast.error(t('write.toast.contentEmptyForDraft'))
       return
@@ -579,16 +504,16 @@ function useDraftSession(options: {
       autosaveTimerRef.current = null
     }
     mutationRef.current.mutate(buildSaveVariables(true))
-  }, [buildSaveVariables, conflict, options.hasContent, resolvingConflict, t])
+  }, [buildSaveVariables, options.hasContent, t])
 
   useEffect(() => {
-    if (conflict || resolvingConflict || !dirtyRef.current) return
-    if (!options.hasContent) return
+    if (!dirtyRef.current || !options.hasContent) return
     if (options.fingerprint === acceptedFingerprintRef.current) return
 
     const timer = window.setTimeout(() => {
       if (autosaveTimerRef.current === timer) autosaveTimerRef.current = null
       if (!dirtyRef.current || mutationRef.current.isPending) return
+      if (crdtRef.current.locked) return
       mutationRef.current.mutate(buildSaveVariables())
     }, 10_000)
     autosaveTimerRef.current = timer
@@ -600,11 +525,25 @@ function useDraftSession(options: {
   }, [
     acceptedFingerprint,
     buildSaveVariables,
-    conflict,
     options.fingerprint,
     options.hasContent,
-    resolvingConflict,
   ])
+
+  useEffect(() => {
+    if (!crdt.active || !ackedFieldsRef.current) return
+    if (!diffDraftFields(ackedFieldsRef.current, fieldsOf(options.data))) return
+    const timer = window.setTimeout(() => {
+      if (fieldsTimerRef.current === timer) fieldsTimerRef.current = null
+      void sendFields().catch((error) =>
+        toast.error(getErrorMessage(error, t('write.toast.draftSaveFailed'))),
+      )
+    }, 500)
+    fieldsTimerRef.current = timer
+    return () => {
+      window.clearTimeout(timer)
+      if (fieldsTimerRef.current === timer) fieldsTimerRef.current = null
+    }
+  }, [crdt.active, options.data, sendFields, t])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -617,44 +556,34 @@ function useDraftSession(options: {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [saveNow])
 
-  const useRemoteConflictDraft = useCallback(() => {
-    if (!conflict) return
-    const remote = conflict.remote
-    const nextState = fromRevision(
-      options.kind,
-      remote.headRevision,
-      options.state,
-    )
-    const fingerprint = getDraftFingerprint(
-      options.kind,
-      nextState,
-      options.isEditing ? options.id : undefined,
-    )
-    options.setState(nextState)
-    accept(remote, fingerprint, { draftId: remote.id })
-    setConflict(null)
-    setConflictDialogOpen(false)
-    toast.success(t('write.toast.draftRemoteApplied'))
-  }, [accept, conflict, options, t])
-
-  const keepLocalConflictDraft = useCallback(() => {
-    if (!conflict) return
-    dirtyRef.current = true
-    setConflict(null)
-    setConflictDialogOpen(false)
-    toast.success(t('write.toast.draftLocalKept'))
-  }, [conflict, t])
-
   return {
     accept,
     acceptedDraft: () => acceptedDraftRef.current,
     acceptedFingerprint: () => acceptedFingerprintRef.current,
-    clearAcceptedDraft: (id: string) => {
-      if (acceptedDraftRef.current?.id === id) acceptedDraftRef.current = null
+    flushCrdt,
+    ensureCrdt,
+    presenceUser,
+    checkpoint: async (kind: 'publish' | 'save') => {
+      await flushCrdt()
+      return createDraftCheckpoint(draftId, kind)
     },
-    conflict,
-    conflictDialogOpen,
-    dismissRemoteUpdate,
+    reloadFields: async () => {
+      if (!draftId) return
+      const draft = await getDraftById(draftId)
+      acceptedDraftRef.current = draft
+      ackedFieldsRef.current = formFieldsOf(
+        options.kind,
+        draft.headRevision,
+        formStateRef.current,
+      )
+      options.setState((previous) => ({
+        ...fromRevision(options.kind, draft.headRevision, previous),
+        content: previous.content,
+        text: previous.text,
+        title: previous.title,
+      }))
+    },
+    crdt,
     draftId,
     getPublishInput: (currentDraftId: string) => ({
       baseline:
@@ -665,20 +594,12 @@ function useDraftSession(options: {
       fingerprint: latestFingerprintRef.current,
     }),
     hasUnsavedChanges,
-    keepLocalConflictDraft,
     latestDraft: () => acceptedDraftRef.current ?? mutation.data,
     latestFingerprint: () => latestFingerprintRef.current,
     markDirty,
-    mergeRemoteUpdate,
     mutation,
-    remoteUpdateStale,
-    resolvingConflict,
     saveNow,
-    setConflict,
-    setConflictDialogOpen,
     setDraftId,
-    useRemoteConflictDraft,
-    useRemoteUpdate,
   }
 }
 
@@ -700,7 +621,6 @@ function WritePage(props: { kind: WriteKind }) {
   const [revisionsOpen, setRevisionsOpen] = useState(false)
   const [metaOpen, setMetaOpen] = useState(false)
   const [draftListHintDismissed, setDraftListHintDismissed] = useState(false)
-  const [reviewingDraft, setReviewingDraft] = useState<DraftModel | null>(null)
   const appliedRouteDraftIdRef = useRef<string | null>(null)
   const formSeededKeyRef = useRef<string | null>(null)
   const draftRefType = draftRefTypeByKind[props.kind]
@@ -733,6 +653,10 @@ function WritePage(props: { kind: WriteKind }) {
     queryKey: adminQueryKeys.users.me(),
     staleTime: 5 * 60_000,
   })
+  const canEditDraft = hasPermission(
+    meQuery.data?.permissions,
+    Permission.EditPost,
+  )
   const canPublish = hasPermission(
     meQuery.data?.permissions,
     Permission.PublishPost,
@@ -786,18 +710,9 @@ function WritePage(props: { kind: WriteKind }) {
     state,
   })
   const {
-    conflict: draftConflict,
-    conflictDialogOpen: draftConflictDialogOpen,
-    dismissRemoteUpdate,
     draftId,
-    mergeRemoteUpdate,
     mutation: draftMutation,
-    remoteUpdateStale,
-    resolvingConflict: draftConflictResolving,
     saveNow: saveDraftNow,
-    setConflict: setDraftConflict,
-    setConflictDialogOpen: setDraftConflictDialogOpen,
-    useRemoteUpdate,
   } = draftSession
   const handledPublishTaskRef = useRef('')
   const { socketConnected: publishTaskSocketConnected } =
@@ -817,24 +732,6 @@ function WritePage(props: { kind: WriteKind }) {
     enabled: Boolean(routeBaseRevisionId),
     queryFn: () => getRevision(routeBaseRevisionId),
     queryKey: ['drafts', 'revision', routeBaseRevisionId],
-  })
-  const baseRelationQuery = useQuery({
-    enabled: Boolean(
-      routeBaseRevisionId &&
-      versionContextQuery.data?.publishedRevision?.id &&
-      routeBaseRevisionId !== versionContextQuery.data?.publishedRevision?.id,
-    ),
-    queryFn: () =>
-      compareRevisions(
-        versionContextQuery.data!.publishedRevision!.id,
-        routeBaseRevisionId,
-      ),
-    queryKey: [
-      'drafts',
-      'compare',
-      versionContextQuery.data?.publishedRevision?.id,
-      routeBaseRevisionId,
-    ],
   })
   const translationsQuery = useQuery({
     enabled: isEditing && publishConfirmOpen,
@@ -978,14 +875,6 @@ function WritePage(props: { kind: WriteKind }) {
       (newDraftsQuery.data ?? []).filter((draft) => draft.status === 'active'),
     [newDraftsQuery.data],
   )
-  const activeDocumentBranches = useMemo(
-    () => versionContextQuery.data?.branches ?? [],
-    [versionContextQuery.data?.branches],
-  )
-  const standaloneDraftTree = useMemo(
-    () => buildStandaloneDraftTree(activeNewDrafts),
-    [activeNewDrafts],
-  )
   const firstCategoryId = categories[0]?.id ?? ''
   const activeCategory =
     categories.find((category) => category.id === state.categoryId) ??
@@ -1115,24 +1004,6 @@ function WritePage(props: { kind: WriteKind }) {
     versionContextQuery.data,
   ])
 
-  const reviewAncestorQuery = useQuery({
-    enabled: Boolean(reviewingDraft?.commonAncestorRevisionId),
-    queryFn: () => getRevision(reviewingDraft!.commonAncestorRevisionId!),
-    queryKey: ['drafts', 'revision', reviewingDraft?.commonAncestorRevisionId],
-  })
-  const recoveryReviewData = useMemo(
-    () =>
-      reviewingDraft && detailModel
-        ? buildDraftRecoveryReviewData(
-            props.kind,
-            detailModel,
-            reviewingDraft,
-            reviewAncestorQuery.data,
-          )
-        : null,
-    [detailModel, props.kind, reviewAncestorQuery.data, reviewingDraft],
-  )
-
   useEffect(() => {
     const draft = routeDraftQuery.data
     if (!draft || appliedRouteDraftIdRef.current === draft.id) return
@@ -1144,6 +1015,9 @@ function WritePage(props: { kind: WriteKind }) {
     }
 
     appliedRouteDraftIdRef.current = draft.id
+    // Our own first save put this id in the URL; the editor is already ahead of the saved
+    // revision, and re-applying it would remount the editor and drop keystrokes typed since.
+    if (draftSession.draftId === draft.id) return
     const nextState = fromRevision(props.kind, draft.headRevision, state)
     const fingerprint = getDraftFingerprint(
       props.kind,
@@ -1161,6 +1035,7 @@ function WritePage(props: { kind: WriteKind }) {
     }
   }, [
     draftRefType,
+    draftSession.draftId,
     id,
     isEditing,
     props.kind,
@@ -1179,36 +1054,33 @@ function WritePage(props: { kind: WriteKind }) {
     unknown,
     {
       aiResources: PublishAiResourceRequest[]
-      confirmDiverged: boolean
       regenerateLockedTranslations: boolean
     }
   >({
-    mutationFn: async ({
-      aiResources,
-      confirmDiverged,
-      regenerateLockedTranslations,
-    }) => {
+    mutationFn: async ({ aiResources, regenerateLockedTranslations }) => {
       const currentDraftId = draftId || routeDraftId
       const { baseline, data, fingerprint } =
         draftSession.getPublishInput(currentDraftId)
       if (currentDraftId && !baseline) {
         throw new Error(t('write.toast.draftBaselineMissing'))
       }
-      const draft = currentDraftId
-        ? await updateDraft(currentDraftId, {
-            data,
-            expectedHeadRevisionId: baseline!.headRevisionId,
-          })
-        : await createDraft({
-            baseRevisionId: branchBaseRevisionId,
-            data,
-            refId: isEditing ? id : undefined,
-            refType: draftRefType,
-          })
+      const draft = draftSession.crdt.active
+        ? await draftSession.checkpoint('publish')
+        : currentDraftId
+          ? await updateDraft(currentDraftId, {
+              data,
+              expectedHeadRevisionId: baseline!.headRevisionId,
+            })
+          : await createDraft({
+              baseRevisionId: branchBaseRevisionId,
+              data,
+              refId: isEditing ? id : undefined,
+              refType: draftRefType,
+            })
       const task = await createPublishJob({
         aiResources,
         branchId: draft.id,
-        confirmDiverged,
+        confirmDiverged: false,
         expectedPublishedRevisionId: draft.document.publishedRevisionId,
         regenerateLockedTranslations,
         revisionId: draft.headRevisionId,
@@ -1287,6 +1159,62 @@ function WritePage(props: { kind: WriteKind }) {
     [categories, state],
   )
 
+  const crdtActive = draftSession.crdt.active
+  const peerAvatars = crdtActive ? (
+    <PeerAvatars
+      peers={draftSession.crdt.peers}
+      selfId={draftSession.presenceUser.id}
+    />
+  ) : null
+  const setCrdtTitle = draftSession.crdt.setTitle
+  useEffect(() => {
+    if (crdtActive) setCrdtTitle(state.title)
+  }, [crdtActive, setCrdtTitle, state.title])
+
+  const workingCopy = versionContextQuery.data?.branches[0]
+  const openingWorkingCopyRef = useRef(false)
+  useEffect(() => {
+    if (!isEditing || routeDraftId || routeBaseRevisionId) return
+    if (!versionContextQuery.isSuccess || !canEditDraft) return
+    const showDraft = (nextDraftId: string) => {
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.set('draftId', nextDraftId)
+      setSearchParams(nextParams, { replace: true })
+    }
+    if (workingCopy) {
+      showDraft(workingCopy.id)
+      return
+    }
+    if (openingWorkingCopyRef.current) return
+    openingWorkingCopyRef.current = true
+    void openWorkingCopy(draftRefType, id)
+      .then((draft) => showDraft(draft.id))
+      .catch((error: unknown) => {
+        if (
+          error instanceof ApiRequestError &&
+          error.code === 'PERMISSION_DENIED'
+        ) {
+          return
+        }
+        toast.error(getErrorMessage(error, t('write.toast.draftSaveFailed')))
+      })
+      .finally(() => {
+        openingWorkingCopyRef.current = false
+      })
+  }, [
+    canEditDraft,
+    draftRefType,
+    id,
+    isEditing,
+    routeBaseRevisionId,
+    routeDraftId,
+    searchParams,
+    setSearchParams,
+    t,
+    versionContextQuery.isSuccess,
+    workingCopy,
+  ])
+
   const updateField = <TKey extends keyof WriteFormState>(
     key: TKey,
     value: WriteFormState[TKey],
@@ -1302,116 +1230,6 @@ function WritePage(props: { kind: WriteKind }) {
     setState((previous) => applyWriteAgentMetaUpdates(previous, updates))
   }
 
-  const applyDraft = (draft: DraftModel) => {
-    const nextState = fromRevision(props.kind, draft.headRevision, state)
-    const fingerprint = getDraftFingerprint(
-      props.kind,
-      nextState,
-      isEditing ? id : undefined,
-    )
-    draftSession.accept(draft, fingerprint, { draftId: draft.id })
-    setDraftConflict(null)
-    setState(nextState)
-    const nextParams = new URLSearchParams(searchParams)
-    nextParams.set('draftId', draft.id)
-    nextParams.delete('baseRevisionId')
-    if (draft.document.refId) nextParams.set('id', draft.document.refId)
-    setSearchParams(nextParams, { replace: true })
-    setReviewingDraft(null)
-    toast.success(t('write.toast.draftApplied'))
-  }
-
-  const confirmSourceSwitch = async (nextDraftId: string) => {
-    if (
-      !draftSession.hasUnsavedChanges() ||
-      (nextDraftId !== '' && nextDraftId === (draftId || routeDraftId))
-    ) {
-      return true
-    }
-    return confirmDialog({
-      confirmText: t('write.versionTree.switchConfirm'),
-      description: t('write.versionTree.switchDescription'),
-      destructive: true,
-      title: t('write.versionTree.switchTitle'),
-    })
-  }
-
-  const continueDraft = async (draft: DraftModel) => {
-    if (!(await confirmSourceSwitch(draft.id))) return
-    applyDraft(draft)
-    setRevisionsOpen(false)
-  }
-
-  const publishDraftFromTree = async (draft: DraftModel) => {
-    if (!canPublish) return
-    if (!(await confirmSourceSwitch(draft.id))) return
-    applyDraft(draft)
-    setRevisionsOpen(false)
-    setPublishError(null)
-    setPublishConfirmOpen(true)
-  }
-
-  const viewCurrentArticle = async () => {
-    if (!detailModel) return
-    if (!(await confirmSourceSwitch(''))) return
-    const nextState = fromModel(props.kind, detailModel)
-    const fingerprint = getDraftFingerprint(props.kind, nextState, id)
-    draftSession.accept(null, fingerprint, { draftId: '' })
-    setDraftConflict(null)
-    setState(nextState)
-    const nextParams = new URLSearchParams(searchParams)
-    nextParams.delete('baseRevisionId')
-    nextParams.delete('draftId')
-    setSearchParams(nextParams, { replace: true })
-    setRevisionsOpen(false)
-  }
-
-  const closeDraftsPanel = () => {
-    setRevisionsOpen(false)
-  }
-
-  const deleteDraftMutation = useMutation({
-    mutationFn: deleteDraft,
-    onError: (error: unknown) =>
-      toast.error(getErrorMessage(error, t('drafts.toast.deleteFailed'))),
-    onSuccess: async (_result, deletedId: string) => {
-      const deletedCurrent = draftId === deletedId || routeDraftId === deletedId
-      draftSession.clearAcceptedDraft(deletedId)
-      if (deletedCurrent) {
-        const nextState = detailModel
-          ? fromModel(props.kind, detailModel)
-          : emptyState
-        const fingerprint = getDraftFingerprint(
-          props.kind,
-          nextState,
-          isEditing ? id : undefined,
-        )
-        draftSession.accept(null, fingerprint, { draftId: '' })
-        setState(nextState)
-        const nextParams = new URLSearchParams(searchParams)
-        nextParams.delete('draftId')
-        setSearchParams(nextParams, { replace: true })
-      }
-      toast.success(t('drafts.toast.deleted'))
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminQueryKeys.drafts.root }),
-        isEditing ? versionContextQuery.refetch() : newDraftsQuery.refetch(),
-      ])
-    },
-  })
-
-  const confirmAndDeleteDraft = async (draft: DraftModel) => {
-    const confirmed = await confirmDialog({
-      destructive: true,
-      title: t('drafts.detail.confirmDelete', {
-        title: draft.headRevision.title || t('write.editor.untitled'),
-      }),
-    })
-    if (!confirmed) return
-    if (reviewingDraft?.id === draft.id) setReviewingDraft(null)
-    deleteDraftMutation.mutate(draft.id)
-  }
-
   const generateTitleOrSlug = () => {
     if (!state.title.trim() && !state.text.trim()) {
       toast.error(t('write.slugGenerate.bothMissing'))
@@ -1421,33 +1239,12 @@ function WritePage(props: { kind: WriteKind }) {
     writerGenerateMutation.mutate()
   }
 
-  const useRemoteConflictDraft = draftSession.useRemoteConflictDraft
-
-  const keepLocalConflictDraft = draftSession.keepLocalConflictDraft
-
   const latestDraftCandidate = draftSession.latestDraft()
   const latestDraft =
     latestDraftCandidate?.status === 'active' ? latestDraftCandidate : undefined
   const draftListHintCount =
     !isEditing && !routeDraftId ? activeNewDrafts.length : 0
   const showDraftListHint = draftListHintCount > 0 && !draftListHintDismissed
-  // The banner only exists to protect unsaved work: a clean editor is updated
-  // silently instead (see adoptLatestRemoteDraft). While a save conflict is
-  // unresolved the conflict banner already owns that decision.
-  const showRemoteUpdateHint =
-    remoteUpdateStale && !draftConflict && draftSession.hasUnsavedChanges()
-  const selectedBranch =
-    activeDocumentBranches.find(
-      (branch) => branch.id === (draftId || routeDraftId),
-    ) ?? routeDraftQuery.data
-  const versionBranchCount = isEditing
-    ? activeDocumentBranches.length
-    : activeNewDrafts.length
-  const publishIsDiverged = selectedBranch
-    ? selectedBranch.relationToPublished === 'descendant' ||
-      selectedBranch.relationToPublished === 'diverged'
-    : baseRelationQuery.data?.relation === 'descendant' ||
-      baseRelationQuery.data?.relation === 'diverged'
   const draftKindText = t('write.kind.post')
   const isDirty = draftSession.hasUnsavedChanges()
   const slugPathPrefix = `/posts/${activeCategory?.slug ?? ''}/`
@@ -1457,31 +1254,25 @@ function WritePage(props: { kind: WriteKind }) {
       : publishOperation === 'republish'
         ? writeCopy(locale, 'republish')
         : writeCopy(locale, 'publish')
-  const dockTone: WriteDockTone = draftConflict
-    ? 'conflict'
-    : saveMutation.isPending
-      ? 'publishing'
-      : !hasDraftAutosaveContent
-        ? 'needContent'
-        : draftMutation.isPending || draftConflictResolving
-          ? 'saving'
-          : isDirty
-            ? 'unsaved'
-            : publishTaskId
-              ? 'submitted'
-              : isPublished && !canSubmitPublication
-                ? 'matchesLive'
-                : latestDraft
-                  ? 'saved'
-                  : isEditing && !isPublished
-                    ? 'offline'
-                    : 'fresh'
+  const dockTone: WriteDockTone = saveMutation.isPending
+    ? 'publishing'
+    : !hasDraftAutosaveContent
+      ? 'needContent'
+      : draftMutation.isPending
+        ? 'saving'
+        : isDirty
+          ? 'unsaved'
+          : publishTaskId
+            ? 'submitted'
+            : isPublished && !canSubmitPublication
+              ? 'matchesLive'
+              : latestDraft
+                ? 'saved'
+                : isEditing && !isPublished
+                  ? 'offline'
+                  : 'fresh'
   const requestPublish = () => {
-    if (!canPublish || draftConflictResolving || saveMutation.isPending) return
-    if (draftConflict) {
-      setDraftConflictDialogOpen(true)
-      return
-    }
+    if (!canPublish || saveMutation.isPending) return
     setPublishError(null)
     setPublishConfirmOpen(true)
   }
@@ -1514,6 +1305,8 @@ function WritePage(props: { kind: WriteKind }) {
             metaFieldsSchema={POST_META_SCHEMA}
             onAgentClose={() => setAgentOpen(false)}
             onContentChange={(content) => updateField('content', content)}
+            crdt={draftSession.crdt}
+            ensureDocument={draftSession.ensureCrdt}
             onMetaFieldsUpdate={applyAgentMetaUpdates}
             onPinSelection={() => setAgentOpen(true)}
             onTextChange={(text) => updateField('text', text)}
@@ -1524,51 +1317,22 @@ function WritePage(props: { kind: WriteKind }) {
         hasArticle={isEditing}
         metaOpen={metaOpen}
         notices={
-          <>
-            {draftConflict ? (
-              <>
-                <DraftConflictBanner
-                  conflictCount={draftConflict.conflicts.length}
-                  onKeepLocal={keepLocalConflictDraft}
-                  onUseRemote={useRemoteConflictDraft}
-                />
-                <Button
-                  htmlType="button"
-                  onClick={() => setRevisionsOpen(true)}
-                  type="text"
-                >
-                  {writeCopy(locale, 'openRevisions')}
-                </Button>
-              </>
-            ) : null}
-            {showRemoteUpdateHint ? (
-              <DraftHintBanner
-                actionLabel={t('write.remoteUpdate.useNew')}
-                message={t('write.remoteUpdate.message')}
-                onAction={useRemoteUpdate}
-                onDismiss={dismissRemoteUpdate}
-                onSecondaryAction={mergeRemoteUpdate}
-                secondaryActionLabel={t('write.remoteUpdate.merge')}
-                variant="remote-update"
-              />
-            ) : null}
-            {showDraftListHint ? (
-              <DraftHintBanner
-                actionLabel={t('write.draftList.hintAction')}
-                message={t('write.draftList.hintMessage', {
-                  count: draftListHintCount,
-                  label: draftKindText,
-                })}
-                onAction={() => setRevisionsOpen(true)}
-                onDismiss={() => setDraftListHintDismissed(true)}
-                variant="list"
-              />
-            ) : null}
-          </>
+          showDraftListHint ? (
+            <DraftHintBanner
+              actionLabel={t('write.draftList.hintAction')}
+              message={t('write.draftList.hintMessage', {
+                count: draftListHintCount,
+                label: draftKindText,
+              })}
+              onAction={() => navigate('/drafts')}
+              onDismiss={() => setDraftListHintDismissed(true)}
+              variant="list"
+            />
+          ) : null
         }
         onCloseAi={() => setAgentOpen(false)}
         onCloseMeta={() => setMetaOpen(false)}
-        onCloseRevisions={closeDraftsPanel}
+        onCloseRevisions={() => setRevisionsOpen(false)}
         deletePending={deletePostMutation.isPending}
         onDelete={() => {
           void confirmDialog({
@@ -1613,7 +1377,6 @@ function WritePage(props: { kind: WriteKind }) {
           !canPublish ||
           saveMutation.isPending ||
           detailLoading ||
-          draftConflictResolving ||
           !canSubmitPublication
         }
         publishLabel={publishLabel}
@@ -1621,50 +1384,35 @@ function WritePage(props: { kind: WriteKind }) {
         publishedPublicAt={detailModel?.publicAt}
         publishing={saveMutation.isPending}
         refId={isEditing ? id : undefined}
-        revisionCount={versionBranchCount}
+        peers={peerAvatars}
         revisions={
-          <VersionTreePanel
-            currentDraftId={draftId || routeDraftId}
-            currentPublishedRevisionId={
+          <TimelinePanel
+            authorName={(userId) =>
+              authorCandidates.find((user) => user.id === userId)
+                ?.displayName ?? null
+            }
+            documentId={versionContextQuery.data?.document.id ?? null}
+            draftId={draftId || routeDraftId}
+            onBeforeChange={draftSession.flushCrdt}
+            onChanged={async ({ restored }) => {
+              await draftSession.crdt.pull()
+              if (restored) await draftSession.reloadFields()
+            }}
+            publishedRevisionId={
               versionContextQuery.data?.document.publishedRevisionId ?? null
             }
-            deletingDraftId={
-              deleteDraftMutation.isPending
-                ? (deleteDraftMutation.variables ?? null)
-                : null
-            }
-            documentId={
-              versionContextQuery.data?.document.id ??
-              (isEditing ? activeDocumentBranches : activeNewDrafts).find(
-                (draft) => draft.id === (draftId || routeDraftId),
-              )?.documentId ??
-              null
-            }
-            drafts={isEditing ? activeDocumentBranches : activeNewDrafts}
-            nodes={
-              isEditing
-                ? (versionContextQuery.data?.versionTree ?? [])
-                : standaloneDraftTree
-            }
-            onCompare={setReviewingDraft}
-            onContinue={(draft) => void continueDraft(draft)}
-            onDelete={confirmAndDeleteDraft}
-            onHistory={(draft) => navigate(`/drafts/${draft.id}`)}
-            onPublish={(draft) => void publishDraftFromTree(draft)}
-            onViewOnline={() => void viewCurrentArticle()}
+            selfId={draftSession.presenceUser.id || null}
           />
         }
         revisionsOpen={revisionsOpen}
         saveDisabled={
           detailLoading ||
           draftMutation.isPending ||
-          draftConflictResolving ||
           saveMutation.isPending ||
-          Boolean(draftConflict) ||
           !hasDraftAutosaveContent
         }
         saving={draftMutation.isPending}
-        savingDraft={draftMutation.isPending || draftConflictResolving}
+        savingDraft={draftMutation.isPending}
         showViewTask={Boolean(publishTaskId)}
         siteDefaultLang={siteDefaultLang}
         slugPrefix={slugPathPrefix}
@@ -1675,20 +1423,8 @@ function WritePage(props: { kind: WriteKind }) {
         updateField={updateField}
         values={state}
       />
-      <DraftRecoveryReview
-        data={recoveryReviewData}
-        onClose={() => setReviewingDraft(null)}
-        onContinue={() => {
-          if (reviewingDraft) void continueDraft(reviewingDraft)
-        }}
-        onDelete={() => {
-          if (reviewingDraft) void confirmAndDeleteDraft(reviewingDraft)
-        }}
-        open={Boolean(reviewingDraft)}
-      />
       <PublishConfirmationDialog
         aiConfig={aiPublishOptionsQuery.data}
-        diverged={publishIsDiverged}
         failureMessage={publishError}
         lockedTranslationLangs={lockedTranslationLangs}
         onClose={() => {
@@ -1700,25 +1436,11 @@ function WritePage(props: { kind: WriteKind }) {
           setPublishError(null)
           saveMutation.mutate({
             aiResources: resources,
-            confirmDiverged: publishIsDiverged,
             regenerateLockedTranslations: options.regenerateLockedTranslations,
           })
         }}
-        onReviewDiff={
-          publishIsDiverged && selectedBranch
-            ? () => {
-                if (saveMutation.isPending) return
-                setPublishConfirmOpen(false)
-                setReviewingDraft(selectedBranch)
-              }
-            : undefined
-        }
         open={publishConfirmOpen}
         operation={publishOperation}
-        otherBranchCount={Math.max(
-          0,
-          activeDocumentBranches.length - (selectedBranch ? 1 : 0),
-        )}
         pending={saveMutation.isPending}
         rememberedResources={
           versionContextQuery.data?.document.publishAiResources
@@ -1731,46 +1453,8 @@ function WritePage(props: { kind: WriteKind }) {
         }
         validationError={validationError}
       />
-      {draftConflict ? (
-        <DraftConflictDialog
-          conflictCount={draftConflict.conflicts.length}
-          onClose={() => setDraftConflictDialogOpen(false)}
-          onKeepLocal={keepLocalConflictDraft}
-          onUseRemote={useRemoteConflictDraft}
-          open={draftConflictDialogOpen}
-        />
-      ) : null}
     </>
   )
-}
-
-function buildStandaloneDraftTree(drafts: DraftModel[]): VersionTreeNode[] {
-  const nodes = new Map<string, VersionTreeNode>()
-  for (const draft of drafts) {
-    const existingBase = nodes.get(draft.baseRevisionId)
-    nodes.set(draft.baseRevisionId, {
-      branchBaseIds: [...(existingBase?.branchBaseIds ?? []), draft.id],
-      branchHeadIds: [
-        ...(existingBase?.branchHeadIds ?? []),
-        ...(draft.baseRevisionId === draft.headRevisionId ? [draft.id] : []),
-      ],
-      collapsedRevisionCount: 0,
-      parentNodeId: null,
-      publishedAt: null,
-      revision: draft.baseRevision,
-    })
-    if (draft.baseRevisionId !== draft.headRevisionId) {
-      nodes.set(draft.headRevisionId, {
-        branchBaseIds: [],
-        branchHeadIds: [draft.id],
-        collapsedRevisionCount: 0,
-        parentNodeId: draft.baseRevisionId,
-        publishedAt: null,
-        revision: draft.headRevision,
-      })
-    }
-  }
-  return [...nodes.values()]
 }
 
 function formatRelativeTime(value: string | null | undefined) {
@@ -1789,17 +1473,6 @@ function formatRelativeTime(value: string | null | undefined) {
   const day = Math.round(hr / 24)
   if (day < 7) return translate('write.relativeTime.daysAgo', { count: day })
   return formatDateTime(value)
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-}
-
-function asRecord(
-  value: unknown,
-  fallback: Record<string, unknown> = {},
-): Record<string, unknown> {
-  return isRecord(value) ? value : fallback
 }
 
 function buildWriteImages(state: WriteFormState): ImageModel[] {
@@ -1867,210 +1540,6 @@ function fromModel(_kind: WriteKind, post: WriteModel): WriteFormState {
   }
 }
 
-function fromRevision(
-  kind: WriteKind,
-  draft: RevisionSnapshot | DraftWriteData,
-  previous: WriteFormState,
-): WriteFormState {
-  const specific = (draft.typeSpecificData ?? {}) as Record<string, any>
-  return {
-    ...previous,
-    ...postBylineFromSpecific(specific, previous),
-    content: draft.content ?? '',
-    images: draft.images ?? previous.images,
-    meta: asRecord(draft.meta, previous.meta),
-    text: draft.text ?? '',
-    title: draft.title ?? '',
-    categoryId:
-      typeof specific.categoryId === 'string'
-        ? specific.categoryId
-        : previous.categoryId,
-    pin: 'pin' in specific ? Boolean(specific.pin) : previous.pin,
-    pinOrder:
-      typeof specific.pinOrder === 'number'
-        ? String(specific.pinOrder)
-        : previous.pinOrder,
-    publishedAt:
-      typeof specific.created === 'string'
-        ? specific.created
-        : previous.publishedAt,
-    slug: typeof specific.slug === 'string' ? specific.slug : previous.slug,
-    summary:
-      'summary' in specific
-        ? typeof specific.summary === 'string'
-          ? specific.summary
-          : ''
-        : previous.summary,
-    tags: Array.isArray(specific.tags)
-      ? specific.tags.map((tag) => String(tag)).join(', ')
-      : previous.tags,
-  }
-}
-
-function buildDraftRecoveryReviewData(
-  kind: WriteKind,
-  model: PostModel,
-  draft: DraftModel,
-  ancestor?: RevisionSnapshot,
-): DraftRecoveryReviewData {
-  const current = fromModel(kind, model)
-  const next = fromRevision(kind, draft.headRevision, current)
-  const ancestorState = ancestor
-    ? fromRevision(kind, ancestor, current)
-    : undefined
-  const fields: DraftRecoveryReviewData['fields'] = []
-  const add = (
-    labelKey: TranslationKey,
-    currentValue: unknown,
-    draftValue: unknown,
-    ancestorValue?: unknown,
-  ) => {
-    if (
-      serializeListKey([normalizeReviewValue(currentValue)]) ===
-      serializeListKey([normalizeReviewValue(draftValue)])
-    ) {
-      return
-    }
-    fields.push({
-      ancestor: ancestorState ? formatReviewValue(ancestorValue) : undefined,
-      current: formatReviewValue(currentValue),
-      draft: formatReviewValue(draftValue),
-      label: translate(labelKey),
-    })
-  }
-
-  add(
-    'write.recovery.field.title',
-    current.title,
-    next.title,
-    ancestorState?.title,
-  )
-  add('write.recovery.field.slug', current.slug, next.slug, ancestorState?.slug)
-  add(
-    'write.recovery.field.publicAt',
-    current.publicAt,
-    next.publicAt,
-    ancestorState?.publicAt,
-  )
-
-  add(
-    'write.recovery.field.summary',
-    current.summary,
-    next.summary,
-    ancestorState?.summary,
-  )
-  add(
-    'write.recovery.field.category',
-    current.categoryId,
-    next.categoryId,
-    ancestorState?.categoryId,
-  )
-  add(
-    'write.recovery.field.tags',
-    splitCommaList(current.tags).sort(),
-    splitCommaList(next.tags).sort(),
-    splitCommaList(ancestorState?.tags ?? '').sort(),
-  )
-  add('write.recovery.field.pin', current.pin, next.pin, ancestorState?.pin)
-  add(
-    'write.recovery.field.pinOrder',
-    current.pinOrder,
-    next.pinOrder,
-    ancestorState?.pinOrder,
-  )
-  add(
-    'write.recovery.field.images',
-    current.images,
-    next.images,
-    ancestorState?.images,
-  )
-  add('write.recovery.field.meta', current.meta, next.meta, ancestorState?.meta)
-  add(
-    'write.authors.title',
-    current.authors,
-    next.authors,
-    ancestorState?.authors,
-  )
-  add(
-    'write.sourceLang.label',
-    current.sourceLang,
-    next.sourceLang,
-    ancestorState?.sourceLang,
-  )
-  add(
-    'write.section.image.coverLabel',
-    current.image,
-    next.image,
-    ancestorState?.image,
-  )
-  add(
-    'write.seo.sectionTitle',
-    [current.seoTitle, current.seoDescription, current.seoImage],
-    [next.seoTitle, next.seoDescription, next.seoImage],
-    ancestorState
-      ? [
-          ancestorState.seoTitle,
-          ancestorState.seoDescription,
-          ancestorState.seoImage,
-        ]
-      : undefined,
-  )
-
-  const bodyChanged = current.content !== next.content
-
-  return {
-    ancestorContent: ancestorState?.content,
-    bodyChanged,
-    currentContent: current.content,
-    draftContent: next.content,
-    fields,
-    diverged:
-      draft.relationToPublished === 'diverged' ||
-      draft.relationToPublished === 'descendant',
-    savedAt: formatRelativeTime(draft.updatedAt ?? draft.createdAt),
-  }
-}
-
-function normalizeReviewValue(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(normalizeReviewValue)
-  }
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, item]) => [key, normalizeReviewValue(item)]),
-    )
-  }
-  return value ?? null
-}
-
-function formatReviewValue(value: unknown): string {
-  if (typeof value === 'boolean') {
-    return translate(
-      value
-        ? 'write.recovery.review.enabled'
-        : 'write.recovery.review.disabled',
-    )
-  }
-  if (Array.isArray(value)) {
-    if (value.every((item) => item && typeof item === 'object')) {
-      return value
-        .map((item) =>
-          typeof (item as { src?: unknown }).src === 'string'
-            ? String((item as { src: string }).src)
-            : JSON.stringify(item),
-        )
-        .join(', ')
-    }
-    return value.filter(Boolean).join(', ')
-  }
-  if (value && typeof value === 'object') {
-    return JSON.stringify(normalizeReviewValue(value), null, 2)
-  }
-  return value == null ? '' : String(value)
-}
-
 function getDraftFingerprint(
   kind: WriteKind,
   state: WriteFormState,
@@ -2079,62 +1548,13 @@ function getDraftFingerprint(
   return draftFingerprint(toDraftData(kind, state, refId))
 }
 
-function toDraftData(
-  _kind: WriteKind,
-  state: WriteFormState,
-  _refId?: string,
-): DraftWriteData {
-  state = projectWriteState(state)
-
-  return {
-    content: state.content,
-    contentFormat: 'lexical',
-    meta: state.meta,
-    text: state.text,
-    title: state.title.trim() || state.title,
-    typeSpecificData: {
-      ...postBylineToSpecific(state),
-      categoryId: state.categoryId,
-      pin: state.pin,
-      pinOrder: state.pin ? Number(state.pinOrder) || 1 : undefined,
-      ...(state.publishedAt ? { created: state.publishedAt } : {}),
-      slug: state.slug,
-      summary: state.summary || null,
-      tags: state.tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    },
-  }
-}
-
-// Pending AI diff decorators (agent-diff) are transient review UI and must
-// never be persisted — project them back to their factual (original) side.
-function stripPendingAgentDiffs(content: string): string {
-  if (!content.includes('"agent-diff"')) return content
-  try {
-    const editorState = JSON.parse(content) as SerializedEditorState
-    return JSON.stringify(projectAgentDiffNodesToFactualState(editorState))
-  } catch {
-    return content
-  }
-}
-
-function projectWriteState(state: WriteFormState): WriteFormState {
-  if (!state.content.trim()) return state
-  const content = stripPendingAgentDiffs(state.content)
-  return {
-    ...state,
-    content,
-    text: mxLexicalToMarkdown(content),
-  }
-}
-
 export function RichWriteSurface(props: {
   agentVisible?: boolean
   onAgentClose?: () => void
   autoFocus?: boolean
   content: string
+  crdt?: CrdtDraftController
+  ensureDocument?: () => Promise<boolean>
   kind: WriteKind
   onContentChange: (content: string) => void
   onTextChange: (text: string) => void
@@ -2160,13 +1580,24 @@ export function RichWriteSurface(props: {
   )
   const agent = useWriteAgent({
     agentVisible: Boolean(props.agentVisible),
+    document: props.crdt,
     documentId: props.refId,
     documentKind: props.kind,
+    ensureDocument: props.ensureDocument,
   })
   const latestCallbacks = useRef({
     onContentChange: props.onContentChange,
     onTextChange: props.onTextChange,
   })
+  const bindCrdtEditor = props.crdt?.bindEditor
+  const lexicalEditorRef = useRef<LexicalEditor | null>(null)
+  const [lexicalEditor, setLexicalEditor] = useState<LexicalEditor | null>(null)
+  const crdtLocked = Boolean(props.crdt?.locked)
+  const crdtLockedRef = useRef(crdtLocked)
+  crdtLockedRef.current = crdtLocked
+  useEffect(() => {
+    lexicalEditorRef.current?.setEditable(!crdtLocked)
+  }, [crdtLocked])
 
   latestCallbacks.current = {
     onContentChange: props.onContentChange,
@@ -2206,7 +1637,9 @@ export function RichWriteSurface(props: {
     litexmlRegistry: createMxLitexmlRegistry,
     plugins: [],
     systemMessages: [
-      ...buildDocumentBashSystemMessages(),
+      ...buildDocumentBashSystemMessages({
+        shared: Boolean(props.crdt?.active),
+      }),
       ...dynamicCatalogMessages,
       ...(props.metaFieldsSchema
         ? buildMetaSystemMessages(props.metaFieldsSchema)
@@ -2233,7 +1666,13 @@ export function RichWriteSurface(props: {
     onChange: (value) => {
       latestCallbacks.current.onContentChange(JSON.stringify(value))
     },
-    onEditorReady: agent.onEditorReady,
+    onEditorReady: (editor) => {
+      lexicalEditorRef.current = editor
+      setLexicalEditor(editor)
+      if (crdtLockedRef.current) editor?.setEditable(false)
+      agent.onEditorReady(editor)
+      bindCrdtEditor?.(editor)
+    },
     onPinSelection: props.onPinSelection,
     onTextChange: (text) => {
       latestCallbacks.current.onTextChange(text)
@@ -2251,6 +1690,13 @@ export function RichWriteSurface(props: {
       <Suspense fallback={<RichEditorFallback />}>
         <RichEditorWithAgent ref={editorRef} {...editorOptions} />
       </Suspense>
+      {props.crdt?.active ? (
+        <RemoteCarets
+          editor={lexicalEditor}
+          peers={props.crdt.peers}
+          resolveCaret={props.crdt.resolveCaret}
+        />
+      ) : null}
       <Drawer
         classNames={{ bodyContent: editorStyles.drawerBody }}
         onClose={props.onAgentClose}

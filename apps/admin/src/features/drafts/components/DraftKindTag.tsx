@@ -8,21 +8,18 @@ import type { DraftChangeKind } from '../utils/draft-decision'
 import { draftChangeKind } from '../utils/draft-decision'
 
 const kindColor: Record<DraftChangeKind, string | undefined> = {
-  behind: 'warning',
   changed: 'processing',
   new: undefined,
   same: 'success',
 }
 
 const kindLabel = {
-  behind: 'changeBehind',
   changed: 'changeChanged',
   new: 'changeNew',
   same: 'changeSame',
 } as const
 
 const kindDetail = {
-  behind: 'behindDetail',
   changed: 'changeChangedDetail',
   new: 'changeNewDetail',
   same: 'changesNone',

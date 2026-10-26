@@ -2,7 +2,7 @@ import type { DraftModel, RevisionSnapshot } from '~/models/draft'
 
 import { getDraftTextForDiff } from './draft-diff'
 
-export type DraftChangeKind = 'behind' | 'changed' | 'new' | 'same'
+export type DraftChangeKind = 'changed' | 'new' | 'same'
 
 export type DraftSort = 'oldest' | 'saved' | 'title'
 
@@ -17,34 +17,17 @@ export function draftTitle(
 }
 
 export function draftChangeKind(draft: DraftModel): DraftChangeKind {
-  if (!draft.document.refId && !draft.publishedRevision) return 'new'
-  switch (draft.relationToPublished) {
-    case 'same': {
-      return 'same'
-    }
-    case 'ancestor': {
-      return 'behind'
-    }
-    case 'descendant':
-    case 'diverged': {
-      return 'changed'
-    }
-    default: {
-      return draft.publishedRevision ? 'changed' : 'new'
-    }
-  }
-}
-
-export function draftHasConflict(draft: DraftModel) {
-  return draft.relationToPublished === 'diverged'
+  if (draft.relation === 'in_sync') return 'same'
+  if (draft.relation === 'ahead') return 'changed'
+  return 'new'
 }
 
 export function draftRevertsChanges(draft: DraftModel) {
-  return draftChangeKind(draft) === 'behind'
+  return draft.relation === 'ahead'
 }
 
 export function isPublishedIdenticalDraft(draft: DraftModel) {
-  return draftChangeKind(draft) === 'same'
+  return draft.relation === 'in_sync'
 }
 
 export function parentPostLabel(

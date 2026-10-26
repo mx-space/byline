@@ -15,7 +15,6 @@ export const translationGapsPath = '/ai/overview?capability=translation&gaps=1'
 export type DeskWritingStatus = 'modified' | 'unpublished'
 
 export interface DeskWritingItem {
-  branchCount: number
   draftId: string
   id: string
   status: DeskWritingStatus
@@ -25,39 +24,31 @@ export interface DeskWritingItem {
 }
 
 export function buildWritingItems(drafts: DraftModel[]): DeskWritingItem[] {
-  const byDocument = new Map<string, DeskWritingItem>()
-  for (const draft of drafts) {
-    if (draft.status !== 'active' || draft.relationToPublished === 'same')
-      continue
-    const existing = byDocument.get(draft.documentId)
-    if (existing) {
-      existing.branchCount += 1
-      continue
-    }
-    byDocument.set(draft.documentId, {
-      branchCount: 1,
+  return drafts
+    .filter(
+      (draft) => draft.status === 'active' && draft.relation !== 'in_sync',
+    )
+    .map<DeskWritingItem>((draft) => ({
       draftId: draft.id,
       id: draft.documentId,
       status: draft.document.refId ? 'modified' : 'unpublished',
       time: draft.updatedAt ?? draft.createdAt,
       title: draft.headRevision.title,
       to: getEditPathForDraft(draft),
-    })
-  }
-
-  return [...byDocument.values()].sort((a, b) => b.time.localeCompare(a.time))
+    }))
+    .sort((a, b) => b.time.localeCompare(a.time))
 }
 
 export function countUnpublishedDrafts(drafts: DraftModel[]) {
   let fresh = 0
-  let behind = 0
+  let changes = 0
   for (const draft of drafts) {
     if (draft.status !== 'active') continue
     const kind = draftChangeKind(draft)
     if (kind === 'new') fresh += 1
-    else if (kind === 'behind') behind += 1
+    else if (kind === 'changed') changes += 1
   }
-  return { behind, drafts: fresh }
+  return { changes, drafts: fresh }
 }
 
 const HEATMAP_MAX_LEVEL = 4

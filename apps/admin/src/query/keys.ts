@@ -116,6 +116,8 @@ export const adminQueryKeys = {
       ['drafts', 'recovery-version', params.id, params.version] as const,
     root: ['drafts'] as const,
     share: (documentId: string) => ['drafts', 'share', documentId] as const,
+    timeline: (id: string) => ['drafts', 'timeline', id] as const,
+    archived: (id: string) => ['drafts', 'archived', id] as const,
   },
   settings: {
     accountRoot: ['settings', 'account'] as const,

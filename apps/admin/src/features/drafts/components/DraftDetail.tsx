@@ -1,4 +1,4 @@
-import { Alert, createStaticStyles, Segmented, Tag, Tooltip } from '@lobehub/ui'
+import { Alert, createStaticStyles, Segmented, Tooltip } from '@lobehub/ui'
 import { Surface } from '@lobehub/ui/dashboard'
 import { Pencil, Trash2, Undo2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -11,8 +11,6 @@ import { Button } from '~/ui/site-button'
 import { useDraftCopy } from '../copy'
 import {
   draftAuthorIds,
-  draftChangeKind,
-  draftHasConflict,
   draftRevertsChanges,
   draftSavedAt,
   draftSlug,
@@ -67,7 +65,6 @@ export function DraftDetail(props: {
   const { draft } = props
   const head = draft.headRevision
   const published = draft.publishedRevision
-  const kind = draftChangeKind(draft)
   const savedAt = draftSavedAt(draft)
   const slug = draftSlug(draft)
   const authorIds = draftAuthorIds(draft)
@@ -83,15 +80,8 @@ export function DraftDetail(props: {
   }, [bodyDiffers, draft.id])
 
   const reverts = draftRevertsChanges(draft)
-  const notice = draftHasConflict(draft) ? (
-    <Alert
-      description={copy('conflictDetail')}
-      showIcon
-      title={copy('conflict')}
-      type="warning"
-    />
-  ) : kind === 'behind' ? (
-    <Alert description={copy('behindDetail')} showIcon type="info" />
+  const notice = reverts ? (
+    <Alert description={copy('aheadDetail')} showIcon type="info" />
   ) : null
 
   return (
@@ -136,14 +126,7 @@ export function DraftDetail(props: {
       }
       contentWidth="article"
       onBack={props.onBack}
-      status={
-        <>
-          <DraftKindTag draft={draft} />
-          {draftHasConflict(draft) ? (
-            <Tag color="error">{copy('conflict')}</Tag>
-          ) : null}
-        </>
-      }
+      status={<DraftKindTag draft={draft} />}
       title={draftTitle(draft, copy('untitled'))}
     >
       <div className={styles.body}>

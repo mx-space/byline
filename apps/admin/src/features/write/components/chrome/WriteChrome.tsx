@@ -1,6 +1,5 @@
 import {
   Avatar,
-  Badge,
   DraggablePanel,
   Drawer,
   ScrollArea,
@@ -12,7 +11,7 @@ import {
 import {
   Bot,
   ChevronLeft,
-  GitBranch,
+  History,
   PanelRightClose,
   PanelRightOpen,
 } from 'lucide-react'
@@ -37,7 +36,6 @@ import {
 } from './WriteMetaFields'
 
 export type WriteDockTone =
-  | 'conflict'
   | 'fresh'
   | 'matchesLive'
   | 'needContent'
@@ -81,6 +79,7 @@ export function WriteChrome(
     onRetryLoad: () => void
     onSave: () => void
     onViewTask: () => void
+    peers?: ReactNode
     phase: 'error' | 'loading' | 'ready'
     publishDisabled: boolean
     publishLabel: string
@@ -89,7 +88,6 @@ export function WriteChrome(
     revisionsOpen: boolean
     aiOpen: boolean
     metaOpen: boolean
-    revisionCount: number
     saveDisabled: boolean
     saving: boolean
     savingDraft: boolean
@@ -134,37 +132,32 @@ export function WriteChrome(
     })
   }
 
-  const revisionLabel =
-    props.revisionCount > 0
-      ? copy('revisionsCount', { count: props.revisionCount })
-      : copy('revisions')
+  const revisionLabel = t('write.timeline.title')
   const savedAt = props.draft?.updatedAt ?? props.draft?.createdAt
   const saveState: { detail?: string; label: string } | null =
-    props.tone === 'conflict'
-      ? { detail: copy('statusConflict'), label: copy('conflictShort') }
-      : props.tone === 'publishing'
-        ? { detail: copy('publishing'), label: copy('publishingShort') }
-        : props.tone === 'saving'
-          ? { label: copy('saving') }
-          : props.tone === 'unsaved'
-            ? { label: copy('unsavedChanges') }
-            : props.tone === 'submitted'
-              ? { detail: copy('submitted'), label: copy('submittedShort') }
-              : props.tone === 'matchesLive'
+    props.tone === 'publishing'
+      ? { detail: copy('publishing'), label: copy('publishingShort') }
+      : props.tone === 'saving'
+        ? { label: copy('saving') }
+        : props.tone === 'unsaved'
+          ? { label: copy('unsavedChanges') }
+          : props.tone === 'submitted'
+            ? { detail: copy('submitted'), label: copy('submittedShort') }
+            : props.tone === 'matchesLive'
+              ? {
+                  detail: copy('matchesLive'),
+                  label: copy('matchesLiveShort'),
+                }
+              : props.tone === 'saved' && savedAt
                 ? {
-                    detail: copy('matchesLive'),
-                    label: copy('matchesLiveShort'),
+                    detail: format.dateTime(savedAt),
+                    label: copy('savedAt', {
+                      time: format.relativeTime(savedAt),
+                    }),
                   }
-                : props.tone === 'saved' && savedAt
-                  ? {
-                      detail: format.dateTime(savedAt),
-                      label: copy('savedAt', {
-                        time: format.relativeTime(savedAt),
-                      }),
-                    }
-                  : props.tone === 'needContent'
-                    ? { label: copy('needContent') }
-                    : null
+                : props.tone === 'needContent'
+                  ? { label: copy('needContent') }
+                  : null
 
   const authorsById = new Map(
     props.authorCandidates.map((author) => [author.id, author]),
@@ -216,9 +209,7 @@ export function WriteChrome(
   const identity = (
     <>
       <Tag
-        color={
-          scheduled ? 'warning' : props.published ? 'success' : undefined
-        }
+        color={scheduled ? 'warning' : props.published ? 'success' : undefined}
       >
         {scheduled
           ? copy('scheduled')
@@ -251,15 +242,14 @@ export function WriteChrome(
   )
   const actions = (
     <div className={styles.barActions}>
-      <Badge count={props.revisionCount} overflowCount={99} size="small">
-        <Button
-          aria-label={revisionLabel}
-          icon={GitBranch}
-          onClick={props.onOpenRevisions}
-          title={revisionLabel}
-          type="text"
-        />
-      </Badge>
+      {props.peers}
+      <Button
+        aria-label={revisionLabel}
+        icon={History}
+        onClick={props.onOpenRevisions}
+        title={revisionLabel}
+        type="text"
+      />
       <Button
         aria-label={props.aiOpen ? copy('closeAi') : copy('openAi')}
         icon={Bot}
@@ -447,7 +437,7 @@ export function WriteChrome(
         onClose={props.onCloseRevisions}
         open={props.revisionsOpen}
         placement="right"
-        title={t('write.versionTree.title')}
+        title={t('write.timeline.title')}
         width={isDesktop ? 420 : '100%'}
       >
         {props.revisionsOpen ? props.revisions : null}

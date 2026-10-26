@@ -1,4 +1,8 @@
-import type { AgentToolConfig, AgentToolResult } from '@haklex/rich-agent-core'
+import type {
+  AgentOperation,
+  AgentToolConfig,
+  AgentToolResult,
+} from '@haklex/rich-agent-core'
 import {
   deserializeMxLitexmlToLexical,
   serializeMxLexicalToLitexml,
@@ -74,7 +78,43 @@ export type DocumentBashWorkspace = {
 }
 
 export type CreateDocumentBashWorkspaceOptions = {
+  applyDocument?: (target: SerializedEditorState, focusBlockId?: string) => void
   getEditorState: () => SerializedEditorState | null
+  onSeed?: () => void
+  ownsWrites?: () => boolean
+}
+
+function keepUntouchedBlocks(
+  view: SerializedEditorState,
+  next: SerializedEditorState,
+  operations: AgentOperation[],
+): SerializedEditorState {
+  const changed = new Set(
+    operations.flatMap((operation) =>
+      operation.op === 'replace' ? [operation.blockId] : [],
+    ),
+  )
+  const original = new Map<string, SerializedLexicalNode>()
+  for (const block of view.root.children) {
+    const id = (block as NodeRecord).$?.blockId
+    if (id) original.set(id, block)
+  }
+  return {
+    ...next,
+    root: {
+      ...next.root,
+      children: next.root.children.map((block) => {
+        const id = (block as NodeRecord).$?.blockId
+        return id && !changed.has(id) ? (original.get(id) ?? block) : block
+      }),
+    },
+  }
+}
+
+function focusOf(operation: AgentOperation | undefined): string | undefined {
+  if (!operation) return undefined
+  if (operation.op !== 'insert') return operation.blockId
+  return (operation.node as NodeRecord).$?.blockId
 }
 
 function extractText(node: SerializedLexicalNode): string {
@@ -134,6 +174,8 @@ export function createDocumentBashWorkspace(
     bash: Bash
     emittedOperations: boolean
     lastEmittedXml: string
+    ownsWrites: boolean
+    view: SerializedEditorState
   } | null = null
 
   const beginRun = () => {
@@ -145,6 +187,7 @@ export function createDocumentBashWorkspace(
     const editorState = options.getEditorState()
     if (!editorState) return null
     const xml = serializeMxLexicalToLitexml(editorState, { compact: false })
+    options.onSeed?.()
     const bash = new Bash({
       commands: ALLOWED_COMMANDS,
       cwd: '/',
@@ -160,6 +203,8 @@ export function createDocumentBashWorkspace(
       bash,
       emittedOperations: false,
       lastEmittedXml: xml,
+      ownsWrites: options.ownsWrites?.() ?? Boolean(options.applyDocument),
+      view: editorState,
     }
     return session
   }
@@ -197,6 +242,27 @@ export function createDocumentBashWorkspace(
       current.lastEmittedXml = xml
     }
     await current.bash.writeFile(OUTLINE_PATH, buildOutline(diff.nextState))
+
+    if (current.ownsWrites && options.applyDocument) {
+      const applied = diffDocumentStates(current.view, diff.nextState)
+      if (!applied.ok) throw new Error(applied.message)
+      if (applied.operations.length === 0) {
+        return {
+          note: `${DOC_PATH} changed textually but parses to the same document; no edit was recorded.`,
+        }
+      }
+      // LiteXML drops inline style, alignment and indent, so only blocks the agent changed may
+      // come from the parsed file; every other block keeps the document's own JSON.
+      const target = keepUntouchedBlocks(
+        current.view,
+        diff.nextState,
+        applied.operations,
+      )
+      options.applyDocument(target, focusOf(applied.operations.at(-1)))
+      current.base = target
+      current.view = target
+      return {}
+    }
 
     if (diff.operations.length === 0 && !current.emittedOperations) {
       return {

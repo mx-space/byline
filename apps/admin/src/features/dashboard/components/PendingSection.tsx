@@ -108,11 +108,6 @@ export function PendingSection() {
                         ? copy('writingModified')
                         : copy('writingUnpublished')}
                     </Tag>
-                    {item.branchCount > 1 ? (
-                      <Text as="span" type="secondary">
-                        {copy('writingBranches', { count: item.branchCount })}
-                      </Text>
-                    ) : null}
                     <Text as="span" type="secondary">
                       {displayDeskTime(format.relativeTime(item.time))}
                     </Text>

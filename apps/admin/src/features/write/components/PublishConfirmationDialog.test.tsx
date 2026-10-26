@@ -26,34 +26,6 @@ afterEach(() => {
 })
 
 describe('PublishConfirmationDialog', () => {
-  it('offers the three-way diff before publishing a diverged branch', () => {
-    const onReviewDiff = vi.fn()
-    act(() => {
-      root.render(
-        withUi(
-          createElement(PublishConfirmationDialog, {
-            diverged: true,
-            onClose: vi.fn(),
-            onConfirm: vi.fn(),
-            onReviewDiff,
-            otherBranchCount: 2,
-            open: true,
-            operation: 'online-update',
-            pending: false,
-            validationError: null,
-          }),
-        ),
-      )
-    })
-
-    act(() => {
-      ;[...document.querySelectorAll('button')]
-        .find((button) => button.textContent?.trim() === '查看差异')
-        ?.click()
-    })
-    expect(onReviewDiff).toHaveBeenCalledOnce()
-  })
-
   it('submits per-resource modes and pre-fills the remembered choice', async () => {
     const onConfirm = vi.fn()
     const props = {
@@ -64,10 +36,8 @@ describe('PublishConfirmationDialog', () => {
         translationTargetLanguages: ['en'],
         tts: { enable: true },
       } as any,
-      diverged: false,
       onClose: vi.fn(),
       onConfirm,
-      otherBranchCount: 0,
       open: true,
       operation: 'online-update' as const,
       pending: false,
@@ -144,11 +114,9 @@ describe('PublishConfirmationDialog', () => {
               enableTranslation: true,
               translationTargetLanguages: ['zh-TW', 'ja'],
             } as any,
-            diverged: false,
             lockedTranslationLangs: ['zh-TW'],
             onClose: vi.fn(),
             onConfirm,
-            otherBranchCount: 0,
             open: true,
             operation: 'online-update',
             pending: false,
@@ -194,10 +162,8 @@ describe('PublishConfirmationDialog', () => {
           withUi(
             createElement(PublishConfirmationDialog, {
               aiConfig: { providers: [{ enabled: true }] } as any,
-              diverged: false,
               onClose: vi.fn(),
               onConfirm,
-              otherBranchCount: 0,
               open: true,
               operation: 'online-update',
               pending: false,

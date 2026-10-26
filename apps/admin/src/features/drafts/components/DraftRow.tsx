@@ -1,4 +1,4 @@
-import { createStaticStyles, cx, Icon, Tag, Tooltip } from '@lobehub/ui'
+import { createStaticStyles, cx, Icon, Tooltip } from '@lobehub/ui'
 import { Image as ImageIcon, Undo2 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -9,7 +9,6 @@ import { buildMenuItemsFromActions, ListRow } from '~/ui/list-actions'
 import { useDraftCopy } from '../copy'
 import {
   draftAuthorIds,
-  draftHasConflict,
   draftRevertsChanges,
   draftSavedAt,
   draftTitle,
@@ -188,11 +187,6 @@ export function DraftRow(props: {
         </div>
         <div className={styles.line}>
           <DraftKindTag draft={props.draft} size="small" />
-          {draftHasConflict(props.draft) ? (
-            <Tag color="error" size="small">
-              {copy('conflict')}
-            </Tag>
-          ) : null}
           {authorIds.length > 0 ? (
             <span className={styles.byline}>
               {props.authorNames(authorIds)}

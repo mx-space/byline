@@ -12,7 +12,7 @@ export const draftCopy = createFeatureCopy({
     'en-US': 'Back to list',
     'zh-CN': '返回列表',
   },
-  behindDetail: {
+  aheadDetail: {
     'en-US':
       'This draft has changes against the published article. Reverting leaves the published article as it is.',
     'zh-CN': '这篇相对已发布版有改动。撤销后，已发布的文章保持不变。',
@@ -20,10 +20,6 @@ export const draftCopy = createFeatureCopy({
   cancel: {
     'en-US': 'Cancel',
     'zh-CN': '取消',
-  },
-  changeBehind: {
-    'en-US': 'Changes',
-    'zh-CN': '改动',
   },
   changeChanged: {
     'en-US': 'Changed',
@@ -118,16 +114,6 @@ export const draftCopy = createFeatureCopy({
   clearSearch: {
     'en-US': 'Clear search',
     'zh-CN': '清除搜索',
-  },
-  conflict: {
-    'en-US': 'Conflict',
-    'zh-CN': '冲突',
-  },
-  conflictDetail: {
-    'en-US':
-      'This draft and the published post both changed. Continue editing to merge them. Deleting the draft leaves the published post unchanged.',
-    'zh-CN':
-      '草稿和已发布版各自有改动。继续编辑可在写作页合并。删除草稿不会改动已发布的文章。',
   },
   confirmDeleteBody: {
     'en-US': 'This cannot be undone. The published post stays.',
