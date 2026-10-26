@@ -1,8 +1,24 @@
-import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
+import {
+  Body,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common'
+import type { FastifyReply, FastifyRequest } from 'fastify'
+import type { OpId } from 'loro-crdt'
 
 import { ApiController } from '~/common/decorators/api-controller.decorator'
 import { Auth } from '~/common/decorators/auth.decorator'
 import { CurrentUser } from '~/common/decorators/current-user.decorator'
+import { WithFastifyRouteOptions } from '~/common/decorators/fastify-route-options.decorator'
+import { HTTPDecorators } from '~/common/decorators/http.decorator'
 import { RequirePermissions } from '~/common/decorators/permission.decorator'
 import { AppErrorCode, createAppException } from '~/common/errors'
 import { withMeta } from '~/common/response/envelope.types'
@@ -15,16 +31,28 @@ import { DraftRefType } from './draft.enum'
 import {
   type CreateDraftDto,
   CreateDraftSchema,
+  type DraftCheckpointDto,
+  DraftCheckpointSchema,
+  type DraftCrdtQueryDto,
+  DraftCrdtQuerySchema,
   type DraftDocumentIdDto,
   DraftDocumentIdSchema,
+  type DraftFieldsDto,
+  DraftFieldsSchema,
   type DraftPagerDto,
   DraftPagerSchema,
   type DraftRefTypeAndIdDto,
   DraftRefTypeAndIdSchema,
   type DraftRefTypeDto,
   DraftRefTypeSchema,
+  type DraftRestoreDto,
+  DraftRestoreSchema,
   type DraftShareTokenDto,
   DraftShareTokenSchema,
+  type DraftUndoDto,
+  DraftUndoSchema,
+  type DraftWorkingCopyParamsDto,
+  DraftWorkingCopyParamsSchema,
   type RevisionComparisonDto,
   RevisionComparisonSchema,
   type SetDraftShareDto,
@@ -34,6 +62,8 @@ import {
 } from './draft.schema'
 import { DraftService } from './draft.service'
 import { DraftViews } from './draft.views'
+
+const CRDT_UPDATE_BODY_LIMIT = 4 * 1024 * 1024
 
 @ApiController('drafts')
 export class DraftController {
@@ -79,6 +109,21 @@ export class DraftController {
     return this.draftService.getContext(
       params.refType as DraftRefType,
       params.refId,
+    )
+  }
+
+  @Post('/working-copy/:refType/:refId')
+  @Auth()
+  @RequirePermissions(UserPermission.EditPost)
+  openWorkingCopy(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: DraftWorkingCopyParamsSchema })
+    params: DraftWorkingCopyParamsDto,
+  ) {
+    return this.draftService.openWorkingCopy(
+      params.refType as DraftRefType,
+      params.refId,
+      user,
     )
   }
 
@@ -154,6 +199,116 @@ export class DraftController {
   @Auth()
   revisions(@Param({ schema: EntityIdSchema }) params: EntityIdDto) {
     return this.draftService.getBranchRevisions(params.id)
+  }
+
+  @Get('/:id/crdt')
+  @Auth()
+  @HTTPDecorators.RawResponse
+  async exportCrdt(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+    @Query({ schema: DraftCrdtQuerySchema }) query: DraftCrdtQueryDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const bytes = await this.draftService.exportCrdt(
+      params.id,
+      user,
+      query.since
+        ? new Uint8Array(Buffer.from(query.since, 'base64'))
+        : undefined,
+    )
+    reply.type('application/octet-stream')
+    return Buffer.from(bytes)
+  }
+
+  @Post('/:id/crdt')
+  @Auth()
+  @RequirePermissions(UserPermission.EditPost)
+  @HttpCode(204)
+  @WithFastifyRouteOptions({ bodyLimit: CRDT_UPDATE_BODY_LIMIT })
+  async importCrdt(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+    @Req() request: FastifyRequest,
+  ) {
+    if (!Buffer.isBuffer(request.body)) {
+      throw createAppException(AppErrorCode.DRAFT_CRDT_UPDATE_REJECTED, {
+        branchId: params.id,
+        reason: 'expected an application/octet-stream body',
+      })
+    }
+    await this.draftService.importCrdt(
+      params.id,
+      new Uint8Array(request.body),
+      user,
+    )
+  }
+
+  @Post('/:id/checkpoints')
+  @Auth()
+  @RequirePermissions(UserPermission.EditPost)
+  createCheckpoint(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+    @Body({ schema: DraftCheckpointSchema }) body: DraftCheckpointDto,
+  ) {
+    return this.draftService.createCheckpoint(params.id, body.kind, user)
+  }
+
+  @Patch('/:id/fields')
+  @Auth()
+  @RequirePermissions(UserPermission.EditPost)
+  updateFields(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+    @Body({ schema: DraftFieldsSchema }) body: DraftFieldsDto,
+  ) {
+    return this.draftService.updateFields(params.id, body, user)
+  }
+
+  @Get('/:id/history')
+  @Auth()
+  history(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+  ) {
+    return this.draftService.history(params.id, user)
+  }
+
+  @Get('/:id/archived')
+  @Auth()
+  archived(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+  ) {
+    return this.draftService.archivedDrafts(params.id, user)
+  }
+
+  @Post('/:id/restore')
+  @Auth()
+  @RequirePermissions(UserPermission.EditPost)
+  restore(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+    @Body({ schema: DraftRestoreSchema }) body: DraftRestoreDto,
+  ) {
+    return this.draftService.restore(params.id, body.revisionId, user)
+  }
+
+  @Post('/:id/undo')
+  @Auth()
+  @RequirePermissions(UserPermission.EditPost)
+  undo(
+    @CurrentUser() user: SessionUser,
+    @Param({ schema: EntityIdSchema }) params: EntityIdDto,
+    @Body({ schema: DraftUndoSchema }) body: DraftUndoDto,
+  ) {
+    return this.draftService.undo(
+      params.id,
+      body.id as OpId,
+      body.before as OpId[],
+      user,
+    )
   }
 
   @Put('/:id')

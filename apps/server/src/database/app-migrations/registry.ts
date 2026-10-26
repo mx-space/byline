@@ -1,4 +1,5 @@
 import { migration as protectStoredSecrets } from './20261018-protect-stored-secrets'
+import { migration as collapseDraftBranches } from './20261026-collapse-draft-branches'
 import type { AppMigration } from './types'
 
 /**
@@ -10,5 +11,6 @@ import type { AppMigration } from './types'
  * previously applied one is left in place and simply goes unreferenced.
  */
 export const migrations: AppMigration[] = [
+  collapseDraftBranches,
   ...(process.env.MX_MIGRATE_SECRETS === '1' ? [protectStoredSecrets] : []),
 ]

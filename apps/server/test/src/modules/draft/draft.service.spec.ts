@@ -70,6 +70,7 @@ const harness = () => {
     findShareByDocument: vi.fn(),
     findShareByToken: vi.fn(),
     isPostAuthor: vi.fn(),
+    relationOf: vi.fn(async () => 'ahead'),
     saveBranch: vi.fn(),
     upsertShare: vi.fn(),
   }
@@ -77,13 +78,19 @@ const harness = () => {
     removeReferencesForDocument: vi.fn(),
     updateReferencesForDocument: vi.fn(),
   }
+  const crdt = {
+    discard: vi.fn(),
+    usesCrdt: vi.fn(async () => false),
+    workingCopyOfDocument: vi.fn(async () => null),
+  }
   const service = new DraftService(
     repository as never,
     fileReferences as never,
     {} as never,
     { emit: vi.fn() } as never,
+    crdt as never,
   )
-  return { fileReferences, repository, service }
+  return { crdt, fileReferences, repository, service }
 }
 
 describe('DraftService tree revisions', () => {
@@ -257,17 +264,12 @@ describe('DraftService tree revisions', () => {
     )
   })
 
-  it('archives one branch without touching its siblings', async () => {
-    const { fileReferences, repository, service } = harness()
-    repository.archiveBranch.mockResolvedValue(branch)
+  it('discards the working copy on delete', async () => {
+    const { crdt, service } = harness()
 
     await service.delete(branch.id, owner)
 
-    expect(repository.archiveBranch).toHaveBeenCalledWith(branch.id)
-    expect(fileReferences.removeReferencesForDocument).toHaveBeenCalledWith(
-      branch.id,
-      FileReferenceType.Draft,
-    )
+    expect(crdt.discard).toHaveBeenCalledWith(branch.id)
   })
 })
 
@@ -321,7 +323,7 @@ describe('DraftService ownership', () => {
   })
 
   it('lets the creator of an unpublished post keep editing it, and nobody else', async () => {
-    const { repository, service } = harness()
+    const { crdt, repository, service } = harness()
     repository.findBranchById.mockResolvedValue(branch)
     repository.findDocumentById.mockResolvedValue({
       ...document,
@@ -333,9 +335,8 @@ describe('DraftService ownership', () => {
     await expect(
       service.delete(branch.id, { ...author, id: 'someone-else' }),
     ).rejects.toMatchObject({ code: AppErrorCode.PERMISSION_DENIED })
-    repository.archiveBranch.mockResolvedValue(branch)
     await service.delete(branch.id, author)
-    expect(repository.archiveBranch).toHaveBeenCalledWith(branch.id)
+    expect(crdt.discard).toHaveBeenCalledWith(branch.id)
     expect(repository.isPostAuthor).not.toHaveBeenCalled()
   })
 

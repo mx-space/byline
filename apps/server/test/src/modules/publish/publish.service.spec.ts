@@ -44,17 +44,31 @@ const makeBranch = () => ({
   status: 'active',
 })
 
-const harness = (options: { online?: boolean } = {}) => {
+const harness = (options: { crdt?: boolean; online?: boolean } = {}) => {
   const branch = makeBranch()
+  const checkpoints = new Map<string, Record<string, unknown>>([
+    [
+      'checkpoint-1',
+      {
+        ...snapshot,
+        documentId: 'document-1',
+        id: 'checkpoint-1',
+        kind: 'publish',
+        title: 'Checkpoint title',
+      },
+    ],
+  ])
   const order: string[] = []
   let handler: TaskHandler<PublishTaskPayload> | undefined
   let payload: PublishTaskPayload | undefined
   const drafts = {
     findById: vi.fn(async () => branch),
+    findRevisionById: vi.fn(async (id: string) => checkpoints.get(id) ?? null),
     linkDocument: vi.fn(),
     recordPublication: vi.fn(async () => ({ kind: 'ok' })),
     setAiSeo: vi.fn(),
     setPublishAiResources: vi.fn(),
+    usesCrdt: vi.fn(async () => options.crdt ?? false),
   }
   const posts = {
     create: vi.fn(),
@@ -111,13 +125,17 @@ const harness = (options: { online?: boolean } = {}) => {
   )
   service.onModuleInit()
 
-  const create = (confirmDiverged = false, aiResources?: unknown) =>
+  const create = (
+    confirmDiverged = false,
+    aiResources?: unknown,
+    revisionId: string = branch.headRevisionId,
+  ) =>
     service.create({
       aiResources,
       branchId: branch.id,
       confirmDiverged,
       expectedPublishedRevisionId: branch.document.publishedRevisionId,
-      revisionId: branch.headRevisionId,
+      revisionId,
     } as never)
   const run = async (signal = new AbortController().signal) => {
     const setResult = vi.fn()
@@ -150,6 +168,36 @@ const harness = (options: { online?: boolean } = {}) => {
     tasks,
   }
 }
+
+describe('PublishService on a Loro working copy', () => {
+  it('publishes a checkpoint that is not the working copy head', async () => {
+    const { create, payload } = harness({ crdt: true })
+
+    await create(false, undefined, 'checkpoint-1')
+
+    expect(payload()).toMatchObject({
+      revisionId: 'checkpoint-1',
+      snapshot: { title: 'Checkpoint title' },
+    })
+  })
+
+  it('ignores the divergence confirmation for a working copy', async () => {
+    const { branch, create, tasks } = harness({ crdt: true })
+    branch.relationToPublished = 'diverged'
+
+    await create(false, undefined, 'checkpoint-1')
+
+    expect(tasks.createTask).toHaveBeenCalled()
+  })
+
+  it('rejects a revision from another document', async () => {
+    const { create } = harness({ crdt: true })
+
+    await expect(
+      create(false, undefined, 'unknown-revision'),
+    ).rejects.toMatchObject({ code: AppErrorCode.CONTENT_REVISION_NOT_FOUND })
+  })
+})
 
 describe('PublishService tree selection', () => {
   it('requires confirmation when publishing a branch from an older base', async () => {

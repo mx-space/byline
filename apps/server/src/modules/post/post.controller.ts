@@ -45,7 +45,7 @@ import {
   SetPostPublishStatusSchema,
 } from './post.schema'
 import { PostService } from './post.service'
-import type { PostModel, PostRow } from './post.types'
+import type { PostRow } from './post.types'
 import { PostMetaBuilder } from './post-meta-builder'
 import { isPostPublic } from './post-visibility'
 
@@ -472,10 +472,7 @@ export class PostController {
     @Param({ schema: EntityIdSchema }) params: EntityIdDto,
     @Body({ schema: PartialPostSchema }) body: PartialPostDto,
   ) {
-    await this.postService.updateById(
-      params.id,
-      body as unknown as Partial<PostModel>,
-    )
+    await this.postService.patchById(params.id, body)
   }
 
   @Delete('/:id')

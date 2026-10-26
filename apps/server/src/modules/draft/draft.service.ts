@@ -1,8 +1,10 @@
 import { randomBytes } from 'node:crypto'
 
 import { Injectable } from '@nestjs/common'
+import type { OpId } from 'loro-crdt'
 
 import { AppErrorCode, createAppException } from '~/common/errors'
+import { AppException } from '~/common/errors/exception.types'
 import { BusinessEvents, EventScope } from '~/constants/business-event.constant'
 import { UserPermission } from '~/constants/permission.constant'
 import { FileReferenceType } from '~/modules/file/file-reference.enum'
@@ -16,6 +18,7 @@ import { DraftRefType } from './draft.enum'
 import { DraftRepository } from './draft.repository'
 import type {
   CreateDraftDto,
+  DraftCheckpointDto,
   SetDraftShareDto,
   UpdateDraftDto,
 } from './draft.schema'
@@ -23,6 +26,7 @@ import type {
   ContentDocumentRow,
   ContentPublicationEventRow,
   ContentRevisionRow,
+  CrdtFieldsPatch,
   DocumentShareRow,
   DraftActor,
   DraftBranchRow,
@@ -36,6 +40,7 @@ import type {
   VersionTreeNode,
 } from './draft.types'
 import { canonicalSnapshot, sameRevisionContent } from './draft-content'
+import { type CheckpointResult, DraftCrdtService } from './draft-crdt.service'
 
 const projectVersionTree = (
   document: ContentDocumentRow,
@@ -145,6 +150,7 @@ export class DraftService {
     private readonly fileReferenceService: FileReferenceService,
     private readonly databaseService: DatabaseService,
     private readonly eventManager: EventManagerService,
+    private readonly crdtService: DraftCrdtService,
   ) {}
 
   get repository() {
@@ -174,6 +180,9 @@ export class DraftService {
   }
 
   private async assertCanEdit(actor: DraftActor, document: ContentDocumentRow) {
+    if (!hasPermission(actor, UserPermission.EditPost)) {
+      throw createAppException(AppErrorCode.PERMISSION_DENIED)
+    }
     if (hasPermission(actor, UserPermission.EditOthersPost)) return
     const owns =
       document.createdBy === actor.id ||
@@ -248,6 +257,25 @@ export class DraftService {
       base = created.revision
     }
 
+    if (dto.baseRevisionId || dto.refId) {
+      const workingCopy = await this.crdtService.workingCopyOfDocument(
+        document.id,
+      )
+      if (workingCopy) {
+        if (
+          dto.ifInSync &&
+          (await this.draftRepository.relationOf(workingCopy.id)) !== 'in_sync'
+        ) {
+          throw createAppException(AppErrorCode.DRAFT_WORKING_COPY_AHEAD, {
+            documentId: String(document.id),
+          })
+        }
+        return this.legacyView(
+          await this.crdtService.legacyWrite(workingCopy.id, base.id, snapshot),
+        )
+      }
+    }
+
     const created = await this.draftRepository.createBranch(
       document.id,
       base.id,
@@ -281,6 +309,15 @@ export class DraftService {
     }
     await this.assertCanEdit(actor, document)
     const snapshot = canonicalSnapshot(document.refType, dto.data)
+    if (await this.crdtService.usesCrdt(id)) {
+      return this.legacyView(
+        await this.crdtService.legacyWrite(
+          id,
+          dto.expectedHeadRevisionId,
+          snapshot,
+        ),
+      )
+    }
     const result = await this.draftRepository.saveBranch(
       id,
       dto.expectedHeadRevisionId,
@@ -312,17 +349,197 @@ export class DraftService {
    * as a failed request — the client still gets the new head in the response.
    */
   private broadcastUpdate(view: DraftBranchView) {
+    this.broadcast(view, view.document)
+  }
+
+  private broadcast(branch: DraftBranchRow, document: ContentDocumentRow) {
     void this.eventManager.emit(
       BusinessEvents.DRAFT_UPDATE,
       {
-        branchId: view.id,
-        documentId: view.documentId,
-        headRevisionId: view.headRevisionId,
-        refId: view.document.refId,
-        refType: view.document.refType,
+        branchId: branch.id,
+        documentId: branch.documentId,
+        headRevisionId: branch.headRevisionId,
+        refId: document.refId,
+        refType: document.refType,
       } satisfies DraftUpdateEventPayload,
       { scope: EventScope.TO_ADMIN },
     )
+  }
+
+  private async editableBranch(
+    id: string,
+    actor: DraftActor,
+  ): Promise<DraftBranchRow> {
+    const branch = await this.draftRepository.findBranchById(id)
+    const document =
+      branch && (await this.draftRepository.findDocumentById(branch.documentId))
+    if (!branch || !document) {
+      throw createAppException(AppErrorCode.DRAFT_NOT_FOUND, { id })
+    }
+    await this.assertCanEdit(actor, document)
+    return branch
+  }
+
+  async documentIdOf(id: string): Promise<string> {
+    const branch = await this.draftRepository.findBranchById(id)
+    if (!branch) {
+      throw createAppException(AppErrorCode.DRAFT_NOT_FOUND, { id })
+    }
+    return String(branch.documentId)
+  }
+
+  async canEdit(id: string, actor: DraftActor): Promise<boolean> {
+    try {
+      await this.editableBranch(id, actor)
+      return true
+    } catch (error) {
+      if (error instanceof AppException) return false
+      throw error
+    }
+  }
+
+  async openWorkingCopy(
+    refType: DraftRefType,
+    refId: string,
+    actor: DraftActor,
+  ): Promise<DraftBranchView> {
+    const document = await this.ensurePublishedDocument(refType, refId)
+    await this.assertCanEdit(actor, document)
+    const workingCopy = await this.crdtService.workingCopyOfDocument(
+      document.id,
+    )
+    if (!workingCopy) {
+      throw createAppException(AppErrorCode.DRAFT_NOT_FOUND, { id: refId })
+    }
+    return this.checkpointView(
+      await this.crdtService.createCheckpoint(workingCopy.id, 'save'),
+    )
+  }
+
+  async mergeArticleFields(
+    refType: DraftRefType,
+    refId: string,
+    typeSpecificData: Record<string, unknown>,
+  ): Promise<void> {
+    if (!Object.keys(typeSpecificData).length) return
+    const document = await this.draftRepository.findDocumentByRef(
+      refType,
+      refId,
+    )
+    if (document) {
+      await this.crdtService.mergeDocumentFields(document.id, typeSpecificData)
+    }
+  }
+
+  usesCrdt(id: string): Promise<boolean> {
+    return this.crdtService.usesCrdt(id)
+  }
+
+  async findForEditing(
+    id: string,
+    actor: DraftActor,
+  ): Promise<DraftBranchView | null> {
+    await this.editableBranch(id, actor)
+    if (await this.crdtService.usesCrdt(id)) {
+      return this.checkpointView(
+        await this.crdtService.createCheckpoint(id, 'save'),
+      )
+    }
+    return this.findById(id)
+  }
+
+  async exportCrdtFor(id: string, actor: DraftActor, since?: Uint8Array) {
+    await this.editableBranch(id, actor)
+    return this.crdtService.exportFor(id, since)
+  }
+
+  async exportCrdt(
+    id: string,
+    actor: DraftActor,
+    since?: Uint8Array,
+  ): Promise<Uint8Array> {
+    return (await this.exportCrdtFor(id, actor, since)).update
+  }
+
+  async importCrdt(
+    id: string,
+    bytes: Uint8Array,
+    actor: DraftActor,
+    origin?: string,
+    author?: string,
+  ): Promise<void> {
+    await this.editableBranch(id, actor)
+    const { branch, document } = await this.crdtService.importUpdate(
+      id,
+      bytes,
+      origin,
+      author,
+    )
+    this.broadcast(branch, document)
+  }
+
+  async createCheckpoint(
+    id: string,
+    kind: DraftCheckpointDto['kind'],
+    actor: DraftActor,
+  ): Promise<DraftBranchView> {
+    await this.editableBranch(id, actor)
+    return this.checkpointView(
+      await this.crdtService.createCheckpoint(id, kind),
+    )
+  }
+
+  async updateFields(id: string, patch: CrdtFieldsPatch, actor: DraftActor) {
+    await this.editableBranch(id, actor)
+    return this.crdtService.updateFields(id, patch)
+  }
+
+  async history(id: string, actor: DraftActor) {
+    await this.editableBranch(id, actor)
+    return this.crdtService.history(id)
+  }
+
+  async archivedDrafts(
+    id: string,
+    actor: DraftActor,
+  ): Promise<DraftBranchView[]> {
+    const branch = await this.editableBranch(id, actor)
+    const archived = await this.draftRepository.findBranchesByDocument(
+      branch.documentId,
+      'archived',
+    )
+    return Promise.all(archived.map((row) => this.hydrate(row)))
+  }
+
+  async restore(
+    id: string,
+    revisionId: string,
+    actor: DraftActor,
+  ): Promise<DraftBranchView> {
+    await this.editableBranch(id, actor)
+    return this.checkpointView(await this.crdtService.restore(id, revisionId))
+  }
+
+  async undo(id: string, change: OpId, before: OpId[], actor: DraftActor) {
+    await this.editableBranch(id, actor)
+    return this.checkpointView(await this.crdtService.undo(id, change, before))
+  }
+
+  private async checkpointView(
+    result: CheckpointResult,
+  ): Promise<DraftBranchView> {
+    const view = await this.hydrate(result.branch)
+    this.broadcastUpdate(view)
+    return view
+  }
+
+  private async legacyView(result: CheckpointResult): Promise<DraftBranchView> {
+    const view = await this.checkpointView(result)
+    return {
+      ...view,
+      headRevision: result.revision,
+      headRevisionId: result.revision.id,
+    }
   }
 
   async findById(id: string): Promise<DraftBranchView | null> {
@@ -505,14 +722,7 @@ export class DraftService {
       }
       await this.assertCanEdit(actor, document)
     }
-    const branch = await this.draftRepository.archiveBranch(id)
-    if (!branch) {
-      throw createAppException(AppErrorCode.DRAFT_NOT_FOUND, { id })
-    }
-    await this.fileReferenceService.removeReferencesForDocument(
-      id,
-      FileReferenceType.Draft,
-    )
+    await this.crdtService.discard(id)
   }
 
   async deleteByRef(refType: DraftRefType, refId: string): Promise<void> {
@@ -643,6 +853,7 @@ export class DraftService {
       document,
       headRevision,
       publishedRevision,
+      relation: await this.draftRepository.relationOf(branch.id),
       relationToPublished: comparison?.relation ?? null,
     }
   }

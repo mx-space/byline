@@ -74,7 +74,17 @@ export class PublishService implements OnModuleInit {
         id: dto.branchId,
       })
     }
-    if (branch.headRevisionId !== dto.revisionId) {
+    const workingCopy = await this.drafts.usesCrdt(branch.id)
+    let revision = branch.headRevision
+    if (workingCopy) {
+      const selected = await this.drafts.findRevisionById(dto.revisionId)
+      if (!selected || selected.documentId !== branch.documentId) {
+        throw createAppException(AppErrorCode.CONTENT_REVISION_NOT_FOUND, {
+          id: dto.revisionId,
+        })
+      }
+      revision = selected
+    } else if (branch.headRevisionId !== dto.revisionId) {
       throw createAppException(AppErrorCode.DRAFT_HEAD_CONFLICT, {
         actualHeadRevisionId: branch.headRevisionId,
         branchId: branch.id,
@@ -90,6 +100,7 @@ export class PublishService implements OnModuleInit {
       })
     }
     if (
+      !workingCopy &&
       branch.relationToPublished &&
       ['descendant', 'diverged'].includes(branch.relationToPublished) &&
       !dto.confirmDiverged
@@ -123,8 +134,8 @@ export class PublishService implements OnModuleInit {
           : 'republish',
       refId: branch.document.refId,
       refType: branch.document.refType,
-      revisionId: branch.headRevision.id,
-      snapshot: structuredClone(branch.headRevision),
+      revisionId: revision.id,
+      snapshot: structuredClone(revision),
     }
 
     return this.tasks.createTask({

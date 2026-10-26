@@ -339,6 +339,36 @@ export const APP_ERROR_DEFINITIONS = {
     message: 'Share link not found',
     details: (p) => (p?.id ? { id: p.id } : undefined),
   },
+  [AppErrorCode.DRAFT_CRDT_UPDATE_REJECTED]: {
+    status: 400,
+    message: 'The collaborative update was rejected',
+    details: (p) => ({ branchId: p.branchId, reason: p.reason }),
+  },
+  [AppErrorCode.DRAFT_CRDT_FORMAT_UNSUPPORTED]: {
+    status: 400,
+    message: 'This draft only accepts Lexical content',
+    details: (p) => ({ branchId: p.branchId, contentFormat: p.contentFormat }),
+  },
+  [AppErrorCode.DRAFT_CRDT_STALE]: {
+    status: 409,
+    message: 'The collaborative document was rebuilt; reload it',
+    details: (p) => ({ documentId: p.documentId }),
+  },
+  [AppErrorCode.DRAFT_PUBLISH_PENDING]: {
+    status: 409,
+    message: 'This document has a publish task in progress',
+    details: (p) => ({ documentId: p.documentId }),
+  },
+  [AppErrorCode.DRAFT_WORKING_COPY_AHEAD]: {
+    status: 409,
+    message:
+      'The article has unpublished changes from other editors; publish or discard them first',
+    details: (p) => ({ documentId: p.documentId }),
+  },
+  [AppErrorCode.COLLAB_FORBIDDEN]: {
+    status: 403,
+    message: 'You cannot edit this document',
+  },
   [AppErrorCode.DRAFT_HEAD_CONFLICT]: {
     status: 409,
     message: 'The same draft was updated elsewhere',

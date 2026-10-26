@@ -65,7 +65,7 @@
     "@lexical/headless": "^0.52.0",
     "@lexical/list": "^0.52.0",
     "@mx-space/cli": "0.21.6",
-    "@mx-space/editor": "0.5.0",
+    "@mx-space/editor": "0.5.1",
     "lexical": "^0.52.0",
     "remark-gfm": "^4.0.1",
     "remark-mdx": "^3.1.1",

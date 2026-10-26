@@ -29,6 +29,7 @@ export interface ContentDocumentRow {
   aiSeo: DocumentAiSeo | null
   createdAt: Date
   createdBy: string | null
+  crdtEpoch: number
   id: EntityId
   publishAiResources: PublishAiResourceRequest[] | null
   publishedRevisionId: EntityId | null
@@ -37,11 +38,44 @@ export interface ContentDocumentRow {
   updatedAt: Date | null
 }
 
+export type Frontiers = { counter: number; peer: `${number}` }[]
+
+export type CheckpointKind =
+  'save' | 'publish' | 'restore' | 'undo' | 'import' | 'legacy-save'
+
 export interface ContentRevisionRow extends RevisionSnapshot {
   createdAt: Date
   documentId: EntityId
+  frontiers?: Frontiers | null
   id: EntityId
+  kind?: CheckpointKind | null
   parentRevisionId: EntityId | null
+}
+
+export interface CrdtFields {
+  meta: Record<string, unknown> | null
+  typeSpecificData: Record<string, unknown> | null
+}
+
+export type CrdtFieldsPatch = {
+  [K in keyof CrdtFields]?: Record<string, unknown>
+}
+
+export interface CrdtDocRow {
+  createdAt: Date
+  documentId: EntityId
+  editedAt: Date | null
+  fields: CrdtFields | null
+  snapshot: Uint8Array
+  snapshotVersion: Uint8Array
+  syncedRevisionId: EntityId | null
+  updatedAt: Date | null
+}
+
+export interface CheckpointInput {
+  frontiers: Frontiers | null
+  kind: CheckpointKind
+  snapshot: RevisionSnapshot
 }
 
 export interface ContentPublicationEventRow {
@@ -69,12 +103,15 @@ export interface RevisionComparison {
   right: ContentRevisionRow
 }
 
+export type DraftRelation = 'ahead' | 'fresh' | 'in_sync'
+
 export interface DraftBranchView extends DraftBranchRow {
   baseRevision: ContentRevisionRow
   commonAncestorRevisionId: EntityId | null
   document: ContentDocumentRow
   headRevision: ContentRevisionRow
   publishedRevision: ContentRevisionRow | null
+  relation: DraftRelation
   relationToPublished: RevisionRelation | null
 }
 

@@ -43,6 +43,13 @@
       "when": 1792843549312,
       "tag": "0005_document_ai_seo",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793003577599,
+      "tag": "0006_loro_content_storage",
+      "breakpoints": true
     }
   ]
 }

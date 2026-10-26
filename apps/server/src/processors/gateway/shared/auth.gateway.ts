@@ -31,6 +31,13 @@ export const createAuthGateway = (options: AuthGatewayOptions) => {
     }
 
     tokenSocketIdMap = new Map<string, Set<string>>()
+    private readonly authenticatedUsers = new WeakMap<WsConnection, string>()
+
+    // Message handlers run as soon as the socket is tracked, before the auth lookup settles,
+    // and keep running while a rejected socket is closing.
+    protected authenticatedUserOf(conn: WsConnection) {
+      return this.authenticatedUsers.get(conn)
+    }
     private readonly socketIdTokenMap = new Map<string, string>()
 
     protected bindToken(token: string, conn: WsConnection) {
@@ -68,7 +75,11 @@ export const createAuthGateway = (options: AuthGatewayOptions) => {
         const session =
           await this.authService.getSessionUserFromHeaders(headers)
         if (session?.user?.id) {
-          return this.completeConnection(conn, session.session?.token)
+          return this.completeConnection(
+            conn,
+            session.user.id,
+            session.session?.token,
+          )
         }
       }
 
@@ -91,13 +102,18 @@ export const createAuthGateway = (options: AuthGatewayOptions) => {
         return this.authFailed(conn)
       }
 
-      this.completeConnection(conn, result.id)
+      this.completeConnection(conn, result.referenceId, result.id)
     }
 
     // A close during the auth lookups already unbound this connection; binding
     // now would strand the token entry, since nothing unbinds it again.
-    private completeConnection(conn: WsConnection, token?: string) {
+    private completeConnection(
+      conn: WsConnection,
+      userId: string,
+      token?: string,
+    ) {
       if (!this.resolveConnection(conn.ws)) return
+      this.authenticatedUsers.set(conn, userId)
       this.sendConnectGreeting(conn)
       if (token) this.bindToken(token, conn)
     }
@@ -106,6 +122,7 @@ export const createAuthGateway = (options: AuthGatewayOptions) => {
       const conn = this.resolveConnection(ws)
       if (!conn) return
 
+      this.authenticatedUsers.delete(conn)
       await this.releaseConnection(conn)
       this.unbindToken(conn)
       this.sendDisconnectGreeting(conn)

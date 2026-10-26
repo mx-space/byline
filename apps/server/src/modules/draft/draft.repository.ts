@@ -7,7 +7,6 @@ import {
   ilike,
   inArray,
   isNull,
-  ne,
   or,
   type SQL,
   sql,
@@ -15,6 +14,7 @@ import {
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import {
+  contentCrdtDocs,
   contentDocuments,
   contentDocumentShares,
   contentPublicationEvents,
@@ -32,6 +32,7 @@ import { type EntityId, parseEntityId } from '~/shared/id/entity-id'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 
 import type {
+  CheckpointKind,
   ContentDocumentRow,
   ContentPublicationEventRow,
   ContentRevisionRow,
@@ -40,6 +41,7 @@ import type {
   DraftBranchStatus,
   DraftListFilter,
   DraftRefType,
+  DraftRelation,
   DraftShareMode,
   RevisionSnapshot,
 } from './draft.types'
@@ -55,12 +57,13 @@ const mapDocument = (
   refType: row.refType as DraftRefType,
 })
 
-const mapRevision = (
+export const mapRevision = (
   row: typeof contentRevisions.$inferSelect,
 ): ContentRevisionRow => ({
   ...row,
   documentId: toEntityId(row.documentId)!,
   id: toEntityId(row.id)!,
+  kind: row.kind as CheckpointKind | null,
   parentRevisionId: toEntityId(row.parentRevisionId),
 })
 
@@ -85,7 +88,7 @@ const mapShare = (
   revisionId: toEntityId(row.revisionId),
 })
 
-const mapBranch = (row: typeof drafts.$inferSelect): DraftBranchRow => ({
+export const mapBranch = (row: typeof drafts.$inferSelect): DraftBranchRow => ({
   ...row,
   baseRevisionId: toEntityId(row.baseRevisionId)!,
   documentId: toEntityId(row.documentId)!,
@@ -93,6 +96,24 @@ const mapBranch = (row: typeof drafts.$inferSelect): DraftBranchRow => ({
   id: toEntityId(row.id)!,
   status: row.status as DraftBranchStatus,
 })
+
+// The import checkpoint is the published revision read back through Loro, so a
+// working copy still sitting on it has nothing unpublished.
+const IN_SYNC = sql`coalesce(${contentDocuments.publishedRevisionId} is not null
+  and (${drafts.headRevisionId} = ${contentDocuments.publishedRevisionId}
+    or (${contentRevisions.kind} = 'import'
+      and ${contentRevisions.parentRevisionId} = ${contentDocuments.publishedRevisionId}))
+  and not exists (
+    select 1 from ${contentCrdtDocs}
+    where ${contentCrdtDocs.documentId} = ${drafts.documentId}
+      and ${contentCrdtDocs.editedAt} > ${contentRevisions.createdAt}
+  ), false)`
+
+const RELATION = sql<DraftRelation>`case
+  when ${contentDocuments.publishedRevisionId} is null then 'fresh'
+  when ${IN_SYNC} then 'in_sync'
+  else 'ahead'
+end`
 
 @Injectable()
 export class DraftRepository extends BaseRepository {
@@ -151,6 +172,20 @@ export class DraftRepository extends BaseRepository {
       )
       .where(this.buildFilter(filter))
     return Number(row?.count ?? 0)
+  }
+
+  async relationOf(branchId: EntityId | string): Promise<DraftRelation> {
+    const [row] = await this.db
+      .select({ relation: RELATION })
+      .from(drafts)
+      .innerJoin(contentDocuments, eq(contentDocuments.id, drafts.documentId))
+      .innerJoin(
+        contentRevisions,
+        eq(contentRevisions.id, drafts.headRevisionId),
+      )
+      .where(eq(drafts.id, parseEntityId(branchId)))
+      .limit(1)
+    return row?.relation ?? 'ahead'
   }
 
   async findDocumentById(
@@ -247,7 +282,10 @@ export class DraftRepository extends BaseRepository {
           eq(drafts.status, status),
         ),
       )
-      .orderBy(desc(drafts.updatedAt), desc(drafts.createdAt))
+      .orderBy(
+        desc(sql`coalesce(${drafts.updatedAt}, ${drafts.createdAt})`),
+        desc(drafts.createdAt),
+      )
     return rows.map(mapBranch)
   }
 
@@ -560,6 +598,12 @@ export class DraftRepository extends BaseRepository {
       )
   }
 
+  async deleteDocumentById(id: EntityId | string): Promise<void> {
+    await this.db
+      .delete(contentDocuments)
+      .where(eq(contentDocuments.id, parseEntityId(id)))
+  }
+
   async findShareByDocument(
     documentId: EntityId | string,
   ): Promise<DocumentShareRow | null> {
@@ -625,14 +669,7 @@ export class DraftRepository extends BaseRepository {
     if (filter.refType) {
       conditions.push(eq(contentDocuments.refType, filter.refType))
     }
-    // A head that is the published revision has no unpublished changes, so it
-    // is not a draft. Direct reads and the version tree still return it.
-    conditions.push(
-      or(
-        isNull(contentDocuments.publishedRevisionId),
-        ne(drafts.headRevisionId, contentDocuments.publishedRevisionId),
-      )!,
-    )
+    conditions.push(sql`not ${IN_SYNC}`)
     if (filter.hasRef !== undefined) {
       conditions.push(
         filter.hasRef
