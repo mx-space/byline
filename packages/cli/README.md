@@ -12,8 +12,8 @@ pnpm add -g @mx-space/byline-cli
 npx @mx-space/byline-cli import mdx --help
 ```
 
-The package installs a `byline` binary. API credentials come from flags or the
-environment:
+The package installs a `byline` binary. API credentials come from flags, the
+environment, or the session saved by `byline login`, in that order:
 
 | Flag        | Environment      | Purpose                                             |
 | ----------- | ---------------- | --------------------------------------------------- |
@@ -23,6 +23,23 @@ environment:
 
 The importer is also exported as a library (`planImport`, `executeImport`,
 `convertMdx`, `loadImportConfig`) for scripted migrations.
+
+## `byline login`
+
+Signs in through the browser with the OAuth device flow and saves the session
+token to `~/.config/byline/credentials.json` (or under `$XDG_CONFIG_HOME`),
+readable only by you.
+
+```sh
+byline login --api-url https://cms.example.com/api/v3
+byline whoami
+byline logout
+```
+
+The CLI opens the verification link and waits until you approve the code in the
+admin; pass `--no-browser` to only print the link. Later commands use the saved
+session when no `--api-key` or `--token` is given and the API URL matches. When
+the session expires they ask you to run `byline login` again.
 
 ## `byline import mdx <dir>`
 

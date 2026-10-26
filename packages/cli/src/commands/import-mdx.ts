@@ -2,6 +2,8 @@ import { parseArgs } from 'node:util'
 
 import { createClient } from '@mx-space/byline-api-client'
 
+import { readCredentials, resolveApiCredentials } from '../auth/credentials'
+import { fetchSession } from '../auth/device'
 import { loadImportConfig } from '../importer/config'
 import { executeImport, type PostOutcome } from '../importer/execute'
 import { planImport } from '../importer/plan'
@@ -32,6 +34,9 @@ Options:
   --api-url <url>          Byline API base URL (env BYLINE_API_URL)
   --api-key <key>          API key sent as x-api-key (env BYLINE_API_KEY)
   --token <token>          bearer session token (env BYLINE_TOKEN)
+
+Without --api-key or --token, the session saved by \`byline login\` is used
+when its API URL matches.
 `
 
 const parseAliases = (values: string[] = []) =>
@@ -97,13 +102,24 @@ export const runImportMdx = async (argv: string[]): Promise<number> => {
     defaultAuthors: values['default-author'],
   })
 
-  const apiUrl = values['api-url'] ?? process.env.BYLINE_API_URL
-  const apiKey = values['api-key'] ?? process.env.BYLINE_API_KEY
-  const token = values.token ?? process.env.BYLINE_TOKEN
+  const { apiUrl, apiKey, token, stored } = resolveApiCredentials(
+    {
+      apiUrl: values['api-url'],
+      apiKey: values['api-key'],
+      token: values.token,
+    },
+    process.env,
+    await readCredentials(),
+  )
   const dryRun = values['dry-run']
   if (!dryRun && (!apiUrl || (!apiKey && !token))) {
     throw new Error(
-      'An API URL and an API key or token are required unless --dry-run is set',
+      'An API URL and an API key or token are required unless --dry-run is set; run `byline login` or pass --api-key',
+    )
+  }
+  if (stored && apiUrl && token && !(await fetchSession(apiUrl, token))) {
+    throw new Error(
+      `The saved session for ${apiUrl} is no longer valid; run \`byline login\``,
     )
   }
   const client =
