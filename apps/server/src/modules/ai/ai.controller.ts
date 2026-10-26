@@ -90,7 +90,7 @@ export class AiController {
     for (const provider of aiConfig.providers) {
       if (
         !provider.enabled ||
-        !provider.apiKey ||
+        (!provider.apiKey && provider.type !== AIProviderType.LobeHub) ||
         !(requestedCapability === 'text'
           ? (provider.capabilities?.text ?? true)
           : provider.capabilities?.[requestedCapability])
@@ -149,7 +149,7 @@ export class AiController {
       })
     }
 
-    if (!apiKey) {
+    if (!apiKey && type !== AIProviderType.LobeHub) {
       throw createAppException(AppErrorCode.AI_NOT_ENABLED, {
         message: 'API key is required',
       })
@@ -191,7 +191,7 @@ export class AiController {
       })
     }
 
-    if (!apiKey) {
+    if (!apiKey && type !== AIProviderType.LobeHub) {
       throw createAppException(AppErrorCode.AI_NOT_ENABLED, {
         message: 'API key is required',
       })
@@ -254,7 +254,7 @@ export class AiController {
     return {
       providerId: body.providerId,
       type: body.type ?? storedProvider?.type,
-      apiKey: body.apiKey || storedProvider?.apiKey,
+      apiKey: body.apiKey || storedProvider?.apiKey || '',
       endpoint: body.endpoint ?? storedProvider?.endpoint,
       modelListUrl: body.modelListUrl ?? storedProvider?.modelListUrl,
     }
@@ -274,7 +274,7 @@ export class AiController {
 
     return {
       type: body.type ?? storedProvider?.type,
-      apiKey: body.apiKey || storedProvider?.apiKey,
+      apiKey: body.apiKey || storedProvider?.apiKey || '',
       endpoint: body.endpoint ?? storedProvider?.endpoint,
       model: body.model ?? storedProvider?.defaultModel,
       appendV1: body.appendV1 ?? storedProvider?.appendV1,
@@ -307,7 +307,7 @@ export class AiController {
       })
     }
 
-    if (!provider.apiKey) {
+    if (!provider.apiKey && provider.type !== AIProviderType.LobeHub) {
       throw createAppException(AppErrorCode.AI_NOT_ENABLED, {
         message: `Provider ${providerId} has no API key configured`,
       })

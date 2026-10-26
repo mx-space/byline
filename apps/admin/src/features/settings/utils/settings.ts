@@ -204,6 +204,7 @@ function extractVertexProjectId(endpoint: string): string | undefined {
 
 export function coerceAIProviderType(value: unknown): AIProviderType {
   if (
+    value === 'lobehub' ||
     value === 'typesafe' ||
     value === 'anthropic' ||
     value === 'generic' ||
@@ -230,6 +231,7 @@ export function getDefaultAIModel(type: AIProviderType) {
     case 'anthropic': {
       return 'claude-sonnet-4.5'
     }
+    case 'lobehub':
     case 'generic': {
       return ''
     }
@@ -247,6 +249,9 @@ export function getAIProviderNamePlaceholder(
   type: AIProviderType,
 ) {
   switch (type) {
+    case 'lobehub': {
+      return 'LobeHub Cloud'
+    }
     case 'anthropic': {
       return t('settings.ai.placeholder.nameAnthropic')
     }
@@ -285,6 +290,7 @@ export function getAIProviderModelPlaceholder(
     case 'anthropic': {
       return t('settings.ai.placeholder.modelAnthropic')
     }
+    case 'lobehub':
     case 'generic': {
       return t('settings.ai.placeholder.modelCompatible')
     }
@@ -309,6 +315,7 @@ export function resolvePiProviderId(provider: {
   endpoint?: string
   type: AIProviderType
 }): string | null {
+  if (provider.type === 'lobehub') return null
   const endpoint = provider.endpoint?.trim()
   if (endpoint) {
     try {

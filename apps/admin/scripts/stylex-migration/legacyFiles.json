@@ -51,7 +51,6 @@
   "src/features/settings/components/account/SessionSection.tsx",
   "src/features/settings/components/account/TokenPanel.tsx",
   "src/features/settings/components/ai/AIModelAssignmentField.tsx",
-  "src/features/settings/components/ai/AIProviderDrawer.tsx",
   "src/features/settings/components/ai/AIProviderPresetModal.tsx",
   "src/features/settings/components/ai/AITextListField.tsx",
   "src/features/settings/components/ai/TtsVoiceField.tsx",

@@ -317,3 +317,24 @@ it('preserves a saved decision provider and assignment when reopening settings',
   })
   expect(resolvePiProviderId(reopened.providers![0])).toBeNull()
 })
+
+it('keeps a saved LobeHub connection when settings are loaded and ignores a stale endpoint for registry lookup', () => {
+  const config = normalizeAIConfig({
+    providers: [
+      {
+        id: 'cloud',
+        name: 'LobeHub Cloud',
+        type: 'lobehub',
+        enabled: true,
+        defaultModel: 'openai/gpt-5-mini',
+        endpoint: 'https://api.openai.com/v1',
+      },
+    ],
+  })
+  expect(config.providers?.[0]).toMatchObject({
+    type: 'lobehub',
+    apiKey: '',
+    defaultModel: 'openai/gpt-5-mini',
+  })
+  expect(resolvePiProviderId(config.providers![0])).toBeNull()
+})

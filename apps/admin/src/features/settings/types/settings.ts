@@ -4,7 +4,12 @@ import type { ConfigFormGroup } from '~/api/options'
 import type { TranslationKey } from '~/i18n/types'
 
 export type AIProviderType =
-  'anthropic' | 'generic' | 'google-vertex' | 'openai-compatible' | 'typesafe'
+  | 'anthropic'
+  | 'generic'
+  | 'google-vertex'
+  | 'lobehub'
+  | 'openai-compatible'
+  | 'typesafe'
 export type AIProviderCapability = 'decision' | 'image' | 'speech' | 'text'
 
 export interface AIProviderCapabilities {

@@ -1,19 +1,22 @@
 import {
   AutoComplete,
+  Button,
   Checkbox,
-  createStaticStyles,
   Flexbox,
   InputPassword,
+  Spin,
+  Tag,
   toast,
 } from '@lobehub/ui'
+import { cssVar } from '@lobehub/ui/stylex/cssVar.stylex'
+import * as stylex from '@stylexjs/stylex'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, Loader2, Settings } from 'lucide-react'
+import { ExternalLink, Settings } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 
 import { getModelList, getRegistryModels, testConfig } from '~/api/ai'
 import { useI18n } from '~/i18n'
 import { Drawer } from '~/ui/feedback/drawer'
-import { Button } from '~/ui/primitives/button'
 import { SelectField } from '~/ui/primitives/select'
 import { TextInput } from '~/ui/primitives/text-field'
 
@@ -42,130 +45,55 @@ import {
   resolvePiProviderId,
 } from '../../utils/settings'
 import { FieldShell } from '../SettingsPrimitives'
+import { LobeHubConnection } from './LobeHubConnection'
 
-const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
-  draftNote: css`
-    color: ${cssVar.colorTextSecondary};
-    font-size: 14px;
-    line-height: 22px;
-  `,
-  u0bb529bd: css`
-    width: 1rem;
-    height: 1rem;
-    @keyframes byline-spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-    animation: byline-spin 1s linear infinite; /* lobe-design-ignore LOBE-MOTION-DURATION: a status spinner needs a full turn */
-    @media (prefers-reduced-motion: reduce) {
-      animation: none;
-    }
-  `,
-  ube28d39b: css`
-    width: min(90vw, 32rem);
-  `,
-  uec979b4f: css`
-    & > :not([hidden]) ~ :not([hidden]) {
-      margin-top: 1.25rem;
-    }
-    overflow-y: auto;
-    padding: 1rem;
-  `,
-  u8e0c3efc: css`
-    & > :not([hidden]) ~ :not([hidden]) {
-      margin-top: 0.75rem;
-    }
-    border-radius: 14px;
-    border-width: 1px;
-    border-style: solid;
-    border-color: ${cssVar.colorFillSecondary};
-    padding: 0.75rem;
-    :where(.dark, .dark *) & {
-      border-color: ${cssVar.colorText};
-    }
-  `,
-  u9b5df76b: css`
-    font-size: 0.75rem;
-    line-height: 1.125rem;
-    color: ${cssVar.colorText};
-  `,
-  ufa2251b6: css`
-    font-size: 0.75rem;
-    line-height: 1.125rem;
-    font-weight: 500;
-    color: ${cssVar.colorText};
-  `,
-  u5c1f5c15: css`
-    display: flex;
-    flex-wrap: wrap;
-    column-gap: 0.75rem;
-    row-gap: 0.25rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-  `,
-  u64721834: css`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    color: ${cssVar.colorPrimary};
-    &:hover {
-      text-decoration: underline;
-    }
-  `,
-  uef2d6f74: css`
-    width: 0.75rem;
-    height: 0.75rem;
-  `,
-  u343fbed5: css`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    color: ${cssVar.colorTextSecondary};
-    &:hover {
-      color: ${cssVar.colorText};
-    }
-    &:hover {
-      text-decoration: underline;
-    }
-  `,
-  uf7b5fa97: css`
-    width: 1rem;
-    height: 1rem;
-  `,
-  uff4d2db0: css`
-    max-height: 18rem;
-  `,
-  ueb6a3cef: css`
-    padding: 0.25rem;
-  `,
-  ube1287d2: css`
-    display: flex;
-    min-width: 0px;
-    align-items: center;
-    gap: 0.75rem;
-  `,
-  u67bab313: css`
-    min-width: 0px;
-    flex: 1 1 0%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  `,
-  u10c992af: css`
-    margin-left: 0.5rem;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    color: ${cssVar.colorTextTertiary};
-  `,
-  ub2ddbe74: css`
-    flex-shrink: 0;
-    font-size: 0.625rem;
-    line-height: 0.875rem;
-    font-variant-numeric: tabular-nums;
-    color: ${cssVar.colorTextSecondary};
-  `,
-}))
+const styles = stylex.create({
+  note: {
+    color: cssVar.colorTextSecondary,
+    fontSize: cssVar.fontSizeSM,
+    marginBlock: 0,
+  },
+  label: { fontWeight: 500 },
+  links: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    columnGap: 12,
+    rowGap: 4,
+    fontSize: cssVar.fontSizeSM,
+  },
+  link: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    color: cssVar.colorPrimary,
+    textDecoration: { default: 'none', ':hover': 'underline' },
+  },
+  secondaryLink: {
+    color: { default: cssVar.colorTextSecondary, ':hover': cssVar.colorText },
+  },
+  linkIcon: { width: 12, height: 12 },
+  modelOption: { display: 'flex', minWidth: 0, alignItems: 'center', gap: 12 },
+  modelName: {
+    minWidth: 0,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: '0%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  modelId: {
+    marginInlineStart: 8,
+    fontSize: cssVar.fontSizeSM,
+    color: cssVar.colorTextTertiary,
+  },
+  modelPrice: {
+    flexShrink: 0,
+    fontSize: cssVar.fontSizeSM,
+    fontVariantNumeric: 'tabular-nums',
+    color: cssVar.colorTextSecondary,
+  },
+})
 
 const BUILD_HASH =
   (typeof window !== 'undefined' && (window as any).version) || 'dev'
@@ -182,13 +110,15 @@ export function AIProviderDrawer(props: {
   const queryClient = useQueryClient()
   const [fetching, setFetching] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [lobeHubConnected, setLobeHubConnected] = useState(false)
   const provider = props.provider
   const decisionEnabled = provider?.type === 'typesafe'
   const textEnabled = provider?.capabilities?.text ?? true
   const matchedPreset = provider ? findAIProviderPreset(provider) : undefined
   const isGoogleVertex = provider?.type === 'google-vertex'
 
-  const showEndpoint = Boolean(provider)
+  const isLobeHub = provider?.type === 'lobehub'
+  const showEndpoint = Boolean(provider) && !isLobeHub
   const piProviderId =
     provider && textEnabled ? resolvePiProviderId(provider) : null
 
@@ -215,8 +145,9 @@ export function AIProviderDrawer(props: {
     () => mergeModelOptions(props.providerModels, registryModels),
     [props.providerModels, registryModels],
   )
-  const modelsDisabled =
-    !decisionEnabled && piProviderId === null && modelOptions.length === 0
+  const modelsDisabled = isLobeHub
+    ? !lobeHubConnected
+    : !decisionEnabled && piProviderId === null && modelOptions.length === 0
   const modelMatch = useMemo(
     () =>
       provider
@@ -225,7 +156,11 @@ export function AIProviderDrawer(props: {
     [registryModels, provider],
   )
   const showCustomTokenFields = Boolean(
-    provider && !decisionEnabled && provider.defaultModel.trim() && !modelMatch,
+    provider &&
+    !isLobeHub &&
+    !decisionEnabled &&
+    provider.defaultModel.trim() &&
+    !modelMatch,
   )
 
   const refreshModels = async () => {
@@ -295,25 +230,21 @@ export function AIProviderDrawer(props: {
         provider && (textEnabled || decisionEnabled) ? (
           <Flexbox gap={8} horizontal justify="flex-end">
             <Button
-              disabled={fetching}
+              disabled={isLobeHub && !lobeHubConnected}
+              loading={fetching}
               onClick={() => void refreshModels()}
-              type="button"
-              variant="subtle"
+              htmlType="button"
+              type="text"
             >
-              {fetching ? (
-                <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
-              ) : null}
               {t('settings.ai.action.fetchModels')}
             </Button>
             <Button
-              disabled={testing}
+              disabled={isLobeHub && !lobeHubConnected}
+              loading={testing}
               onClick={() => void testProvider()}
-              type="button"
-              variant="subtle"
+              htmlType="button"
+              type="text"
             >
-              {testing ? (
-                <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
-              ) : null}
               {t('settings.ai.action.testConnection')}
             </Button>
           </Flexbox>
@@ -323,74 +254,78 @@ export function AIProviderDrawer(props: {
       onClose={props.onClose}
       open={Boolean(provider)}
       title={provider ? formatAIProviderLabel(provider) : ''}
-      widthClassName={lobeStyles.ube28d39b}
     >
       {provider ? (
-        <div className={lobeStyles.uec979b4f}>
-          <p className={lobeStyles.draftNote}>
+        <Flexbox gap={24}>
+          <p className={stylex.props(styles.note).className}>
             {settingsCopy(locale, 'stagedInDrawer')}
           </p>
-          <Checkbox
-            checked={provider.enabled}
-            onChange={(enabled) => props.onChange({ enabled })}
-          >
-            {t('settings.oauth.switch.enabled')}
-          </Checkbox>
-          <div className={lobeStyles.u8e0c3efc}>
-            {decisionEnabled ? (
-              <p className={lobeStyles.u9b5df76b}>
-                {t('settings.ai.capability.decision')}
-              </p>
-            ) : (
-              <>
-                <div className={lobeStyles.ufa2251b6}>
-                  {t('settings.ai.field.capabilities')}
-                </div>
-                <Checkbox
-                  checked={provider.capabilities?.text ?? true}
-                  onChange={(text) =>
-                    props.onChange({
-                      capabilities: {
-                        text,
-                        image: provider.capabilities?.image ?? false,
-                        speech: provider.capabilities?.speech ?? false,
-                      },
-                    })
-                  }
-                >
-                  {t('settings.ai.capability.text')}
-                </Checkbox>
-                <Checkbox
-                  checked={provider.capabilities?.image ?? false}
-                  onChange={(image) =>
-                    props.onChange({
-                      capabilities: {
-                        text: provider.capabilities?.text ?? true,
-                        image,
-                        speech: provider.capabilities?.speech ?? false,
-                      },
-                    })
-                  }
-                >
-                  {t('settings.ai.capability.image')}
-                </Checkbox>
-                <Checkbox
-                  checked={provider.capabilities?.speech ?? false}
-                  onChange={(speech) =>
-                    props.onChange({
-                      capabilities: {
-                        text: provider.capabilities?.text ?? true,
-                        image: provider.capabilities?.image ?? false,
-                        speech,
-                      },
-                    })
-                  }
-                >
-                  {t('settings.ai.capability.speech')}
-                </Checkbox>
-              </>
-            )}
-          </div>
+          <Flexbox align="center" gap={12} horizontal justify="space-between">
+            <Checkbox
+              checked={provider.enabled}
+              onChange={(enabled) => props.onChange({ enabled })}
+            >
+              {t('settings.oauth.switch.enabled')}
+            </Checkbox>
+            {isLobeHub || decisionEnabled ? (
+              <Tag>
+                {t(
+                  decisionEnabled
+                    ? 'settings.ai.capability.decision'
+                    : 'settings.ai.capability.text',
+                )}
+              </Tag>
+            ) : null}
+          </Flexbox>
+          {!isLobeHub && !decisionEnabled ? (
+            <Flexbox gap={12}>
+              <span {...stylex.props(styles.label)}>
+                {t('settings.ai.field.capabilities')}
+              </span>
+              <Checkbox
+                checked={provider.capabilities?.text ?? true}
+                onChange={(text) =>
+                  props.onChange({
+                    capabilities: {
+                      text,
+                      image: provider.capabilities?.image ?? false,
+                      speech: provider.capabilities?.speech ?? false,
+                    },
+                  })
+                }
+              >
+                {t('settings.ai.capability.text')}
+              </Checkbox>
+              <Checkbox
+                checked={provider.capabilities?.image ?? false}
+                onChange={(image) =>
+                  props.onChange({
+                    capabilities: {
+                      text: provider.capabilities?.text ?? true,
+                      image,
+                      speech: provider.capabilities?.speech ?? false,
+                    },
+                  })
+                }
+              >
+                {t('settings.ai.capability.image')}
+              </Checkbox>
+              <Checkbox
+                checked={provider.capabilities?.speech ?? false}
+                onChange={(speech) =>
+                  props.onChange({
+                    capabilities: {
+                      text: provider.capabilities?.text ?? true,
+                      image: provider.capabilities?.image ?? false,
+                      speech,
+                    },
+                  })
+                }
+              >
+                {t('settings.ai.capability.speech')}
+              </Checkbox>
+            </Flexbox>
+          ) : null}
           <FieldShell label={t('settings.ai.field.providerType')}>
             <SelectField<AIProviderType>
               aria-label={t('settings.ai.field.providerType')}
@@ -404,6 +339,15 @@ export function AIProviderDrawer(props: {
                     image: false,
                     speech: false,
                   },
+                  ...(type === 'lobehub'
+                    ? {
+                        apiKey: '',
+                        endpoint: '',
+                        modelListUrl: '',
+                        voiceListUrl: '',
+                        appendV1: false,
+                      }
+                    : {}),
                   ...(type === 'typesafe'
                     ? { endpoint: 'https://api.typesafe.ai/v1' }
                     : {}),
@@ -416,27 +360,41 @@ export function AIProviderDrawer(props: {
               value={provider.type}
             />
           </FieldShell>
-          <TextInput
-            label={t('settings.ai.field.displayName')}
-            onChange={(name) => props.onChange({ name })}
-            placeholder={getAIProviderNamePlaceholder(t, provider.type)}
-            value={provider.name}
-          />
-          <FieldShell label={t('settings.ai.field.apiKey')}>
-            <InputPassword
-              autoComplete="new-password"
-              onChange={(event) =>
-                props.onChange({ apiKey: event.target.value })
-              }
-              placeholder={getAIProviderKeyPlaceholder(provider.type)}
-              value={provider.apiKey}
+          <FieldShell label={t('settings.ai.field.displayName')}>
+            <TextInput
+              onChange={(name) => props.onChange({ name })}
+              placeholder={getAIProviderNamePlaceholder(t, provider.type)}
+              value={provider.name}
             />
           </FieldShell>
+          {isLobeHub ? (
+            <LobeHubConnection
+              onConnected={refreshModels}
+              onDisconnected={() =>
+                queryClient.setQueryData<Record<string, AIProviderModel[]>>(
+                  props.modelCacheKey,
+                  (current) => ({ ...current, [provider.id]: [] }),
+                )
+              }
+              onStatusChange={setLobeHubConnected}
+            />
+          ) : (
+            <FieldShell label={t('settings.ai.field.apiKey')}>
+              <InputPassword
+                autoComplete="new-password"
+                onChange={(event) =>
+                  props.onChange({ apiKey: event.target.value })
+                }
+                placeholder={getAIProviderKeyPlaceholder(provider.type)}
+                value={provider.apiKey}
+              />
+            </FieldShell>
+          )}
           {matchedPreset?.apiKeyUrl || matchedPreset?.websiteUrl ? (
-            <div className={lobeStyles.u5c1f5c15}>
+            <div {...stylex.props(styles.links)}>
               {matchedPreset.apiKeyUrl ? (
                 <a
-                  className={lobeStyles.u64721834}
+                  {...stylex.props(styles.link)}
                   href={matchedPreset.apiKeyUrl}
                   rel="noreferrer"
                   target="_blank"
@@ -444,13 +402,13 @@ export function AIProviderDrawer(props: {
                   {t('settings.ai.preset.getApiKey')}
                   <ExternalLink
                     aria-hidden="true"
-                    className={lobeStyles.uef2d6f74}
+                    {...stylex.props(styles.linkIcon)}
                   />
                 </a>
               ) : null}
               {matchedPreset.websiteUrl ? (
                 <a
-                  className={lobeStyles.u343fbed5}
+                  {...stylex.props(styles.link, styles.secondaryLink)}
                   href={matchedPreset.websiteUrl}
                   rel="noreferrer"
                   target="_blank"
@@ -458,52 +416,58 @@ export function AIProviderDrawer(props: {
                   {t('settings.ai.preset.website')}
                   <ExternalLink
                     aria-hidden="true"
-                    className={lobeStyles.uef2d6f74}
+                    {...stylex.props(styles.linkIcon)}
                   />
                 </a>
               ) : null}
             </div>
           ) : null}
           {isGoogleVertex ? (
-            <TextInput
-              label={t('settings.ai.field.projectId')}
-              onChange={(projectId) => {
-                const preset = aiProviderPresets.find(
-                  (item) => item.id === 'googleVertex',
-                )
-                props.onChange({
-                  projectId,
-                  endpoint:
-                    interpolatePresetTemplate(preset?.endpoint, {
-                      projectId,
-                    }) ?? provider.endpoint,
-                })
-              }}
-              placeholder={t('settings.ai.preset.modal.projectIdPlaceholder')}
-              spellCheck={false}
-              value={provider.projectId ?? ''}
-            />
+            <FieldShell label={t('settings.ai.field.projectId')}>
+              <TextInput
+                onChange={(projectId) => {
+                  const preset = aiProviderPresets.find(
+                    (item) => item.id === 'googleVertex',
+                  )
+                  props.onChange({
+                    projectId,
+                    endpoint:
+                      interpolatePresetTemplate(preset?.endpoint, {
+                        projectId,
+                      }) ?? provider.endpoint,
+                  })
+                }}
+                placeholder={t('settings.ai.preset.modal.projectIdPlaceholder')}
+                spellCheck={false}
+                value={provider.projectId ?? ''}
+              />
+            </FieldShell>
           ) : null}
           {showEndpoint ? (
-            <TextInput
-              label={t('settings.ai.field.endpoint')}
-              onChange={(endpoint) => props.onChange({ endpoint })}
-              placeholder={
-                provider.type === 'openai-compatible' || isGoogleVertex
-                  ? t('settings.ai.placeholder.endpointCompatible')
-                  : t('settings.ai.placeholder.endpointDefault')
-              }
-              value={provider.endpoint ?? ''}
-            />
-          ) : null}
-          {textEnabled && provider.type !== 'anthropic' && !isGoogleVertex ? (
-            <>
+            <FieldShell label={t('settings.ai.field.endpoint')}>
               <TextInput
-                label={t('settings.ai.field.modelListUrl')}
-                onChange={(modelListUrl) => props.onChange({ modelListUrl })}
-                placeholder={t('settings.ai.placeholder.modelListUrl')}
-                value={provider.modelListUrl ?? ''}
+                onChange={(endpoint) => props.onChange({ endpoint })}
+                placeholder={
+                  provider.type === 'openai-compatible' || isGoogleVertex
+                    ? t('settings.ai.placeholder.endpointCompatible')
+                    : t('settings.ai.placeholder.endpointDefault')
+                }
+                value={provider.endpoint ?? ''}
               />
+            </FieldShell>
+          ) : null}
+          {textEnabled &&
+          provider.type !== 'anthropic' &&
+          !isGoogleVertex &&
+          !isLobeHub ? (
+            <>
+              <FieldShell label={t('settings.ai.field.modelListUrl')}>
+                <TextInput
+                  onChange={(modelListUrl) => props.onChange({ modelListUrl })}
+                  placeholder={t('settings.ai.placeholder.modelListUrl')}
+                  value={provider.modelListUrl ?? ''}
+                />
+              </FieldShell>
               <Checkbox
                 checked={provider.appendV1 ?? true}
                 onChange={(appendV1) => props.onChange({ appendV1 })}
@@ -512,13 +476,14 @@ export function AIProviderDrawer(props: {
               </Checkbox>
             </>
           ) : null}
-          {provider.capabilities?.speech && !isGoogleVertex ? (
-            <TextInput
-              label={t('settings.ai.field.voiceListUrl')}
-              onChange={(voiceListUrl) => props.onChange({ voiceListUrl })}
-              placeholder={t('settings.ai.placeholder.voiceListUrl')}
-              value={provider.voiceListUrl ?? ''}
-            />
+          {provider.capabilities?.speech && !isGoogleVertex && !isLobeHub ? (
+            <FieldShell label={t('settings.ai.field.voiceListUrl')}>
+              <TextInput
+                onChange={(voiceListUrl) => props.onChange({ voiceListUrl })}
+                placeholder={t('settings.ai.placeholder.voiceListUrl')}
+                value={provider.voiceListUrl ?? ''}
+              />
+            </FieldShell>
           ) : null}
           {textEnabled || decisionEnabled ? (
             <>
@@ -534,41 +499,45 @@ export function AIProviderDrawer(props: {
               </FieldShell>
               {showCustomTokenFields ? (
                 <>
-                  <TextInput
-                    inputMode="numeric"
-                    label={t('settings.ai.field.contextWindow')}
-                    onChange={(value) =>
-                      props.onChange({
-                        contextWindow: value.trim() ? Number(value) : undefined,
-                      })
-                    }
-                    type="number"
-                    value={
-                      provider.contextWindow == null
-                        ? ''
-                        : String(provider.contextWindow)
-                    }
-                  />
-                  <TextInput
-                    inputMode="numeric"
-                    label={t('settings.ai.field.maxTokens')}
-                    onChange={(value) =>
-                      props.onChange({
-                        maxTokens: value.trim() ? Number(value) : undefined,
-                      })
-                    }
-                    type="number"
-                    value={
-                      provider.maxTokens == null
-                        ? ''
-                        : String(provider.maxTokens)
-                    }
-                  />
+                  <FieldShell label={t('settings.ai.field.contextWindow')}>
+                    <TextInput
+                      inputMode="numeric"
+                      onChange={(value) =>
+                        props.onChange({
+                          contextWindow: value.trim()
+                            ? Number(value)
+                            : undefined,
+                        })
+                      }
+                      type="number"
+                      value={
+                        provider.contextWindow == null
+                          ? ''
+                          : String(provider.contextWindow)
+                      }
+                    />
+                  </FieldShell>
+                  <FieldShell label={t('settings.ai.field.maxTokens')}>
+                    <TextInput
+                      inputMode="numeric"
+                      onChange={(value) =>
+                        props.onChange({
+                          maxTokens: value.trim() ? Number(value) : undefined,
+                        })
+                      }
+                      type="number"
+                      value={
+                        provider.maxTokens == null
+                          ? ''
+                          : String(provider.maxTokens)
+                      }
+                    />
+                  </FieldShell>
                 </>
               ) : null}
             </>
           ) : null}
-        </div>
+        </Flexbox>
       ) : null}
     </Drawer>
   )
@@ -606,15 +575,15 @@ function ModelCombobox(props: {
         const pricing = formatAIModelPricing(model.pricing, t)
         return {
           label: (
-            <span className={lobeStyles.ube1287d2}>
-              <span className={lobeStyles.u67bab313}>
+            <span {...stylex.props(styles.modelOption)}>
+              <span {...stylex.props(styles.modelName)}>
                 <span>{name}</span>
                 {name !== model.id ? (
-                  <span className={lobeStyles.u10c992af}>{model.id}</span>
+                  <span {...stylex.props(styles.modelId)}>{model.id}</span>
                 ) : null}
               </span>
               {pricing ? (
-                <span className={lobeStyles.ub2ddbe74}>{pricing}</span>
+                <span {...stylex.props(styles.modelPrice)}>{pricing}</span>
               ) : null}
             </span>
           ),
@@ -639,11 +608,7 @@ function ModelCombobox(props: {
       onChange={props.onChange}
       options={options}
       placeholder={props.placeholder}
-      suffix={
-        props.loading ? (
-          <Loader2 aria-hidden="true" className={lobeStyles.u0bb529bd} />
-        ) : undefined
-      }
+      suffix={props.loading ? <Spin size="small" /> : undefined}
     />
   )
 }
