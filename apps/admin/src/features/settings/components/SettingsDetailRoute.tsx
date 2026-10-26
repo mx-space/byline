@@ -1,9 +1,11 @@
-import { createStaticStyles } from '@lobehub/ui'
-import { SlidersHorizontal } from 'lucide-react'
+import { ActionIcon, createStaticStyles } from '@lobehub/ui'
+import { PageHeader } from '@lobehub/ui/dashboard'
+import { ArrowLeft, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router'
 
 import { useDocumentTitle } from '~/hooks/use-document-title'
+import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '~/hooks/use-media-query'
 import { useI18n } from '~/i18n'
 import { DetailPane, DetailPlaceholder } from '~/ui/page'
 import { FormSkeleton } from '~/ui/placeholders'
@@ -18,14 +20,22 @@ import { SettingsActionBarContext, SettingsSaveBar } from './SettingsActionBar'
 import { SystemSettings } from './SystemSettings'
 
 const styles = createStaticStyles(({ css, responsive }) => ({
+  back: css`
+    align-self: flex-start;
+  `,
   content: css`
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
     width: 100%;
     max-width: 800px;
     margin-inline: auto;
-    padding-block: 24px 48px;
-    padding-inline: 24px;
+    padding-block: 28px 48px;
+    padding-inline: 32px;
 
     ${responsive.md} {
+      gap: 16px;
       padding-block: 16px 32px;
       padding-inline: 16px;
     }
@@ -34,6 +44,7 @@ const styles = createStaticStyles(({ css, responsive }) => ({
 
 export function SettingsDetailRoute() {
   const { locale, t } = useI18n()
+  const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY)
   const { section } = useParams<{ section?: string }>()
   const ctx = useSettingsRouteContext()
   const [dirtyAction, setDirtyAction] = useState<SettingsDirtyAction | null>(
@@ -61,16 +72,29 @@ export function SettingsDetailRoute() {
   return (
     <SettingsActionBarContext.Provider value={setDirtyAction}>
       <DetailPane
-        backLabel={settingsCopy(locale, 'backToList')}
         footer={
           dirtyAction ? <SettingsSaveBar action={dirtyAction} /> : undefined
         }
-        meta={getGroupDescription(locale, activeGroup ?? { key: section })}
-        onBack={ctx.onBack}
+        hideHeader
         padded={false}
-        title={title}
       >
         <div className={styles.content}>
+          {isDesktop ? null : (
+            <ActionIcon
+              aria-label={settingsCopy(locale, 'backToList')}
+              className={styles.back}
+              icon={ArrowLeft}
+              onClick={ctx.onBack}
+              title={settingsCopy(locale, 'backToList')}
+            />
+          )}
+          <PageHeader
+            description={getGroupDescription(
+              locale,
+              activeGroup ?? { key: section },
+            )}
+            title={title}
+          />
           {!activeGroup ? (
             <FormSkeleton label={t('settings.common.loading')} rows={6} />
           ) : null}

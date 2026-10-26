@@ -1,4 +1,4 @@
-import { Alert, Flexbox, Text, toast } from '@lobehub/ui'
+import { Alert, toast } from '@lobehub/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getMe, updateMe } from '~/api/users'
@@ -11,6 +11,7 @@ import { Button } from '~/ui/site-button'
 
 import { settingsCopy } from '../copy'
 import { formatDateTime, getErrorMessage } from '../utils/settings'
+import { SettingsGroup } from './SettingsPrimitives'
 
 export function ProfileSettings() {
   const { locale, t } = useI18n()
@@ -20,11 +21,7 @@ export function ProfileSettings() {
     queryKey: adminQueryKeys.users.me(),
   })
 
-  if (meQuery.isLoading) {
-    return <FormSkeleton label={t('settings.common.loading')} rows={5} />
-  }
-
-  if (!meQuery.data) {
+  if (!meQuery.isLoading && !meQuery.data) {
     return (
       <Alert
         action={
@@ -46,32 +43,38 @@ export function ProfileSettings() {
   const me = meQuery.data
 
   return (
-    <Flexbox gap={16}>
-      {me.lastLoginAt ? (
-        <Text type="secondary">
-          {t('settings.owner.lastLoginAt', {
-            time: formatDateTime(me.lastLoginAt),
-          })}
-        </Text>
-      ) : null}
-      <UserProfileForm
-        key={me.updatedAt ?? me.id}
-        onSubmit={async (input) => {
-          try {
-            const updated = await updateMe(input)
-            queryClient.setQueryData(adminQueryKeys.users.me(), updated)
-            await queryClient.invalidateQueries({
-              queryKey: adminQueryKeys.users.root,
+    <SettingsGroup
+      desc={
+        me?.lastLoginAt
+          ? t('settings.owner.lastLoginAt', {
+              time: formatDateTime(me.lastLoginAt),
             })
-            toast.success(t('settings.owner.success.save'))
-          } catch (error) {
-            toast.error(
-              getUserErrorMessage(error, t('settings.owner.error.save')),
-            )
-          }
-        }}
-        user={me}
-      />
-    </Flexbox>
+          : undefined
+      }
+      title={t('settings.owner.section.title')}
+    >
+      {me ? (
+        <UserProfileForm
+          key={me.updatedAt ?? me.id}
+          onSubmit={async (input) => {
+            try {
+              const updated = await updateMe(input)
+              queryClient.setQueryData(adminQueryKeys.users.me(), updated)
+              await queryClient.invalidateQueries({
+                queryKey: adminQueryKeys.users.root,
+              })
+              toast.success(t('settings.owner.success.save'))
+            } catch (error) {
+              toast.error(
+                getUserErrorMessage(error, t('settings.owner.error.save')),
+              )
+            }
+          }}
+          user={me}
+        />
+      ) : (
+        <FormSkeleton label={t('settings.common.loading')} rows={5} />
+      )}
+    </SettingsGroup>
   )
 }

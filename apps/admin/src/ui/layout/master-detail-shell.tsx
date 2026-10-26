@@ -37,7 +37,6 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     min-height: 0px;
     min-width: 0px;
     overflow: hidden;
-    background-color: ${cssVar.colorBgContainer};
   `,
   panel: css`
     flex: none;
@@ -80,7 +79,17 @@ const lobeStyles = createStaticStyles(({ css, cssVar }) => ({
     min-height: 0px;
     min-width: 0px;
     overflow: hidden;
-    background-color: ${cssVar.colorBgContainer};
+
+    /* Cover the list while matching the ConsoleShell workspace. */
+    background-color: color-mix(
+      in srgb,
+      ${cssVar.colorBgLayout} 50%,
+      ${cssVar.colorBgContainer}
+    );
+
+    html.dark & {
+      background-color: ${cssVar.colorBgContainer};
+    }
   `,
 }))
 

@@ -13,8 +13,13 @@ import type {
 } from '../../types/settings'
 import { formatAIModelPricing } from '../../utils/aiModelPricing'
 import { formatAIProviderLabel } from '../../utils/settings'
+import {
+  AIModelAvatar,
+  AIModelOptionLabel,
+  AIProviderOptionLabel,
+} from './ai-brand'
 
-const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
+const styles = createStaticStyles(({ css, responsive }) => ({
   controls: css`
     display: grid;
     grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
@@ -31,30 +36,6 @@ const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
     ${responsive.md} {
       grid-template-columns: minmax(0, 1fr);
     }
-  `,
-  modelId: css`
-    margin-inline-start: 8px;
-    font-size: ${cssVar.fontSizeSM};
-    color: ${cssVar.colorTextTertiary};
-  `,
-  modelName: css`
-    overflow: hidden;
-    flex: 1;
-    min-width: 0;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  `,
-  option: css`
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    min-width: 0;
-  `,
-  pricing: css`
-    flex-shrink: 0;
-    font-size: ${cssVar.fontSizeSM};
-    font-variant-numeric: tabular-nums;
-    color: ${cssVar.colorTextSecondary};
   `,
 }))
 
@@ -83,26 +64,16 @@ export function AIModelAssignmentField(props: {
   )
   const modelOptions = useMemo(
     () =>
-      providerModels.map((model) => {
-        const name = model.name || model.id
-        const pricing = formatAIModelPricing(model.pricing, t)
-        return {
-          label: (
-            <span className={styles.option}>
-              <span className={styles.modelName}>
-                <span>{name}</span>
-                {name !== model.id ? (
-                  <span className={styles.modelId}>{model.id}</span>
-                ) : null}
-              </span>
-              {pricing ? (
-                <span className={styles.pricing}>{pricing}</span>
-              ) : null}
-            </span>
-          ),
-          value: model.id,
-        }
-      }),
+      providerModels.map((model) => ({
+        label: (
+          <AIModelOptionLabel
+            id={model.id}
+            name={model.name}
+            pricing={formatAIModelPricing(model.pricing, t)}
+          />
+        ),
+        value: model.id,
+      })),
     [providerModels, t],
   )
   const modelById = useMemo(
@@ -161,7 +132,11 @@ export function AIModelAssignmentField(props: {
         options={[
           { label: t('settings.ai.assignment.providerNone'), value: '' },
           ...providers.map((provider) => ({
-            label: formatAIProviderLabel(provider),
+            label: (
+              <AIProviderOptionLabel provider={provider}>
+                {formatAIProviderLabel(provider)}
+              </AIProviderOptionLabel>
+            ),
             value: provider.id,
           })),
         ]}
@@ -169,6 +144,7 @@ export function AIModelAssignmentField(props: {
       />
       <AutoComplete
         disabled={!providerId}
+        prefix={modelValue ? <AIModelAvatar model={modelValue} /> : undefined}
         filter={(item, query) =>
           filterModel(
             item && typeof item === 'object' && 'value' in item

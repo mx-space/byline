@@ -36,6 +36,7 @@ import type {
 } from '../../types/settings'
 import { formatAIProviderLabel } from '../../utils/settings'
 import { SettingRow, SettingsGroup } from '../SettingsPrimitives'
+import { AIProviderAvatar } from './ai-brand'
 import { AIModelAssignmentField } from './AIModelAssignmentField'
 import { AIProviderDrawer } from './AIProviderDrawer'
 import { presentAIProviderPresetModal } from './AIProviderPresetModal'
@@ -317,6 +318,7 @@ export function AIConfigEditor(props: {
       const nameKey = PRESET_NAME_KEYS[preset.id]
       return {
         desc: preset.endpoint || undefined,
+        icon: <AIProviderAvatar provider={preset.id} />,
         key: preset.id,
         label: nameKey ? t(nameKey) : preset.name,
         onClick: () => void addProviderFromPreset(preset),
@@ -359,6 +361,7 @@ export function AIConfigEditor(props: {
               key={provider.id}
               label={
                 <Flexbox align="center" as="span" gap={8} horizontal>
+                  <AIProviderAvatar provider={provider} />
                   <span>{formatAIProviderLabel(provider)}</span>
                   {provider.enabled ? null : (
                     <Tag size="small">{ai('providerDisabled')}</Tag>

@@ -1,4 +1,5 @@
 import { Flexbox, Select, Switch, Text, toast } from '@lobehub/ui'
+import { Surface } from '@lobehub/ui/dashboard'
 import { cssVar } from '@lobehub/ui/stylex/cssVar.stylex'
 import * as stylex from '@stylexjs/stylex'
 import { useMutation } from '@tanstack/react-query'
@@ -29,11 +30,6 @@ const styles = stylex.create({
   list: {
     display: 'flex',
     flexDirection: 'column',
-    paddingInline: '16px',
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderColor: cssVar.colorBorderSecondary,
-    borderRadius: cssVar.borderRadiusLG,
   },
   role: { width: '176px' },
   row: {
@@ -103,17 +99,14 @@ export function UserPermissionsCard(props: UserPermissionsCardProps) {
       : t('users.permission.customHintNoBase', { added: addedLabels ?? '' })
 
   return (
-    <Flexbox aria-labelledby="user-permissions-title" as="section" gap={12}>
-      <Flexbox
-        align="center"
-        gap={12}
-        horizontal
-        justify="space-between"
-        wrap="wrap"
-      >
-        <Text id="user-permissions-title" strong>
-          {t('users.permission.title')}
+    <Surface
+      aria-labelledby="user-permissions-title"
+      description={
+        <Text fontSize={12} type="secondary">
+          {props.canEdit ? hint : t('users.permission.readOnly')}
         </Text>
+      }
+      extra={
         <Select
           aria-label={t('users.permission.role')}
           className={stylex.props(styles.role).className}
@@ -127,58 +120,61 @@ export function UserPermissionsCard(props: UserPermissionsCardProps) {
           prefix={t('users.permission.role')}
           value={role}
         />
-      </Flexbox>
-      <Text fontSize={12} type="secondary">
-        {props.canEdit ? hint : t('users.permission.readOnly')}
-      </Text>
-      <div {...stylex.props(styles.list)}>
-        {PERMISSION_FIELDS.map((field, index) => {
-          const selfLocked =
-            props.isSelf && field.bit === Permission.ManageUsers
-          return (
-            <div
-              {...stylex.props(styles.row, index > 0 && styles.rowDivided)}
-              key={field.bit}
-            >
-              <div {...stylex.props(styles.rowText)}>
-                <Text>{t(field.label)}</Text>
-                <Text fontSize={12} type="secondary">
-                  {selfLocked
-                    ? t('users.permission.selfLock')
-                    : t(field.description)}
-                </Text>
+      }
+      title={
+        <span id="user-permissions-title">{t('users.permission.title')}</span>
+      }
+    >
+      <Flexbox gap={16}>
+        <div {...stylex.props(styles.list)}>
+          {PERMISSION_FIELDS.map((field, index) => {
+            const selfLocked =
+              props.isSelf && field.bit === Permission.ManageUsers
+            return (
+              <div
+                {...stylex.props(styles.row, index > 0 && styles.rowDivided)}
+                key={field.bit}
+              >
+                <div {...stylex.props(styles.rowText)}>
+                  <Text>{t(field.label)}</Text>
+                  <Text fontSize={12} type="secondary">
+                    {selfLocked
+                      ? t('users.permission.selfLock')
+                      : t(field.description)}
+                  </Text>
+                </div>
+                <Switch
+                  aria-label={t(field.label)}
+                  checked={hasPermission(mask, field.bit)}
+                  disabled={!props.canEdit || selfLocked}
+                  onChange={() =>
+                    setMask((current) => togglePermission(current, field.bit))
+                  }
+                />
               </div>
-              <Switch
-                aria-label={t(field.label)}
-                checked={hasPermission(mask, field.bit)}
-                disabled={!props.canEdit || selfLocked}
-                onChange={() =>
-                  setMask((current) => togglePermission(current, field.bit))
-                }
-              />
-            </div>
-          )
-        })}
-      </div>
-      {props.canEdit ? (
-        <Flexbox gap={8} horizontal justify="flex-end">
-          <Button
-            disabled={!dirty || mutation.isPending}
-            onClick={() => setMask(props.user.permissions)}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            disabled={!dirty}
-            icon={Save}
-            loading={mutation.isPending}
-            onClick={() => mutation.mutate()}
-            type="primary"
-          >
-            {t('users.permission.save')}
-          </Button>
-        </Flexbox>
-      ) : null}
-    </Flexbox>
+            )
+          })}
+        </div>
+        {props.canEdit ? (
+          <Flexbox gap={8} horizontal justify="flex-end">
+            <Button
+              disabled={!dirty || mutation.isPending}
+              onClick={() => setMask(props.user.permissions)}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              disabled={!dirty}
+              icon={Save}
+              loading={mutation.isPending}
+              onClick={() => mutation.mutate()}
+              type="primary"
+            >
+              {t('users.permission.save')}
+            </Button>
+          </Flexbox>
+        ) : null}
+      </Flexbox>
+    </Surface>
   )
 }

@@ -11,7 +11,7 @@ import {
 import { cssVar } from '@lobehub/ui/stylex/cssVar.stylex'
 import * as stylex from '@stylexjs/stylex'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, Settings } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 
 import { getModelList, getRegistryModels, testConfig } from '~/api/ai'
@@ -45,6 +45,7 @@ import {
   resolvePiProviderId,
 } from '../../utils/settings'
 import { FieldShell } from '../SettingsPrimitives'
+import { AIModelAvatar, AIModelOptionLabel, AIProviderAvatar } from './ai-brand'
 import { LobeHubConnection } from './LobeHubConnection'
 
 const styles = stylex.create({
@@ -72,27 +73,6 @@ const styles = stylex.create({
     color: { default: cssVar.colorTextSecondary, ':hover': cssVar.colorText },
   },
   linkIcon: { width: 12, height: 12 },
-  modelOption: { display: 'flex', minWidth: 0, alignItems: 'center', gap: 12 },
-  modelName: {
-    minWidth: 0,
-    flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: '0%',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  modelId: {
-    marginInlineStart: 8,
-    fontSize: cssVar.fontSizeSM,
-    color: cssVar.colorTextTertiary,
-  },
-  modelPrice: {
-    flexShrink: 0,
-    fontSize: cssVar.fontSizeSM,
-    fontVariantNumeric: 'tabular-nums',
-    color: cssVar.colorTextSecondary,
-  },
 })
 
 const BUILD_HASH =
@@ -250,10 +230,18 @@ export function AIProviderDrawer(props: {
           </Flexbox>
         ) : null
       }
-      icon={Settings}
       onClose={props.onClose}
       open={Boolean(provider)}
-      title={provider ? formatAIProviderLabel(provider) : ''}
+      title={
+        provider ? (
+          <Flexbox align="center" gap={8} horizontal>
+            <AIProviderAvatar provider={provider} />
+            <span>{formatAIProviderLabel(provider)}</span>
+          </Flexbox>
+        ) : (
+          ''
+        )
+      }
     >
       {provider ? (
         <Flexbox gap={24}>
@@ -570,32 +558,23 @@ function ModelCombobox(props: {
 
   const options = useMemo(
     () =>
-      props.models.map((model) => {
-        const name = model.name || model.id
-        const pricing = formatAIModelPricing(model.pricing, t)
-        return {
-          label: (
-            <span {...stylex.props(styles.modelOption)}>
-              <span {...stylex.props(styles.modelName)}>
-                <span>{name}</span>
-                {name !== model.id ? (
-                  <span {...stylex.props(styles.modelId)}>{model.id}</span>
-                ) : null}
-              </span>
-              {pricing ? (
-                <span {...stylex.props(styles.modelPrice)}>{pricing}</span>
-              ) : null}
-            </span>
-          ),
-          value: model.id,
-        }
-      }),
+      props.models.map((model) => ({
+        label: (
+          <AIModelOptionLabel
+            id={model.id}
+            name={model.name}
+            pricing={formatAIModelPricing(model.pricing, t)}
+          />
+        ),
+        value: model.id,
+      })),
     [props.models, t],
   )
 
   return (
     <AutoComplete
       disabled={props.disabled}
+      prefix={props.value ? <AIModelAvatar model={props.value} /> : undefined}
       filter={(item, query) =>
         filterModel(
           item && typeof item === 'object' && 'value' in item

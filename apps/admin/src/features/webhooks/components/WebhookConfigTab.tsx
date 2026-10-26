@@ -1,4 +1,5 @@
 import { Alert, Text, toast } from '@lobehub/ui'
+import { Surface } from '@lobehub/ui/dashboard'
 import { Form, useForm } from '@lobehub/ui/form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
@@ -77,19 +78,25 @@ export function WebhookConfigTab(props: { webhook: WebhookModel }) {
 
   return (
     <Form form={form} gap={20} layout="vertical">
-      {formError ? <Alert showIcon title={formError} type="error" /> : null}
-      <WebhookFields form={form} mode="edit" />
-      {dirty ? (
-        <div className={styles.saveBar}>
-          <Text className={styles.saveBarText}>{text('unsaved')}</Text>
-          <Button htmlType="button" onClick={() => form.reset()}>
-            {text('discard')}
-          </Button>
-          <Button htmlType="submit" loading={mutation.isPending} type="primary">
-            {text('save')}
-          </Button>
-        </div>
-      ) : null}
+      <Surface title={text('tabConfig')}>
+        {formError ? <Alert showIcon title={formError} type="error" /> : null}
+        <WebhookFields form={form} mode="edit" />
+        {dirty ? (
+          <div className={styles.saveBar}>
+            <Text className={styles.saveBarText}>{text('unsaved')}</Text>
+            <Button htmlType="button" onClick={() => form.reset()}>
+              {text('discard')}
+            </Button>
+            <Button
+              htmlType="submit"
+              loading={mutation.isPending}
+              type="primary"
+            >
+              {text('save')}
+            </Button>
+          </div>
+        ) : null}
+      </Surface>
     </Form>
   )
 }

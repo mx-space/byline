@@ -7,6 +7,7 @@ import {
   Text,
   TextArea,
 } from '@lobehub/ui'
+import { Surface } from '@lobehub/ui/dashboard'
 import { Form } from '@lobehub/ui/form'
 import { RotateCcw } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -75,15 +76,9 @@ export function SettingsGroup(props: {
   title: ReactNode
 }) {
   return (
-    <Form.Group
-      collapsible={false}
-      desc={props.desc}
-      extra={props.extra}
-      title={props.title}
-      variant="outlined"
-    >
+    <Surface description={props.desc} extra={props.extra} title={props.title}>
       {props.children}
-    </Form.Group>
+    </Surface>
   )
 }
 

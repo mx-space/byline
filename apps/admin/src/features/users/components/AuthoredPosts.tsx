@@ -70,7 +70,6 @@ export function AuthoredPosts(props: { userId: string }) {
 
   return (
     <Flexbox gap={4}>
-      <Text type="secondary">{copy('postsTitle')}</Text>
       {posts.map((post) => {
         const place = bylinePlace(post.authors, props.userId)
         return (

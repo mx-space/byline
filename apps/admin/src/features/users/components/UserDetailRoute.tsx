@@ -8,7 +8,7 @@ import {
   Text,
   toast,
 } from '@lobehub/ui'
-import { PageHeader } from '@lobehub/ui/dashboard'
+import { PageHeader, Surface } from '@lobehub/ui/dashboard'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useParams } from 'react-router'
@@ -44,7 +44,7 @@ import { UserPermissionsCard } from './UserPermissionsCard'
 import { UserProfileForm } from './UserProfileForm'
 import { useUsersRouteContext } from './users-route-context'
 
-const styles = createStaticStyles(({ css, cssVar }) => ({
+const styles = createStaticStyles(({ css }) => ({
   column: css`
     display: flex;
     flex-direction: column;
@@ -81,8 +81,6 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     block-size: 100%;
     padding-block: 24px;
     padding-inline: 20px 16px;
-
-    background: ${cssVar.colorBgContainer};
   `,
   panel: css`
     flex: none;
@@ -114,7 +112,7 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
   stack: css`
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
   `,
 }))
 
@@ -260,23 +258,25 @@ export function UserDetailRoute() {
         title={t('routes.users.detail')}
       />
       <div className={styles.stack}>
-        {user ? (
-          <UserProfileForm
-            identityLocked={!canEditSignInIdentity(user, ctx.currentUserId)}
-            key={user.updatedAt ?? user.id}
-            onSubmit={async (input) => {
-              try {
-                await save.mutateAsync(input)
-              } catch {
-                return undefined
-              }
-            }}
-            submitLabel={copy('saveProfile')}
-            user={user}
-          />
-        ) : (
-          <FormSkeleton label={copy('loading')} rows={5} />
-        )}
+        <Surface title={copy('profileSection')}>
+          {user ? (
+            <UserProfileForm
+              identityLocked={!canEditSignInIdentity(user, ctx.currentUserId)}
+              key={user.updatedAt ?? user.id}
+              onSubmit={async (input) => {
+                try {
+                  await save.mutateAsync(input)
+                } catch {
+                  return undefined
+                }
+              }}
+              submitLabel={copy('saveProfile')}
+              user={user}
+            />
+          ) : (
+            <FormSkeleton label={copy('loading')} rows={5} />
+          )}
+        </Surface>
         {user && status !== 'profileOnly' ? (
           <UserPermissionsCard
             canEdit={canManageUsers}
@@ -286,7 +286,11 @@ export function UserDetailRoute() {
             user={user}
           />
         ) : null}
-        {user ? <AuthoredPosts userId={user.id} /> : null}
+        {user ? (
+          <Surface title={copy('postsTitle')}>
+            <AuthoredPosts userId={user.id} />
+          </Surface>
+        ) : null}
       </div>
     </div>
   )

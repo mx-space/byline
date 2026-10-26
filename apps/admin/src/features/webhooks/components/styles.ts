@@ -166,15 +166,13 @@ export const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
     gap: 8px;
     align-items: center;
 
-    margin-block: 8px -32px;
+    margin-block: 8px calc(-1 * var(--surface-pad-block, 16px));
+    margin-inline: calc(-1 * var(--surface-pad-inline, 16px));
     padding-block: 12px;
+    padding-inline: var(--surface-pad-inline, 16px);
     border-block-start: 1px solid ${cssVar.colorBorderSecondary};
 
-    background: ${cssVar.colorBgContainer};
-
-    ${responsive.md} {
-      margin-block-end: -24px;
-    }
+    background-color: var(--lobe-surface-bg-solid, ${cssVar.colorBgContainer});
   `,
   saveBarText: css`
     flex: 1;

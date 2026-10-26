@@ -262,6 +262,10 @@ export const usersCopy = createFeatureCopy({
     'en-US': 'Byline posts',
     'zh-CN': '署名文章',
   },
+  profileSection: {
+    'en-US': 'Profile',
+    'zh-CN': '资料',
+  },
   profileOnlyHint: {
     'en-US': 'Byline only. This person cannot sign in.',
     'zh-CN': '仅用于署名，不能登录。',
