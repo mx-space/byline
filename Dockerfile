@@ -28,9 +28,10 @@ RUN apk add --no-cache bash curl tini postgresql-client
 WORKDIR /app
 COPY --from=builder /out .
 
-# The bundle keeps sharp (native) and ws (loaded through createRequire by the
-# Nest WsAdapter) external, so they are installed next to it.
-RUN npm i --no-save --no-package-lock sharp@0.35.5 ws@8.22.0 \
+# The bundle keeps sharp (native), ws (loaded through createRequire by the
+# Nest WsAdapter) and loro-crdt (reads its wasm glue files next to itself)
+# external, so they are installed next to it.
+RUN npm i --no-save --no-package-lock sharp@0.35.5 ws@8.22.0 loro-crdt@1.17.1 \
   && npm cache clean --force
 
 COPY --chmod=755 docker-entrypoint.sh .
