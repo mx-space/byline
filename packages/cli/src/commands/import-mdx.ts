@@ -117,9 +117,13 @@ export const runImportMdx = async (argv: string[]): Promise<number> => {
       'An API URL and an API key or token are required unless --dry-run is set; run `byline login` or pass --api-key',
     )
   }
-  if (stored && apiUrl && token && !(await fetchSession(apiUrl, token))) {
+  // An invalid bearer token is treated as anonymous, so public lookups would
+  // quietly report every post as new instead of failing.
+  if (apiUrl && token && !apiKey && !(await fetchSession(apiUrl, token))) {
     throw new Error(
-      `The saved session for ${apiUrl} is no longer valid; run \`byline login\``,
+      stored
+        ? `The saved session for ${apiUrl} is no longer valid; run \`byline login\``
+        : `The token is not a valid session for ${apiUrl}`,
     )
   }
   const client =
