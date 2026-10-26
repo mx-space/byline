@@ -116,7 +116,9 @@ export const runDraft = async (argv: string[]): Promise<number> => {
     case 'delete': {
       const client = (await connect(values, { required: true }))!
       await client.drafts.delete(id!)
-      process.stdout.write(`Deleted draft ${id}\n`)
+      process.stdout.write(
+        `Deleted draft ${id} (the server keeps it archived)\n`,
+      )
       return 0
     }
     default: {

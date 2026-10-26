@@ -17,11 +17,13 @@ const line = (label: string, value: unknown) =>
 
 const date = (value?: string | null) => (value ? value.slice(0, 16) : '')
 
+const titleOf = (title: string) => title.trim() || '(untitled)'
+
 export const formatDraftRow = (draft: DraftBranch) => {
   const head = draft.headRevision
   const slug = head.typeSpecificData?.slug
   const state = draft.document.refId ? `post ${draft.document.refId}` : 'new'
-  return `${draft.id}  ${date(draft.updatedAt ?? draft.createdAt)}  ${state.padEnd(24)} ${head.title}${slug ? ` (${slug})` : ''}`
+  return `${draft.id}  ${date(draft.updatedAt ?? draft.createdAt)}  ${state.padEnd(24)} ${titleOf(head.title)}${slug ? ` (${slug})` : ''}`
 }
 
 export const formatDraft = (
@@ -32,7 +34,8 @@ export const formatDraft = (
   const data = head.typeSpecificData ?? {}
   return [
     ...line('Draft', draft.id),
-    ...line('Title', head.title),
+    ...line('Status', draft.status === 'active' ? undefined : draft.status),
+    ...line('Title', titleOf(head.title)),
     ...line('Slug', data.slug),
     ...line('Category', extra.category),
     ...line('Authors', extra.authors),
