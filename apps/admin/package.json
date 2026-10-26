@@ -20,7 +20,7 @@
     "@haklex/rich-agent-core": "0.54.3",
     "@haklex/rich-compose": "0.54.4",
     "@haklex/rich-diff": "0.54.3",
-    "@haklex/rich-editor": "0.54.3",
+    "@haklex/rich-editor": "0.54.4",
     "@haklex/rich-editor-ui": "0.54.3",
     "@haklex/rich-ext-ai-agent": "0.54.3",
     "@haklex/rich-ext-chat": "0.54.3",
