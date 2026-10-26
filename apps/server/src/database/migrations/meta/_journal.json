@@ -50,6 +50,13 @@
       "when": 1793003577599,
       "tag": "0006_loro_content_storage",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793014125806,
+      "tag": "0007_drop_document_shares",
+      "breakpoints": true
     }
   ]
 }

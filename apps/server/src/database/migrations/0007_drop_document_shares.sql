@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS "content_document_shares" CASCADE;
