@@ -20,6 +20,7 @@ import type {
   OauthProviderField,
   OauthProviderType,
 } from '../../types/settings'
+import { buildOauthValidationReturnUrl } from '../../utils/oauth'
 import { SecretInput, SettingRow, SettingsGroup } from '../SettingsPrimitives'
 import { AppleIcon, GitHubIcon, GoogleIcon } from './OauthIcons'
 
@@ -105,10 +106,8 @@ export function OauthProviderSection(props: {
     })
 
   const validate = () => {
-    const callback = new URL(location.href)
-    callback.searchParams.set('validate', props.type)
     void authClient.linkSocial({
-      callbackURL: callback.toString(),
+      callbackURL: buildOauthValidationReturnUrl(props.type),
       provider: props.type,
     })
   }

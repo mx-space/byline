@@ -100,11 +100,31 @@ export type SettingsGroupType = 'account' | 'system' | 'user'
 export type OauthProviderType = 'apple' | 'github' | 'google'
 
 export interface OauthOptions {
+  customClients?: CustomOauthClient[]
+  configuredProviders?: string[]
   providers?: Array<{
     enabled?: boolean
     type: OauthProviderType
   }>
   public?: Partial<Record<OauthProviderType, Record<string, string>>>
+}
+
+export interface CustomOauthClient {
+  id: string
+  name: string
+  icon?: string
+  enabled: boolean
+  protocol: 'oidc' | 'oauth2'
+  clientId: string
+  discoveryUrl?: string
+  authorizationUrl?: string
+  tokenUrl?: string
+  userInfoUrl?: string
+  scopes?: string[]
+  authentication?: 'basic' | 'post'
+  profile?: Partial<
+    Record<'id' | 'email' | 'name' | 'image' | 'emailVerified', string>
+  >
 }
 
 export interface OauthProviderField {

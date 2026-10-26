@@ -13,6 +13,10 @@ import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 
 import { AuthService } from '../auth/auth.service'
 import type { SessionUser } from '../auth/auth.types'
+import {
+  buildCustomOAuthProviders,
+  buildSocialProviders,
+} from '../auth/social-providers'
 import { ConfigsService } from '../configs/configs.service'
 import {
   type CreateInviteDto,
@@ -43,20 +47,34 @@ export class UserController {
   @Get('/allow-login')
   @HttpCache({ disable: true })
   async allowLogin() {
-    const { disablePasswordLogin } =
-      await this.configsService.get('authSecurity')
-    const [hasPasskey, oauthProviders, hasCredentialAccount] =
+    const [{ disablePasswordLogin }, oauth, hasPasskey, hasCredentialAccount] =
       await Promise.all([
+        this.configsService.get('authSecurity'),
+        this.configsService.get('oauth'),
         this.authService.hasPasskey(),
-        this.authService.getOauthProviders(),
         this.authService.hasCredentialAccount(),
       ])
+    const oauthProviders = [
+      ...Object.keys(buildSocialProviders(oauth, '')),
+      ...buildCustomOAuthProviders(oauth, '').map(
+        (provider) => provider.providerId,
+      ),
+    ]
 
     return {
       password: hasCredentialAccount && !disablePasswordLogin,
       passkey: hasPasskey,
+      oauthProviders: (oauth.customClients ?? [])
+        .filter(
+          (client) => client.enabled && oauthProviders.includes(client.id),
+        )
+        .map(({ id, name, icon }) => ({ id, name, icon })),
       ...Object.fromEntries(
-        oauthProviders.map((provider) => [provider.toLowerCase(), true]),
+        oauthProviders
+          .filter((provider) =>
+            ['apple', 'github', 'google'].includes(provider),
+          )
+          .map((provider) => [provider, true]),
       ),
     }
   }

@@ -294,7 +294,7 @@ export class AuthService {
   }
 
   getOauthProviders() {
-    return Object.keys(this.authInstance.get().options.socialProviders || {})
+    return this.authInstance.get().api.getProviders()
   }
 
   hasCredentialAccount() {

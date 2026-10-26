@@ -19,6 +19,7 @@ import { flattenOauthOptions } from '../../utils/oauth'
 import { getErrorMessage } from '../../utils/settings'
 import { useSettingsRouteContext } from '../settings-route-context'
 import { useSettingsActionBarSetter } from '../SettingsActionBar'
+import { CustomOauthSection } from './CustomOauthSection'
 import type { OauthDraft } from './OauthProviderSection'
 import {
   countOauthChanges,
@@ -53,6 +54,7 @@ export function OauthSection() {
     {},
   )
   const [failure, setFailure] = useState<string | null>(null)
+  const [customDirty, setCustomDirty] = useState(false)
 
   const oauthQuery = useQuery({
     queryFn: () => getOption<OauthOptions>('oauth'),
@@ -203,9 +205,9 @@ export function OauthSection() {
   }, [data])
 
   useEffect(() => {
-    registerLeaveGuard(() => hasDirty)
+    registerLeaveGuard(() => hasDirty || customDirty)
     return () => registerLeaveGuard(null)
-  }, [hasDirty, registerLeaveGuard])
+  }, [customDirty, hasDirty, registerLeaveGuard])
 
   useEffect(() => {
     setDirtyAction(
@@ -225,6 +227,12 @@ export function OauthSection() {
 
   return (
     <Flexbox gap={12}>
+      {oauthQuery.data ? (
+        <CustomOauthSection
+          onDirtyChange={setCustomDirty}
+          options={oauthQuery.data}
+        />
+      ) : null}
       <Flexbox gap={2}>
         <Text strong>{t('settings.oauth.title')}</Text>
         <Text type="secondary">{settingsAccountCopy(locale, 'oauthDesc')}</Text>

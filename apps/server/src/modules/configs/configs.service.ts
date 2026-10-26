@@ -407,7 +407,24 @@ export class ConfigsService implements OnModuleInit {
   ): Promise<Readonly<IConfig[T]>> {
     const config = await this.getStoredConfig()
     const value = config[key]
-    return sanitizeConfigForResponse(value as object, key) as IConfig[T]
+    const sanitized = sanitizeConfigForResponse(
+      value as object,
+      key,
+    ) as IConfig[T]
+    if (key === 'oauth') {
+      const oauth = value as OAuthConfig
+      return {
+        ...sanitized,
+        configuredProviders: Object.entries(oauth.secrets ?? {})
+          .filter(([id, fields]) =>
+            id === 'apple'
+              ? Boolean(fields.privateKey && fields.keyId && fields.teamId)
+              : Boolean(fields.clientSecret),
+          )
+          .map(([id]) => id),
+      }
+    }
+    return sanitized as IConfig[T]
   }
 
   private async patch<T extends keyof IConfig>(
@@ -418,19 +435,21 @@ export class ConfigsService implements OnModuleInit {
     const updatedConfigRow = await this.optionsRepository.upsert(
       key as string,
       encryptObject(
-        mergeWith(cloneDeep(config[key]), data, (old, newer) => {
-          if (newer === null) {
-            return null
-          }
-          // Arrays are not merged
-          if (Array.isArray(old)) {
-            return newer
-          }
-          // Objects are merged
-          if (typeof old === 'object' && typeof newer === 'object') {
-            return { ...old, ...newer }
-          }
-        }),
+        key === 'oauth'
+          ? data
+          : mergeWith(cloneDeep(config[key]), data, (old, newer) => {
+              if (newer === null) {
+                return null
+              }
+              // Arrays are not merged
+              if (Array.isArray(old)) {
+                return newer
+              }
+              // Objects are merged
+              if (typeof old === 'object' && typeof newer === 'object') {
+                return { ...old, ...newer }
+              }
+            }),
         key,
       ),
     )
@@ -453,7 +472,17 @@ export class ConfigsService implements OnModuleInit {
     key: T,
     value: Partial<IConfig[T]>,
   ) {
+    const oauthSecrets =
+      key === 'oauth' ? (value as OAuthConfig).secrets : undefined
     value = camelcaseKeys(value) as any
+    if (oauthSecrets) {
+      ;(value as OAuthConfig).secrets = Object.fromEntries(
+        Object.entries(oauthSecrets).map(([id, fields]) => [
+          id,
+          camelcaseKeys(fields),
+        ]),
+      )
+    }
     value = removeEmptyEncryptedFields(value as object, key) as Partial<
       IConfig[T]
     >
@@ -549,10 +578,34 @@ export class ConfigsService implements OnModuleInit {
 
         const nextOauth = {
           providers: currentProviders,
+          customClients: [
+            ...new Map([
+              ...(current.customClients ?? []).map(
+                (client) => [client.id, client] as const,
+              ),
+              ...(value.customClients ?? []).map(
+                (client) => [client.id, client] as const,
+              ),
+            ]).values(),
+          ].filter(
+            (client) => !value.removedCustomClients?.includes(client.id),
+          ),
           public: merge(cloneDeep(current.public || {}), value.public || {}),
           secrets: merge(cloneDeep(current.secrets || {}), value.secrets || {}),
         }
-        const option = await this.patch(key as 'oauth', nextOauth)
+        for (const id of value.removedCustomClients ?? [])
+          delete nextOauth.secrets[id]
+        for (const client of nextOauth.customClients) {
+          if (client.enabled && !nextOauth.secrets[client.id]?.clientSecret) {
+            throw createAppException(AppErrorCode.CONFIG_VALIDATION_FAILED, {
+              message: `customClients.${client.id}.clientSecret: Required for an enabled OAuth client`,
+            })
+          }
+        }
+        const option = await this.patch(
+          key as 'oauth',
+          this.validWithDto(dto, nextOauth),
+        )
 
         await this.configVersionService.bump(ConfigVersionScopes.OAuth)
         return option

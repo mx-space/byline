@@ -23,6 +23,7 @@ export function AuthSubmitButton(props: {
       loading={props.loading}
       onClick={props.onClick}
       size="large"
+      shape="default"
       type="primary"
     >
       {props.children}

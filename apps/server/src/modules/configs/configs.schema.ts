@@ -579,10 +579,92 @@ const OAuthProviderSchema = z.object({
   enabled: z.boolean(),
 })
 
+const CustomOAuthIdSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(/^[a-z][a-z0-9-]*$/)
+  .refine(
+    (id) =>
+      ![
+        'github',
+        'google',
+        'apple',
+        'passkey',
+        'credential',
+        'password',
+      ].includes(id),
+    'This client identifier is reserved',
+  )
+const OAuthUrlSchema = z.url({ protocol: /^https?$/ })
+const OAuthProfilePathSchema = z
+  .string()
+  .max(128)
+  .regex(/^[\w.-]+$/)
+  .optional()
+
+export const CustomOAuthClientSchema = z
+  .object({
+    id: CustomOAuthIdSchema,
+    name: z.string().trim().min(1).max(100),
+    icon: OAuthUrlSchema.or(z.literal('')).optional(),
+    enabled: z.boolean(),
+    protocol: z.enum(['oidc', 'oauth2']),
+    clientId: z.string().trim().max(512),
+    discoveryUrl: OAuthUrlSchema.or(z.literal('')).optional(),
+    authorizationUrl: OAuthUrlSchema.or(z.literal('')).optional(),
+    tokenUrl: OAuthUrlSchema.or(z.literal('')).optional(),
+    userInfoUrl: OAuthUrlSchema.or(z.literal('')).optional(),
+    scopes: z.array(z.string().trim().min(1).max(128)).max(32).optional(),
+    authentication: z.enum(['post', 'basic']).optional(),
+    profile: z
+      .object({
+        id: OAuthProfilePathSchema,
+        email: OAuthProfilePathSchema,
+        name: OAuthProfilePathSchema,
+        image: OAuthProfilePathSchema,
+        emailVerified: OAuthProfilePathSchema,
+      })
+      .optional(),
+  })
+  .superRefine((client, ctx) => {
+    if (!client.enabled) return
+    const required =
+      client.protocol === 'oidc'
+        ? (['clientId', 'discoveryUrl'] as const)
+        : (['clientId', 'authorizationUrl', 'tokenUrl', 'userInfoUrl'] as const)
+    for (const key of required) {
+      if (!client[key])
+        ctx.addIssue({
+          code: 'custom',
+          path: [key],
+          message: 'Required for an enabled OAuth client',
+        })
+    }
+  })
+export type CustomOAuthClient = z.infer<typeof CustomOAuthClientSchema>
+
 export const OAuthSchema = section(
   'OAuth',
   {
     providers: z.array(OAuthProviderSchema).optional(),
+    customClients: z
+      .array(CustomOAuthClientSchema)
+      .max(50)
+      .superRefine((clients, ctx) => {
+        const ids = new Set<string>()
+        clients.forEach((client, index) => {
+          if (ids.has(client.id))
+            ctx.addIssue({
+              code: 'custom',
+              path: [index, 'id'],
+              message: 'Client identifiers must be unique',
+            })
+          ids.add(client.id)
+        })
+      })
+      .optional(),
+    removedCustomClients: z.array(CustomOAuthIdSchema).optional(),
     secrets: withMeta(
       z.record(z.string(), z.record(z.string(), z.string())).optional(),
       { encrypt: true },

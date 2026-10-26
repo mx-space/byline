@@ -19,9 +19,11 @@ import { toNodeHandler } from 'better-auth/node'
 import {
   bearer,
   deviceAuthorization,
+  genericOAuth,
   oneTimeToken,
   username,
 } from 'better-auth/plugins'
+import type { GenericOAuthConfig } from 'better-auth/plugins/generic-oauth'
 import { and, eq } from 'drizzle-orm'
 import { customAlphabet } from 'nanoid'
 import wcmatch from 'wildcard-match'
@@ -234,6 +236,7 @@ export async function CreateAuth(
   idGenerator?: SnowflakeGenerator,
   getCredentialSignInGate?: () => Promise<CredentialSignInGate>,
   sendResetPasswordEmail?: SendResetPasswordEmail,
+  customProviders: GenericOAuthConfig[] = [],
 ) {
   const deviceVerificationPath = isDev
     ? '/device'
@@ -356,6 +359,7 @@ export async function CreateAuth(
           schema: { apikey: { modelName: 'apiKey' } },
         },
       ),
+      genericOAuth({ config: customProviders }),
       passkey({
         ...passkeyOptions,
         schema: {
@@ -544,7 +548,10 @@ export async function CreateAuth(
         const _listUserAccounts = auth.api.listUserAccounts.bind(auth.api)
         return Object.assign(auth.api, {
           getProviders() {
-            return Object.keys(auth.options.socialProviders || {})
+            return [
+              ...Object.keys(auth.options.socialProviders || {}),
+              ...customProviders.map((provider) => provider.providerId),
+            ]
           },
           async listUserAccounts(
             params: Parameters<typeof auth.api.listUserAccounts>[0],

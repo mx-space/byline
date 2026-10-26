@@ -1,13 +1,21 @@
-import { Input, InputPassword, Text, toast } from '@lobehub/ui'
+import {
+  ActionIcon,
+  Button,
+  type ButtonProps,
+  Divider,
+  Flexbox,
+  Input,
+  InputPassword,
+  toast,
+} from '@lobehub/ui'
 import { Form, useForm } from '@lobehub/ui/form'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { KeyRound } from 'lucide-react'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { Fingerprint } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import { type AllowLoginResponse, getAllowLogin } from '~/api/users'
 import { SESSION_WITH_LOGIN } from '~/constants/keys'
-import { Button, type ButtonProps } from '~/ui/site-button'
 import { authClient } from '~/utils/authjs/auth'
 
 import {
@@ -18,16 +26,17 @@ import {
 import { useAuthCopy } from '../use-auth-copy'
 import { checkIsInit } from '../utils/check-init'
 import { focusInvalid } from '../utils/focus-invalid'
-import { buildHashRouteUrl } from '../utils/login'
+import { buildHashRouteUrl, readHashSearchParam } from '../utils/login'
 import { AppleIcon } from './AppleIcon'
 import { authStyles } from './auth-styles'
 import { AuthSubmitButton, AuthTextLink } from './AuthActions'
 import { AuthScreen } from './AuthScreen'
 import { GithubIcon } from './GithubIcon'
 import { GoogleIcon } from './GoogleIcon'
+import { OauthProviderIcon } from './OauthProviderIcon'
 import { StatusAlert } from './StatusAlert'
 
-type MethodId = 'apple' | 'github' | 'google' | 'passkey'
+type MethodId = string
 
 const providerLabel = {
   apple: 'Apple',
@@ -37,6 +46,7 @@ const providerLabel = {
 type Busy = 'password' | MethodId | null
 
 type SignInMethod = {
+  custom?: boolean
   icon: ButtonProps['icon']
   id: MethodId
   label: string
@@ -101,15 +111,20 @@ export function LoginRouteViewContent() {
 
   return (
     <AuthScreen
+      footer={messages('inviteOnly')}
       loading={waiting}
       subtitle={
         <span className={authStyles.wrap}>{messages('loginDescription')}</span>
       }
-      title={messages('loginTitle')}
+      title={messages('loginHeading')}
     >
       {waiting ? null : (
         <LoginBody
           callbackURL={callbackURL}
+          errorCallbackURL={buildHashRouteUrl(
+            `/login?from=${encodeURIComponent(searchParams.get('to') || fromPath)}`,
+          )}
+          oauthError={readHashSearchParam('error')}
           initError={initQuery.isError}
           methodsError={allowLoginQuery.isError}
           onRetry={retry}
@@ -123,6 +138,8 @@ export function LoginRouteViewContent() {
 
 function LoginBody(props: {
   callbackURL: string
+  errorCallbackURL: string
+  oauthError: string | null
   initError: boolean
   methodsError: boolean
   onRetry: () => void
@@ -132,6 +149,7 @@ function LoginBody(props: {
   const messages = useAuthCopy()
   const [busy, setBusy] = useState<Busy>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
+  const [returnedError, setReturnedError] = useState(Boolean(props.oauthError))
   const showPassword = props.settings?.password !== false
   const methods = buildMethods(props.settings, messages)
 
@@ -148,6 +166,7 @@ function LoginBody(props: {
     if (busy) return
     setBusy('passkey')
     setNotice(null)
+    setReturnedError(false)
     try {
       const result = await authClient.signIn.passkey()
       if (result.error) {
@@ -172,18 +191,29 @@ function LoginBody(props: {
     }
   }
 
-  const runSocial = async (provider: Exclude<MethodId, 'passkey'>) => {
+  const runSocial = async (provider: string) => {
     if (busy) return
     setBusy(provider)
     setNotice(null)
+    setReturnedError(false)
     try {
-      const result = await authClient.signIn.social({
-        callbackURL: props.callbackURL,
-        provider,
-      })
-      if (result.error) failSocial(providerLabel[provider])
+      const method = methods.find((item) => item.id === provider)
+      const result = method?.custom
+        ? await authClient.signIn.oauth2({
+            callbackURL: props.callbackURL,
+            errorCallbackURL: props.errorCallbackURL,
+            providerId: provider,
+          })
+        : await authClient.signIn.social({
+            callbackURL: props.callbackURL,
+            errorCallbackURL: props.errorCallbackURL,
+            provider,
+          })
+      if (result.error) failSocial(method?.label ?? provider)
     } catch {
-      failSocial(providerLabel[provider])
+      failSocial(
+        methods.find((item) => item.id === provider)?.label ?? provider,
+      )
     } finally {
       setBusy(null)
     }
@@ -205,6 +235,13 @@ function LoginBody(props: {
     />
   ) : notice ? (
     <StatusAlert description={notice.detail} title={notice.title} />
+  ) : returnedError ? (
+    <StatusAlert
+      title={messages('oauthReturnedError')}
+      description={messages(
+        showPassword ? 'socialFailedPassword' : 'socialFailedOnly',
+      )}
+    />
   ) : !showPassword && methods.length === 0 ? (
     <StatusAlert
       description={messages('noMethodsDetail')}
@@ -221,16 +258,19 @@ function LoginBody(props: {
           busy={busy === 'password'}
           locked={busy !== null}
           onBusy={(value) => setBusy(value ? 'password' : null)}
-          onStart={() => setNotice(null)}
+          onStart={() => {
+            setNotice(null)
+            setReturnedError(false)
+          }}
           onSuccess={props.onSuccess}
         />
       ) : null}
       <MethodList
         busy={busy}
-        methods={showPassword ? methods : methods.slice(1)}
+        methods={methods}
         onPasskey={runPasskey}
         onSocial={runSocial}
-        primary={showPassword ? null : (methods[0] ?? null)}
+        hasPassword={showPassword}
       />
     </>
   )
@@ -292,14 +332,19 @@ function PasswordForm(props: {
         label={messages('accountLabel')}
         name="identifier"
         required={messages('accountRequired')}
-        desc={messages('accountHint')}
         validate={(value) => {
           if (typeof value === 'string' && value.length > 0 && !value.trim()) {
             return messages('accountRequired')
           }
         }}
       >
-        <Input autoComplete="username" autoFocus name="username" size="large" />
+        <Input
+          autoComplete="username"
+          autoFocus
+          name="username"
+          placeholder={messages('accountHint')}
+          size="large"
+        />
       </Form.Field>
       <Form.Field
         label={messages('passwordLabel')}
@@ -327,73 +372,62 @@ function MethodList(props: {
   methods: SignInMethod[]
   onPasskey: () => void
   onSocial: (provider: Exclude<MethodId, 'passkey'>) => void
-  primary: SignInMethod | null
+  hasPassword: boolean
 }) {
   const messages = useAuthCopy()
-  if (!props.primary && props.methods.length === 0) return null
+  if (props.methods.length === 0) return null
 
   const run = (method: SignInMethod) => {
     if (method.id === 'passkey') props.onPasskey()
     else props.onSocial(method.id)
   }
 
-  const rest: ReactNode[] = []
-  for (const method of props.methods) {
-    rest.push(
-      <MethodButton
-        busy={props.busy === method.id}
-        key={method.id}
-        method={method}
-        onClick={() => run(method)}
-      />,
-    )
-  }
+  const oauth = props.methods.filter((method) => method.id !== 'passkey')
+  const passkey = props.methods.find((method) => method.id === 'passkey')
 
   return (
-    <>
-      {props.primary ? (
-        <AuthSubmitButton
-          flush
-          htmlType="button"
-          icon={props.primary.icon}
-          loading={props.busy === props.primary.id}
-          onClick={() => {
-            const method = props.primary
-            if (method) run(method)
-          }}
+    <Flexbox className={authStyles.methods} gap={20}>
+      {oauth.length > 0 ? (
+        <>
+          <Divider>{messages('otherMethods')}</Divider>
+          <Flexbox
+            align="center"
+            gap={12}
+            horizontal
+            justify="center"
+            wrap="wrap"
+          >
+            {oauth.map((method) => (
+              <ActionIcon
+                aria-label={method.name}
+                disabled={props.busy !== null && props.busy !== method.id}
+                icon={method.icon}
+                key={method.id}
+                loading={props.busy === method.id}
+                onClick={() => run(method)}
+                size={{ blockSize: 48, size: 24 }}
+                title={method.name}
+                variant="outlined"
+              />
+            ))}
+          </Flexbox>
+        </>
+      ) : null}
+      {passkey ? (
+        <Button
+          aria-label={passkey.name}
+          block
+          disabled={props.busy !== null && props.busy !== passkey.id}
+          icon={passkey.icon}
+          loading={props.busy === passkey.id}
+          onClick={props.onPasskey}
+          size="large"
+          type={props.hasPassword ? 'default' : 'primary'}
         >
-          {props.primary.name}
-        </AuthSubmitButton>
+          {passkey.name}
+        </Button>
       ) : null}
-      {rest.length > 0 ? (
-        <div className={authStyles.methods}>
-          <Text type="secondary">{messages('otherMethods')}</Text>
-          {rest}
-        </div>
-      ) : null}
-    </>
-  )
-}
-
-function MethodButton(props: {
-  busy: boolean
-  method: SignInMethod
-  onClick: () => void
-}) {
-  return (
-    <Button
-      aria-label={props.method.name}
-      block
-      className={authStyles.method}
-      htmlType="button"
-      icon={props.method.icon}
-      loading={props.busy}
-      onClick={props.onClick}
-      size="large"
-      type="default"
-    >
-      {props.method.label}
-    </Button>
+    </Flexbox>
   )
 }
 
@@ -405,10 +439,19 @@ function buildMethods(
   const methods: SignInMethod[] = []
   if (settings.passkey) {
     methods.push({
-      icon: KeyRound,
+      icon: Fingerprint,
       id: 'passkey',
       label: messages('passkeyLabel'),
       name: messages('passkeyName'),
+    })
+  }
+  for (const provider of settings.oauthProviders ?? []) {
+    methods.push({
+      custom: true,
+      icon: <OauthProviderIcon src={provider.icon} />,
+      id: provider.id,
+      label: provider.name,
+      name: messages('socialName', { provider: provider.name }),
     })
   }
   if (settings.github) {

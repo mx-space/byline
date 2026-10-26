@@ -1,6 +1,15 @@
 import { createFeatureCopy } from '~/i18n/feature-copy'
 
 export const authCopyCatalog = {
+  oauthReturnedError: {
+    'en-US': 'Third-party sign-in was not completed',
+    'zh-CN': '第三方登录未完成',
+  },
+  loginHeading: { 'en-US': 'Sign in to Byline', 'zh-CN': '登录 Byline' },
+  inviteOnly: {
+    'en-US': 'Invited accounts only. Contact an administrator to join.',
+    'zh-CN': '仅限受邀账号访问。需要加入请联系站点管理员。',
+  },
   acceptFailedDetail: {
     'en-US': 'Check the fields and try again.',
     'zh-CN': '检查填写内容后再试。',

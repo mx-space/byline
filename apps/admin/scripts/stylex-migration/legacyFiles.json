@@ -11,7 +11,6 @@
   "src/features/ai/product/gallery.tsx",
   "src/features/ai/shell/styles.ts",
   "src/features/auth/components/AppleIcon.tsx",
-  "src/features/auth/components/AuthScreen.tsx",
   "src/features/auth/components/GithubIcon.tsx",
   "src/features/auth/components/GoogleIcon.tsx",
   "src/features/auth/components/auth-styles.ts",

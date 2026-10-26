@@ -1,9 +1,10 @@
-import { createStaticStyles } from '@lobehub/ui'
 import { AuthLayout } from '@lobehub/ui/dashboard'
+import { cssVar } from '@lobehub/ui/stylex/cssVar.stylex'
+import * as stylex from '@stylexjs/stylex'
 import { lazy, type ReactNode, Suspense } from 'react'
 
 import { useI18n } from '~/i18n'
-import { LogoColor } from '~/ui/brand'
+import { Combine } from '~/ui/brand'
 
 import { AuthTools } from './auth-tools'
 
@@ -13,28 +14,15 @@ const Grainient = lazy(() =>
   })),
 )
 
-const styles = createStaticStyles(({ css, cssVar }) => ({
-  form: css`
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    width: 100%;
-  `,
-  link: css`
-    font-size: 12px;
-    line-height: 18px;
-    color: ${cssVar.colorPrimary};
-
-    &:hover {
-      color: ${cssVar.colorPrimaryHover};
-    }
-
-    &:focus-visible {
-      text-decoration: underline;
-    }
-  `,
-}))
+const styles = stylex.create({
+  form: { display: 'flex', flexDirection: 'column', gap: 12, width: '100%' },
+  link: {
+    fontSize: cssVar.fontSizeSM,
+    lineHeight: cssVar.lineHeightSM,
+    color: { default: cssVar.colorPrimary, ':hover': cssVar.colorPrimaryHover },
+    textDecoration: { default: 'none', ':focus-visible': 'underline' },
+  },
+})
 
 export function AuthScreen(props: {
   alert?: ReactNode
@@ -60,19 +48,19 @@ export function AuthScreen(props: {
           }
         />
       }
-      background="grid"
+      background="plain"
+      brand={<Combine size={32} />}
       description={props.subtitle}
       footer={props.footer}
       loading={props.loading}
-      logo={<LogoColor size={40} />}
       title={props.title}
       tools={<AuthTools />}
-      variant="elevated"
+      variant="default"
     >
       {props.children}
     </AuthLayout>
   )
 }
 
-export const authFormClassName = styles.form
-export const authLinkClassName = styles.link
+export const authFormClassName = stylex.props(styles.form).className
+export const authLinkClassName = stylex.props(styles.link).className

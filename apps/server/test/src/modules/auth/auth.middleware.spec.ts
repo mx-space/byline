@@ -68,6 +68,7 @@ describe('AuthMiddleware', () => {
 
       expect(next).toHaveBeenCalledOnce()
       expect(handler).not.toHaveBeenCalled()
+      expect((middleware as any).ensureAuthHandlerFresh).toHaveBeenCalledOnce()
     })
 
     it('should bypass non-GET/POST methods', async () => {

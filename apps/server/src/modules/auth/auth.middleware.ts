@@ -17,7 +17,10 @@ import { ConfigsService } from '../configs/configs.service'
 import { AuthInstanceInjectKey } from './auth.constant'
 import { CreateAuth } from './auth.implement'
 import type { InjectAuthInstance } from './auth.interface'
-import { buildSocialProviders } from './social-providers'
+import {
+  buildCustomOAuthProviders,
+  buildSocialProviders,
+} from './social-providers'
 
 declare module 'http' {
   interface IncomingMessage {
@@ -113,6 +116,7 @@ export class AuthMiddleware implements NestMiddleware, OnModuleInit {
           ),
         }),
         this.sendResetPasswordEmail,
+        buildCustomOAuthProviders(oauth, urls.serverUrl),
       )
       this.authHandler = handler
 
@@ -131,16 +135,17 @@ export class AuthMiddleware implements NestMiddleware, OnModuleInit {
       return
     }
 
-    if (shouldBypassBetterAuth(req.originalUrl)) {
-      next()
-      return
-    }
     if (req.method !== 'GET' && req.method !== 'POST') {
       next()
       return
     }
 
     await this.ensureAuthHandlerFresh()
+
+    if (shouldBypassBetterAuth(req.originalUrl)) {
+      next()
+      return
+    }
 
     return await this.authHandler(req, res)
   }

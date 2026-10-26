@@ -18,7 +18,9 @@ export function flattenOauthOptions(
       return [
         provider.type,
         {
-          configured: Object.values(publicFields).some(Boolean),
+          configured: data?.configuredProviders
+            ? data.configuredProviders.includes(provider.type)
+            : Object.values(publicFields).some(Boolean),
           enabled: providerMap.get(provider.type)?.enabled ?? false,
           public: publicFields,
           type: provider.type,
@@ -26,4 +28,15 @@ export function flattenOauthOptions(
       ]
     }),
   ) as Record<OauthProviderType, FlatOauthProvider>
+}
+
+export function buildOauthValidationReturnUrl(
+  providerId: string,
+  href = window.location.href,
+) {
+  const url = new URL(href)
+  const route = new URL(url.hash.slice(1) || '/', url.origin)
+  route.searchParams.set('validate', providerId)
+  url.hash = `${route.pathname}${route.search}`
+  return url.toString()
 }

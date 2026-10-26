@@ -70,7 +70,8 @@ export type AllowLoginResponse = {
   google?: boolean
   passkey: boolean
   password: boolean
-} & Record<string, boolean | undefined>
+  oauthProviders?: Array<{ id: string; name: string; icon?: string }>
+}
 
 export interface LoggedStatus {
   isGuest?: boolean
