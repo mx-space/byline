@@ -7,7 +7,6 @@ import type { DraftRefType } from './draft.enum'
 export type { DraftRefType }
 
 export type DraftBranchStatus = 'active' | 'archived'
-export type DraftShareMode = 'pinned' | 'follow'
 export type RevisionRelation = 'same' | 'ancestor' | 'descendant' | 'diverged'
 
 export interface RevisionSnapshot {
@@ -146,27 +145,6 @@ export interface DraftListFilter {
   refType?: DraftRefType
   search?: string
   status?: DraftBranchStatus
-}
-
-export interface DocumentShareRow {
-  createdAt: Date
-  documentId: EntityId
-  draftId: EntityId | null
-  id: EntityId
-  mode: DraftShareMode
-  revisionId: EntityId | null
-  token: string
-  updatedAt: Date | null
-}
-
-export interface SharedRevisionSnapshot {
-  content: string | null
-  contentFormat: 'lexical'
-  createdAt: Date
-  images: unknown[] | null
-  refType: DraftRefType
-  text: string
-  title: string
 }
 
 /**

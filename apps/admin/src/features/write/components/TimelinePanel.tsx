@@ -5,19 +5,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Archive, History, Loader2, RotateCcw, Undo2 } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 
-import type { SetDraftShareData } from '~/api/drafts'
 import {
-  deleteDraftShare,
   getArchivedDrafts,
   getDraftHistory,
-  getDraftShare,
   restoreDraftRevision,
-  setDraftShare,
   undoDraftChange,
 } from '~/api/drafts'
 import { useI18n } from '~/i18n'
 import type { TranslationKey } from '~/i18n/types'
-import type { CheckpointKind, DraftModel, DraftShare } from '~/models/draft'
+import type { CheckpointKind, DraftModel } from '~/models/draft'
 import { adminQueryKeys } from '~/query/keys'
 import { subscribeDraftUpdate } from '~/socket/draft-update-signal'
 import { confirmDialog } from '~/ui/feedback/confirm'
@@ -32,7 +28,6 @@ import {
   type TimelineRow,
   type TimelineStep,
 } from './timeline/build-timeline'
-import { ShareBar } from './timeline/ShareBar'
 
 const ROW_LIMIT = 200
 
@@ -177,7 +172,6 @@ const stepLabels: Record<StepKind, TranslationKey> = {
 
 export interface TimelinePanelProps {
   authorName: (userId: string) => string | null
-  documentId: string | null
   draftId: string
   onBeforeChange: () => Promise<void>
   onChanged: (change: { restored: boolean }) => Promise<void> | void
@@ -188,7 +182,7 @@ export interface TimelinePanelProps {
 export function TimelinePanel(props: TimelinePanelProps) {
   const { format, t } = useI18n()
   const queryClient = useQueryClient()
-  const { draftId, documentId } = props
+  const { draftId } = props
   const historyKey = adminQueryKeys.drafts.timeline(draftId)
   const historyQuery = useQuery({
     enabled: Boolean(draftId),
@@ -260,28 +254,6 @@ export function TimelinePanel(props: TimelinePanelProps) {
     if (confirmed) restoreMutation.mutate(revisionId)
   }
 
-  const shareKey = adminQueryKeys.drafts.share(documentId ?? '')
-  const shareQuery = useQuery({
-    enabled: Boolean(documentId),
-    queryFn: () => getDraftShare(documentId!),
-    queryKey: shareKey,
-  })
-  const writeShare = (share: DraftShare | null) => {
-    queryClient.setQueryData(shareKey, share)
-  }
-  const setShareMutation = useMutation({
-    mutationFn: (data: SetDraftShareData) => setDraftShare(documentId!, data),
-    onSuccess: writeShare,
-  })
-  const revokeShareMutation = useMutation({
-    mutationFn: () => deleteDraftShare(documentId!),
-    onSuccess: () => {
-      writeShare(null)
-      toast.success(t('write.share.revoked'))
-    },
-  })
-  const followDraft = () => setShareMutation.mutate({ draftId, mode: 'follow' })
-
   const stepAuthor = (row: TimelineRow) => {
     if (row.type !== 'step' || !row.author || row.author === props.selfId) {
       return null
@@ -293,16 +265,6 @@ export function TimelinePanel(props: TimelinePanelProps) {
 
   return (
     <div {...stylex.props(styles.root)}>
-      {documentId ? (
-        <ShareBar
-          canFollowCurrentDraft
-          onCreate={followDraft}
-          onFollowCurrentDraft={followDraft}
-          onRevoke={() => revokeShareMutation.mutate()}
-          pending={setShareMutation.isPending || revokeShareMutation.isPending}
-          share={shareQuery.data ?? null}
-        />
-      ) : null}
       {historyQuery.isLoading ? (
         <div {...stylex.props(styles.center)}>
           <Loader2 aria-hidden="true" size={16} />

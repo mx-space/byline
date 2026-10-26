@@ -6,7 +6,6 @@ import type {
   DraftHistory,
   DraftModel,
   DraftRefType,
-  DraftShare,
   TypeSpecificData,
   VersionContext,
 } from '~/models/draft'
@@ -84,26 +83,6 @@ export function getRevision(id: string) {
 
 export function getDraftRevisions(id: string) {
   return getJson<ContentRevision[]>(`/drafts/${id}/revisions`)
-}
-
-export type SetDraftShareData =
-  { draftId: string; mode: 'follow' } | { mode: 'pinned'; revisionId: string }
-
-export function getDraftShare(documentId: string) {
-  return getJson<DraftShare | null>(`/drafts/documents/${documentId}/share`)
-}
-
-export function setDraftShare(documentId: string, data: SetDraftShareData) {
-  return putJson<DraftShare, SetDraftShareData>(
-    `/drafts/documents/${documentId}/share`,
-    data,
-  )
-}
-
-export function deleteDraftShare(documentId: string) {
-  return deleteJson<{ success: boolean }>(
-    `/drafts/documents/${documentId}/share`,
-  )
 }
 
 export function createDraft(data: CreateDraftData) {

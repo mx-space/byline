@@ -105,13 +105,6 @@ export async function collapseBranches(
   const retired = active.filter((branch) => branch.id !== keep?.id)
   for (const branch of retired) {
     await drafts.archiveBranch(branch.id)
-    const share = await drafts.findShareByDocument(document.id)
-    if (share?.mode === 'follow' && share.draftId === branch.id) {
-      await drafts.upsertShare(document.id, share.token, {
-        mode: 'pinned',
-        revisionId: branch.headRevisionId,
-      })
-    }
   }
   return { keep, retired }
 }

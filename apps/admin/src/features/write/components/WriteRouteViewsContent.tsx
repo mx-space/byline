@@ -1399,7 +1399,6 @@ function WritePage(props: { kind: WriteKind }) {
               authorCandidates.find((user) => user.id === userId)
                 ?.displayName ?? null
             }
-            documentId={versionContextQuery.data?.document.id ?? null}
             draftId={draftId || routeDraftId}
             onBeforeChange={draftSession.flushCrdt}
             onChanged={async ({ restored }) => {

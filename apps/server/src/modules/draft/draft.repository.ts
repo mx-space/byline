@@ -16,7 +16,6 @@ import { PG_DB_TOKEN } from '~/constants/system.constant'
 import {
   contentCrdtDocs,
   contentDocuments,
-  contentDocumentShares,
   contentPublicationEvents,
   contentRevisions,
   drafts,
@@ -36,13 +35,11 @@ import type {
   ContentDocumentRow,
   ContentPublicationEventRow,
   ContentRevisionRow,
-  DocumentShareRow,
   DraftBranchRow,
   DraftBranchStatus,
   DraftListFilter,
   DraftRefType,
   DraftRelation,
-  DraftShareMode,
   RevisionSnapshot,
 } from './draft.types'
 import { sameRevisionContent } from './draft-content'
@@ -75,17 +72,6 @@ const mapPublicationEvent = (
   id: toEntityId(row.id)!,
   previousRevisionId: toEntityId(row.previousRevisionId),
   revisionId: toEntityId(row.revisionId)!,
-})
-
-const mapShare = (
-  row: typeof contentDocumentShares.$inferSelect,
-): DocumentShareRow => ({
-  ...row,
-  documentId: toEntityId(row.documentId)!,
-  draftId: toEntityId(row.draftId),
-  id: toEntityId(row.id)!,
-  mode: row.mode as DraftShareMode,
-  revisionId: toEntityId(row.revisionId),
 })
 
 export const mapBranch = (row: typeof drafts.$inferSelect): DraftBranchRow => ({
@@ -602,66 +588,6 @@ export class DraftRepository extends BaseRepository {
     await this.db
       .delete(contentDocuments)
       .where(eq(contentDocuments.id, parseEntityId(id)))
-  }
-
-  async findShareByDocument(
-    documentId: EntityId | string,
-  ): Promise<DocumentShareRow | null> {
-    const [row] = await this.db
-      .select()
-      .from(contentDocumentShares)
-      .where(eq(contentDocumentShares.documentId, parseEntityId(documentId)))
-      .limit(1)
-    return row ? mapShare(row) : null
-  }
-
-  async findShareByToken(token: string): Promise<DocumentShareRow | null> {
-    const [row] = await this.db
-      .select()
-      .from(contentDocumentShares)
-      .where(eq(contentDocumentShares.token, token))
-      .limit(1)
-    return row ? mapShare(row) : null
-  }
-
-  async upsertShare(
-    documentId: EntityId | string,
-    token: string,
-    target:
-      | { draftId: EntityId | string; mode: 'follow' }
-      | { mode: 'pinned'; revisionId: EntityId | string },
-  ): Promise<DocumentShareRow> {
-    const values = {
-      documentId: parseEntityId(documentId),
-      draftId: target.mode === 'follow' ? parseEntityId(target.draftId) : null,
-      id: this.snowflake.nextId(),
-      mode: target.mode,
-      revisionId:
-        target.mode === 'pinned' ? parseEntityId(target.revisionId) : null,
-      token,
-    }
-    const [row] = await this.db
-      .insert(contentDocumentShares)
-      .values(values)
-      .onConflictDoUpdate({
-        set: {
-          draftId: values.draftId,
-          mode: values.mode,
-          revisionId: values.revisionId,
-          updatedAt: new Date(),
-        },
-        target: contentDocumentShares.documentId,
-      })
-      .returning()
-    return mapShare(row)
-  }
-
-  async deleteShareByDocument(documentId: EntityId | string): Promise<boolean> {
-    const rows = await this.db
-      .delete(contentDocumentShares)
-      .where(eq(contentDocumentShares.documentId, parseEntityId(documentId)))
-      .returning({ id: contentDocumentShares.id })
-    return rows.length > 0
   }
 
   private buildFilter(filter: DraftListFilter): SQL | undefined {

@@ -177,7 +177,6 @@ export class DraftCrdtService {
       const document = await this.drafts.findDocumentById(documentId)
       if (!document) return
       await this.crdt.discard(documentId, branch.id)
-      await this.releaseShare(document, branch)
       await this.fileReferences.removeReferencesForDocument(
         branch.id,
         FileReferenceType.Draft,
@@ -554,7 +553,7 @@ export class DraftCrdtService {
     const active = await this.drafts.findBranchesByDocument(document.id)
     if (active.length) {
       const [keep, ...rest] = active
-      for (const branch of rest) await this.retire(document, branch)
+      for (const branch of rest) await this.retire(branch)
       return keep
     }
     if (!document.publishedRevisionId) {
@@ -583,26 +582,12 @@ export class DraftCrdtService {
     }
   }
 
-  private async retire(document: ContentDocumentRow, branch: DraftBranchRow) {
+  private async retire(branch: DraftBranchRow) {
     await this.drafts.archiveBranch(branch.id)
-    await this.releaseShare(document, branch)
     await this.fileReferences.removeReferencesForDocument(
       branch.id,
       FileReferenceType.Draft,
     )
-  }
-
-  private async releaseShare(
-    document: ContentDocumentRow,
-    branch: DraftBranchRow,
-  ) {
-    const share = await this.drafts.findShareByDocument(document.id)
-    if (share?.mode === 'follow' && share.draftId === branch.id) {
-      await this.drafts.upsertShare(document.id, share.token, {
-        mode: 'pinned',
-        revisionId: branch.headRevisionId,
-      })
-    }
   }
 
   private async importDoc(

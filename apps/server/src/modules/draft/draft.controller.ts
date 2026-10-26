@@ -35,8 +35,6 @@ import {
   DraftCheckpointSchema,
   type DraftCrdtQueryDto,
   DraftCrdtQuerySchema,
-  type DraftDocumentIdDto,
-  DraftDocumentIdSchema,
   type DraftFieldsDto,
   DraftFieldsSchema,
   type DraftPagerDto,
@@ -47,21 +45,16 @@ import {
   DraftRefTypeSchema,
   type DraftRestoreDto,
   DraftRestoreSchema,
-  type DraftShareTokenDto,
-  DraftShareTokenSchema,
   type DraftUndoDto,
   DraftUndoSchema,
   type DraftWorkingCopyParamsDto,
   DraftWorkingCopyParamsSchema,
   type RevisionComparisonDto,
   RevisionComparisonSchema,
-  type SetDraftShareDto,
-  SetDraftShareSchema,
   type UpdateDraftDto,
   UpdateDraftSchema,
 } from './draft.schema'
 import { DraftService } from './draft.service'
-import { DraftViews } from './draft.views'
 
 const CRDT_UPDATE_BODY_LIMIT = 4 * 1024 * 1024
 
@@ -131,44 +124,6 @@ export class DraftController {
   @Auth()
   getNewDrafts(@Param({ schema: DraftRefTypeSchema }) params: DraftRefTypeDto) {
     return this.draftService.findNewDrafts(params.refType as DraftRefType)
-  }
-
-  @Get('/shared/:token')
-  async shared(
-    @Param({ schema: DraftShareTokenSchema }) params: DraftShareTokenDto,
-  ) {
-    const snapshot = await this.draftService.findSharedSnapshot(params.token)
-    return DraftViews.shared.parse(snapshot)
-  }
-
-  @Get('/documents/:documentId/share')
-  @Auth()
-  getShare(
-    @Param({ schema: DraftDocumentIdSchema }) params: DraftDocumentIdDto,
-  ) {
-    return this.draftService.getShare(params.documentId)
-  }
-
-  @Put('/documents/:documentId/share')
-  @Auth()
-  @RequirePermissions(UserPermission.EditPost)
-  setShare(
-    @CurrentUser() user: SessionUser,
-    @Param({ schema: DraftDocumentIdSchema }) params: DraftDocumentIdDto,
-    @Body({ schema: SetDraftShareSchema }) body: SetDraftShareDto,
-  ) {
-    return this.draftService.setShare(params.documentId, body, user)
-  }
-
-  @Delete('/documents/:documentId/share')
-  @Auth()
-  @RequirePermissions(UserPermission.EditPost)
-  async deleteShare(
-    @CurrentUser() user: SessionUser,
-    @Param({ schema: DraftDocumentIdSchema }) params: DraftDocumentIdDto,
-  ) {
-    await this.draftService.deleteShare(params.documentId, user)
-    return { success: true }
   }
 
   @Get('/compare/:leftId/:rightId')

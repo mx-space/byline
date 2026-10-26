@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getArchivedDrafts,
   getDraftHistory,
-  getDraftShare,
   restoreDraftRevision,
   undoDraftChange,
 } from '~/api/drafts'
@@ -19,12 +18,9 @@ import type { DraftHistory, DraftModel } from '~/models/draft'
 import { TimelinePanel } from './TimelinePanel'
 
 vi.mock('~/api/drafts', () => ({
-  deleteDraftShare: vi.fn(),
   getArchivedDrafts: vi.fn(),
   getDraftHistory: vi.fn(),
-  getDraftShare: vi.fn(),
   restoreDraftRevision: vi.fn(),
-  setDraftShare: vi.fn(),
   undoDraftChange: vi.fn(),
 }))
 vi.mock('~/ui/feedback/confirm', () => ({
@@ -82,7 +78,6 @@ const render = async () => {
             createElement(TimelinePanel, {
               authorName: (id: string) =>
                 ({ ada: 'Ada', me: 'Me' })[id] ?? null,
-              documentId: 'doc-1',
               draftId: 'd1',
               onBeforeChange,
               onChanged,
@@ -120,7 +115,6 @@ beforeEach(() => {
   document.body.append(container)
   root = createRoot(container)
   vi.mocked(getDraftHistory).mockResolvedValue(history)
-  vi.mocked(getDraftShare).mockResolvedValue(null as never)
   vi.mocked(getArchivedDrafts).mockResolvedValue([])
   vi.mocked(restoreDraftRevision).mockImplementation(async (_id, revision) => {
     calls.push(`restore:${revision}`)

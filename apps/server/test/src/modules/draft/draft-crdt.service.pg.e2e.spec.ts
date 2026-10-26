@@ -154,7 +154,7 @@ describe('DraftCrdtService (real PG)', () => {
     expect(readDocContent(await clientOf(branch.id)).title).toBe('Pub')
   })
 
-  it('keeps one working copy, archiving older branches and pinning their follow shares', async () => {
+  it('keeps one working copy, archiving older branches', async () => {
     const { branch: older, document, published } = await seed()
     const { branch: newer } = await drafts.createBranch(
       document.id,
@@ -162,20 +162,10 @@ describe('DraftCrdtService (real PG)', () => {
       lexical('Newer', ['n']),
       false,
     )
-    await drafts.upsertShare(document.id, 'tok-older', {
-      draftId: older.id,
-      mode: 'follow',
-    })
-
     const workingCopy = await service.workingCopy(older.id)
 
     expect(workingCopy.id).toBe(newer.id)
     expect((await drafts.findBranchById(older.id))?.status).toBe('archived')
-    expect(await drafts.findShareByToken('tok-older')).toMatchObject({
-      draftId: null,
-      mode: 'pinned',
-      revisionId: older.headRevisionId,
-    })
   })
 
   it('creates a working copy from the published revision when none is active', async () => {

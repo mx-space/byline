@@ -93,7 +93,6 @@ export type AppErrorPayloadMap = {
   // draft
   [AppErrorCode.DRAFT_NOT_FOUND]: WithId
   [AppErrorCode.CONTENT_REVISION_NOT_FOUND]: WithId
-  [AppErrorCode.DRAFT_SHARE_NOT_FOUND]: WithId | undefined
   [AppErrorCode.DRAFT_CRDT_UPDATE_REJECTED]: {
     branchId: string
     reason: string
