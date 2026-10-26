@@ -17,7 +17,7 @@
     "@6over3/zeroperl-ts": "^1.0.10",
     "@better-auth/passkey": "1.6.33",
     "@excalidraw/excalidraw": "^0.18.1",
-    "@haklex/rich-agent-core": "0.54.3",
+    "@haklex/rich-agent-core": "0.54.4",
     "@haklex/rich-compose": "0.54.4",
     "@haklex/rich-diff": "0.54.3",
     "@haklex/rich-editor": "0.54.3",

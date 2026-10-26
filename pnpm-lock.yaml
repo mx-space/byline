@@ -305,8 +305,8 @@ importers:
         specifier: ^0.18.1
         version: 0.18.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.2.9)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@haklex/rich-agent-core':
-        specifier: 0.54.3
-        version: 0.54.3(@haklex/rich-editor@0.54.3(@base-ui/react@1.9.0(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lexical/extension@0.52.0(typescript@6.0.3))(@lexical/link@0.52.0(typescript@6.0.3))(@lexical/list@0.52.0(typescript@6.0.3))(@lexical/markdown@0.52.0(typescript@6.0.3))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(@lexical/rich-text@0.52.0(typescript@6.0.3))(@lexical/table@0.52.0(typescript@6.0.3))(katex@0.19.1)(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.61.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3))(@types/react@19.3.0)(immer@11.2.9)(lexical@0.52.0(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.3.1))
+        specifier: 0.54.4
+        version: 0.54.4(@haklex/rich-editor@0.54.3(@base-ui/react@1.9.0(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lexical/extension@0.52.0(typescript@6.0.3))(@lexical/link@0.52.0(typescript@6.0.3))(@lexical/list@0.52.0(typescript@6.0.3))(@lexical/markdown@0.52.0(typescript@6.0.3))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(@lexical/rich-text@0.52.0(typescript@6.0.3))(@lexical/table@0.52.0(typescript@6.0.3))(katex@0.19.1)(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.61.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3))(@types/react@19.3.0)(immer@11.2.9)(lexical@0.52.0(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.3.1))
       '@haklex/rich-compose':
         specifier: 0.54.4
         version: 0.54.4(0f410278f4b6098610854122b6e771e4)
@@ -931,8 +931,8 @@ importers:
   packages/cli:
     dependencies:
       '@haklex/rich-headless':
-        specifier: 0.54.3
-        version: 0.54.3(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
+        specifier: 0.58.0
+        version: 0.58.0(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
       '@lexical/headless':
         specifier: 0.52.0
         version: 0.52.0(typescript@6.0.3)
@@ -2261,6 +2261,12 @@ packages:
       '@haklex/rich-editor': ^0.54.3
       lexical: 0.52.0
 
+  '@haklex/rich-agent-core@0.54.4':
+    resolution: {integrity: sha512-3ofaV5tJ4DezjBZbsQC8VQR3+gh9/foua9GuEphSbTVs5fb1A2LBClYnleK0x6hxD/8GlLMIo1JG6JlcSdoW5g==}
+    peerDependencies:
+      '@haklex/rich-editor': ^0.54.4
+      lexical: 0.52.0
+
   '@haklex/rich-compose@0.54.4':
     resolution: {integrity: sha512-XLn9uDFlFH+S1uVjgp0N6FGtmInqjRG978hBm3BQBNVT5xWPTzP+Eivt2/URCF9ed6hb36CZs+eJH7TJhyonoA==}
     peerDependencies:
@@ -2558,6 +2564,11 @@ packages:
 
   '@haklex/rich-headless@0.54.4':
     resolution: {integrity: sha512-b4U1j2hmKA2Feqh8+IU9FX/9sdEMJlmzP8vhUn/CgTEFUskZCl06fULjuzhnWviGUTIoHsdT6AWSwAWD/vYwcA==}
+    peerDependencies:
+      lexical: 0.52.0
+
+  '@haklex/rich-headless@0.58.0':
+    resolution: {integrity: sha512-PqAGp2RefHLGXDZ5gZAFWL5+lIPfKFiDY3CetNnC9z9db8bFBo+j+4RgRMgVwtfsjhMM48KEk9q+3m/d0DvSrg==}
     peerDependencies:
       lexical: 0.52.0
 
@@ -13109,6 +13120,21 @@ snapshots:
       - typescript
       - use-sync-external-store
 
+  '@haklex/rich-agent-core@0.54.4(@haklex/rich-editor@0.54.3(@base-ui/react@1.9.0(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lexical/extension@0.52.0(typescript@6.0.3))(@lexical/link@0.52.0(typescript@6.0.3))(@lexical/list@0.52.0(typescript@6.0.3))(@lexical/markdown@0.52.0(typescript@6.0.3))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(@lexical/rich-text@0.52.0(typescript@6.0.3))(@lexical/table@0.52.0(typescript@6.0.3))(katex@0.19.1)(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.61.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3))(@types/react@19.3.0)(immer@11.2.9)(lexical@0.52.0(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.3.1))':
+    dependencies:
+      '@haklex/rich-editor': 0.54.3(@base-ui/react@1.9.0(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lexical/extension@0.52.0(typescript@6.0.3))(@lexical/link@0.52.0(typescript@6.0.3))(@lexical/list@0.52.0(typescript@6.0.3))(@lexical/markdown@0.52.0(typescript@6.0.3))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(@lexical/rich-text@0.52.0(typescript@6.0.3))(@lexical/table@0.52.0(typescript@6.0.3))(katex@0.19.1)(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.61.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)
+      '@haklex/rich-litexml': 0.54.4(typescript@6.0.3)
+      lexical: 0.52.0(typescript@6.0.3)
+      nanoid: 6.0.2
+      zustand: 5.0.16(@types/react@19.3.0)(immer@11.2.9)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
+    transitivePeerDependencies:
+      - '@types/react'
+      - canvas
+      - immer
+      - react
+      - typescript
+      - use-sync-external-store
+
   '@haklex/rich-compose@0.54.4(0f410278f4b6098610854122b6e771e4)':
     dependencies:
       '@haklex/rich-editor': 0.54.3(@base-ui/react@1.9.0(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lexical/extension@0.52.0(typescript@6.0.3))(@lexical/link@0.52.0(typescript@6.0.3))(@lexical/list@0.52.0(typescript@6.0.3))(@lexical/markdown@0.52.0(typescript@6.0.3))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(@lexical/rich-text@0.52.0(typescript@6.0.3))(@lexical/table@0.52.0(typescript@6.0.3))(katex@0.19.1)(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.61.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)
@@ -13501,6 +13527,19 @@ snapshots:
       - typescript
 
   '@haklex/rich-headless@0.54.4(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)':
+    dependencies:
+      '@lexical/code-core': 0.52.0(typescript@6.0.3)
+      '@lexical/extension': 0.52.0(typescript@6.0.3)
+      '@lexical/link': 0.52.0(typescript@6.0.3)
+      '@lexical/list': 0.52.0(typescript@6.0.3)
+      '@lexical/markdown': 0.52.0(typescript@6.0.3)
+      '@lexical/rich-text': 0.52.0(typescript@6.0.3)
+      '@lexical/table': 0.52.0(typescript@6.0.3)
+      lexical: 0.52.0(typescript@6.0.3)
+    transitivePeerDependencies:
+      - typescript
+
+  '@haklex/rich-headless@0.58.0(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)':
     dependencies:
       '@lexical/code-core': 0.52.0(typescript@6.0.3)
       '@lexical/extension': 0.52.0(typescript@6.0.3)
