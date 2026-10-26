@@ -256,10 +256,16 @@ export function AIConfigEditor(props: {
 
   const languagesRow = (input: {
     desc: string
+    divider?: boolean
     onChange: (value: string[]) => void
     value?: string[]
   }) => (
-    <SettingRow desc={input.desc} divider label={ai('targetLanguages')} wide>
+    <SettingRow
+      desc={input.desc}
+      divider={input.divider ?? true}
+      label={ai('targetLanguages')}
+      wide
+    >
       <AITextListField
         label={ai('targetLanguages')}
         onChange={input.onChange}
@@ -409,6 +415,7 @@ export function AIConfigEditor(props: {
           <>
             {languagesRow({
               desc: ai('translationLanguagesDesc'),
+              divider: false,
               onChange: (translationTargetLanguages) =>
                 update({ translationTargetLanguages }),
               value: config.translationTargetLanguages,
@@ -465,6 +472,7 @@ export function AIConfigEditor(props: {
           <>
             {modelRow({
               desc: ai('summaryModelDesc'),
+              divider: false,
               label: ai('summaryModelLabel'),
               models: textModels,
               onChange: (summaryModel) => update({ summaryModel }),
@@ -495,6 +503,7 @@ export function AIConfigEditor(props: {
           <>
             {modelRow({
               desc: ai('insightsModelDesc'),
+              divider: false,
               label: ai('insightsModelLabel'),
               models: textModels,
               onChange: (insightsModel) => update({ insightsModel }),
@@ -546,6 +555,7 @@ export function AIConfigEditor(props: {
             {modelRow({
               capability: 'image',
               desc: ai('imageModelDesc'),
+              divider: false,
               label: ai('imageModelLabel'),
               models: imageModels,
               onChange: (model) => updateImage({ model }),
@@ -604,6 +614,7 @@ export function AIConfigEditor(props: {
             {modelRow({
               capability: 'speech',
               desc: ai('ttsModelDesc'),
+              divider: false,
               label: ai('ttsModelLabel'),
               models: speechModels,
               onChange: (model) => updateTts({ model }),
