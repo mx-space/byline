@@ -60,8 +60,6 @@ const styles = createStaticStyles(({ css, cssVar, responsive }) => ({
     height: 100%;
     min-height: 0;
     min-width: 0;
-
-    background: ${cssVar.colorBgContainer};
   `,
   scroll: css`
     overflow: auto;

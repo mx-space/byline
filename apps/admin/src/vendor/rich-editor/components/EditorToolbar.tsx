@@ -579,7 +579,13 @@ export function EditorToolbar(props: { className?: string }) {
               title: copy('more'),
             }}
           >
-            <MoreHorizontal aria-hidden size={14} />
+            <Button
+              aria-label={copy('more')}
+              icon={MoreHorizontal}
+              onMouseDown={(event) => event.preventDefault()}
+              title={copy('more')}
+              type="text"
+            />
           </DropdownMenu>
         ) : null}
         {import.meta.env.DEV ? (
