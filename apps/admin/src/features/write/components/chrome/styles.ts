@@ -322,8 +322,6 @@ export const writeChromeStyles = createStaticStyles(
       height: 100%;
       min-height: 0;
       min-width: 0;
-
-      background: ${cssVar.colorBgContainer};
     `,
     panelHeader: css`
       display: flex;
@@ -366,8 +364,6 @@ export const writeChromeStyles = createStaticStyles(
 
       height: 100%;
       min-height: 0;
-
-      background: ${cssVar.colorBgContainer};
     `,
     section: css`
       display: flex;
