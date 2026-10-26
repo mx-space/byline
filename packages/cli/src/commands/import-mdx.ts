@@ -1,9 +1,6 @@
 import { parseArgs } from 'node:util'
 
-import { createClient } from '@mx-space/byline-api-client'
-
-import { readCredentials, resolveApiCredentials } from '../auth/credentials'
-import { fetchSession } from '../auth/device'
+import { connect, CONNECTION_HELP, CONNECTION_OPTIONS } from '../auth/client'
 import { loadImportConfig } from '../importer/config'
 import { executeImport, type PostOutcome } from '../importer/execute'
 import { planImport } from '../importer/plan'
@@ -31,13 +28,7 @@ Options:
   --preserve-dates         send the frontmatter date as the post creation time
   --verbose                print one line per post and every conversion issue
   --json                   print the summary as JSON
-  --api-url <url>          Byline API base URL (env BYLINE_API_URL)
-  --api-key <key>          API key sent as x-api-key (env BYLINE_API_KEY)
-  --token <token>          bearer session token (env BYLINE_TOKEN)
-
-Without --api-key or --token, the session saved by \`byline login\` is used
-when its API URL matches.
-`
+${CONNECTION_HELP}`
 
 const parseAliases = (values: string[] = []) =>
   Object.fromEntries(
@@ -71,9 +62,7 @@ export const runImportMdx = async (argv: string[]): Promise<number> => {
       'preserve-dates': { type: 'boolean', default: false },
       verbose: { type: 'boolean', default: false },
       json: { type: 'boolean', default: false },
-      'api-url': { type: 'string' },
-      'api-key': { type: 'string' },
-      token: { type: 'string' },
+      ...CONNECTION_OPTIONS,
       help: { type: 'boolean', short: 'h', default: false },
     },
   })
@@ -102,34 +91,8 @@ export const runImportMdx = async (argv: string[]): Promise<number> => {
     defaultAuthors: values['default-author'],
   })
 
-  const { apiUrl, apiKey, token, stored } = resolveApiCredentials(
-    {
-      apiUrl: values['api-url'],
-      apiKey: values['api-key'],
-      token: values.token,
-    },
-    process.env,
-    await readCredentials(),
-  )
   const dryRun = values['dry-run']
-  if (!dryRun && (!apiUrl || (!apiKey && !token))) {
-    throw new Error(
-      'An API URL and an API key or token are required unless --dry-run is set; run `byline login` or pass --api-key',
-    )
-  }
-  // An invalid bearer token is treated as anonymous, so public lookups would
-  // quietly report every post as new instead of failing.
-  if (apiUrl && token && !apiKey && !(await fetchSession(apiUrl, token))) {
-    throw new Error(
-      stored
-        ? `The saved session for ${apiUrl} is no longer valid; run \`byline login\``
-        : `The token is not a valid session for ${apiUrl}`,
-    )
-  }
-  const client =
-    apiUrl && (apiKey || token)
-      ? createClient({ endpoint: apiUrl, apiKey, token })
-      : null
+  const client = await connect(values, { required: !dryRun })
 
   let plan = await planImport(dir, config)
   if (values.only) {

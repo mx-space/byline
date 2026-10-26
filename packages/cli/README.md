@@ -41,6 +41,68 @@ admin; pass `--no-browser` to only print the link. Later commands use the saved
 session when no `--api-key` or `--token` is given and the API URL matches. When
 the session expires they ask you to run `byline login` again.
 
+## Writing drafts
+
+`byline post` and `byline draft` write post drafts. They never publish; publish
+from the admin. The flags and the `<mxpost>` envelope are the same as
+[`mxs`](https://www.npmjs.com/package/@mx-space/cli), with `--authors` added
+for multi-author bylines.
+
+```sh
+byline author list                      # usernames for --authors
+byline post create --file post.xml      # <mxpost> envelope
+byline post create --title "Hello" --category engineering \
+  --authors ada,grace --content file=body.md --format markdown
+byline draft list --new
+byline draft get <id>
+byline draft update <id> --authors grace,ada --summary "…"
+byline draft update <id> --content - < body.xml
+byline draft delete <id>
+byline post list
+byline post get <slug-or-id>
+```
+
+`--content` takes inline text, `file=<path>`, or `-` for stdin. `--format lexical`
+(the default) reads LiteXML; `--format markdown` reads Markdown. Flags override
+the envelope, and `draft update` keeps every field and the body it is not given.
+
+```xml
+<mxpost>
+  <meta>
+    <title>Hello</title>
+    <slug>hello</slug>
+    <category>engineering</category>
+    <tags><tag>cli</tag></tags>
+    <authors><author>ada</author><author>grace</author></authors>
+    <summary>One line.</summary>
+  </meta>
+  <content>
+<p>Body in <strong>LiteXML</strong>.</p>
+  </content>
+</mxpost>
+```
+
+Authors are usernames, emails or user ids, in byline order. Add `--json` for the
+raw API response.
+
+## `byline ai` and `byline skill`
+
+These run the bundled [`mxs`](https://www.npmjs.com/package/@mx-space/cli) with
+Byline's credentials, in a config directory of its own
+(`~/.config/byline/mxs`), so your mx-space profiles are never used. Every `mxs
+ai` and `mxs skill` subcommand and flag works as documented by `mxs`.
+
+```sh
+byline ai summary by-article <post-id-or-slug>
+byline ai translate languages <post-id-or-slug>
+byline ai summary list --size 10
+byline skill list
+byline skill get commands-ai
+```
+
+`byline ai` takes the same `--api-url`, `--api-key` and `--token` as the other
+commands and falls back to the session saved by `byline login`.
+
 ## `byline import mdx <dir>`
 
 Imports an MDX or Markdown content tree as Byline posts. It works with any

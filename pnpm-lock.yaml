@@ -939,6 +939,12 @@ importers:
       '@lexical/list':
         specifier: 0.52.0
         version: 0.52.0(typescript@6.0.3)
+      '@mx-space/cli':
+        specifier: 0.21.6
+        version: 0.21.6(typescript@6.0.3)
+      '@mx-space/editor':
+        specifier: 0.5.0
+        version: 0.5.0(loro-crdt@1.17.1)(typescript@6.0.3)
       lexical:
         specifier: 0.52.0
         version: 0.52.0(typescript@6.0.3)
@@ -2561,6 +2567,9 @@ packages:
   '@haklex/rich-litexml@0.54.4':
     resolution: {integrity: sha512-Z8+ANKS0glPvKXPdymd6RljiI63Z3WA2lFNY6oGzpqmMTTzCC3X/JdyX/bsOrPeh+yNF35aczB+K0h8hsa//0Q==}
 
+  '@haklex/rich-litexml@0.58.0':
+    resolution: {integrity: sha512-pweb0mVaU9wtNsa1Oi9Vd8tODejA9f9bz6vzw2chMV7CMRtiI3OoRbRh11mXkTzj92AOj/mqBaQuxw6mJIHuHg==}
+
   '@haklex/rich-plugin-block-handle@0.54.3':
     resolution: {integrity: sha512-D4vfIAB/NpzxLPgP+OfJNrezlUx1u42kVkze3b2A/1QFFGc3wb8Hst8DCh8VpC9yyDI80KDfAV+lvrSlFe5ihg==}
     peerDependencies:
@@ -3742,8 +3751,24 @@ packages:
   '@mx-space/ai@0.3.1':
     resolution: {integrity: sha512-PzfeMppzpK8bTeqYxWMw0+lWii2ysidj1Y1mWtSq6899djv2ucu2Q4E9mjgQc9qIFoq2uBuSW82HD4sJwGkkzQ==}
 
+  '@mx-space/cli@0.21.6':
+    resolution: {integrity: sha512-+3XMg6RVxZpXPjF3EhxGRaRdH6zxPVN9kAld3zVDPEpxa1y2AU6rFWt23FYU3SrNVKosa4D0rjpC7BzC2avTEQ==}
+    engines: {node: '>=26.0.0'}
+    hasBin: true
+
   '@mx-space/editor@0.4.0':
     resolution: {integrity: sha512-0SJvr8jzlboBhbCQdfVItbNZStYU2FqXYhV3Vu51Fo4X3gh1XbT5cUGUYG0rgdNnKN0SjR6cC7y8FF4Nr5ZQIQ==}
+
+  '@mx-space/editor@0.5.0':
+    resolution: {integrity: sha512-Hru4OAd/8BPARUmA06+8KWsec9j0Mac6J2mDH1KkHoy9gGB6CrmAaun9twRrHK0oY44wJmrYftUYiaLE5IGtPA==}
+    peerDependencies:
+      '@haklex/rich-collab-loro': 0.58.0
+      loro-crdt: ^1.16.4
+    peerDependenciesMeta:
+      '@haklex/rich-collab-loro':
+        optional: true
+      loro-crdt:
+        optional: true
 
   '@mx-space/ws-client@0.2.0':
     resolution: {integrity: sha512-5BrruNStfOoMqCqAKCzRI6kIeYe7wuCHGMxUVyarSg/FzfYQyKL+hhj4rEMZE6kZIgNhIOcy9jpetZc0mIFrfg==}
@@ -8662,6 +8687,9 @@ packages:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
 
+  loro-crdt@1.17.1:
+    resolution: {integrity: sha512-83hWRYG6eMMpPezm+yXWlOqCuUsC0BYY1MVCPW9x2zlikgkHhL7GC7Q6JFH+Hjvauyn287Q1MiwTuRW0lUOUag==}
+
   lowercase-keys@3.0.0:
     resolution: {integrity: sha512-ozCC6gdQ+glXOQsveKD0YsDy8DSQFjDTz4zyzEHNV5+JP5D62LmfDZ6o1cycFx9ouG940M5dE8C8CTewdj2YWQ==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
@@ -13503,6 +13531,15 @@ snapshots:
       - canvas
       - typescript
 
+  '@haklex/rich-litexml@0.58.0(typescript@6.0.3)':
+    dependencies:
+      lexical: 0.52.0(typescript@6.0.3)
+      linkedom: 0.18.13
+      nanoid: 6.0.2
+    transitivePeerDependencies:
+      - canvas
+      - typescript
+
   '@haklex/rich-plugin-block-handle@0.54.3(@haklex/rich-editor-ui@0.54.3(@base-ui/react@1.9.0(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.61.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@haklex/rich-style-token@0.54.4(react@19.3.1))(@lexical/html@0.52.0(typescript@6.0.3))(@lexical/list@0.52.0(typescript@6.0.3))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(@lexical/rich-text@0.52.0(typescript@6.0.3))(@lexical/selection@0.52.0(typescript@6.0.3))(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.61.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)':
     dependencies:
       '@haklex/rich-editor-ui': 0.54.3(@base-ui/react@1.9.0(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lexical/react@0.52.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(lexical@0.52.0(typescript@6.0.3))(lucide-react@1.61.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -14878,6 +14915,14 @@ snapshots:
       - utf-8-validate
       - ws
 
+  '@mx-space/cli@0.21.6(typescript@6.0.3)':
+    dependencies:
+      '@haklex/rich-litexml': 0.58.0(typescript@6.0.3)
+      loro-crdt: 1.17.1
+    transitivePeerDependencies:
+      - canvas
+      - typescript
+
   '@mx-space/editor@0.4.0(typescript@6.0.3)':
     dependencies:
       '@haklex/rich-headless': 0.54.4(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
@@ -14886,6 +14931,22 @@ snapshots:
       '@lexical/markdown': 0.52.0(typescript@6.0.3)
       '@noble/hashes': 2.4.0
       lexical: 0.52.0(typescript@6.0.3)
+    transitivePeerDependencies:
+      - bufferutil
+      - canvas
+      - typescript
+      - utf-8-validate
+
+  '@mx-space/editor@0.5.0(loro-crdt@1.17.1)(typescript@6.0.3)':
+    dependencies:
+      '@haklex/rich-headless': 0.54.4(lexical@0.52.0(typescript@6.0.3))(typescript@6.0.3)
+      '@haklex/rich-litexml': 0.54.3(typescript@6.0.3)
+      '@lexical/headless': 0.52.0(typescript@6.0.3)
+      '@lexical/markdown': 0.52.0(typescript@6.0.3)
+      '@noble/hashes': 2.4.0
+      lexical: 0.52.0(typescript@6.0.3)
+    optionalDependencies:
+      loro-crdt: 1.17.1
     transitivePeerDependencies:
       - bufferutil
       - canvas
@@ -20083,6 +20144,8 @@ snapshots:
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
+
+  loro-crdt@1.17.1: {}
 
   lowercase-keys@3.0.0: {}
 
