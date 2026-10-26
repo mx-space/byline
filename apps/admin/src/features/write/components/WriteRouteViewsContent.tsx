@@ -41,7 +41,7 @@ import type { PublishAiResourceRequest, PublishTask } from '~/api/publish-jobs'
 import { createPublishJob } from '~/api/publish-jobs'
 import { AITaskStatus, getTask } from '~/api/tasks'
 import { getMe, getUsers } from '~/api/users'
-import { API_URL, WEB_URL } from '~/constants/env'
+import { API_URL } from '~/constants/env'
 import {
   useCollectionDetailQuery,
   useCollectionListQuery,
@@ -85,6 +85,7 @@ import {
   type WriteKind,
 } from '~/features/write/utils/write-form'
 import { useDocumentTitle } from '~/hooks/use-document-title'
+import { usePostPermalink } from '~/hooks/use-post-permalink'
 import { useI18n } from '~/i18n'
 import { translate } from '~/i18n/translate'
 import type { Image as ImageModel } from '~/models/base'
@@ -606,6 +607,7 @@ function useDraftSession(options: {
 function WritePage(props: { kind: WriteKind }) {
   const { locale, t } = useI18n()
   const navigate = useNavigate()
+  const permalink = usePostPermalink()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const id = searchParams.get('id') ?? ''
@@ -879,7 +881,15 @@ function WritePage(props: { kind: WriteKind }) {
   const activeCategory =
     categories.find((category) => category.id === state.categoryId) ??
     categories[0]
-  const postPublicPath = buildPostPublicPath(state, activeCategory)
+  const postSlug = state.slug.trim()
+  const publicPath = postSlug
+    ? permalink.url({ category: activeCategory?.slug, id, slug: postSlug })
+    : ''
+  const slugPath = permalink.displayPath({
+    category: activeCategory?.slug,
+    id,
+    slug: postSlug || writeCopy(locale, 'slugPlaceholder'),
+  })
   const publishedFingerprint = useMemo(
     () =>
       detailModel
@@ -1247,7 +1257,6 @@ function WritePage(props: { kind: WriteKind }) {
   const showDraftListHint = draftListHintCount > 0 && !draftListHintDismissed
   const draftKindText = t('write.kind.post')
   const isDirty = draftSession.hasUnsavedChanges()
-  const slugPathPrefix = `/posts/${activeCategory?.slug ?? ''}/`
   const publishLabel =
     publishOperation === 'online-update'
       ? writeCopy(locale, 'updateOnline')
@@ -1281,7 +1290,6 @@ function WritePage(props: { kind: WriteKind }) {
     : isEditing && postDetailQuery.isError && !detailModel
       ? 'error'
       : 'ready'
-  const publicPath = postPublicPath ? `${WEB_URL}${postPublicPath}` : ''
 
   return (
     <>
@@ -1415,7 +1423,7 @@ function WritePage(props: { kind: WriteKind }) {
         savingDraft={draftMutation.isPending}
         showViewTask={Boolean(publishTaskId)}
         siteDefaultLang={siteDefaultLang}
-        slugPrefix={slugPathPrefix}
+        slugPath={slugPath}
         tags={tags}
         title={state.title}
         tone={dockTone}
@@ -1829,14 +1837,6 @@ function splitCommaList(value: string) {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
-}
-
-function buildPostPublicPath(
-  state: Pick<WriteFormState, 'slug'>,
-  category: CategoryEntity | undefined,
-) {
-  if (!state.slug.trim() || !category?.slug) return ''
-  return `/posts/${category.slug}/${state.slug.trim()}`
 }
 
 function getErrorMessage(error: unknown, fallback: string) {

@@ -1,11 +1,14 @@
-import { URL } from 'node:url'
-
 import { Injectable } from '@nestjs/common'
 import { isNotNil } from 'es-toolkit'
 
-import type { CategoryModel } from '~/modules/category/category.types'
 import { ConfigsService } from '~/modules/configs/configs.service'
 import type { PostModel } from '~/modules/post/post.types'
+import {
+  DEFAULT_POST_PERMALINK,
+  joinWebUrl,
+  type PermalinkPost,
+  renderPostPermalink,
+} from '~/utils/permalink.util'
 
 @Injectable()
 export class UrlBuilderService {
@@ -14,21 +17,28 @@ export class UrlBuilderService {
     return isNotNil(model.title) && isNotNil(model.slug)
   }
 
-  build(model: PostModel) {
+  build(model: PostModel, template = DEFAULT_POST_PERMALINK) {
     if (this.isPostModel(model)) {
-      return `/posts/${
-        (model.category as CategoryModel).slug
-      }/${encodeURIComponent(model.slug)}`
+      return renderPostPermalink(template, model)
     }
 
     return '/'
   }
 
   async buildWithBaseUrl(model: PostModel) {
-    const {
-      url: { webUrl: baseURL },
-    } = await this.configsService.waitForConfigReady()
+    const { webUrl, postPermalink } = await this.urlConfig()
+    return joinWebUrl(webUrl, this.build(model, postPermalink))
+  }
 
-    return new URL(this.build(model), baseURL).href
+  async createPostUrlResolver() {
+    const { webUrl, postPermalink } = await this.urlConfig()
+    const template = postPermalink || DEFAULT_POST_PERMALINK
+    return (post: PermalinkPost) =>
+      joinWebUrl(webUrl, renderPostPermalink(template, post))
+  }
+
+  private async urlConfig() {
+    const { url } = await this.configsService.waitForConfigReady()
+    return url
   }
 }

@@ -11,6 +11,7 @@ import { TranslationService } from '~/processors/helper/helper.translation.servi
 import { createE2EApp } from '../../../helper/create-e2e-app'
 import { authPassHeader } from '../../../mock/guard/auth.guard'
 import { translationEntryProvider } from '../../../mock/processors/translation.mock'
+import { urlBuilderProvider } from '../../../mock/processors/url-builder.mock'
 
 const makePost = (overrides: Record<string, unknown> = {}) => ({
   id: '7000000000000000050',
@@ -98,6 +99,7 @@ describe('GET /posts/slug/:slug (e2e)', () => {
   const proxy = createE2EApp({
     controllers: [PostController],
     providers: [
+      urlBuilderProvider,
       {
         provide: PostService,
         useFactory: () =>

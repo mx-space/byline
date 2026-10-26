@@ -131,6 +131,7 @@ export const adminQueryKeys = {
     sessions: () => ['settings', 'account', 'sessions'] as const,
     site: () => ['settings', 'site'] as const,
     tokens: () => ['settings', 'account', 'tokens'] as const,
+    url: () => ['settings', 'url'] as const,
   },
   users: {
     authors: () => ['users', 'authors'] as const,

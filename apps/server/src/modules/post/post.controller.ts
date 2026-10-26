@@ -22,6 +22,7 @@ import {
   type EntryRule,
   TranslationService,
 } from '~/processors/helper/helper.translation.service'
+import { UrlBuilderService } from '~/processors/helper/helper.url-builder.service'
 import { type EntityIdDto, EntityIdSchema } from '~/shared/dto/id.dto'
 
 import { AiInsightsService } from '../ai/ai-insights/ai-insights.service'
@@ -76,7 +77,13 @@ export class PostController {
     private readonly aiSummaryService: AiSummaryService,
     private readonly aiTtsQueryService: AiTtsQueryService,
     private readonly translationEntryService: TranslationEntryService,
+    private readonly urlBuilderService: UrlBuilderService,
   ) {}
+
+  private async attachUrls<T extends PostRow>(docs: T[]) {
+    const resolveUrl = await this.urlBuilderService.createPostUrlResolver()
+    return docs.map((doc) => Object.assign(doc, { url: resolveUrl(doc) }))
+  }
 
   private async batchEntryTranslations(
     lang: string,
@@ -209,7 +216,7 @@ export class PostController {
     }
     if (lang) this.applyTagGlossary(metaBuilder, entryMaps)
 
-    return withMeta(res.data, metaBuilder.build())
+    return withMeta(await this.attachUrls(res.data), metaBuilder.build())
   }
 
   @Get('/get-url/:slug')
@@ -225,8 +232,10 @@ export class PostController {
       throw createAppException(AppErrorCode.POST_NOT_FOUND)
     }
 
+    const resolveUrl = await this.urlBuilderService.createPostUrlResolver()
     return {
       path: `/${doc.category?.slug}/${doc.slug}`,
+      url: resolveUrl(doc),
     }
   }
 
@@ -278,7 +287,7 @@ export class PostController {
       scheduledOnly: query.visibility === 'scheduled',
     })
     return withMeta(
-      res.data,
+      await this.attachUrls(res.data),
       new MetaObjectBuilder()
         .view('card')
         .pagination({
@@ -352,7 +361,8 @@ export class PostController {
     metaBuilder.translation(translationMap)
     if (lang) this.applyTagGlossary(metaBuilder, entryMaps)
 
-    return withMeta(doc, metaBuilder.build())
+    const [withUrl] = await this.attachUrls([doc])
+    return withMeta(withUrl, metaBuilder.build())
   }
 
   @Get('/:category/:slug')
@@ -462,7 +472,8 @@ export class PostController {
     metaBuilder.translation(translationMap)
     if (lang) this.applyTagGlossary(metaBuilder, entryMaps)
 
-    return withMeta(postDocument, metaBuilder.build())
+    const [withUrl] = await this.attachUrls([postDocument])
+    return withMeta(withUrl, metaBuilder.build())
   }
 
   @Patch('/:id')

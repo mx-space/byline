@@ -2,6 +2,11 @@ import { z } from 'zod'
 
 import { zAllowedUrl } from '~/common/zod'
 import { AIProviderType } from '~/modules/ai/ai.types'
+import {
+  isPostPermalinkToken,
+  permalinkTokensOf,
+  POST_PERMALINK_TOKENS,
+} from '~/utils/permalink.util'
 
 import { field, section, withMeta } from './configs.zod-schema.util'
 
@@ -11,6 +16,28 @@ export const UrlSchema = section('Site URLs', {
   adminUrl: field.halfGrid(zAllowedUrl.optional(), 'Admin dashboard URL'),
   serverUrl: field.halfGrid(zAllowedUrl.optional(), 'API URL'),
   wsUrl: field.halfGrid(zAllowedUrl.optional(), 'Gateway URL'),
+  postPermalink: field.plain(
+    z
+      .string()
+      .trim()
+      .startsWith('/', 'Must start with /')
+      .refine(
+        (value) => {
+          const tokens = permalinkTokensOf(value)
+          return tokens.includes('slug') || tokens.includes('id')
+        },
+        { message: 'Must include {slug} or {id}' },
+      )
+      .refine((value) => permalinkTokensOf(value).every(isPostPermalinkToken), {
+        message: `Only ${POST_PERMALINK_TOKENS.map((token) => `{${token}}`).join(', ')} are supported`,
+      })
+      .optional(),
+    'Post permalink',
+    {
+      description:
+        'Path appended to the frontend URL. Supports {slug}, {category} and {id}, e.g. /posts/{category}/{slug} or /{slug}',
+    },
+  ),
 })
 
 // ==================== Site ====================

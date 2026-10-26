@@ -187,6 +187,7 @@ export interface Post {
   id: string
   title: string
   slug: string
+  url?: string
   text: string
   content: string | null
   contentFormat: 'lexical'

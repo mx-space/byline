@@ -957,6 +957,7 @@ export const enUS = {
   'settings.schema.mailOptions.smtp.user.title': 'SMTP username',
   'settings.schema.mailOptions.title': 'Email notifications',
   'settings.schema.url.adminUrl.title': 'Admin dashboard URL',
+  'settings.schema.url.postPermalink.title': 'Post permalink',
   'settings.schema.url.serverUrl.title': 'API URL',
   'settings.schema.url.title': 'Site URLs',
   'settings.schema.url.webUrl.title': 'Frontend URL',

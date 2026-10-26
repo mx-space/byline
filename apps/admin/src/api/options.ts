@@ -6,6 +6,7 @@ export interface SystemOptions {
 
 export interface UrlOptions {
   adminUrl: string
+  postPermalink?: string
   serverUrl: string
   webUrl: string
   wsUrl: string

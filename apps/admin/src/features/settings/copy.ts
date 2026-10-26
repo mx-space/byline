@@ -305,6 +305,12 @@ export const settingsFieldCopy = createOptionalCopy({
     'en-US': 'Where this admin lives; invite and reset links point here.',
     'zh-CN': '管理端地址，邀请和重置密码邮件的链接指向这里。',
   },
+  'url.postPermalink': {
+    'en-US':
+      'Path after the frontend URL. Use {slug}, {category} and {id}, such as /posts/{category}/{slug} or /{slug}.',
+    'zh-CN':
+      '拼在前端 URL 后面的路径，可用 {slug}、{category}、{id}，例如 /posts/{category}/{slug} 或 /{slug}。',
+  },
   'url.serverUrl': {
     'en-US': 'Public address of the API.',
     'zh-CN': 'API 的公开地址。',

@@ -15,11 +15,20 @@ const createController = () => {
     updateById: vi.fn().mockResolvedValue({ id: 'post-1' }),
     deletePost: vi.fn(),
   }
+  const urlBuilderService = {
+    createPostUrlResolver: vi.fn(
+      async () => (post: { slug: string }) =>
+        `https://example.com/blog/${post.slug}`,
+    ),
+  }
   const controller = new PostController(
     postService as any,
     {} as any,
     {} as any,
     {} as any,
+    {} as any,
+    {} as any,
+    urlBuilderService as any,
   )
   return { controller, postService }
 }
@@ -30,6 +39,7 @@ describe('PostController', () => {
 
     await expect(controller.getBySlug('hello')).resolves.toEqual({
       path: '/default/hello',
+      url: 'https://example.com/blog/hello',
     })
   })
 

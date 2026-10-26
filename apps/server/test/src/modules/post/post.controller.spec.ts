@@ -8,6 +8,7 @@ const lexicalContent = JSON.stringify({ root: { children: [] } })
 const makePost = (overrides: Record<string, unknown> = {}) => ({
   id: '7000000000000000060',
   title: 'Original title',
+  slug: 'original-title',
   text: 'original body',
   content: lexicalContent,
   contentFormat: 'lexical',
@@ -155,6 +156,13 @@ const createController = (opts: CreateControllerOptions = {}) => {
     ),
   }
 
+  const urlBuilderService = {
+    createPostUrlResolver: vi.fn(
+      async () => (post: { slug: string }) =>
+        `https://example.com/blog/${post.slug}`,
+    ),
+  }
+
   const controller = new PostController(
     postService as any,
     translationService as any,
@@ -162,6 +170,7 @@ const createController = (opts: CreateControllerOptions = {}) => {
     aiSummaryService as any,
     aiTtsQueryService as any,
     translationEntryService as any,
+    urlBuilderService as any,
   )
 
   return {
@@ -197,6 +206,14 @@ describe('PostController.getPaginate', () => {
 
     expect(res.data[0].text).toBe('original body')
     expect(res.data[0].content).toBe(lexicalContent)
+  })
+
+  it('attaches the configured permalink to every item', async () => {
+    const { controller } = createController({ posts: [makePost()] })
+
+    const res = await controller.getPaginate({} as any, false)
+
+    expect(res.data[0].url).toBe('https://example.com/blog/original-title')
   })
 
   it('overwrites title, text, summary, content, category.name in place when translated', async () => {
@@ -437,6 +454,18 @@ describe('PostController.getByCateAndSlug', () => {
     expect(postTm?.article?.text).toBeUndefined()
     expect(postTm?.article?.content).toBeUndefined()
     expect(postTm?.article?.contentFormat).toBeUndefined()
+  })
+
+  it('attaches the configured permalink to the detail', async () => {
+    const { controller } = createController({ posts: [makePost()] })
+
+    const res = await controller.getByCateAndSlug(
+      { category: 'tech', slug: 'original-title' },
+      {} as any,
+      false,
+    )
+
+    expect(res.data.url).toBe('https://example.com/blog/original-title')
   })
 })
 

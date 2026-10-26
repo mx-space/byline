@@ -25,7 +25,7 @@ import {
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 
-import { postExternalHref } from '~/features/posts/components/post-format'
+import { usePostPermalink } from '~/hooks/use-post-permalink'
 import { useI18n } from '~/i18n'
 import type { PostModel } from '~/models/post'
 import { Button } from '~/ui/site-button'
@@ -462,6 +462,7 @@ function SeoFieldStatus(props: { field: SeoFieldCheck }) {
 function FeaturedPost(props: { onShare: () => void; post: PostModel }) {
   const { format } = useI18n()
   const copy = useDashboardCopy()
+  const { postUrl } = usePostPermalink()
   const { post } = props
   const authors = (post.authors ?? []).filter((author) =>
     author.displayName.trim(),
@@ -529,11 +530,7 @@ function FeaturedPost(props: { onShare: () => void; post: PostModel }) {
             <LobeButton
               icon={ExternalLink}
               onClick={() =>
-                window.open(
-                  postExternalHref(post),
-                  '_blank',
-                  'noopener,noreferrer',
-                )
+                window.open(postUrl(post), '_blank', 'noopener,noreferrer')
               }
               type="text"
             >

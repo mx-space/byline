@@ -5,6 +5,7 @@ const PostCardSchema = z
     id: z.string(),
     title: z.string(),
     slug: z.string(),
+    url: z.string().optional(),
     summary: z.string().nullable().optional(),
     categoryId: z.string(),
     category: z

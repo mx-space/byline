@@ -19,6 +19,7 @@ import {
 import { useNavigate } from 'react-router'
 
 import { useAiQuickActionsBuilder } from '~/features/ai/hooks/use-ai-quick-actions'
+import { usePostPermalink } from '~/hooks/use-post-permalink'
 import { useI18n } from '~/i18n'
 import type { PostModel } from '~/models/post'
 import {
@@ -45,7 +46,7 @@ import { usePostsList } from '../hooks/use-posts-list'
 import type { PostSortKey, SortOrder } from '../types/posts'
 import { buildPostActions } from './buildPostActions'
 import { buildPostMenuItems } from './buildPostMenuItems'
-import { formatUpdatedAt, postExternalHref, postTitle } from './post-format'
+import { formatUpdatedAt, postTitle } from './post-format'
 import {
   PostBylineCell,
   PostRowActions,
@@ -112,6 +113,7 @@ function isInteractiveTarget(target: EventTarget) {
 export function PostsRouteViewContent(props: { scheduled?: boolean } = {}) {
   const scheduled = props.scheduled ?? false
   const copy = usePostCopy()
+  const { postUrl } = usePostPermalink()
   const table = useRecordTable()
   const { format, t } = useI18n()
   const navigate = useNavigate()
@@ -197,7 +199,7 @@ export function PostsRouteViewContent(props: { scheduled?: boolean } = {}) {
       deleteMany: (targets) => confirmAndDelete(toDeleteTargets(targets)),
       navigateToEdit: (post) => openEdit(post),
       openExternal: (post) => {
-        window.open(postExternalHref(post), '_blank', 'noopener,noreferrer')
+        window.open(postUrl(post), '_blank', 'noopener,noreferrer')
       },
     },
     copy,
@@ -225,7 +227,7 @@ export function PostsRouteViewContent(props: { scheduled?: boolean } = {}) {
       categories: rowCategories,
       categoryDisabled: categoryMutation.isPending,
       copy,
-      externalHref: postExternalHref(post),
+      externalHref: postUrl(post),
       onCategoryChange: (nextCategoryId) =>
         categoryMutation.mutate({ categoryId: nextCategoryId, id: post.id }),
       onPinToggle: (isPinned) => pinMutation.mutate({ id: post.id, isPinned }),

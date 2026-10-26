@@ -377,10 +377,7 @@ export function WriteChrome(
                     <span aria-hidden>·</span>
                     <span>{categoryName ?? copy('categoryPlaceholder')}</span>
                     <span aria-hidden>·</span>
-                    <span className={styles.metaPath}>
-                      {props.slugPrefix}
-                      {props.values.slug || copy('slugPlaceholder')}
-                    </span>
+                    <span className={styles.metaPath}>{props.slugPath}</span>
                   </button>
                 </div>
                 <EditorToolbarSlotContext.Provider value={toolbarSlot}>

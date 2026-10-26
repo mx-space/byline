@@ -1,4 +1,3 @@
-import { WEB_URL } from '~/constants/env'
 import type { PostModel } from '~/models/post'
 
 export function postTitle(post: PostModel, untitled: string) {
@@ -10,11 +9,6 @@ export function bylineNames(post: PostModel) {
   return (post.authors ?? [])
     .map((author) => author.displayName.trim())
     .filter((name) => name.length > 0)
-}
-
-export function postExternalHref(post: PostModel) {
-  const category = post.category?.slug ?? post.categoryId
-  return `${WEB_URL}/posts/${category}/${post.slug}`
 }
 
 export function formatUpdatedAt(value: string | null, empty: string) {

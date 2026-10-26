@@ -901,6 +901,7 @@ export const zhCN = {
   'settings.schema.mailOptions.smtp.user.title': 'SMTP 用户名',
   'settings.schema.mailOptions.title': '邮件通知',
   'settings.schema.url.adminUrl.title': '管理面板 URL',
+  'settings.schema.url.postPermalink.title': '文章链接格式',
   'settings.schema.url.serverUrl.title': 'API URL',
   'settings.schema.url.title': '站点地址',
   'settings.schema.url.webUrl.title': '前端 URL',

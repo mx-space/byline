@@ -17,12 +17,13 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
+import { usePostPermalink } from '~/hooks/use-post-permalink'
 import { usePostScheduled } from '~/hooks/use-post-scheduled'
 import { useI18n } from '~/i18n'
 import type { PostModel } from '~/models/post'
 
 import { usePostCopy } from '../copy'
-import { bylineNames, postExternalHref, postTitle } from './post-format'
+import { bylineNames, postTitle } from './post-format'
 import { styles } from './styles'
 
 const MAX_AVATARS = 3
@@ -129,6 +130,7 @@ export function PostRowActions(props: {
 }) {
   const copy = usePostCopy()
   const scheduled = usePostScheduled(props.post)
+  const { postUrl } = usePostPermalink()
   return (
     <div className={styles.actions} data-row-actions="">
       <ActionIcon
@@ -143,11 +145,7 @@ export function PostRowActions(props: {
           aria-label={copy('openLink')}
           icon={ExternalLink}
           onClick={() =>
-            window.open(
-              postExternalHref(props.post),
-              '_blank',
-              'noopener,noreferrer',
-            )
+            window.open(postUrl(props.post), '_blank', 'noopener,noreferrer')
           }
           size="small"
           title={copy('openLink')}

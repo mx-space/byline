@@ -23,6 +23,7 @@ export interface PostModel {
   text: string
   title: string
   slug: string
+  url?: string
   categoryId: string
   images: Image[]
   modifiedAt: string | null

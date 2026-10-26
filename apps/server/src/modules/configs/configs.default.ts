@@ -1,3 +1,5 @@
+import { DEFAULT_POST_PERMALINK } from '~/utils/permalink.util'
+
 import type { IConfig } from './configs.interface'
 
 export const generateDefaultConfig: () => IConfig = () => ({
@@ -6,6 +8,7 @@ export const generateDefaultConfig: () => IConfig = () => ({
     adminUrl: 'http://localhost:2333/admin/',
     serverUrl: 'http://localhost:2333',
     webUrl: 'http://localhost:2323',
+    postPermalink: DEFAULT_POST_PERMALINK,
   },
   site: {
     defaultSourceLang: 'en',

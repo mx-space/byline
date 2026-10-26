@@ -18,6 +18,7 @@ import {
   translationEntryProvider,
   translationProvider,
 } from '../../mock/processors/translation.mock'
+import { urlBuilderProvider } from '../../mock/processors/url-builder.mock'
 
 /**
  * SDK `PostModelMarkdown` 之必填键（packages/api-client/models/post.ts）。
@@ -138,6 +139,7 @@ describe('PostController contract (e2e)', () => {
     providers: [
       postServiceProvider,
       translationProvider,
+      urlBuilderProvider,
       translationEntryProvider,
       aiInsightsProvider,
       aiSummaryProvider,
@@ -202,6 +204,7 @@ describe('PostController contract (e2e)', () => {
     const body = res.json()
     assertNoLegacyKeys(body)
     expect(typeof body.data.path).toBe('string')
+    expect(typeof body.data.url).toBe('string')
   })
 
   test('SDK shape — every PostModel key present on list rows', async () => {

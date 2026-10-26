@@ -72,7 +72,7 @@ export interface WriteMetaFieldsProps {
   publishedPublicAt?: string | null
   refId?: string
   siteDefaultLang: string
-  slugPrefix: string
+  slugPath: string
   tags: Array<{ count: number; name: string }>
   unpublishPending: boolean
   view: SettingsView
@@ -125,7 +125,7 @@ export function WriteMetaFields(props: WriteMetaFieldsProps) {
   const canGenerate =
     props.values.text.trim().length > 0 &&
     (!props.values.title.trim() || !props.values.slug.trim())
-  const pathText = `${props.slugPrefix}${props.values.slug || copy('slugPlaceholder')}`
+  const pathText = props.slugPath
 
   if (props.view !== 'main') {
     return (

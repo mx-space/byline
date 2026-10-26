@@ -8,7 +8,7 @@ import {
 import { Link2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { postExternalHref } from '~/features/posts/components/post-format'
+import { usePostPermalink } from '~/hooks/use-post-permalink'
 import type { PostModel } from '~/models/post'
 
 import { useDashboardCopy } from '../copy'
@@ -155,7 +155,8 @@ export function SharePostModal(props: {
 }) {
   const copy = useDashboardCopy()
   const { post } = props
-  const href = postExternalHref(post)
+  const { postUrl } = usePostPermalink()
+  const href = postUrl(post)
   const title = post.title.trim() || copy('untitled')
   const summary = post.summary?.trim() ?? ''
   const authors = (post.authors ?? [])

@@ -116,7 +116,7 @@ export class PostsResource {
   }
 
   getPath(slug: string) {
-    return this.http.request<{ path: string }>(
+    return this.http.request<{ path: string; url?: string }>(
       'GET',
       `/posts/get-url/${encodeURIComponent(slug)}`,
     )

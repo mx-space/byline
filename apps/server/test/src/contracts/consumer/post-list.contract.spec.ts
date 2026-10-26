@@ -30,6 +30,7 @@ import {
   translationEntryProvider,
   translationProvider,
 } from '../../../mock/processors/translation.mock'
+import { urlBuilderProvider } from '../../../mock/processors/url-builder.mock'
 
 const fixturePost = (overrides: Record<string, unknown> = {}) => ({
   id: '7000000000000000060',
@@ -113,6 +114,7 @@ describe('Consumer contract — post list (e2e)', () => {
     providers: [
       postServiceProvider,
       translationProvider,
+      urlBuilderProvider,
       translationEntryProvider,
       aiInsightsProvider,
       aiSummaryProvider,
