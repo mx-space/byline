@@ -92,3 +92,72 @@ describe('scheduled publishing settings', () => {
     }
   })
 })
+
+describe('SEO settings', () => {
+  it('links to every language of the post in the AI overview', async () => {
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+    try {
+      await act(async () =>
+        root.render(
+          <QueryClientProvider client={client}>
+            <I18nProvider>
+              <MemoryRouter>
+                <AppTheme>
+                  <WriteMetaFields
+                    values={{
+                      ...emptyPostBylineState,
+                      categoryId: '',
+                      meta: {},
+                      pin: false,
+                      pinOrder: '1',
+                      publishedAt: '',
+                      slug: '',
+                      summary: '',
+                      tags: '',
+                      text: '',
+                      title: '',
+                    }}
+                    published
+                    publicPath="https://example.com/post"
+                    hasArticle
+                    refId="42"
+                    categories={[]}
+                    categoriesFailed={false}
+                    authorCandidates={[]}
+                    coverImages={[]}
+                    deletePending={false}
+                    generatePending={false}
+                    siteDefaultLang="en"
+                    slugPath="/"
+                    tags={[]}
+                    unpublishPending={false}
+                    view="seo"
+                    updateField={() => {}}
+                    onDelete={() => {}}
+                    onGenerate={() => {}}
+                    onRetryCategories={() => {}}
+                    onUnpublish={() => {}}
+                    onViewChange={() => {}}
+                  />
+                </AppTheme>
+              </MemoryRouter>
+            </I18nProvider>
+          </QueryClientProvider>,
+        ),
+      )
+      const link = [...host.querySelectorAll('a')].find(
+        (node) => node.textContent === '查看全部语言',
+      )
+      expect(link?.getAttribute('href')).toBe('/ai/overview/42#locale-meta')
+    } finally {
+      await act(async () => root.unmount())
+      client.clear()
+      host.remove()
+    }
+  })
+})

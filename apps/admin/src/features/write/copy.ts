@@ -293,6 +293,10 @@ export const writeCopy = createFeatureCopy({
     'en-US': 'SEO',
     'zh-CN': 'SEO',
   },
+  viewAllLocales: {
+    'en-US': 'View all languages',
+    'zh-CN': '查看全部语言',
+  },
   sectionSummary: {
     'en-US': 'Summary and tags',
     'zh-CN': '摘要与标签',

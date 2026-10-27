@@ -133,6 +133,28 @@ const catalog = {
   },
   post: { 'zh-CN': '文章', 'en-US': 'Post' },
   locked: { 'zh-CN': '不覆盖', 'en-US': 'Kept' },
+  localeMetaTitle: { 'zh-CN': 'SEO 与摘要', 'en-US': 'SEO and summary' },
+  localeMetaDescription: {
+    'zh-CN':
+      '每种语言实际使用的 SEO 标题、SEO 描述和 AI 摘要。点一行打开该语言的编辑。',
+    'en-US':
+      'The SEO title, SEO description and AI summary each language uses. Click a row to edit that language.',
+  },
+  localeMetaLang: { 'zh-CN': '语言', 'en-US': 'Language' },
+  localeMetaSeoTitle: { 'zh-CN': 'SEO 标题', 'en-US': 'SEO title' },
+  localeMetaSeoDescription: { 'zh-CN': 'SEO 描述', 'en-US': 'SEO description' },
+  localeMetaSummary: { 'zh-CN': 'AI 摘要', 'en-US': 'AI summary' },
+  localeMetaSourceLang: { 'zh-CN': '原文', 'en-US': 'Source' },
+  localeMetaHuman: { 'zh-CN': '人工', 'en-US': 'Human' },
+  localeMetaLocked: { 'zh-CN': '人工 · 已锁定', 'en-US': 'Human · Locked' },
+  localeMetaAi: { 'zh-CN': 'AI', 'en-US': 'AI' },
+  localeMetaInherited: { 'zh-CN': '沿用原文', 'en-US': 'From source' },
+  localeMetaEmpty: { 'zh-CN': '空', 'en-US': 'Empty' },
+  localeMetaShowMore: {
+    'zh-CN': '展开其余 {count} 种语言',
+    'en-US': 'Show {count} more languages',
+  },
+  localeMetaShowLess: { 'zh-CN': '收起', 'en-US': 'Show less' },
   lockedHint: {
     'zh-CN': '重新生成和发布不会替换这条译文。改过或导入的译文可以这样保住。',
     'en-US':
@@ -176,6 +198,17 @@ const catalog = {
   overwriteLocked: {
     'zh-CN': '仍然替换',
     'en-US': 'Replace anyway',
+  },
+  summaryLocked: { 'zh-CN': '已锁定', 'en-US': 'Locked' },
+  overwriteLockedSummaryTitle: {
+    'zh-CN': '替换已锁定的摘要？',
+    'en-US': 'Replace a locked summary?',
+  },
+  overwriteLockedSummaryBody: {
+    'zh-CN':
+      '{lang} 的摘要是人写的，已锁定。重新生成会用 AI 摘要替换它，并解除锁定。',
+    'en-US':
+      'The {lang} summary was written by a person and is locked. Regenerating replaces it with an AI summary and unlocks it.',
   },
   skipLocked: {
     'zh-CN': '跳过不覆盖的语言',

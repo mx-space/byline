@@ -89,6 +89,7 @@ export interface AISummary {
   generationMetrics?: GenerationMetrics | null
   hash: string
   id: string
+  isLocked?: boolean
   lang: string
   refId: string
   summary: string
@@ -297,11 +298,17 @@ export function updateSummary(id: string, data: { summary: string }) {
 export function createSummaryTask(data: {
   force?: boolean
   refId: string
+  regenerateLocked?: boolean
   targetLanguages?: string[]
 }) {
   return postJson<
     CreateTaskResponse,
-    { force?: boolean; refId: string; targetLanguages?: string[] }
+    {
+      force?: boolean
+      refId: string
+      regenerateLocked?: boolean
+      targetLanguages?: string[]
+    }
   >('/ai/summaries/task', data)
 }
 

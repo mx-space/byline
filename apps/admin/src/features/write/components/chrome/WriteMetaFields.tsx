@@ -17,9 +17,10 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 
 import type { CategoryEntity } from '~/data/resources/category'
+import { LOCALE_META_ANCHOR } from '~/features/ai/components/article-overview/locale-meta'
 import { usePostScheduled } from '~/hooks/use-post-scheduled'
 import { useI18n } from '~/i18n'
 import type { Image as ImageModel } from '~/models/base'
@@ -143,6 +144,11 @@ export function WriteMetaFields(props: WriteMetaFieldsProps) {
               titlePlaceholder={props.values.title}
               value={props.values}
             />
+            {props.refId ? (
+              <Link to={`/ai/overview/${props.refId}#${LOCALE_META_ANCHOR}`}>
+                {copy('viewAllLocales')}
+              </Link>
+            ) : null}
           </div>
         ) : (
           <AdvancedFields {...props} />

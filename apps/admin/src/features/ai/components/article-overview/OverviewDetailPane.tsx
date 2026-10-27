@@ -39,6 +39,7 @@ import {
   normaliseLangInput,
   resolveCell,
 } from './coverage-cells'
+import { LocaleMetaSection } from './LocaleMetaSection'
 import { buildGenerateTask } from './overview-generate-task'
 import { OverviewMatrix } from './OverviewMatrix'
 import { useOverviewActions } from './useOverviewActions'
@@ -354,6 +355,15 @@ export function OverviewDetailPane(props: { refId: string }) {
           />
           <Button onClick={addLang}>{copy('addLangAction')}</Button>
         </Flexbox>
+        {detail.localeMeta?.length ? (
+          <LocaleMetaSection
+            onOpen={(path) => navigate(path)}
+            postEditPath={editPath ?? undefined}
+            refId={props.refId}
+            rows={detail.localeMeta}
+            translations={detail.assets.translation}
+          />
+        ) : null}
       </div>
     </Page>
   )

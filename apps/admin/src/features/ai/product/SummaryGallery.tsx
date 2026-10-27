@@ -1,3 +1,4 @@
+import { Tag } from '@lobehub/ui'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 
@@ -75,6 +76,9 @@ export function SummaryGallery(props: {
           meta={
             <>
               <span>{item.lang}</span>
+              {item.isLocked ? (
+                <Tag color="gold">{copy('summaryLocked')}</Tag>
+              ) : null}
               <StatusTags stale={props.staleIds.has(item.id)} />
               <span>{format.relativeTime(item.createdAt)}</span>
             </>

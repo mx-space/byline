@@ -43,6 +43,7 @@ interface AssetBase {
 }
 
 export interface SummaryAsset extends AssetBase {
+  isLocked?: boolean
   isTranslation: boolean
   sourceLang: string | null
   summary: string
@@ -92,8 +93,24 @@ export interface ActiveGeneration {
   totalItems: number | null
 }
 
+export type LocaleMetaSource = 'ai' | 'empty' | 'human' | 'inherited' | 'locked'
+
+export interface LocaleMetaField {
+  source: LocaleMetaSource
+  text: string | null
+}
+
+export interface LocaleMetaRow {
+  isSource: boolean
+  lang: string
+  seoDescription: LocaleMetaField
+  seoTitle: LocaleMetaField
+  summary: LocaleMetaField
+}
+
 export interface AiOverviewDetail {
   activeTasks: ActiveGeneration[]
+  localeMeta?: LocaleMetaRow[]
   article: ArticleInfo
   assets: {
     insights: InsightsAsset[]

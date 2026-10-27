@@ -2,6 +2,7 @@ import { confirmModal, toast } from '@lobehub/ui'
 import { useMutation } from '@tanstack/react-query'
 
 import { useI18n } from '~/i18n'
+import { confirmDialog } from '~/ui/feedback/confirm'
 
 import { useAiCopy } from '../../copy'
 import { useAiDefaultLangs } from '../../hooks/use-ai-default-langs'
@@ -54,6 +55,18 @@ export function isLockedItem(item: unknown): boolean {
     'isLocked' in item &&
     (item as { isLocked?: boolean }).isLocked,
   )
+}
+
+export async function resolveRetryInput(
+  item: unknown,
+  lang: string,
+  refId: string,
+  confirmOverwrite: () => Promise<boolean>,
+) {
+  const input = { force: true, langs: [lang], refId }
+  if (!isLockedItem(item)) return input
+  if (!(await confirmOverwrite())) return null
+  return { ...input, regenerateLocked: true }
 }
 
 export function useArtefactActions<TItem>(
@@ -157,7 +170,17 @@ export function useArtefactActions<TItem>(
       extraMutation.mutate(() => retry.run(item))
       return
     }
-    await taskMutation.mutateAsync({ force: true, langs: [lang], refId })
+    const input = await resolveRetryInput(item, lang, refId, () =>
+      confirmDialog({
+        cancelText: copy('cancel'),
+        confirmText: copy('overwriteLocked'),
+        description: copy('overwriteLockedSummaryBody', { lang }),
+        destructive: true,
+        title: copy('overwriteLockedSummaryTitle'),
+      }),
+    )
+    if (!input) return
+    await taskMutation.mutateAsync(input)
   }
 
   const run = (action: ItemAction<TItem>, item: TItem) =>

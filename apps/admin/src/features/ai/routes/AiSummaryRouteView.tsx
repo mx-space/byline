@@ -19,10 +19,11 @@ export function AiSummaryRouteView() {
       generate: {
         defaultLangsOptionKey: 'summaryTargetLanguages',
         promptForLang: true,
-        runTask: ({ refId, langs, force }) =>
+        runTask: ({ refId, langs, force, regenerateLocked }) =>
           createSummaryTask({
             force,
             refId,
+            regenerateLocked,
             targetLanguages: langs?.length ? langs : undefined,
           }),
         taskTypeForQueue: 'Summary',
