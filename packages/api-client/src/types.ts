@@ -22,6 +22,7 @@ export interface ArticleTranslationMeta {
   translatedAt?: string
   model?: string
   availableTranslations?: string[]
+  localizedTags?: string[]
 }
 
 export interface EntryTranslationMeta {
