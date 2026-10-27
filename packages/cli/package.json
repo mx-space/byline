@@ -1,6 +1,6 @@
 {
   "name": "@mx-space/byline-cli",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Command line tools for the Byline headless CMS, including a generic MDX importer",
   "keywords": [
     "byline",
