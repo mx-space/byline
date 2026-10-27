@@ -1,13 +1,8 @@
 import { z } from 'zod'
 
-import { MAX_LANGS_PER_TASK } from '../ai.constants'
-
 export const CreateSummaryTaskSchema = z.object({
   refId: z.string(),
-  targetLanguages: z
-    .array(z.string().trim().min(1))
-    .max(MAX_LANGS_PER_TASK)
-    .optional(),
+  targetLanguages: z.array(z.string().trim().min(1)).optional(),
   force: z.boolean().optional(),
 })
 
@@ -25,10 +20,7 @@ export type CreateSummaryTranslationTaskDto = z.infer<
 
 export const CreateTranslationTaskSchema = z.object({
   refId: z.string(),
-  targetLanguages: z
-    .array(z.string().trim().min(1))
-    .max(MAX_LANGS_PER_TASK)
-    .optional(),
+  targetLanguages: z.array(z.string().trim().min(1)).optional(),
   force: z.boolean().optional(),
   regenerateLocked: z.boolean().optional(),
 })

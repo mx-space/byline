@@ -418,10 +418,6 @@ const catalog = {
       'Separate with commas, for example zh-CN, en, ja. Leave empty to use site settings.',
   },
   langsCount: { 'zh-CN': '{count} 种语言', 'en-US': '{count} languages' },
-  langsTooMany: {
-    'zh-CN': '一次最多 {max} 种语言',
-    'en-US': 'At most {max} languages at once',
-  },
   forceLabel: { 'zh-CN': '替换已有产物', 'en-US': 'Replace existing output' },
   forceHintTranslation: {
     'zh-CN': '已有译文会被替换。标成「不覆盖」的语言会跳过，除非勾选覆盖。',

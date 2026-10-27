@@ -630,18 +630,6 @@ describe('ai-tts generation task (faux e2e)', () => {
     )
   })
 
-  it('rejects a task carrying more than eight languages', async () => {
-    await expect(
-      h.execute(
-        {
-          refId: '1',
-          langs: ['en', 'fr', 'de', 'es', 'it', 'ja', 'ko', 'ru', 'pt'],
-        },
-        context,
-      ),
-    ).rejects.toMatchObject({ code: AppErrorCode.AI_INVALID_PARAMETER })
-  })
-
   it('throws TTS_DISABLED when the feature is off', async () => {
     h.ttsConfig.enable = false
 

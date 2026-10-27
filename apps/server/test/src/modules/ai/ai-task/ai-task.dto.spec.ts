@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { MAX_LANGS_PER_TASK } from '~/modules/ai/ai.constants'
 import { CreateInsightsTaskSchema } from '~/modules/ai/ai-insights/ai-insights.schema'
 import {
   CreateSummaryTaskSchema,
@@ -8,24 +7,15 @@ import {
   CreateTranslationTaskSchema,
 } from '~/modules/ai/ai-task/ai-task.dto'
 
-const eightLangs = Array.from({ length: 8 }, (_, i) => `lang${i}`)
-const nineLangs = Array.from({ length: 9 }, (_, i) => `lang${i}`)
+const manyLangs = Array.from({ length: 9 }, (_, i) => `lang${i}`)
 
 describe('CreateSummaryTaskSchema', () => {
-  it('accepts targetLanguages at the max of 8', () => {
+  it('accepts any number of target languages', () => {
     const result = CreateSummaryTaskSchema.safeParse({
       refId: 'article-1',
-      targetLanguages: eightLangs,
+      targetLanguages: manyLangs,
     })
     expect(result.success).toBe(true)
-  })
-
-  it('rejects targetLanguages of 9', () => {
-    const result = CreateSummaryTaskSchema.safeParse({
-      refId: 'article-1',
-      targetLanguages: nineLangs,
-    })
-    expect(result.success).toBe(false)
   })
 
   it('rejects a blank or whitespace-only target language', () => {
@@ -65,22 +55,13 @@ describe('CreateSummaryTranslationTaskSchema', () => {
 })
 
 describe('CreateInsightsTaskSchema', () => {
-  it('accepts targetLanguages at the max of 8', () => {
+  it('accepts any number of target languages', () => {
     expect(
       CreateInsightsTaskSchema.safeParse({
         refId: 'article-1',
-        targetLanguages: eightLangs,
+        targetLanguages: manyLangs,
       }).success,
     ).toBe(true)
-  })
-
-  it('rejects targetLanguages of 9', () => {
-    expect(
-      CreateInsightsTaskSchema.safeParse({
-        refId: 'article-1',
-        targetLanguages: nineLangs,
-      }).success,
-    ).toBe(false)
   })
 
   it('rejects a blank or whitespace-only target language', () => {
@@ -94,24 +75,12 @@ describe('CreateInsightsTaskSchema', () => {
 })
 
 describe('CreateTranslationTaskSchema', () => {
-  it('accepts targetLanguages at the max of 8', () => {
+  it('accepts any number of target languages', () => {
     const result = CreateTranslationTaskSchema.safeParse({
       refId: 'article-1',
-      targetLanguages: eightLangs,
+      targetLanguages: manyLangs,
     })
     expect(result.success).toBe(true)
-  })
-
-  it('rejects targetLanguages of 9', () => {
-    const result = CreateTranslationTaskSchema.safeParse({
-      refId: 'article-1',
-      targetLanguages: nineLangs,
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('shares the max with MAX_LANGS_PER_TASK', () => {
-    expect(eightLangs.length).toBe(MAX_LANGS_PER_TASK)
   })
 
   it('rejects a blank or whitespace-only target language', () => {

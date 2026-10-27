@@ -20,8 +20,6 @@ const styles = createStaticStyles(({ css }) => ({
   `,
 }))
 
-const MAX_LANGS = 8
-
 export interface GeneratePromptModalProps {
   defaultLangs?: string[]
   lockedLangs?: string[]
@@ -45,12 +43,10 @@ function GeneratePromptModal(props: GeneratePromptModalProps) {
   const [force, setForce] = useState(false)
   const [overwriteLocked, setOverwriteLocked] = useState(false)
   const langs = parseLangInput(langInput)
-  const tooMany = props.promptForLang && langs.length > MAX_LANGS
   const locked = props.lockedLangs ?? []
 
   const handleSubmit = (event?: FormEvent) => {
     event?.preventDefault()
-    if (tooMany) return
     modal.close({
       force,
       langs: props.promptForLang ? langs : [],
@@ -95,11 +91,6 @@ function GeneratePromptModal(props: GeneratePromptModalProps) {
                 {copy('langsCount', { count: langs.length })}
               </span>
             ) : null}
-            {tooMany ? (
-              <span className={aiStyles.meta}>
-                {copy('langsTooMany', { max: MAX_LANGS })}
-              </span>
-            ) : null}
           </label>
         ) : (
           <p className={aiStyles.meta}>{props.title}</p>
@@ -124,7 +115,6 @@ function GeneratePromptModal(props: GeneratePromptModalProps) {
         </Button>
         <Button
           danger={force && props.replacesUnlocked}
-          disabled={tooMany}
           htmlType="submit"
           type="primary"
         >

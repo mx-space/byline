@@ -119,7 +119,6 @@ export const zhCN = {
   'ai.generate.langsCount': '共 {count} 种',
   'ai.generate.langsHint': '逗号分隔；留空则按 AI 设置中的目标语言',
   'ai.generate.langsLabel': '目标语言',
-  'ai.generate.langsTooMany': '一次最多 {max} 种语言',
   'ai.insights.detailSectionTitle': '精读详情',
   'ai.insights.editLabel.content': '精读内容',
   'ai.insights.editLabel.meta': '元信息',

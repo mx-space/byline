@@ -183,18 +183,21 @@ describe('countGaps and buildFillJobs', () => {
     ])
   })
 
-  it('splits jobs that exceed the per-task language limit', () => {
+  it('keeps every missing language in one task', () => {
     const many = Array.from({ length: 10 }, (_, index) => `l${index}`)
     const [wide] = buildMatrixRows(
       [
         row(
           'd',
-          coverage({ tts: { applicable: true, expected: many, langs: [] } }),
+          coverage({
+            translation: { applicable: true, expected: many, langs: [] },
+            tts: { applicable: true, expected: many, langs: [] },
+          }),
         ),
       ],
       new Map(),
     )
-    const jobs = buildFillJobs([wide], ['tts'])
-    expect(jobs.map((job) => job.langs.length)).toEqual([8, 2])
+    const jobs = buildFillJobs([wide], ['translation', 'tts'])
+    expect(jobs.map((job) => job.langs.length)).toEqual([10, 10])
   })
 })

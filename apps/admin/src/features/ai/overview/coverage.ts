@@ -273,7 +273,6 @@ export interface FillJob {
   refIds: string[]
 }
 
-const MAX_LANGS_PER_TASK = 8
 const MAX_REFS_PER_BATCH = 100
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -286,21 +285,18 @@ function chunk<T>(items: T[], size: number): T[][] {
 
 /**
  * One job per post, except translations: posts missing the same set of
- * languages share a single batch task. Jobs are split to the server's
- * per-task limits.
+ * languages share a single batch task. Jobs are split to the batch size limit.
  */
 export function buildFillJobs(
   rows: MatrixRow[],
   capabilities: readonly AiOverviewCapability[],
 ): FillJob[] {
   return collectFillJobs(rows, capabilities).flatMap((job) =>
-    chunk(job.refIds, MAX_REFS_PER_BATCH).flatMap((refIds) =>
-      chunk(job.langs, MAX_LANGS_PER_TASK).map((langs) => ({
-        capability: job.capability,
-        langs,
-        refIds,
-      })),
-    ),
+    chunk(job.refIds, MAX_REFS_PER_BATCH).map((refIds) => ({
+      capability: job.capability,
+      langs: job.langs,
+      refIds,
+    })),
   )
 }
 

@@ -2,8 +2,6 @@ import { z } from 'zod'
 
 import { normalizeLanguageCode } from '~/utils/lang.util'
 
-const MAX_TASK_LANGS = 8
-
 const zResolvableLang = z
   .string()
   .refine((lang) => normalizeLanguageCode(lang) !== undefined, {
@@ -12,7 +10,7 @@ const zResolvableLang = z
 
 export const CreateTtsTaskSchema = z.object({
   refId: z.string(),
-  langs: z.array(zResolvableLang).max(MAX_TASK_LANGS).optional(),
+  langs: z.array(zResolvableLang).optional(),
   force: z.boolean().optional(),
 })
 export type CreateTtsTaskDto = z.infer<typeof CreateTtsTaskSchema>

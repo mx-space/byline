@@ -130,7 +130,6 @@ export const enUS = {
   'ai.generate.langsHint':
     'Comma-separated; leave empty to use the target languages from AI settings',
   'ai.generate.langsLabel': 'Target languages',
-  'ai.generate.langsTooMany': 'At most {max} languages per run',
   'ai.insights.detailSectionTitle': 'Insights detail',
   'ai.insights.editLabel.content': 'Insights content',
   'ai.insights.editLabel.meta': 'Metadata',

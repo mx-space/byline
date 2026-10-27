@@ -15,12 +15,12 @@ describe('CreateTtsTaskSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('rejects a langs array longer than 8', () => {
+  it('accepts any number of langs', () => {
     const result = CreateTtsTaskSchema.safeParse({
       refId: '1',
       langs: ['en', 'fr', 'de', 'es', 'it', 'ja', 'ko', 'ru', 'pt'],
     })
-    expect(result.success).toBe(false)
+    expect(result.success).toBe(true)
   })
 
   it('rejects an entry parseLanguageCode cannot resolve', () => {

@@ -17,7 +17,6 @@ import {
 
 import { ConfigsService } from '../../configs/configs.service'
 import { FileService } from '../../file/file.service'
-import { MAX_LANGS_PER_TASK } from '../ai.constants'
 import { AiGenerationMetricsService } from '../ai-generation-metrics/ai-generation-metrics.service'
 import { parseLanguageCode } from '../ai-language.util'
 import { AITaskType, type TtsTaskPayload } from '../ai-task/ai-task.types'
@@ -126,12 +125,6 @@ export class AiTtsService implements OnModuleInit {
     const targets = payload.langs?.length
       ? [...new Set(payload.langs.map((lang) => parseLanguageCode(lang)))]
       : [sourceLang]
-
-    if (targets.length > MAX_LANGS_PER_TASK) {
-      throw createAppException(AppErrorCode.AI_INVALID_PARAMETER, {
-        message: `a tts task carries at most ${MAX_LANGS_PER_TASK} languages`,
-      })
-    }
 
     const { prefix } = await this.configService.get('imageStorageOptions')
     const objectKeyPrefix = resolveTtsObjectKeyPrefix(prefix)
