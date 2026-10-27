@@ -154,6 +154,7 @@ describe('TranslationService', () => {
         subtitle: 'Translated Subtitle',
         summary: 'Translated Summary',
         tags: ['tag1', 'tag2'],
+        translatedTags: ['translated-tag'],
         isTranslated: true,
         sourceLang: 'zh',
         translationMeta: {
@@ -847,6 +848,34 @@ describe('buildArticleTranslationMeta', () => {
     expect(meta).not.toHaveProperty('subtitle')
     expect(meta).not.toHaveProperty('summary')
     expect(meta).not.toHaveProperty('tags')
+  })
+
+  it('exposes the translated tags of a translated result', () => {
+    const result: TranslationResult = {
+      title: 'T',
+      text: 'X',
+      tags: ['source-tag'],
+      translatedTags: ['标签'],
+      isTranslated: true,
+      sourceLang: 'en',
+      translationMeta: { sourceLang: 'en', targetLang: 'zh' },
+    }
+    expect(buildArticleTranslationMeta(result, 'zh').localizedTags).toEqual([
+      '标签',
+    ])
+  })
+
+  it('leaves out tags when the translation has none', () => {
+    const result: TranslationResult = {
+      title: 'T',
+      text: 'X',
+      tags: ['source-tag'],
+      isTranslated: true,
+      sourceLang: 'en',
+    }
+    expect(buildArticleTranslationMeta(result, 'zh')).not.toHaveProperty(
+      'localizedTags',
+    )
   })
 
   it('translated result with full translationMeta', () => {

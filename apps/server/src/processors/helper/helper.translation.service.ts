@@ -23,6 +23,7 @@ export interface TranslationResult {
   subtitle?: string | null
   summary?: string | null
   tags?: string[]
+  translatedTags?: string[]
   content?: string
   contentFormat?: string
   seo?: PostSeo | null
@@ -101,6 +102,9 @@ export function buildArticleTranslationMeta(
     translatedAt: result.translationMeta?.translatedAt,
     model: result.translationMeta?.model,
     availableTranslations: result.availableTranslations ?? [],
+    ...(result.isTranslated && result.translatedTags?.length
+      ? { localizedTags: result.translatedTags }
+      : {}),
   }
 }
 
@@ -262,6 +266,9 @@ export class TranslationService {
         subtitle: translation.subtitle ?? originalData.subtitle,
         summary: translation.summary ?? originalData.summary,
         tags: originalData.tags,
+        ...(translation.tags?.length
+          ? { translatedTags: translation.tags }
+          : {}),
         isTranslated: true,
         sourceLang: translation.sourceLang,
         translationMeta: {

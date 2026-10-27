@@ -15,6 +15,7 @@ export const ArticleTranslationSchema = z
     translatedAt: z.date().optional(),
     model: z.string().optional(),
     availableTranslations: z.array(z.string()).optional(),
+    localizedTags: z.array(z.string()).optional(),
   })
   .strict()
 
