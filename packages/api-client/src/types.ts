@@ -398,6 +398,23 @@ export interface Translation {
   [key: string]: unknown
 }
 
+export interface Summary {
+  id: string
+  refId: string
+  lang: string | null
+  summary: string
+  hash: string
+  isTranslation: boolean
+  isLocked: boolean
+  sourceLang: string | null
+  createdAt: string
+  [key: string]: unknown
+}
+
+export interface ManualSummaryInput {
+  summary: string
+}
+
 export interface ManualTranslationInput {
   title: string
   content: string | LexicalEditorState

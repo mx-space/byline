@@ -13,6 +13,7 @@ export type {
   CategoriesResource,
   DynamicComponentsResource,
   FilesResource,
+  SummariesResource,
   TranslationsResource,
 } from './resources/content'
 export type { DraftsResource } from './resources/drafts'

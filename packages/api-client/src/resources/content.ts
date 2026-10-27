@@ -3,8 +3,10 @@ import type {
   Category,
   DynamicComponentCatalog,
   FileType,
+  ManualSummaryInput,
   ManualTranslationInput,
   RegisterDynamicComponentInput,
+  Summary,
   TaskRef,
   Translation,
   TranslationPatch,
@@ -44,6 +46,18 @@ export class CategoriesResource {
 
   delete(id: string) {
     return this.http.request<void>('DELETE', `/categories/${id}`)
+  }
+}
+
+export class SummariesResource {
+  constructor(private readonly http: HttpCore) {}
+
+  writeManual(articleId: string, lang: string, input: ManualSummaryInput) {
+    return this.http.request<Summary>(
+      'PUT',
+      `/ai/summaries/article/${articleId}/lang/${encodeURIComponent(lang)}`,
+      { body: input },
+    )
   }
 }
 

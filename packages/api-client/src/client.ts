@@ -4,6 +4,7 @@ import {
   CategoriesResource,
   DynamicComponentsResource,
   FilesResource,
+  SummariesResource,
   TranslationsResource,
 } from './resources/content'
 import { DraftsResource } from './resources/drafts'
@@ -19,6 +20,7 @@ export class BylineClient {
   readonly tasks: TasksResource
   readonly categories: CategoriesResource
   readonly translations: TranslationsResource
+  readonly summaries: SummariesResource
   readonly users: UsersResource
   readonly authors: AuthorsResource
   readonly invites: InvitesResource
@@ -33,6 +35,7 @@ export class BylineClient {
     this.posts = new PostsResource(this.http, this.drafts, this.publishJobs)
     this.categories = new CategoriesResource(this.http)
     this.translations = new TranslationsResource(this.http)
+    this.summaries = new SummariesResource(this.http)
     this.users = new UsersResource(this.http)
     this.authors = new AuthorsResource(this.http)
     this.invites = new InvitesResource(this.http)

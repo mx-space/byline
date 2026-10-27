@@ -279,6 +279,29 @@ describe('toDraftData', () => {
   })
 })
 
+describe('summaries', () => {
+  it('writes a locked manual summary for one language', async () => {
+    const { fetch, calls } = mockFetch(() => ({
+      body: {
+        data: {
+          id: '1',
+          ref_id: '7',
+          lang: 'pt-BR',
+          summary: 'Olá',
+          is_locked: true,
+        },
+      },
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    const { data } = await client.summaries.writeManual('7', 'pt-BR', {
+      summary: 'Olá',
+    })
+    expect(route(calls[0])).toBe('PUT /ai/summaries/article/7/lang/pt-BR')
+    expect(calls[0].body).toEqual({ summary: 'Olá' })
+    expect(data.isLocked).toBe(true)
+  })
+})
+
 describe('translations, catalog and files', () => {
   it('writes a manual translation with a serialized Lexical state', async () => {
     const { fetch, calls } = mockFetch(() => ({
