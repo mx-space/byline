@@ -1,5 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, desc, eq, inArray, lt, ne, notExists, or, sql } from 'drizzle-orm'
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  lt,
+  ne,
+  notExists,
+  or,
+  sql,
+} from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import {
@@ -351,6 +362,36 @@ export class FileReferenceRepository extends BaseRepository {
     ])
     return {
       data: rows.map(mapRow),
+      pagination: this.paginationOf(Number(count ?? 0), page, size),
+    }
+  }
+
+  async listRemote(
+    page = 1,
+    size = 20,
+  ): Promise<PaginationResult<FileReferenceRow & { inUse: boolean }>> {
+    page = Math.max(1, page)
+    size = Math.min(100, Math.max(1, size))
+    const offset = (page - 1) * size
+    const where = isNotNull(fileReferences.s3ObjectKey)
+    const [rows, [{ count }]] = await Promise.all([
+      this.db
+        .select({
+          row: fileReferences,
+          inUse: sql<boolean>`not (${this.orphanWhere()})`,
+        })
+        .from(fileReferences)
+        .where(where)
+        .orderBy(desc(fileReferences.createdAt))
+        .limit(size)
+        .offset(offset),
+      this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(fileReferences)
+        .where(where),
+    ])
+    return {
+      data: rows.map(({ row, inUse }) => ({ ...mapRow(row), inUse })),
       pagination: this.paginationOf(Number(count ?? 0), page, size),
     }
   }

@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
 
+import { AppErrorCode, createAppException } from '~/common/errors'
 import { ConfigsService } from '~/modules/configs/configs.service'
 import type { ContentFormat } from '~/shared/types/content-format.type'
 import { extractFileUrlsFromContent } from '~/utils/content.util'
@@ -262,6 +263,32 @@ export class FileReferenceService {
 
   async listOrphanFiles(page = 1, size = 20) {
     return this.fileReferenceRepository.listOrphans(page, size)
+  }
+
+  async listRemoteFiles(page = 1, size = 20) {
+    return this.fileReferenceRepository.listRemote(page, size)
+  }
+
+  async deleteRemoteFile(id: string) {
+    const file = await this.fileReferenceRepository.findById(id)
+    if (!file?.s3ObjectKey) {
+      throw createAppException(AppErrorCode.NOT_FOUND, { id })
+    }
+    const uploader = await this.buildS3Uploader()
+    if (!uploader) {
+      throw createAppException(AppErrorCode.FILE_STORAGE_NOT_CONFIGURED)
+    }
+    await uploader.deleteObject(file.s3ObjectKey)
+    await this.fileReferenceRepository.deleteById(file.id)
+    this.logger.log(
+      JSON.stringify({
+        event: 'file_hard_delete',
+        reason: FileDeletionReason.Manual,
+        fileName: file.fileName,
+        fileUrl: file.fileUrl,
+        s3ObjectKey: file.s3ObjectKey,
+      }),
+    )
   }
 
   async getReferenceById(id: string) {

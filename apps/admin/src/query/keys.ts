@@ -68,6 +68,8 @@ export const adminQueryKeys = {
     byType: (type: string) => ['files', 'by-type', type] as const,
     orphans: (params: { page: number; size: number }) =>
       ['files', 'orphans', params] as const,
+    remote: (params: { page: number; size: number }) =>
+      ['files', 'remote', params] as const,
     root: ['files'] as const,
   },
   login: {

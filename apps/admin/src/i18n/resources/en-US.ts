@@ -668,6 +668,8 @@ export const enUS = {
   'routes.scheduledPosts.description':
     'Published posts that are not public yet.',
   'routes.scheduledPosts.title': 'Scheduled',
+  'routes.remoteFiles.description': 'Files Byline uploaded to object storage.',
+  'routes.remoteFiles.title': 'Bucket Files',
   'routes.posts.description':
     'Posts, publishing state, search, and article operations.',
   'routes.posts.title': 'Published',

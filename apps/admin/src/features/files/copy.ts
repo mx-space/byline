@@ -149,6 +149,12 @@ const catalog = {
     'en-US': 'Delete {name}?',
     'zh-CN': '删除 {name}？',
   },
+  deleteInUseBody: {
+    'en-US':
+      'A post or setting still uses this file. Its image or link will break. Deletion cannot be undone.',
+    'zh-CN':
+      '仍有文章或设置在用这个文件，删除后那里的图片或链接会失效。删除后无法恢复。',
+  },
   deleteOneBody: {
     'en-US': 'No post references this file. Deletion cannot be undone.',
     'zh-CN': '没有文章引用这个文件。删除后无法恢复。',
@@ -206,6 +212,15 @@ const catalog = {
     'en-US': 'No orphan files',
     'zh-CN': '没有孤立文件',
   },
+  emptyRemoteBody: {
+    'en-US':
+      'Images and attachments uploaded while object storage is on appear here.',
+    'zh-CN': '开启对象存储后上传的图片和附件会显示在这里。',
+  },
+  emptyRemoteTitle: {
+    'en-US': 'No files in the bucket',
+    'zh-CN': '存储桶里还没有文件',
+  },
   emptySearchTitle: {
     'en-US': 'No matching files',
     'zh-CN': '没有匹配的文件',
@@ -257,6 +272,14 @@ const catalog = {
   loadOrphansFailedTitle: {
     'en-US': 'Could not load orphan files',
     'zh-CN': '孤立文件加载失败',
+  },
+  loadRemoteFailedBody: {
+    'en-US': 'The bucket file list did not update. Retry.',
+    'zh-CN': '存储桶文件列表没有更新，请重试。',
+  },
+  loadRemoteFailedTitle: {
+    'en-US': 'Could not load bucket files',
+    'zh-CN': '存储桶文件加载失败',
   },
   loading: {
     'en-US': 'Loading…',
@@ -378,6 +401,12 @@ const catalog = {
     'en-US': 'Refresh',
     'zh-CN': '刷新',
   },
+  remoteExplain: {
+    'en-US':
+      'Files Byline uploaded to object storage. Objects added to the bucket by other tools are not listed.',
+    'zh-CN':
+      'Byline 上传到对象存储的文件。其他工具直接放进存储桶的对象不在这里。',
+  },
   retry: {
     'en-US': 'Retry',
     'zh-CN': '重试',
@@ -414,17 +443,29 @@ const catalog = {
     'en-US': 'Reference removed',
     'zh-CN': '引用已移除',
   },
+  stateInUse: {
+    'en-US': 'In use',
+    'zh-CN': '使用中',
+  },
   stateNeverUsed: {
     'en-US': 'Never used',
     'zh-CN': '从未使用',
   },
-  tabAll: {
-    'en-US': 'All files',
-    'zh-CN': '全部文件',
+  stateUnused: {
+    'en-US': 'Not used',
+    'zh-CN': '未使用',
+  },
+  tabLocal: {
+    'en-US': 'Local files',
+    'zh-CN': '本地文件',
   },
   tabOrphans: {
     'en-US': 'Orphan files',
     'zh-CN': '孤立文件',
+  },
+  tabRemote: {
+    'en-US': 'Bucket',
+    'zh-CN': '存储桶',
   },
   tabsLabel: {
     'en-US': 'File views',

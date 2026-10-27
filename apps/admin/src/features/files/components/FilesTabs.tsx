@@ -11,7 +11,8 @@ export function FilesTabs() {
     <RouteTabs
       label={copy('tabsLabel')}
       tabs={[
-        { href: '/files', label: copy('tabAll') },
+        { href: '/files', label: copy('tabLocal') },
+        { href: '/files/remote', label: copy('tabRemote') },
         {
           count: orphanCount || undefined,
           href: '/files/orphans',

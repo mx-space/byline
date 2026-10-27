@@ -47,6 +47,22 @@ export interface OrphanListResponse {
   pagination: FileListPagination
 }
 
+export interface RemoteFile {
+  byteSize?: null | number
+  createdAt: string
+  fileName: string
+  fileUrl: string
+  id: string
+  inUse: boolean
+  mimeType?: null | string
+  objectKey: string
+}
+
+export interface RemoteListResponse {
+  data: RemoteFile[]
+  pagination: FileListPagination
+}
+
 export interface CleanupResult {
   deletedCount: number
   totalOrphan: number
@@ -139,6 +155,14 @@ export function renameFile(type: FileType, name: string, newName: string) {
 
 export function getOrphanFiles(page = 1, size = 24) {
   return getJson<OrphanListResponse>('/files/orphans/list', { page, size })
+}
+
+export function getRemoteFiles(page = 1, size = 24) {
+  return getJson<RemoteListResponse>('/files/remote/list', { page, size })
+}
+
+export function deleteRemoteFile(id: string) {
+  return deleteJson<void>(`/files/remote/${encodeURIComponent(id)}`)
 }
 
 export function getOrphanFileCount() {

@@ -636,6 +636,8 @@ export const zhCN = {
   'routes.orphanImages.description':
     '已上传但未被任何持久化内容或配置引用的文件。',
   'routes.orphanImages.title': '孤立文件',
+  'routes.remoteFiles.description': 'Byline 上传到对象存储的文件。',
+  'routes.remoteFiles.title': '存储桶文件',
   'routes.posts.description': '已发布文章的搜索与操作。',
   'routes.posts.title': '已发布',
   'routes.scheduledPosts.description': '已发布、尚未到公开时间的文章。',
