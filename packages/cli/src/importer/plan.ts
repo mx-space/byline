@@ -17,6 +17,7 @@ export interface PlannedTranslation {
   file: string
   title: string
   summary?: string
+  aiSummary?: string
   tags: string[]
   seo?: PostSeoInput
   document: ConvertedDocument
@@ -34,6 +35,7 @@ export interface PlannedPost {
   sourceLocale: string
   title?: string
   summary?: string
+  aiSummary?: string
   tags: string[]
   createdAt?: string
   image?: string
@@ -78,7 +80,8 @@ const extractMeta = (frontmatter: Record<string, unknown>) => {
   const seo = asRecord(frontmatter.seo)
   return {
     title: asString(frontmatter.title) ?? asString(seo.title),
-    summary:
+    summary: asString(frontmatter.summary),
+    aiSummary:
       asString(frontmatter.summary) ??
       asString(frontmatter.description) ??
       asString(seo.description),
@@ -166,6 +169,7 @@ export const planImport = async (
       sourceFile: post.source.relPath,
       title: meta.title,
       summary: meta.summary,
+      aiSummary: meta.aiSummary,
       tags: meta.tags,
       createdAt: asDate(
         frontmatter.date ?? frontmatter.createdAt ?? frontmatter.publishedAt,
@@ -197,6 +201,7 @@ export const planImport = async (
         file: file.relPath,
         title: translatedMeta.title,
         summary: translatedMeta.summary,
+        aiSummary: translatedMeta.aiSummary,
         tags: translatedMeta.tags,
         seo: extractSeo(translated.frontmatter),
         document: translated,
@@ -212,6 +217,7 @@ export const planImport = async (
       category: entry.category,
       title: entry.title,
       summary: entry.summary,
+      aiSummary: entry.aiSummary,
       tags: entry.tags,
       createdAt: entry.createdAt,
       image: entry.image,
@@ -223,6 +229,7 @@ export const planImport = async (
         locale: translation.locale,
         title: translation.title,
         summary: translation.summary,
+        aiSummary: translation.aiSummary,
         tags: translation.tags,
         seo: translation.seo,
         content: translation.document.state,

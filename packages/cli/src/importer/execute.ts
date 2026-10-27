@@ -170,6 +170,17 @@ export const executeImport = async (
           seo: await resolveSeo(translation.seo, uploader, baseDir),
         })
       }
+      const summaries = [
+        { locale: post.sourceLocale, text: post.aiSummary },
+        ...post.translations.map((translation) => ({
+          locale: translation.locale,
+          text: translation.aiSummary,
+        })),
+      ]
+      for (const { locale, text } of summaries) {
+        if (!text) continue
+        await client.summaries.writeManual(postId, locale, { summary: text })
+      }
     } catch (error) {
       outcome.action = 'error'
       outcome.message = isBylineApiError(error)

@@ -213,6 +213,9 @@ const fakeServer = () => {
     if (method === 'PUT' && url.pathname.startsWith('/ai/translations/')) {
       return json({ id: 'tr', is_locked: true })
     }
+    if (method === 'PUT' && url.pathname.startsWith('/ai/summaries/')) {
+      return json({ id: 'sm', is_locked: true, summary: body.summary })
+    }
     if (route === 'POST /files/upload') {
       return json({ url: 'https://cdn.test/cover.png', name: 'cover.png' })
     }
@@ -240,7 +243,8 @@ describe('import', () => {
       slug: 'hello-world',
       category: 'news',
       title: 'Hello',
-      summary: 'Greeting',
+      summary: undefined,
+      aiSummary: 'Greeting',
       tags: ['intro'],
       authorKeys: ['ada', 'grace'],
       createdAt: '2024-06-19T00:00:00.000Z',
@@ -252,6 +256,12 @@ describe('import', () => {
         '你好',
         { title: '你好 SEO', description: '问候', image: './cover.png' },
       ],
+    ])
+    expect(
+      hello.translations.map((t) => [t.locale, t.summary, t.aiSummary]),
+    ).toEqual([
+      ['pt-BR', undefined, undefined],
+      ['zh-CN', undefined, '问候'],
     ])
     expect(plan.find((item) => item.key === 'orphan')?.skipReason).toBe(
       'no en source file',
@@ -321,7 +331,9 @@ describe('import', () => {
     })
     const publish = calls.find((call) => call.path === '/publish-jobs')
     expect(publish?.body.aiResources).toEqual([])
-    const translations = calls.filter((call) => call.method === 'PUT')
+    const translations = calls.filter(
+      (call) => call.method === 'PUT' && call.path.includes('/translations/'),
+    )
     expect(translations.map((call) => call.path).sort()).toEqual([
       expect.stringMatching(/\/ai\/translations\/article\/\d+\/fr$/),
       expect.stringMatching(/\/ai\/translations\/article\/\d+\/pt-BR$/),
@@ -342,6 +354,27 @@ describe('import', () => {
     expect(
       translations.find((call) => call.path.endsWith('pt-BR'))?.body.seo,
     ).toBeNull()
+    expect(
+      translations.find((call) => call.path.endsWith('zh-CN'))?.body.summary,
+    ).toBeNull()
+    expect(draft.body.data.summary ?? null).toBeNull()
+    const summaries = calls.filter((call) =>
+      call.path.startsWith('/ai/summaries/'),
+    )
+    expect(
+      summaries.map((call) => [call.method, call.path, call.body]).sort(),
+    ).toEqual([
+      [
+        'PUT',
+        expect.stringMatching(/\/ai\/summaries\/article\/\d+\/lang\/en$/),
+        { summary: 'Greeting' },
+      ],
+      [
+        'PUT',
+        expect.stringMatching(/\/ai\/summaries\/article\/\d+\/lang\/zh-CN$/),
+        { summary: '问候' },
+      ],
+    ])
 
     calls.length = 0
     const second = await executeImport(plan, config, {
