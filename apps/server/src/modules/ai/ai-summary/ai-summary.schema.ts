@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { zCoerceBoolean } from '~/common/zod'
+import { zCoerceBoolean, zEntityId } from '~/common/zod'
 
 /**
  * Base lang query schema
@@ -39,6 +39,19 @@ export const UpdateSummarySchema = z.object({
 })
 
 export type UpdateSummaryDto = z.infer<typeof UpdateSummarySchema>
+
+export const ManualSummarySchema = z.object({
+  summary: z.string().trim().min(1),
+})
+
+export type ManualSummaryDto = z.infer<typeof ManualSummarySchema>
+
+export const ManualSummaryParamsSchema = z.object({
+  id: zEntityId,
+  lang: z.string().trim().min(2).max(35),
+})
+
+export type ManualSummaryParamsDto = z.infer<typeof ManualSummaryParamsSchema>
 
 export const GetSummariesGroupedQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

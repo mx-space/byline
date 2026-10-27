@@ -16,7 +16,10 @@ import { ConfigsService } from '../../configs/configs.service'
 import { DEFAULT_SUMMARY_LANG } from '../ai.constants'
 import { AiGenerationMetricsService } from '../ai-generation-metrics/ai-generation-metrics.service'
 import type { AiStreamEvent } from '../ai-inflight/ai-inflight.types'
-import { resolveTargetLanguages } from '../ai-language.util'
+import {
+  normalizeTargetLangs,
+  resolveTargetLanguages,
+} from '../ai-language.util'
 import { MultilangGenerationService } from '../ai-multilang/ai-multilang.service'
 import {
   AITaskType,
@@ -61,12 +64,12 @@ export class AiSummaryService implements OnModuleInit {
           payload.targetLanguages,
           aiConfig.summaryTargetLanguages,
         )
-        const { base, translated, failedLangs } =
-          await this.multilang.executeMultilangTask(
-            this.adapter,
-            { ...payload, targetLanguages },
-            context,
-          )
+        const result = await this.multilang.executeMultilangTask(
+          this.adapter,
+          { ...payload, targetLanguages },
+          context,
+        )
+        const { base, translated, failedLangs } = result
         const summaries = [base, ...translated.map((t) => t.doc)].map(
           (doc) => ({
             summaryId: doc.id!,
@@ -74,7 +77,11 @@ export class AiSummaryService implements OnModuleInit {
             summary: doc.summary,
           }),
         )
-        await context.setResult({ summaries, failedLangs })
+        await context.setResult({
+          summaries,
+          failedLangs,
+          skippedLocked: result.skippedLocked,
+        })
       },
     })
 
@@ -110,6 +117,7 @@ export class AiSummaryService implements OnModuleInit {
       base: source,
       targetLang: payload.targetLang,
       force: payload.force,
+      regenerateLocked: payload.regenerateLocked,
       taskId: context?.taskId,
       onCost: context?.incrementCost,
     })
@@ -134,6 +142,12 @@ export class AiSummaryService implements OnModuleInit {
     lang: string,
     text: string,
   ): Promise<AISummaryModel | null> {
+    const current = await this.aiSummaryRepository.findByRefAndLang(
+      articleId,
+      lang,
+    )
+    if (current?.isLocked) return this.toSummaryDoc(current)
+
     const contentHash = this.multilang.computeContentHash(text)
 
     return this.toSummaryDoc(
@@ -289,7 +303,37 @@ export class AiSummaryService implements OnModuleInit {
     }
 
     return this.toSummaryDoc(
-      await this.aiSummaryRepository.updateSummary(id, summary),
+      await this.aiSummaryRepository.updateSummary(id, summary, {
+        isLocked: true,
+      }),
+    )
+  }
+
+  async writeManualSummary(
+    articleId: string,
+    rawLang: string,
+    summary: string,
+  ) {
+    const lang = normalizeTargetLangs([rawLang])[0]
+    if (!lang) {
+      throw createAppException(AppErrorCode.INVALID_PARAMETER, {
+        message: `Unsupported language: ${rawLang}`,
+      })
+    }
+    const { article, sourceLang } = await this.adapter.resolveArticleDetailed(
+      articleId,
+      { isOwner: true },
+    )
+    return this.toSummaryDoc(
+      await this.aiSummaryRepository.upsert({
+        refId: articleId,
+        lang,
+        hash: this.multilang.computeContentHash(article.text),
+        summary,
+        isLocked: true,
+        isTranslation: lang !== sourceLang,
+        sourceLang,
+      }),
     )
   }
   async getSummaryByArticleId(

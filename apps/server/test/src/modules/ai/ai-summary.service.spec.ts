@@ -229,7 +229,9 @@ describe('AiSummaryService', () => {
       id: 'summary-1',
       summary: 'new',
     })
-    expect(repository.updateSummary).toHaveBeenCalledWith('summary-1', 'new')
+    expect(repository.updateSummary).toHaveBeenCalledWith('summary-1', 'new', {
+      isLocked: true,
+    })
   })
 
   it('throws when updating a missing summary row', async () => {
@@ -390,6 +392,7 @@ describe('AiSummaryService — summary task pipeline', () => {
         expect.objectContaining({ summaryId: 'summary-en', lang: 'en' }),
       ],
       failedLangs: [],
+      skippedLocked: [],
     })
   })
 
@@ -490,5 +493,183 @@ describe('AiSummaryService — summary task pipeline', () => {
       ([registered]: any[]) => registered.type,
     )
     expect(types).toContain(AITaskType.SummaryTranslation)
+  })
+})
+
+describe('AiSummaryService — locked summaries', () => {
+  const lockedRow = {
+    id: 'summary-ja',
+    refId: 'post-1',
+    lang: 'ja',
+    summary: 'human ja',
+    hash: 'import-time-hash',
+    isTranslation: true,
+    isLocked: true,
+    sourceSummaryId: null,
+    sourceLang: 'en',
+    createdAt: now,
+  }
+
+  it('serves a locked summary whose hash no longer matches the content', async () => {
+    const { databaseService, repository, service } = createService()
+    databaseService.findGlobalById.mockResolvedValue(visibleArticle)
+    repository.findByRefAndLang.mockResolvedValue(lockedRow)
+    repository.findByHash.mockResolvedValue(null)
+
+    await expect(
+      service.getSummaryByArticleId('post-1', 'ja'),
+    ).resolves.toMatchObject({ summary: 'human ja', isLocked: true })
+  })
+
+  it('locks a summary edited by hand', async () => {
+    const { repository, service } = createService()
+    repository.findById.mockResolvedValue({ ...lockedRow, isLocked: false })
+    repository.updateSummary.mockResolvedValue({
+      ...lockedRow,
+      summary: 'edited',
+    })
+
+    await service.updateSummaryInDb('summary-ja', 'edited')
+
+    expect(repository.updateSummary).toHaveBeenCalledWith(
+      'summary-ja',
+      'edited',
+      {
+        isLocked: true,
+      },
+    )
+  })
+
+  it('writes a manual summary as a locked row hashed against the current content', async () => {
+    const { databaseService, repository, service } = createService()
+    databaseService.findGlobalById.mockResolvedValue({
+      ...visibleArticle,
+      document: { ...visibleArticle.document, meta: { lang: 'en' } },
+    })
+    repository.upsert.mockImplementation(async (input: any) => ({
+      ...lockedRow,
+      ...input,
+      id: 'summary-ja',
+    }))
+    const multilang = new MultilangGenerationService(
+      {} as any,
+      {} as any,
+      {} as any,
+    )
+
+    await service.writeManualSummary('post-1', 'ja', 'human ja')
+
+    expect(repository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        refId: 'post-1',
+        lang: 'ja',
+        summary: 'human ja',
+        hash: multilang.computeContentHash('Long enough text'),
+        isLocked: true,
+        isTranslation: true,
+        sourceLang: 'en',
+      }),
+    )
+  })
+
+  it('writes a manual summary in the source language as the base row', async () => {
+    const { databaseService, repository, service } = createService()
+    databaseService.findGlobalById.mockResolvedValue({
+      ...visibleArticle,
+      document: { ...visibleArticle.document, meta: { lang: 'en' } },
+    })
+    repository.upsert.mockImplementation(async (input: any) => ({
+      ...lockedRow,
+      ...input,
+    }))
+
+    await service.writeManualSummary('post-1', 'en', 'human en')
+
+    expect(repository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lang: 'en',
+        isTranslation: false,
+        isLocked: true,
+      }),
+    )
+  })
+
+  it('normalizes the language of a manual summary', async () => {
+    const { databaseService, repository, service } = createService()
+    databaseService.findGlobalById.mockResolvedValue({
+      ...visibleArticle,
+      document: { ...visibleArticle.document, meta: { lang: 'EN' } },
+    })
+    repository.upsert.mockImplementation(async (input: any) => ({
+      ...lockedRow,
+      ...input,
+    }))
+
+    await service.writeManualSummary('post-1', 'zh-cn', 'human')
+    await service.writeManualSummary('post-1', 'en', 'human en')
+
+    expect(repository.upsert).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        lang: 'zh-CN',
+        isTranslation: true,
+        sourceLang: 'en',
+      }),
+    )
+    expect(repository.upsert).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ lang: 'en', isTranslation: false }),
+    )
+  })
+
+  it('rejects a manual summary in an unsupported language', async () => {
+    const { databaseService, repository, service } = createService()
+    databaseService.findGlobalById.mockResolvedValue(visibleArticle)
+
+    await expect(
+      service.writeManualSummary('post-1', '  ', 'human'),
+    ).rejects.toBeInstanceOf(AppException)
+    expect(repository.upsert).not.toHaveBeenCalled()
+  })
+
+  it('reports locked languages the summary task skipped', async () => {
+    const harness = createService()
+    harness.configService.get.mockResolvedValue({
+      enableSummary: true,
+      summaryTargetLanguages: [],
+      translationLangConcurrency: 2,
+    })
+    harness.databaseService.findGlobalById.mockResolvedValue(visibleArticle)
+    harness.aiService.getSummaryModel.mockResolvedValue(summaryRuntime())
+    harness.repository.findBaseForRef.mockResolvedValue({
+      ...lockedRow,
+      id: 'summary-base',
+      lang: 'zh',
+      isTranslation: false,
+    })
+    harness.repository.findByRefAndLang.mockImplementation(
+      async (_refId: string, lang: string) =>
+        lang === 'ja' ? lockedRow : null,
+    )
+    harness.repository.upsert.mockImplementation(async (input: any) => ({
+      ...lockedRow,
+      ...input,
+      id: `summary-${input.lang}`,
+      isLocked: false,
+    }))
+
+    const ctx = await runSummaryTask(harness, {
+      refId: 'post-1',
+      targetLanguages: ['ja', 'en'],
+      force: true,
+    })
+
+    expect(ctx.setResult).toHaveBeenCalledWith(
+      expect.objectContaining({ skippedLocked: ['ja'] }),
+    )
+    expect(harness.repository.upsert).toHaveBeenCalledTimes(1)
+    expect(harness.repository.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ lang: 'en' }),
+    )
   })
 })

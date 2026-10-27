@@ -36,6 +36,7 @@ export interface SummaryAsset {
   lang: string
   summary: string
   isTranslation: boolean
+  isLocked: boolean
   sourceLang: string | null
   createdAt: Date
   generationMetrics?: GenerationMetricsDto | null
@@ -108,10 +109,26 @@ export interface ActiveGeneration {
   error: string | null
 }
 
+export type LocaleMetaSource = 'human' | 'locked' | 'ai' | 'inherited' | 'empty'
+
+export interface LocaleMetaField {
+  text: string | null
+  source: LocaleMetaSource
+}
+
+export interface LocaleMetaRow {
+  lang: string
+  isSource: boolean
+  seoTitle: LocaleMetaField
+  seoDescription: LocaleMetaField
+  summary: LocaleMetaField
+}
+
 export interface AiOverviewDetail {
   article: RefArticleInfo
   coverage: ArticleCoverage
   activeTasks: ActiveGeneration[]
+  localeMeta: LocaleMetaRow[]
   assets: {
     summary: SummaryAsset[]
     insights: InsightsAsset[]

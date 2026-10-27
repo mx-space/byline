@@ -10,6 +10,7 @@ export interface AISummaryModel extends BaseModel {
   refId: string
   lang?: string | null
   isTranslation?: boolean
+  isLocked?: boolean
   sourceSummaryId?: string | null
   sourceLang?: string | null
   generationMetrics?: GenerationMetricsDto | null
@@ -22,6 +23,7 @@ export interface AiSummaryRow {
   refId: EntityId
   lang: string | null
   isTranslation: boolean
+  isLocked: boolean
   sourceSummaryId: EntityId | null
   sourceLang: string | null
   createdAt: Date

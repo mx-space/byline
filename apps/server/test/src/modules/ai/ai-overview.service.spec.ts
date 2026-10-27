@@ -33,6 +33,10 @@ function createService(
     insightsAssets: vi.fn(async () => []),
     translationAssets: vi.fn(async () => []),
     ttsAssets: vi.fn(async () => []),
+    localeMetaSources: vi.fn(async () => ({
+      translations: [],
+      aiSeoDescription: null,
+    })),
     ...overrides.repository,
   }
 
@@ -380,5 +384,95 @@ describe('AiOverviewService.getArticleOverview', () => {
     expect(taskQueueService.getTasks).toHaveBeenCalledWith(
       expect.objectContaining({ includeSubTasks: true, refId: '300' }),
     )
+  })
+})
+
+describe('AiOverviewService.getArticleOverview locked summaries and locale meta', () => {
+  it('keeps locked summaries and translations of a locked base fresh', async () => {
+    const { service } = createService({
+      documents: {
+        '300': { text: 'edited body', meta: { lang: 'en' } } as never,
+      },
+      repository: {
+        summaryAssets: vi.fn(async () => [
+          {
+            id: 's-en',
+            hash: 'hash:imported body',
+            lang: 'en',
+            summary: 'human en',
+            isTranslation: false,
+            isLocked: true,
+            sourceLang: 'en',
+            createdAt: new Date(),
+          },
+          {
+            id: 's-ja',
+            hash: 'hash:imported body',
+            lang: 'ja',
+            summary: 'ai ja',
+            isTranslation: true,
+            isLocked: false,
+            sourceLang: 'en',
+            createdAt: new Date(),
+          },
+        ]),
+      } as never,
+    })
+
+    const detail = await service.getArticleOverview('300')
+
+    expect(detail.assets.summary.map((row) => row.stale)).toEqual([
+      false,
+      false,
+    ])
+  })
+
+  it('lists SEO and summary per language with their sources', async () => {
+    const { service } = createService({
+      documents: {
+        '300': {
+          text: 'body',
+          meta: { lang: 'en' },
+          seo: { title: 'EN title', description: 'EN desc' },
+        } as never,
+      },
+      repository: {
+        summaryAssets: vi.fn(async () => [
+          {
+            id: 's-ja',
+            hash: 'hash:body',
+            lang: 'ja',
+            summary: 'human ja',
+            isTranslation: true,
+            isLocked: true,
+            sourceLang: 'en',
+            createdAt: new Date(),
+          },
+        ]),
+        localeMetaSources: vi.fn(async () => ({
+          translations: [
+            { lang: 'ja', seo: { title: 'JA title' }, isLocked: true },
+          ],
+          aiSeoDescription: null,
+        })),
+      } as never,
+    })
+
+    const detail = await service.getArticleOverview('300')
+    const byLang = Object.fromEntries(
+      detail.localeMeta.map((row) => [row.lang, row]),
+    )
+
+    expect(detail.localeMeta[0]).toMatchObject({
+      lang: 'en',
+      isSource: true,
+      seoTitle: { text: 'EN title', source: 'human' },
+    })
+    expect(byLang.ja).toMatchObject({
+      seoTitle: { text: 'JA title', source: 'human' },
+      seoDescription: { text: 'EN desc', source: 'inherited' },
+      summary: { text: 'human ja', source: 'locked' },
+    })
+    expect(Object.keys(byLang).sort()).toEqual(['en', 'ja', 'zh'])
   })
 })

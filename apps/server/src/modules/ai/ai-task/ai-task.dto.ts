@@ -4,6 +4,7 @@ export const CreateSummaryTaskSchema = z.object({
   refId: z.string(),
   targetLanguages: z.array(z.string().trim().min(1)).optional(),
   force: z.boolean().optional(),
+  regenerateLocked: z.boolean().optional(),
 })
 
 export type CreateSummaryTaskDto = z.infer<typeof CreateSummaryTaskSchema>
@@ -12,6 +13,7 @@ export const CreateSummaryTranslationTaskSchema = z.object({
   refId: z.string(),
   targetLang: z.string().trim().min(1),
   force: z.boolean().optional(),
+  regenerateLocked: z.boolean().optional(),
 })
 
 export type CreateSummaryTranslationTaskDto = z.infer<

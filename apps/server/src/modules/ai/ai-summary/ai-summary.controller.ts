@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Res,
 } from '@nestjs/common'
@@ -40,6 +41,10 @@ import {
   GetSummaryQuerySchema,
   type GetSummaryStreamQueryDto,
   GetSummaryStreamQuerySchema,
+  type ManualSummaryDto,
+  type ManualSummaryParamsDto,
+  ManualSummaryParamsSchema,
+  ManualSummarySchema,
   type UpdateSummaryDto,
   UpdateSummarySchema,
 } from './ai-summary.schema'
@@ -83,6 +88,7 @@ export class AiSummaryController {
       sourceSummaryId: source.id!,
       targetLang: body.targetLang,
       force: body.force,
+      regenerateLocked: body.regenerateLocked,
     })
   }
 
@@ -128,6 +134,17 @@ export class AiSummaryController {
     @Body({ schema: UpdateSummarySchema }) body: UpdateSummaryDto,
   ) {
     return this.service.updateSummaryInDb(params.id, body.summary)
+  }
+
+  @Put('/article/:id/lang/:lang')
+  @Auth()
+  @RequirePermissions(UserPermission.EditPost)
+  writeManualSummary(
+    @Param({ schema: ManualSummaryParamsSchema })
+    params: ManualSummaryParamsDto,
+    @Body({ schema: ManualSummarySchema }) body: ManualSummaryDto,
+  ) {
+    return this.service.writeManualSummary(params.id, params.lang, body.summary)
   }
 
   @Delete('/:id')

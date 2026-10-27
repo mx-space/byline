@@ -266,6 +266,7 @@ export class AiSummaryAdapter implements MultilangAdapter<
     lang: string
     hash: string
     content: string
+    overwriteLocked?: boolean
   }): Promise<AISummaryModel> {
     return this.toSummaryDoc(
       await this.aiSummaryRepository.upsert({
@@ -274,6 +275,7 @@ export class AiSummaryAdapter implements MultilangAdapter<
         hash: input.hash,
         summary: input.content,
         isTranslation: false,
+        overwriteLocked: input.overwriteLocked,
         sourceSummaryId: null,
         sourceLang: input.lang,
       }),
@@ -287,6 +289,7 @@ export class AiSummaryAdapter implements MultilangAdapter<
     content: string
     sourceId: string
     sourceLang: string
+    overwriteLocked?: boolean
   }): Promise<AISummaryModel> {
     return this.toSummaryDoc(
       await this.aiSummaryRepository.upsert({
@@ -295,6 +298,7 @@ export class AiSummaryAdapter implements MultilangAdapter<
         hash: input.hash,
         summary: input.content,
         isTranslation: true,
+        overwriteLocked: input.overwriteLocked,
         sourceSummaryId: input.sourceId,
         sourceLang: input.sourceLang,
       }),
@@ -321,6 +325,7 @@ export class AiSummaryAdapter implements MultilangAdapter<
       content: doc.summary,
       isTranslation: !!doc.isTranslation,
       sourceLang: doc.sourceLang ?? null,
+      isLocked: !!doc.isLocked,
     }
   }
 }

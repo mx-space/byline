@@ -1,0 +1,1 @@
+ALTER TABLE "ai_summaries" ADD COLUMN "is_locked" boolean DEFAULT false NOT NULL;

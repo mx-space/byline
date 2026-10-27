@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import {
@@ -7,6 +7,7 @@ import {
   aiSummaries,
   aiTranslations,
   aiTts,
+  contentDocuments,
 } from '~/database/schema'
 import {
   BaseRepository,
@@ -15,6 +16,8 @@ import {
 import type { AppDatabase } from '~/processors/database/postgres.provider'
 import { parseEntityId } from '~/shared/id/entity-id'
 
+import { DraftRefType } from '../../draft/draft.enum'
+import type { PostSeo } from '../../post/post.types'
 import { DEFAULT_SUMMARY_LANG } from '../ai.constants'
 import type {
   InsightsAsset,
@@ -116,6 +119,7 @@ export class AiOverviewRepository extends BaseRepository {
         lang: aiSummaries.lang,
         summary: aiSummaries.summary,
         isTranslation: aiSummaries.isTranslation,
+        isLocked: aiSummaries.isLocked,
         sourceLang: aiSummaries.sourceLang,
         createdAt: aiSummaries.createdAt,
       })
@@ -128,9 +132,45 @@ export class AiOverviewRepository extends BaseRepository {
       lang: row.lang ?? DEFAULT_SUMMARY_LANG,
       summary: row.summary,
       isTranslation: row.isTranslation,
+      isLocked: row.isLocked,
       sourceLang: row.sourceLang,
       createdAt: row.createdAt,
     }))
+  }
+
+  async localeMetaSources(refId: string): Promise<{
+    translations: Array<{
+      lang: string
+      seo: PostSeo | null
+      isLocked: boolean
+    }>
+    aiSeoDescription: string | null
+  }> {
+    const refBig = parseEntityId(refId)
+    const [translations, [document]] = await Promise.all([
+      this.db
+        .select({
+          lang: aiTranslations.lang,
+          seo: aiTranslations.seo,
+          isLocked: aiTranslations.isLocked,
+        })
+        .from(aiTranslations)
+        .where(eq(aiTranslations.refId, refBig)),
+      this.db
+        .select({ aiSeo: contentDocuments.aiSeo })
+        .from(contentDocuments)
+        .where(
+          and(
+            eq(contentDocuments.refType, DraftRefType.Post),
+            eq(contentDocuments.refId, refBig),
+          ),
+        )
+        .limit(1),
+    ])
+    return {
+      translations,
+      aiSeoDescription: document?.aiSeo?.description ?? null,
+    }
   }
 
   async insightsAssets(

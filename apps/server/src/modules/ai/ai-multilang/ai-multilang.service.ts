@@ -21,8 +21,14 @@ import type { AiStreamEvent } from '../ai-inflight/ai-inflight.types'
 import { normalizeTargetLangs } from '../ai-language.util'
 import type {
   MultilangAdapter,
+  MultilangFeature,
   MultilangTaskResult,
 } from './ai-multilang.types'
+
+const LOCKED_LABEL: Record<MultilangFeature, string> = {
+  summary: 'summaries',
+  insights: 'insights',
+}
 
 const STREAM_DEFAULTS = {
   lockTtlSec: AI_STREAM_LOCK_TTL,
@@ -59,6 +65,7 @@ export class MultilangGenerationService {
       onCost?: (usd: number) => Promise<void>
       taskId?: string
       force?: boolean
+      overwriteLocked?: boolean
     },
   ): Promise<{
     events: AsyncIterable<AiStreamEvent>
@@ -92,6 +99,7 @@ export class MultilangGenerationService {
           lang: options.lang,
           hash: contentMd5,
           content: generated.content,
+          overwriteLocked: options.overwriteLocked,
         })
         const view = adapter.readDoc(doc)
         await this.generationMetrics.record({
@@ -128,19 +136,21 @@ export class MultilangGenerationService {
       base: TDoc
       targetLang: string
       force?: boolean
+      regenerateLocked?: boolean
       taskId?: string
       onCost?: (usd: number) => Promise<void>
     },
   ): Promise<TDoc> {
     const base = adapter.readDoc(options.base)
-    if (!options.force) {
-      const existing = await adapter.findByRefAndLang(
-        options.refId,
-        options.targetLang,
-      )
-      if (existing) {
-        const view = adapter.readDoc(existing)
-        if (view.isTranslation && view.hash === base.hash) return existing
+    const existing = await adapter.findByRefAndLang(
+      options.refId,
+      options.targetLang,
+    )
+    if (existing) {
+      const view = adapter.readDoc(existing)
+      if (view.isLocked && !options.regenerateLocked) return existing
+      if (!options.force && view.isTranslation && view.hash === base.hash) {
+        return existing
       }
     }
 
@@ -170,6 +180,7 @@ export class MultilangGenerationService {
           content: generated.content,
           sourceId: base.id,
           sourceLang: base.sourceLang || base.lang,
+          overwriteLocked: options.regenerateLocked,
         })
         const view = adapter.readDoc(doc)
         await this.generationMetrics.record({
@@ -199,7 +210,12 @@ export class MultilangGenerationService {
 
   async executeMultilangTask<TArticle, TDoc>(
     adapter: MultilangAdapter<TArticle, TDoc>,
-    payload: { refId: string; targetLanguages?: string[]; force?: boolean },
+    payload: {
+      refId: string
+      targetLanguages?: string[]
+      force?: boolean
+      regenerateLocked?: boolean
+    },
     context: TaskExecuteContext,
   ): Promise<MultilangTaskResult<TDoc>> {
     if (context.isAborted()) throw createAbortError()
@@ -209,9 +225,29 @@ export class MultilangGenerationService {
       payload.refId,
       { isOwner: true },
     )
-    const targets = normalizeTargetLangs(payload.targetLanguages).filter(
-      (lang) => lang !== sourceLang,
+    const requested = normalizeTargetLangs(payload.targetLanguages)
+    const regenerateLockedBase = Boolean(
+      payload.regenerateLocked && requested.includes(sourceLang),
     )
+    const candidates = requested.filter((lang) => lang !== sourceLang)
+    const skippedLocked: string[] = []
+    const targets: string[] = []
+    for (const lang of candidates) {
+      const existing = payload.regenerateLocked
+        ? null
+        : await adapter.findByRefAndLang(payload.refId, lang)
+      if (existing && adapter.readDoc(existing).isLocked) {
+        skippedLocked.push(lang)
+      } else {
+        targets.push(lang)
+      }
+    }
+    if (skippedLocked.length) {
+      await context.appendLog(
+        'info',
+        `Skipping locked ${LOCKED_LABEL[adapter.feature]}: ${skippedLocked.join(', ')}`,
+      )
+    }
     const totalItems = 1 + targets.length
     await context.updateProgress(
       0,
@@ -222,8 +258,10 @@ export class MultilangGenerationService {
 
     const contentHash = this.computeContentHash(text)
     let baseDoc = await adapter.findBase(payload.refId, sourceLang)
-    const reusable =
-      baseDoc && !payload.force && adapter.readDoc(baseDoc).hash === contentHash
+    const baseView = baseDoc ? adapter.readDoc(baseDoc) : null
+    const reusable = baseView?.isLocked
+      ? !regenerateLockedBase
+      : Boolean(baseView && !payload.force && baseView.hash === contentHash)
     if (!reusable) {
       const { result } = await this.runBaseGeneration(adapter, {
         refId: payload.refId,
@@ -234,6 +272,7 @@ export class MultilangGenerationService {
         onCost: context.incrementCost,
         taskId: context.taskId,
         force: payload.force,
+        overwriteLocked: regenerateLockedBase,
       })
       baseDoc = await result
     }
@@ -263,6 +302,7 @@ export class MultilangGenerationService {
                 base: baseDoc!,
                 targetLang,
                 force: payload.force,
+                regenerateLocked: payload.regenerateLocked,
                 taskId: context.taskId,
                 onCost: context.incrementCost,
               })
@@ -291,6 +331,12 @@ export class MultilangGenerationService {
       context.setStatus(TaskStatus.PartialFailed)
     }
 
-    return { base: baseDoc!, sourceLang, translated, failedLangs }
+    return {
+      base: baseDoc!,
+      sourceLang,
+      translated,
+      failedLangs,
+      skippedLocked,
+    }
   }
 }

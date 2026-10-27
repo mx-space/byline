@@ -57,6 +57,13 @@
       "when": 1793014125806,
       "tag": "0007_drop_document_shares",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793087756386,
+      "tag": "0008_summary_is_locked",
+      "breakpoints": true
     }
   ]
 }

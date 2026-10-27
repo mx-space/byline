@@ -11,8 +11,13 @@ import { TaskQueueService, TaskStatus } from '~/processors/task-queue'
 import { computeContentHash } from '~/utils/content.util'
 
 import { ConfigsService } from '../../configs/configs.service'
+import type { PostSeo } from '../../post/post.types'
 import { AiGenerationMetricsService } from '../ai-generation-metrics/ai-generation-metrics.service'
-import { normalizeTargetLangs, parseLanguageCode } from '../ai-language.util'
+import {
+  normalizeTargetLangs,
+  parseLanguageCode,
+  resolveArticleSourceLang,
+} from '../ai-language.util'
 import { MultilangGenerationService } from '../ai-multilang/ai-multilang.service'
 import type { ArticleDocument } from '../ai-translation/ai-translation.types'
 import {
@@ -32,6 +37,7 @@ import type {
 import { AI_OVERVIEW_CAPABILITIES, emptyCostBucket } from './ai-overview.types'
 import { toActiveGenerations } from './ai-overview-active-tasks.util'
 import { buildArticleCoverage, countGaps } from './ai-overview-coverage.util'
+import { buildLocaleMeta, isSummaryStale } from './ai-overview-locale-meta.util'
 
 const ACTIVE_TASK_SCAN_SIZE = 100
 const FAILURE_RETENTION_MS = 10 * 60 * 1000
@@ -129,28 +135,35 @@ export class AiOverviewService {
       type: found.type,
     }
 
-    const [summary, insights, translation, tts, configured, cost, activeTasks] =
-      await Promise.all([
-        this.repository
-          .summaryAssets(refId)
-          .then((rows) => this.generationMetrics.attachLatest('summary', rows)),
-        this.repository
-          .insightsAssets(refId)
-          .then((rows) =>
-            this.generationMetrics.attachLatest('insights', rows),
-          ),
-        this.repository
-          .translationAssets(refId)
-          .then((rows) =>
-            this.generationMetrics.attachLatest('translation', rows),
-          ),
-        this.repository
-          .ttsAssets(refId)
-          .then((rows) => this.generationMetrics.attachLatest('tts', rows)),
-        this.resolveConfiguredLanguages(),
-        this.buildCost(refId),
-        this.findActiveTasks(refId),
-      ])
+    const [
+      summary,
+      insights,
+      translation,
+      tts,
+      configured,
+      cost,
+      activeTasks,
+      localeSources,
+    ] = await Promise.all([
+      this.repository
+        .summaryAssets(refId)
+        .then((rows) => this.generationMetrics.attachLatest('summary', rows)),
+      this.repository
+        .insightsAssets(refId)
+        .then((rows) => this.generationMetrics.attachLatest('insights', rows)),
+      this.repository
+        .translationAssets(refId)
+        .then((rows) =>
+          this.generationMetrics.attachLatest('translation', rows),
+        ),
+      this.repository
+        .ttsAssets(refId)
+        .then((rows) => this.generationMetrics.attachLatest('tts', rows)),
+      this.resolveConfiguredLanguages(),
+      this.buildCost(refId),
+      this.findActiveTasks(refId),
+      this.repository.localeMetaSources(refId),
+    ])
 
     const document = found.document as MetaBearing &
       ArticleDocument & { modifiedAt?: Date | null }
@@ -161,7 +174,7 @@ export class AiOverviewService {
     const assets: AiOverviewDetail['assets'] = {
       summary: summary.map(({ hash, ...asset }) => ({
         ...asset,
-        stale: hash !== articleHash,
+        stale: isSummaryStale({ ...asset, hash }, summary, articleHash),
       })),
       insights: insights.map(({ hash, ...asset }) => ({
         ...asset,
@@ -201,10 +214,20 @@ export class AiOverviewService {
       configured,
     })
 
+    const localeMeta = buildLocaleMeta({
+      sourceLang: resolveArticleSourceLang(document as MetaBearing),
+      sourceSeo: (document as { seo?: PostSeo | null }).seo,
+      aiSeoDescription: localeSources.aiSeoDescription,
+      translations: localeSources.translations,
+      summaries: summary,
+      configuredLangs: [...configured.translation, ...configured.summary],
+    })
+
     return {
       article,
       coverage,
       activeTasks,
+      localeMeta,
       assets,
       cost,
     }

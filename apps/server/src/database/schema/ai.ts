@@ -89,6 +89,7 @@ export const aiSummaries = pgTable(
     refId: refText('ref_id').notNull(),
     lang: text('lang'),
     isTranslation: boolean('is_translation').notNull().default(false),
+    isLocked: boolean('is_locked').notNull().default(false),
     sourceSummaryId: refText('source_summary_id').references(
       (): AnyPgColumn => aiSummaries.id,
       { onDelete: 'set null' },

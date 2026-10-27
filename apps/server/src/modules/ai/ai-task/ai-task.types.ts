@@ -20,6 +20,7 @@ export interface SummaryTaskPayload {
   refId: string
   targetLanguages?: string[]
   force?: boolean
+  regenerateLocked?: boolean
   // Human-readable info
   title?: string
   refType?: string
@@ -30,6 +31,7 @@ export interface SummaryTranslationTaskPayload {
   sourceSummaryId: string
   targetLang: string
   force?: boolean
+  regenerateLocked?: boolean
   title?: string
   refType?: string
 }

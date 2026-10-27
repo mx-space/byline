@@ -10,6 +10,7 @@ interface FakeDoc {
   content: string
   isTranslation: boolean
   sourceLang: string | null
+  isLocked?: boolean
 }
 
 const createHarness = (overrides?: {
@@ -294,5 +295,166 @@ describe('MultilangGenerationService.runTranslation', () => {
       ([opts]: any[]) => opts.key,
     )
     expect(first).toBe(second)
+  })
+})
+
+describe('MultilangGenerationService locked docs', () => {
+  const lockedBase = {
+    id: 'base-zh',
+    lang: 'zh',
+    hash: 'stale-hash',
+    content: 'human base',
+    isTranslation: false,
+    sourceLang: 'zh',
+    isLocked: true,
+  }
+
+  it('reuses a locked base under force instead of regenerating it', async () => {
+    const { adapter, context, service } = createHarness()
+    ;(adapter.findBase as any).mockResolvedValue(lockedBase)
+
+    const result = await service.executeMultilangTask(
+      adapter,
+      { refId: 'post-1', targetLanguages: ['en'], force: true },
+      context as any,
+    )
+
+    expect(adapter.generate).not.toHaveBeenCalled()
+    expect(result.base).toBe(lockedBase)
+    expect(adapter.translate).toHaveBeenCalledWith(
+      'human base',
+      'en',
+      expect.anything(),
+    )
+  })
+
+  it('keeps a locked base when regenerateLocked names only other languages', async () => {
+    const { adapter, context, service } = createHarness()
+    ;(adapter.findBase as any).mockResolvedValue(lockedBase)
+
+    await service.executeMultilangTask(
+      adapter,
+      {
+        refId: 'post-1',
+        targetLanguages: ['en'],
+        force: true,
+        regenerateLocked: true,
+      },
+      context as any,
+    )
+
+    expect(adapter.generate).not.toHaveBeenCalled()
+  })
+
+  it('regenerates a locked base when regenerateLocked names the source language', async () => {
+    const { adapter, context, service } = createHarness()
+    ;(adapter.findBase as any).mockResolvedValue(lockedBase)
+
+    await service.executeMultilangTask(
+      adapter,
+      {
+        refId: 'post-1',
+        targetLanguages: ['zh'],
+        force: true,
+        regenerateLocked: true,
+      },
+      context as any,
+    )
+
+    expect(adapter.generate).toHaveBeenCalledTimes(1)
+    expect(adapter.persistBase).toHaveBeenCalledWith(
+      expect.objectContaining({ lang: 'zh', overwriteLocked: true }),
+    )
+  })
+
+  it('skips locked targets and reports them', async () => {
+    const { adapter, context, contentHash, service } = createHarness()
+    ;(adapter.findBase as any).mockResolvedValue({
+      ...lockedBase,
+      hash: contentHash,
+      isLocked: false,
+    })
+    ;(adapter.findByRefAndLang as any).mockImplementation(
+      async (_refId: string, lang: string) =>
+        lang === 'en'
+          ? {
+              id: 'tr-en',
+              lang: 'en',
+              hash: 'other',
+              content: 'human en',
+              isTranslation: false,
+              sourceLang: 'en',
+              isLocked: true,
+            }
+          : null,
+    )
+
+    const result = await service.executeMultilangTask(
+      adapter,
+      { refId: 'post-1', targetLanguages: ['en', 'ja'], force: true },
+      context as any,
+    )
+
+    expect(adapter.translate).toHaveBeenCalledTimes(1)
+    expect(adapter.translate).toHaveBeenCalledWith(
+      expect.anything(),
+      'ja',
+      expect.anything(),
+    )
+    expect(result.skippedLocked).toEqual(['en'])
+    expect(context.appendLog).toHaveBeenCalledWith(
+      'info',
+      'Skipping locked summaries: en',
+    )
+  })
+
+  it('overwrites a locked target when regenerateLocked is set', async () => {
+    const { adapter, service } = createHarness()
+    ;(adapter.findByRefAndLang as any).mockResolvedValue({
+      id: 'tr-en',
+      lang: 'en',
+      hash: 'h',
+      content: 'human en',
+      isTranslation: true,
+      sourceLang: 'zh',
+      isLocked: true,
+    })
+
+    await service.runTranslation(adapter, {
+      refId: 'post-1',
+      base: { ...lockedBase, isLocked: false },
+      targetLang: 'en',
+      force: true,
+      regenerateLocked: true,
+    })
+
+    expect(adapter.translate).toHaveBeenCalledTimes(1)
+    expect(adapter.persistTranslation).toHaveBeenCalledWith(
+      expect.objectContaining({ lang: 'en', overwriteLocked: true }),
+    )
+  })
+
+  it('returns a locked target from runTranslation even when forced', async () => {
+    const { adapter, service } = createHarness()
+    const locked = {
+      id: 'tr-en',
+      lang: 'en',
+      hash: 'h',
+      content: 'human en',
+      isTranslation: true,
+      sourceLang: 'zh',
+      isLocked: true,
+    }
+    ;(adapter.findByRefAndLang as any).mockResolvedValue(locked)
+
+    const result = await service.runTranslation(adapter, {
+      refId: 'post-1',
+      base: { ...lockedBase, isLocked: false },
+      targetLang: 'en',
+      force: true,
+    })
+
+    expect(result).toBe(locked)
+    expect(adapter.translate).not.toHaveBeenCalled()
   })
 })

@@ -18,6 +18,7 @@ export interface MultilangDocView {
   content: string
   isTranslation: boolean
   sourceLang: string | null
+  isLocked?: boolean
 }
 
 export type PushStreamEvent = (event: AiStreamEvent) => Promise<void>
@@ -55,6 +56,7 @@ export interface MultilangAdapter<TArticle, TDoc> {
     lang: string
     hash: string
     content: string
+    overwriteLocked?: boolean
   }) => Promise<TDoc>
   persistTranslation: (input: {
     refId: string
@@ -63,6 +65,7 @@ export interface MultilangAdapter<TArticle, TDoc> {
     content: string
     sourceId: string
     sourceLang: string
+    overwriteLocked?: boolean
   }) => Promise<TDoc>
   emitGenerated: (
     doc: TDoc,
@@ -76,4 +79,5 @@ export interface MultilangTaskResult<TDoc> {
   sourceLang: string
   translated: Array<{ doc: TDoc; lang: string }>
   failedLangs: string[]
+  skippedLocked: string[]
 }

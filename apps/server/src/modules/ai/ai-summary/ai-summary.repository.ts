@@ -21,6 +21,7 @@ const mapRow = (row: typeof aiSummaries.$inferSelect): AiSummaryRow => ({
   refId: toEntityId(row.refId) as EntityId,
   lang: row.lang,
   isTranslation: row.isTranslation,
+  isLocked: row.isLocked,
   sourceSummaryId: row.sourceSummaryId
     ? (toEntityId(row.sourceSummaryId) as EntityId)
     : null,
@@ -83,6 +84,19 @@ export class AiSummaryRepository extends BaseRepository {
       .where(eq(aiSummaries.id, parseEntityId(id)))
       .limit(1)
     return row ? mapRow(row) : null
+  }
+
+  async listLockedLangs(refId: EntityId | string): Promise<string[]> {
+    const rows = await this.db
+      .select({ lang: aiSummaries.lang })
+      .from(aiSummaries)
+      .where(
+        and(
+          eq(aiSummaries.refId, parseEntityId(refId)),
+          eq(aiSummaries.isLocked, true),
+        ),
+      )
+    return rows.map((row) => row.lang).filter((lang): lang is string => !!lang)
   }
 
   async listForRef(refId: EntityId | string): Promise<AiSummaryRow[]> {
@@ -207,6 +221,8 @@ export class AiSummaryRepository extends BaseRepository {
     summary: string
     lang?: string | null
     isTranslation?: boolean
+    isLocked?: boolean
+    overwriteLocked?: boolean
     sourceSummaryId?: EntityId | string | null
     sourceLang?: string | null
   }): Promise<AiSummaryRow> {
@@ -221,11 +237,15 @@ export class AiSummaryRepository extends BaseRepository {
       .where(and(...conds))
       .limit(1)
     if (existing) {
+      if (existing.isLocked && !input.isLocked && !input.overwriteLocked) {
+        return mapRow(existing)
+      }
       const [row] = await this.db
         .update(aiSummaries)
         .set({
           hash: input.hash,
           summary: input.summary,
+          isLocked: input.isLocked ?? false,
           isTranslation: input.isTranslation ?? existing.isTranslation,
           sourceSummaryId: input.sourceSummaryId
             ? parseEntityId(input.sourceSummaryId)
@@ -246,6 +266,7 @@ export class AiSummaryRepository extends BaseRepository {
         summary: input.summary,
         lang,
         isTranslation: input.isTranslation ?? false,
+        isLocked: input.isLocked ?? false,
         sourceSummaryId: input.sourceSummaryId
           ? parseEntityId(input.sourceSummaryId)
           : null,
@@ -277,10 +298,16 @@ export class AiSummaryRepository extends BaseRepository {
   async updateSummary(
     id: EntityId | string,
     summary: string,
+    options: { isLocked?: boolean } = {},
   ): Promise<AiSummaryRow | null> {
     const [row] = await this.db
       .update(aiSummaries)
-      .set({ summary })
+      .set({
+        summary,
+        ...(options.isLocked === undefined
+          ? {}
+          : { isLocked: options.isLocked }),
+      })
       .where(eq(aiSummaries.id, parseEntityId(id)))
       .returning()
     return row ? mapRow(row) : null
