@@ -1,9 +1,6 @@
 {
   "sourceLocale": "en",
   "siteUrl": "https://lobehub.com",
-  "localeAliases": {
-    "zh": "zh-CN"
-  },
   "components": "./components.json",
   "authors": "./authors.json",
   "categories": {
