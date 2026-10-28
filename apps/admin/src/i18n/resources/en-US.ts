@@ -935,6 +935,23 @@ export const enUS = {
   'settings.schema.imageStorageOptions.secretId.title': 'Access Key ID',
   'settings.schema.imageStorageOptions.secretKey.title': 'Secret access key',
   'settings.schema.imageStorageOptions.title': 'Image storage',
+  'settings.schema.mediaProcessingOptions.imageEffort.title': 'WebP effort',
+  'settings.schema.mediaProcessingOptions.imageLossless.title': 'Lossless WebP',
+  'settings.schema.mediaProcessingOptions.imageMaxDimension.title':
+    'Max image edge (px)',
+  'settings.schema.mediaProcessingOptions.imageQuality.title': 'WebP quality',
+  'settings.schema.mediaProcessingOptions.imageToWebp.title':
+    'Convert images to WebP',
+  'settings.schema.mediaProcessingOptions.videoAudioBitrate.title':
+    'Opus bitrate (kbps)',
+  'settings.schema.mediaProcessingOptions.videoCpuUsed.title':
+    'VP9 speed (cpu-used)',
+  'settings.schema.mediaProcessingOptions.videoCrf.title': 'VP9 CRF',
+  'settings.schema.mediaProcessingOptions.videoMaxHeight.title':
+    'Max video height (px)',
+  'settings.schema.mediaProcessingOptions.videoToWebm.title':
+    'Convert videos to WebM',
+  'settings.schema.mediaProcessingOptions.title': 'Media processing',
   'settings.schema.mailOptions.enable.title': 'Enable email notifications',
   'settings.schema.mailOptions.from.description':
     'Required for Resend; optional for SMTP (defaults to the SMTP username if omitted)',

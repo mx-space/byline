@@ -137,6 +137,7 @@ export type AppErrorPayloadMap = {
   [AppErrorCode.FILE_STORAGE_NOT_CONFIGURED]: undefined
   [AppErrorCode.FILE_REQUIRED]: undefined
   [AppErrorCode.MIME_ZIP_REQUIRED]: { got?: string } | undefined
+  [AppErrorCode.MEDIA_TRANSCODE_FAILED]: { reason?: string } | undefined
 
   // init
   [AppErrorCode.INIT_ALREADY_COMPLETED]: undefined

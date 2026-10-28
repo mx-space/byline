@@ -879,6 +879,21 @@ export const zhCN = {
   'settings.schema.imageStorageOptions.secretId.title': '访问密钥 ID',
   'settings.schema.imageStorageOptions.secretKey.title': '访问密钥',
   'settings.schema.imageStorageOptions.title': '图片存储',
+  'settings.schema.mediaProcessingOptions.imageEffort.title': 'WebP 压缩力度',
+  'settings.schema.mediaProcessingOptions.imageLossless.title': '无损 WebP',
+  'settings.schema.mediaProcessingOptions.imageMaxDimension.title':
+    '图片最大边长（px）',
+  'settings.schema.mediaProcessingOptions.imageQuality.title': 'WebP 质量',
+  'settings.schema.mediaProcessingOptions.imageToWebp.title': '图片转 WebP',
+  'settings.schema.mediaProcessingOptions.videoAudioBitrate.title':
+    'Opus 音频码率（kbps）',
+  'settings.schema.mediaProcessingOptions.videoCpuUsed.title':
+    'VP9 速度（cpu-used）',
+  'settings.schema.mediaProcessingOptions.videoCrf.title': 'VP9 画质（CRF）',
+  'settings.schema.mediaProcessingOptions.videoMaxHeight.title':
+    '视频最大高度（px）',
+  'settings.schema.mediaProcessingOptions.videoToWebm.title': '视频转 WebM',
+  'settings.schema.mediaProcessingOptions.title': '媒体处理',
   'settings.schema.mailOptions.enable.title': '启用邮件通知',
   'settings.schema.mailOptions.from.description':
     'Resend 必填；SMTP 可选（留空时默认使用 SMTP 用户名）',

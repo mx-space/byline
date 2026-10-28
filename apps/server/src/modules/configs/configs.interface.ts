@@ -8,6 +8,7 @@ import {
   type ImageGenerationOptionsSchema,
   type ImageStorageOptionsSchema,
   type MailOptionsSchema,
+  type MediaProcessingOptionsSchema,
   type OAuthSchema,
   type SiteSchema,
   type TtsOptionsSchema,
@@ -31,6 +32,7 @@ export abstract class IConfig {
   imageGenerationOptions: Required<z.infer<typeof ImageGenerationOptionsSchema>>
   ttsOptions: Required<z.infer<typeof TtsOptionsSchema>>
   fileUploadOptions: Required<z.infer<typeof FileUploadOptionsSchema>>
+  mediaProcessingOptions: z.infer<typeof MediaProcessingOptionsSchema>
   authSecurity: z.infer<typeof AuthSecuritySchema>
   ai: z.infer<typeof AISchema>
   oauth: z.infer<typeof OAuthSchema>

@@ -96,9 +96,13 @@ const groupConfigs: GroupConfig[] = [
   {
     key: 'storage',
     title: 'Storage',
-    description: 'Image hosting, file uploads',
+    description: 'Image hosting, file uploads, media processing',
     icon: 'database',
-    sectionKeys: ['imageStorageOptions', 'fileUploadOptions'],
+    sectionKeys: [
+      'imageStorageOptions',
+      'fileUploadOptions',
+      'mediaProcessingOptions',
+    ],
   },
   {
     key: 'ai',

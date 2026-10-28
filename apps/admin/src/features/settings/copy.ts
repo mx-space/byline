@@ -155,8 +155,8 @@ export const settingsGroupCopy = createOptionalCopy({
     'zh-CN': '站点',
   },
   'storage.description': {
-    'en-US': 'Where uploads are stored and how they are named',
-    'zh-CN': '上传文件存放在哪里，以及如何命名',
+    'en-US': 'Where uploads are stored, how they are named and converted',
+    'zh-CN': '上传文件存放在哪里、如何命名与转码',
   },
   'storage.title': {
     'en-US': 'Storage',
@@ -180,6 +180,10 @@ export const settingsSectionCopy = createOptionalCopy({
   imageStorageOptions: {
     'en-US': 'S3 image storage',
     'zh-CN': 'S3 图片存储',
+  },
+  mediaProcessingOptions: {
+    'en-US': 'Media processing',
+    'zh-CN': '媒体处理',
   },
   mailOptions: {
     'en-US': 'Sending',
@@ -218,8 +222,51 @@ export const settingsFieldCopy = createOptionalCopy({
     'zh-CN': '占位符同文件名模板，另支持 {type}。',
   },
   'fileUploadOptions.videoMaxSize': {
-    'en-US': 'Local storage only; defaults to 100 MB. S3 has no limit.',
-    'zh-CN': '仅限本地存储，默认 100 MB；S3 不限制。',
+    'en-US':
+      'Defaults to 100 MB. S3 has no limit unless video conversion is on.',
+    'zh-CN': '默认 100 MB。S3 不限制，开启视频转 WebM 后也受此限制。',
+  },
+  'mediaProcessingOptions.imageEffort': {
+    'en-US': '0–6, default 4. Higher is smaller but slower.',
+    'zh-CN': '0–6，默认 4。越大文件越小，但越慢。',
+  },
+  'mediaProcessingOptions.imageLossless': {
+    'en-US': 'Encode without quality loss; quality is ignored.',
+    'zh-CN': '无损编码，开启后忽略质量设置。',
+  },
+  'mediaProcessingOptions.imageMaxDimension': {
+    'en-US': 'Scale down so the longest edge fits; empty keeps the size.',
+    'zh-CN': '最长边超过时按比例缩小；留空不缩放。',
+  },
+  'mediaProcessingOptions.imageQuality': {
+    'en-US': '1–100, default 80.',
+    'zh-CN': '1–100，默认 80。',
+  },
+  'mediaProcessingOptions.imageToWebp': {
+    'en-US': 'Re-encode uploaded images as WebP. SVG and WebP are kept as-is.',
+    'zh-CN': '开启后，上传的图片会转成 WebP 再存储。SVG 和 WebP 保持原样。',
+  },
+  'mediaProcessingOptions.videoAudioBitrate': {
+    'en-US': 'Default 128 kbps.',
+    'zh-CN': '默认 128 kbps。',
+  },
+  'mediaProcessingOptions.videoCpuUsed': {
+    'en-US': '0–8, default 4. Higher is faster with lower quality.',
+    'zh-CN': '0–8，默认 4。越大越快，画质越低。',
+  },
+  'mediaProcessingOptions.videoCrf': {
+    'en-US': '0–63, default 32. Lower is better quality and larger.',
+    'zh-CN': '0–63，默认 32。越小画质越好，文件越大。',
+  },
+  'mediaProcessingOptions.videoMaxHeight': {
+    'en-US': 'Scale down taller videos; empty keeps the size.',
+    'zh-CN': '超过时按比例缩小；留空不缩放。',
+  },
+  'mediaProcessingOptions.videoToWebm': {
+    'en-US':
+      'Transcode uploaded videos to WebM (VP9 + Opus) with ffmpeg. The upload waits for the transcode, and S3 video uploads are then capped by the video size limit.',
+    'zh-CN':
+      '开启后，上传的视频会用 ffmpeg 转成 WebM（VP9 + Opus）再存储。上传会等转码完成；S3 上的视频也改为受视频大小上限限制。',
   },
   'imageStorageOptions.bucket': {
     'en-US': 'The bucket that stores images.',

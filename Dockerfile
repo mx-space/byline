@@ -23,7 +23,7 @@ RUN mkdir -p /out/admin \
 
 FROM node:26-alpine AS runner
 
-RUN apk add --no-cache bash curl tini postgresql-client
+RUN apk add --no-cache bash curl tini postgresql-client ffmpeg
 
 WORKDIR /app
 COPY --from=builder /out .
