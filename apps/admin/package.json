@@ -1,7 +1,7 @@
 {
   "name": "@mx-space/byline-admin",
   "private": true,
-  "version": "0.4.5",
+  "version": "0.4.6",
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development vite --mode development --open --host",
