@@ -67,7 +67,7 @@
     "@stylexjs/stylex": "0.19.1",
     "@tanstack/react-query": "5.104.5",
     "@uswriting/exiftool": "^1.0.9",
-    "better-auth": "1.6.33",
+    "better-auth": "1.7.7",
     "buffer": "6.0.3",
     "clsx": "^2.1.1",
     "es-toolkit": "1.52.0",
