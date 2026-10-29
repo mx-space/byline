@@ -65,6 +65,49 @@ describe('HttpCore', () => {
     })
   })
 
+  it('propagates a read error when the body is cut off mid-stream', async () => {
+    const terminated = new TypeError('terminated')
+    const fetch = (async () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('{"data":[{"id":"1"'))
+            controller.error(terminated)
+          },
+        }),
+        { headers: { 'content-type': 'application/json' } },
+      )) as typeof globalThis.fetch
+    const client = createClient({ endpoint: 'http://x', fetch })
+    await expect(client.users.me()).rejects.toBe(terminated)
+  })
+
+  it('rejects a successful response whose body is not valid JSON', async () => {
+    const { fetch } = mockFetch(() => ({
+      body: '<html>error page</html>',
+      contentType: 'application/json',
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    await expect(client.users.me()).rejects.toMatchObject({
+      name: 'BylineApiError',
+      status: 200,
+      code: 'INVALID_RESPONSE',
+      path: '/users/me',
+    })
+  })
+
+  it('still maps a failure with an unparseable JSON body to HTTP_ERROR', async () => {
+    const { fetch } = mockFetch(() => ({
+      status: 502,
+      body: '<html>',
+      contentType: 'application/json',
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    await expect(client.users.me()).rejects.toMatchObject({
+      status: 502,
+      code: 'HTTP_ERROR',
+    })
+  })
+
   it('returns undefined data for 204', async () => {
     const { fetch } = mockFetch(() => ({ status: 204 }))
     const client = createClient({ endpoint: 'http://x', fetch })

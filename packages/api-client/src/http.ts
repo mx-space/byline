@@ -105,7 +105,7 @@ export class HttpCore {
 
     const contentType = response.headers.get('content-type') ?? ''
     const payload: unknown = contentType.includes('json')
-      ? await response.json().catch(() => null)
+      ? await this.readJson(response, path)
       : await response.text()
 
     if (!response.ok) throw this.toError(response.status, path, payload)
@@ -118,6 +118,21 @@ export class HttpCore {
       ...(payload.meta === undefined
         ? {}
         : { meta: this.transform<M>(payload.meta) }),
+    }
+  }
+
+  private async readJson(response: Response, path: string) {
+    try {
+      return await response.json()
+    } catch (error) {
+      if (!response.ok) return null
+      if (!(error instanceof SyntaxError)) throw error
+      throw new BylineApiError(
+        response.status,
+        'INVALID_RESPONSE',
+        `Response body is not valid JSON: ${error.message}`,
+        path,
+      )
     }
   }
 
