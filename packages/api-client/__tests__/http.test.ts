@@ -65,6 +65,33 @@ describe('HttpCore', () => {
     })
   })
 
+  it('rejects a successful response whose JSON body is cut off', async () => {
+    const { fetch } = mockFetch(() => ({
+      body: '{"data":[{"id":"1","display_na',
+      contentType: 'application/json',
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    await expect(client.users.me()).rejects.toMatchObject({
+      name: 'BylineApiError',
+      status: 200,
+      code: 'INVALID_RESPONSE',
+      path: '/users/me',
+    })
+  })
+
+  it('still maps a failure with an unparseable JSON body to HTTP_ERROR', async () => {
+    const { fetch } = mockFetch(() => ({
+      status: 502,
+      body: '<html>',
+      contentType: 'application/json',
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    await expect(client.users.me()).rejects.toMatchObject({
+      status: 502,
+      code: 'HTTP_ERROR',
+    })
+  })
+
   it('returns undefined data for 204', async () => {
     const { fetch } = mockFetch(() => ({ status: 204 }))
     const client = createClient({ endpoint: 'http://x', fetch })

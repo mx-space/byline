@@ -34,7 +34,9 @@ resolves to `{ data, meta? }`, mirroring the server envelope. Responses are conv
 from the snake_case wire format to camelCase, except free-form subtrees (post `meta`,
 dynamic component `propsSchema`). Pass `camelCase: false` to keep the wire keys.
 Failures throw `BylineApiError` with the server's `status`, `code`, `message` and
-`details`; use `isBylineApiError(error)` to narrow.
+`details`; use `isBylineApiError(error)` to narrow. A successful response whose JSON
+body cannot be parsed (for example a read cut off mid-stream) throws code
+`INVALID_RESPONSE` instead of resolving with `data: null`.
 
 | Option      | Purpose                                                         |
 | ----------- | --------------------------------------------------------------- |
