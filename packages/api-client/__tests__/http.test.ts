@@ -65,9 +65,25 @@ describe('HttpCore', () => {
     })
   })
 
-  it('rejects a successful response whose JSON body is cut off', async () => {
+  it('propagates a read error when the body is cut off mid-stream', async () => {
+    const terminated = new TypeError('terminated')
+    const fetch = (async () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('{"data":[{"id":"1"'))
+            controller.error(terminated)
+          },
+        }),
+        { headers: { 'content-type': 'application/json' } },
+      )) as typeof globalThis.fetch
+    const client = createClient({ endpoint: 'http://x', fetch })
+    await expect(client.users.me()).rejects.toBe(terminated)
+  })
+
+  it('rejects a successful response whose body is not valid JSON', async () => {
     const { fetch } = mockFetch(() => ({
-      body: '{"data":[{"id":"1","display_na',
+      body: '<html>error page</html>',
       contentType: 'application/json',
     }))
     const client = createClient({ endpoint: 'http://x', fetch })
