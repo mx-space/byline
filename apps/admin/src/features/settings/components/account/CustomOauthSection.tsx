@@ -273,8 +273,8 @@ export function CustomOauthSection({
   const verify = async () => {
     if (!draft) return
     try {
-      const result = await authClient.oauth2.link({
-        providerId: draft.id,
+      const result = await authClient.linkSocial({
+        provider: draft.id,
         callbackURL: buildOauthValidationReturnUrl(draft.id),
       })
       if (result.error) throw new Error(result.error.message)

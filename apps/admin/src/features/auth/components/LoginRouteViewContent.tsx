@@ -198,17 +198,11 @@ function LoginBody(props: {
     setReturnedError(false)
     try {
       const method = methods.find((item) => item.id === provider)
-      const result = method?.custom
-        ? await authClient.signIn.oauth2({
-            callbackURL: props.callbackURL,
-            errorCallbackURL: props.errorCallbackURL,
-            providerId: provider,
-          })
-        : await authClient.signIn.social({
-            callbackURL: props.callbackURL,
-            errorCallbackURL: props.errorCallbackURL,
-            provider,
-          })
+      const result = await authClient.signIn.social({
+        callbackURL: props.callbackURL,
+        errorCallbackURL: props.errorCallbackURL,
+        provider,
+      })
       if (result.error) failSocial(method?.label ?? provider)
     } catch {
       failSocial(

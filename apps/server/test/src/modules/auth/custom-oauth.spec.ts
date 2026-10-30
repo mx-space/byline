@@ -30,6 +30,12 @@ describe('custom OAuth profile mapping', () => {
       'https://cms.example.test',
     )
     expect(
+      await provider.accountSubject({
+        tokens: {},
+        profile: { account: { uid: 0 } },
+      }),
+    ).toBe('0')
+    expect(
       await provider.mapProfileToUser({
         account: {
           uid: 0,
@@ -39,7 +45,6 @@ describe('custom OAuth profile mapping', () => {
         },
       }),
     ).toMatchObject({
-      id: '0',
       email: 'writer@example.test',
       name: 'Writer',
       emailVerified: false,
@@ -80,13 +85,19 @@ describe('custom OAuth profile mapping', () => {
       'https://cms.example.test',
     )
     expect(() =>
-      provider.mapProfileToUser!({
-        account: { uid: {}, mail: 'writer@example.test' },
+      provider.accountSubject!({
+        tokens: {},
+        profile: {
+          account: { uid: {}, mail: 'writer@example.test' },
+        },
       }),
     ).toThrow()
     expect(() =>
-      provider.mapProfileToUser!({
-        account: { uid: '', mail: 'writer@example.test' },
+      provider.accountSubject!({
+        tokens: {},
+        profile: {
+          account: { uid: '', mail: 'writer@example.test' },
+        },
       }),
     ).toThrow()
   })

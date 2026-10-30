@@ -126,7 +126,7 @@ export function buildCustomOAuthProviders(
         pkce: true,
         disableSignUp: true,
         disableImplicitSignUp: true,
-        mapProfileToUser: (profile) => {
+        accountSubject: ({ profile }) => {
           const id = client.profile?.id
             ? readProfileField(profile, client.profile.id)
             : (profile.id ?? profile.sub)
@@ -138,6 +138,9 @@ export function buildCustomOAuthProviders(
               message: 'OAuth provider returned an invalid user identifier',
             })
           }
+          return String(id)
+        },
+        mapProfileToUser: (profile) => {
           const email = readProfileField(
             profile,
             client.profile?.email ?? 'email',
@@ -150,7 +153,6 @@ export function buildCustomOAuthProviders(
             ? readProfileField(profile, client.profile.emailVerified)
             : (profile.emailVerified ?? profile.email_verified)
           return {
-            id: String(id),
             email: typeof email === 'string' ? email : undefined,
             name: typeof name === 'string' ? name : undefined,
             image: typeof image === 'string' ? image : undefined,

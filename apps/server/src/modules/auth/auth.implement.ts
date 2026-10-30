@@ -359,7 +359,24 @@ export async function CreateAuth(
           schema: { apikey: { modelName: 'apiKey' } },
         },
       ),
-      genericOAuth({ config: customProviders }),
+      {
+        ...genericOAuth({ config: customProviders }),
+        async onRequest(request) {
+          const url = new URL(request.url)
+          const prefix = `${isDev ? '/auth' : `/api/v${API_VERSION}/auth`}/oauth2/callback/`
+          if (!url.pathname.startsWith(prefix)) return
+          const providerId = url.pathname.slice(prefix.length)
+          if (
+            !customProviders.some(
+              (provider) => provider.providerId === providerId,
+            )
+          )
+            return
+          // Preserve callback URLs already registered with identity providers.
+          url.pathname = url.pathname.replace('/oauth2/callback/', '/callback/')
+          return { request: new Request(url, request) }
+        },
+      },
       passkey({
         ...passkeyOptions,
         schema: {

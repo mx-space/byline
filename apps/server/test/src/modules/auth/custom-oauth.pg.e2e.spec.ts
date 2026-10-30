@@ -15,6 +15,8 @@ import { SnowflakeService } from '~/shared/id/snowflake.service'
 describe('custom OAuth sign-in and account gates', () => {
   let database: PgTestDatabase
   let identity: Server
+  let authServer: Server
+  let authUrl: string
   let auth: Awaited<ReturnType<typeof CreateAuth>>['auth']
   const exchanges: URLSearchParams[] = []
   const origin = 'http://localhost:2323'
@@ -82,6 +84,15 @@ describe('custom OAuth sign-in and account gates', () => {
       username: 'writer',
       emailVerified: true,
     })
+    let handler: Awaited<ReturnType<typeof CreateAuth>>['handler']
+    authServer = createServer((request, response) => {
+      request.originalUrl = request.url!
+      void handler(request, response)
+    })
+    await new Promise<void>((resolve) =>
+      authServer.listen(0, '127.0.0.1', resolve),
+    )
+    authUrl = `http://127.0.0.1:${(authServer.address() as { port: number }).port}`
     const providers = buildCustomOAuthProviders(
       {
         customClients: [
@@ -110,12 +121,12 @@ describe('custom OAuth sign-in and account gates', () => {
           'plain-oauth': { clientSecret: 'oauth2-secret' },
         },
       },
-      'http://127.0.0.1:2333',
+      authUrl,
     )
-    ;({ auth } = await CreateAuth(
+    ;({ auth, handler } = await CreateAuth(
       {},
       undefined,
-      'http://127.0.0.1:2333',
+      authUrl,
       new SnowflakeService(),
       undefined,
       undefined,
@@ -127,6 +138,9 @@ describe('custom OAuth sign-in and account gates', () => {
     __setTestPostgresInstance(null, null)
     await database?.close()
     await new Promise<void>((resolve, reject) =>
+      authServer?.close((error) => (error ? reject(error) : resolve())),
+    )
+    await new Promise<void>((resolve, reject) =>
       identity?.close((error) => (error ? reject(error) : resolve())),
     )
   })
@@ -136,11 +150,11 @@ describe('custom OAuth sign-in and account gates', () => {
     code: string,
     requestSignUp = false,
   ) {
-    const started = await auth.api.signInWithOAuth2({
+    const started = await auth.api.signInSocial({
       asResponse: true,
       headers: new Headers({ origin }),
       body: {
-        providerId,
+        provider: providerId,
         callbackURL: `${origin}/#/dashboard`,
         errorCallbackURL: `${origin}/#/login`,
         requestSignUp,
@@ -149,19 +163,17 @@ describe('custom OAuth sign-in and account gates', () => {
     expect(started.status).toBe(200)
     const authorization = new URL((await started.json()).url)
     expect(authorization.searchParams.get('redirect_uri')).toBe(
-      `http://127.0.0.1:2333/auth/oauth2/callback/${providerId}`,
+      `${authUrl}/auth/oauth2/callback/${providerId}`,
     )
     expect(authorization.searchParams.get('code_challenge')).toBeTruthy()
     const cookie = started.headers
       .getSetCookie()
       .map((value) => value.split(';')[0])
       .join('; ')
-    return auth.api.oAuth2Callback({
-      asResponse: true,
-      headers: new Headers({ origin, cookie }),
-      params: { providerId },
-      query: { code, state: authorization.searchParams.get('state')! },
-    })
+    const callback = new URL(authorization.searchParams.get('redirect_uri')!)
+    callback.searchParams.set('code', code)
+    callback.searchParams.set('state', authorization.searchParams.get('state')!)
+    return fetch(callback, { headers: { origin, cookie }, redirect: 'manual' })
   }
 
   it('signs in an existing invited user through two independently identified clients', async () => {
@@ -176,6 +188,10 @@ describe('custom OAuth sign-in and account gates', () => {
     expect(linked.map((account) => account.providerId).sort()).toEqual([
       'first-sso',
       'second-sso',
+    ])
+    expect(linked.map((account) => account.accountId)).toEqual([
+      'same-subject',
+      'same-subject',
     ])
     expect(
       exchanges.every((params) => Boolean(params.get('code_verifier'))),

@@ -1,6 +1,6 @@
 import { passkeyClient } from '@better-auth/passkey/client'
 import { createAuthClient } from 'better-auth/client'
-import { genericOAuthClient, usernameClient } from 'better-auth/client/plugins'
+import { usernameClient } from 'better-auth/client/plugins'
 
 import { API_URL } from '~/constants/env'
 import { AUTH_BEARER_TOKEN_KEY } from '~/constants/keys'
@@ -28,7 +28,7 @@ export const authClient = createAuthClient({
       if (authToken) localStorage.setItem(AUTH_BEARER_TOKEN_KEY, authToken)
     },
   },
-  plugins: [passkeyClient(), usernameClient(), genericOAuthClient()],
+  plugins: [passkeyClient(), usernameClient()],
 })
 
 export type AuthSocialProviders =

@@ -23,14 +23,13 @@ vi.mock('../utils/check-init', () => ({ checkIsInit: async () => true }))
 vi.mock('~/utils/authjs/auth', () => ({
   authClient: {
     signIn: {
-      oauth2: vi.fn(async () => ({})),
       social: vi.fn(async () => ({})),
     },
   },
 }))
 
 describe('OAuth sign-in methods', () => {
-  it('uses outlined icon buttons and dispatches custom and built-in providers to their matching auth routes', async () => {
+  it('uses outlined icon buttons and signs in custom and built-in providers through the social route', async () => {
     const container = document.createElement('div')
     document.body.append(container)
     const root = createRoot(container)
@@ -62,8 +61,8 @@ describe('OAuth sign-in methods', () => {
       expect(custom.dataset.variant).toBe('outlined')
       expect(custom.textContent).toBe('')
       await act(async () => custom.click())
-      expect(authClient.signIn.oauth2).toHaveBeenCalledWith(
-        expect.objectContaining({ providerId: 'company-sso' }),
+      expect(authClient.signIn.social).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: 'company-sso' }),
       )
       const github = container.querySelector<HTMLButtonElement>(
         'button[aria-label="使用 GitHub 登录"]',
