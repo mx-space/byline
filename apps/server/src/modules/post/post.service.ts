@@ -470,7 +470,7 @@ export class PostService implements OnApplicationBootstrap {
             : isPostPublic(doc)
               ? BusinessEvents.POST_REPUBLISH
               : BusinessEvents.POST_UNPUBLISH,
-          { id: doc.id },
+          { id: doc.id, slug: doc.slug },
           {
             scope:
               wasPublished || isPostPublic(doc)
@@ -484,7 +484,7 @@ export class PostService implements OnApplicationBootstrap {
   )
 
   async deletePost(id: string) {
-    await Promise.all([
+    const [deleted] = await Promise.all([
       this.postRepository.deleteById(id),
       this.draftService.deleteByRef(DraftRefType.Post, id),
       this.slugTrackerService.deleteAllTracker(id),
@@ -495,7 +495,7 @@ export class PostService implements OnApplicationBootstrap {
     ])
     await this.eventManager.emit(
       BusinessEvents.POST_DELETE,
-      { id },
+      { id, slug: deleted?.slug },
       {
         scope: EventScope.TO_SYSTEM_VISITOR,
         nextTick: true,

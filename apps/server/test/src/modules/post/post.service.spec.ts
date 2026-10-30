@@ -325,7 +325,7 @@ describe('PostService', () => {
     ).toHaveBeenCalledWith('post-1', FileReferenceType.Post)
     expect(eventManager.emit).toHaveBeenCalledWith(
       BusinessEvents.POST_DELETE,
-      { id: 'post-1' },
+      { id: 'post-1', slug: 'post' },
       {
         scope: EventScope.TO_SYSTEM_VISITOR,
         nextTick: true,
@@ -354,7 +354,7 @@ describe('PostService', () => {
 
     expect(eventManager.emit).toHaveBeenCalledWith(
       BusinessEvents.POST_REPUBLISH,
-      { id: 'post-1' },
+      { id: 'post-1', slug: 'post' },
       { scope: EventScope.TO_SYSTEM_VISITOR },
     )
   })
@@ -370,7 +370,7 @@ describe('PostService', () => {
 
     expect(eventManager.emit).toHaveBeenCalledWith(
       BusinessEvents.POST_UNPUBLISH,
-      { id: 'post-1' },
+      { id: 'post-1', slug: 'post' },
       { scope: EventScope.TO_SYSTEM_VISITOR },
     )
   })
@@ -386,7 +386,7 @@ describe('PostService', () => {
 
     expect(eventManager.emit).toHaveBeenCalledWith(
       BusinessEvents.POST_UPDATE,
-      { id: 'post-1' },
+      { id: 'post-1', slug: 'post' },
       { scope: EventScope.TO_SYSTEM },
     )
   })
