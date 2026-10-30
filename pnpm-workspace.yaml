@@ -77,7 +77,7 @@ overrides:
   # versions; keep one headless/litexml runtime across the workspace.
   '@mx-space/ai>@haklex/rich-headless': 0.61.0
   '@mx-space/cli>@haklex/rich-litexml': 0.61.0
-  '@mx-space/editor>@haklex/rich-collab-loro': 0.61.0
+  '@mx-space/editor>@haklex/rich-collab-loro': 0.61.1
   '@mx-space/editor>@haklex/rich-headless': 0.61.0
   '@mx-space/editor>@haklex/rich-litexml': 0.61.0
   '@esbuild-kit/core-utils>esbuild': 0.25.12

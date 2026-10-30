@@ -214,7 +214,7 @@ overrides:
   '@lexical/yjs': 0.53.0
   '@mx-space/ai>@haklex/rich-headless': 0.61.0
   '@mx-space/cli>@haklex/rich-litexml': 0.61.0
-  '@mx-space/editor>@haklex/rich-collab-loro': 0.61.0
+  '@mx-space/editor>@haklex/rich-collab-loro': 0.61.1
   '@mx-space/editor>@haklex/rich-headless': 0.61.0
   '@mx-space/editor>@haklex/rich-litexml': 0.61.0
   '@esbuild-kit/core-utils>esbuild': 0.25.12
@@ -3560,7 +3560,7 @@ packages:
   '@mx-space/editor@0.5.1':
     resolution: {integrity: sha512-/pqEe63oeHZe+xgPjSZlxGitcJ/7hsy5dzxXP7iiEvnc+X748EdwuMZDeCPmJIVrp/+HM5+onE6q7hmAvzWKZw==}
     peerDependencies:
-      '@haklex/rich-collab-loro': 0.61.0
+      '@haklex/rich-collab-loro': 0.61.1
       loro-crdt: ^1.16.4
     peerDependenciesMeta:
       '@haklex/rich-collab-loro':
