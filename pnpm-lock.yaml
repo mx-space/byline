@@ -213,7 +213,7 @@ overrides:
   '@lexical/utils': 0.53.0
   '@lexical/yjs': 0.53.0
   '@mx-space/ai>@haklex/rich-headless': 0.61.0
-  '@mx-space/cli>@haklex/rich-litexml': 0.61.0
+  '@mx-space/cli>@haklex/rich-litexml': 0.61.1
   '@mx-space/editor>@haklex/rich-collab-loro': 0.61.0
   '@mx-space/editor>@haklex/rich-headless': 0.61.0
   '@mx-space/editor>@haklex/rich-litexml': 0.61.0
@@ -2514,6 +2514,9 @@ packages:
 
   '@haklex/rich-litexml@0.61.0':
     resolution: {integrity: sha512-q3q82hBF/rKWhDYvl9l7o+CF+Cv0kMO78ZGJ2aDUXR8izIu6DSljeg/8dI8C6PBUsB7NXxcaVR4OTB1e291L0g==}
+
+  '@haklex/rich-litexml@0.61.1':
+    resolution: {integrity: sha512-CtZfZ/TCXDskYMGERIv/jvk6KDdXzW7bWVq8QRBE7zNDhVUyVT7RHmSxpeuvluAMW7a0K9ZIRTxwYc/x6SrGYQ==}
 
   '@haklex/rich-plugin-block-handle@0.61.0':
     resolution: {integrity: sha512-AT0VcdbtlPjWhxwz1WDrm9jZYMLKvrR+zUK83J1LY8EsYUNkcgcKMLJOaYYtutiYmU1kXqa36lWbHiFSf/wIrw==}
@@ -13195,6 +13198,15 @@ snapshots:
       - canvas
       - typescript
 
+  '@haklex/rich-litexml@0.61.1(typescript@6.0.3)':
+    dependencies:
+      lexical: 0.53.0(typescript@6.0.3)
+      linkedom: 0.18.14
+      nanoid: 6.0.2
+    transitivePeerDependencies:
+      - canvas
+      - typescript
+
   '@haklex/rich-plugin-block-handle@0.61.0(375570adf6985beb88681791a7a80064)':
     dependencies:
       '@haklex/rich-editor': 0.61.0(@base-ui/react@1.9.0(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lexical/extension@0.53.0(typescript@6.0.3))(@lexical/link@0.53.0(typescript@6.0.3))(@lexical/list@0.53.0(typescript@6.0.3))(@lexical/markdown@0.53.0(typescript@6.0.3))(@lexical/react@0.53.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)(yjs@13.6.33))(@lexical/rich-text@0.53.0(typescript@6.0.3))(@lexical/table@0.53.0(typescript@6.0.3))(katex@0.19.1)(lexical@0.53.0(typescript@6.0.3))(lucide-react@1.64.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3)
@@ -14429,7 +14441,7 @@ snapshots:
 
   '@mx-space/cli@0.21.6(typescript@6.0.3)':
     dependencies:
-      '@haklex/rich-litexml': 0.61.0(typescript@6.0.3)
+      '@haklex/rich-litexml': 0.61.1(typescript@6.0.3)
       loro-crdt: 1.17.1
     transitivePeerDependencies:
       - canvas
