@@ -75,7 +75,7 @@ overrides:
   '@lexical/yjs': 0.53.0
   # The published @mx-space packages pin their own haklex
   # versions; keep one headless/litexml runtime across the workspace.
-  '@mx-space/ai>@haklex/rich-headless': 0.61.0
+  '@mx-space/ai>@haklex/rich-headless': 0.61.1
   '@mx-space/cli>@haklex/rich-litexml': 0.61.0
   '@mx-space/editor>@haklex/rich-collab-loro': 0.61.0
   '@mx-space/editor>@haklex/rich-headless': 0.61.0
