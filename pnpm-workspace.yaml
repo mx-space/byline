@@ -28,7 +28,7 @@ overrides:
   '@better-auth/core': 1.7.14
   '@better-auth/expo': 1.7.14
   '@better-auth/passkey': 1.7.14
-  kysely: 0.29.7
+  kysely: 0.29.8
   pino: ./external/pino
   rolldown: 1.2.15
   'tsdown@0.22.8>rolldown-plugin-dts': 0.27.14
