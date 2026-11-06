@@ -432,7 +432,7 @@ importers:
         version: 6.13.0(@lobehub/ui@6.9.1)(lucide-react@1.64.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@lobehub/streamdown':
         specifier: ^1.4.0
-        version: 1.4.4(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@9.4.0)
+        version: 1.4.5(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@9.4.0)
       '@lobehub/ui':
         specifier: ^6.9.0
         version: 6.9.1(@lobehub/fluent-emoji@5.0.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@lobehub/icons@6.13.0)(@shikijs/themes@4.5.0)(@types/mdast@4.0.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(date-fns@4.4.0)(micromark-util-types@2.0.3)(micromark@4.0.3(supports-color@9.4.0))(motion@14.7.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@9.4.0)
@@ -3490,8 +3490,8 @@ packages:
       react: ^19.0.0
       react-dom: ^19.0.0
 
-  '@lobehub/streamdown@1.4.4':
-    resolution: {integrity: sha512-k1vAHB+FzAMC674yB3npZr2EosRciJmT3jZQ/51ZI+d9O5rk+CoGI1RdOhz39A/oaaQFgSbEWwE2EwlrpR+Clw==}
+  '@lobehub/streamdown@1.4.5':
+    resolution: {integrity: sha512-3du4J78cKEjd6iQ791gfW7CNa+CAYWdsPKzfvY/VtlJgI/X1U/PPwWFGzf4U1DR4ekxaQAqnJZ0TIk8v0b836A==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       react: ^19.0.0
@@ -14267,7 +14267,7 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@lobehub/streamdown@1.4.4(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@9.4.0)':
+  '@lobehub/streamdown@1.4.5(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@9.4.0)':
     dependencies:
       '@types/hast': 3.0.5
       hast-util-to-jsx-runtime: 2.3.6(supports-color@9.4.0)
@@ -14301,7 +14301,7 @@ snapshots:
       '@giscus/react': 3.1.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@lobehub/fluent-emoji': 5.0.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@lobehub/icons': 6.13.0(@lobehub/ui@6.9.1)(lucide-react@1.64.0(@types/react@19.3.0)(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@lobehub/streamdown': 1.4.4(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@9.4.0)
+      '@lobehub/streamdown': 1.4.5(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@9.4.0)
       '@mdx-js/mdx': 3.1.1(supports-color@9.4.0)
       '@pierre/diffs': 1.6.1(@shikijs/themes@4.5.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@pierre/highlights': 0.2.0
@@ -18872,7 +18872,7 @@ snapshots:
 
   hast-util-to-jsx-runtime@2.3.6(supports-color@9.4.0):
     dependencies:
-      '@types/estree': 1.0.9
+      '@types/estree': 1.0.10
       '@types/hast': 3.0.5
       '@types/unist': 3.0.3
       comma-separated-tokens: 2.0.3
