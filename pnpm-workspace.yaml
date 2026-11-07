@@ -23,11 +23,11 @@ allowBuilds:
 overrides:
   'eslint-plugin-react-compiler>zod': 3.25.76
   'get-pixels@^3>request': ./external/request
-  better-auth: 1.7.14
-  '@better-auth/api-key': 1.7.14
-  '@better-auth/core': 1.7.14
-  '@better-auth/expo': 1.7.14
-  '@better-auth/passkey': 1.7.14
+  better-auth: 1.7.18
+  '@better-auth/api-key': 1.7.18
+  '@better-auth/core': 1.7.18
+  '@better-auth/expo': 1.7.18
+  '@better-auth/passkey': 1.7.18
   kysely: 0.29.8
   pino: ./external/pino
   rolldown: 1.2.16
