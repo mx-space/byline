@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@6over3/zeroperl-ts": "^1.0.10",
-    "@better-auth/passkey": "1.7.14",
+    "@better-auth/passkey": "1.7.18",
     "@excalidraw/excalidraw": "^0.18.1",
     "@haklex/rich-agent-core": "0.61.0",
     "@haklex/rich-collab-loro": "0.61.0",
@@ -67,7 +67,7 @@
     "@stylexjs/stylex": "0.19.1",
     "@tanstack/react-query": "5.105.0",
     "@uswriting/exiftool": "^1.0.9",
-    "better-auth": "1.7.14",
+    "better-auth": "1.7.18",
     "buffer": "6.0.3",
     "clsx": "^2.1.1",
     "es-toolkit": "1.53.0",
