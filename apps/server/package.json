@@ -52,7 +52,7 @@
     "@earendil-works/pi-ai": "0.99.1",
     "@fastify/multipart": "10.1.8",
     "@fastify/static": "10.1.10",
-    "@haklex/rich-collab-loro": "0.61.0",
+    "@haklex/rich-collab-loro": "0.61.1",
     "@haklex/rich-headless": "0.61.0",
     "@haklex/rich-litexml": "0.61.0",
     "@innei/message-engine": "0.5.0",
