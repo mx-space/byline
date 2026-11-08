@@ -19,7 +19,7 @@
     "@excalidraw/excalidraw": "^0.18.1",
     "@haklex/rich-agent-core": "0.61.0",
     "@haklex/rich-collab-loro": "0.61.1",
-    "@haklex/rich-compose": "0.61.0",
+    "@haklex/rich-compose": "0.61.1",
     "@haklex/rich-diff": "0.61.0",
     "@haklex/rich-editor": "0.61.0",
     "@haklex/rich-editor-ui": "0.61.0",
