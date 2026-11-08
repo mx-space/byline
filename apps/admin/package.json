@@ -18,7 +18,7 @@
     "@better-auth/passkey": "1.7.18",
     "@excalidraw/excalidraw": "^0.18.1",
     "@haklex/rich-agent-core": "0.61.0",
-    "@haklex/rich-collab-loro": "0.61.0",
+    "@haklex/rich-collab-loro": "0.61.1",
     "@haklex/rich-compose": "0.61.0",
     "@haklex/rich-diff": "0.61.0",
     "@haklex/rich-editor": "0.61.0",
