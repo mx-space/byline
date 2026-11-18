@@ -238,7 +238,7 @@ export class AiSummaryService implements OnModuleInit {
   async getSummariesByRefId(refId: string) {
     const article = await this.databaseService.findGlobalById(refId)
 
-    if (!article) {
+    if (!article || !article.document) {
       throw createAppException(AppErrorCode.CONTENT_NOT_FOUND, { id: refId })
     }
     const canonicalId = String((article.document as { id: string }).id)
