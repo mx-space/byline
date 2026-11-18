@@ -3,8 +3,12 @@ import {
   type DraftBranch,
   isBylineApiError,
 } from '@mx-space/byline-api-client'
-
-import { SEO_DESCRIPTION_LIMIT, SEO_TITLE_LIMIT } from './limits'
+import {
+  type PostSeoTextInput,
+  resolvePostSeoText,
+  SEO_DESCRIPTION_LIMIT,
+  SEO_TITLE_LIMIT,
+} from '@mx-space/byline-shared/post-seo'
 
 export interface CheckIssue {
   code: string
@@ -16,30 +20,15 @@ export interface DraftCheckResult {
   notes: string[]
 }
 
-type SeoFields = {
-  description?: string | null
-  title?: string | null
-}
-
-const seoOf = (data: Record<string, unknown>): SeoFields => {
-  const seo = data.seo
-  if (!seo || typeof seo !== 'object') return {}
-  return seo as SeoFields
-}
-
-export const collectSeoIssues = (input: {
-  seo?: SeoFields | null
-  title: string
-}): CheckIssue[] => {
+export const collectSeoIssues = (input: PostSeoTextInput): CheckIssue[] => {
   const issues: CheckIssue[] = []
-  const seoTitle = input.seo?.title?.trim() || input.title.trim()
+  const { description, title: seoTitle } = resolvePostSeoText(input)
   if (seoTitle.length > SEO_TITLE_LIMIT) {
     issues.push({
       code: 'seo_title_too_long',
       message: `SEO title is ${seoTitle.length} characters (limit ${SEO_TITLE_LIMIT})`,
     })
   }
-  const description = input.seo?.description ?? ''
   if (description.length > SEO_DESCRIPTION_LIMIT) {
     issues.push({
       code: 'seo_description_too_long',
@@ -69,13 +58,14 @@ export const checkDraft = async (
   draft: DraftBranch,
 ): Promise<DraftCheckResult> => {
   const data = draft.headRevision.typeSpecificData ?? {}
-  const issues = collectSeoIssues({
-    title: draft.headRevision.title,
-    seo: seoOf(data),
-  })
-  const notes: string[] = []
   const manualSummary =
     typeof data.summary === 'string' ? data.summary.trim() : ''
+  const issues = collectSeoIssues({
+    title: draft.headRevision.title,
+    summary: manualSummary,
+    seo: data.seo as PostSeoTextInput['seo'],
+  })
+  const notes: string[] = []
 
   let hasAiSummary = false
   let hasTranslation = false

@@ -5,6 +5,7 @@ import type {
 } from '@nestjs/common'
 import { Injectable } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
+import type { FastifyRequest } from 'fastify'
 import type { Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
 
@@ -33,7 +34,8 @@ export class ResponseInterceptor implements NestInterceptor {
     }
 
     const http = context.switchToHttp()
-    if (!http.getRequest()) {
+    const request = http.getRequest<FastifyRequest>()
+    if (!request) {
       return next.handle()
     }
 
@@ -50,6 +52,9 @@ export class ResponseInterceptor implements NestInterceptor {
       [context.getHandler(), context.getClass()],
     )
     const bypassPaths = Array.isArray(bypassMetadata) ? bypassMetadata : []
+    const wantsTaskIdAlias =
+      request.method === 'POST' &&
+      request.headers['user-agent']?.startsWith('mxs/')
 
     return next.handle().pipe(
       map((data) => {
@@ -60,10 +65,9 @@ export class ResponseInterceptor implements NestInterceptor {
         const envelope: SuccessEnvelope = isExplicitSuccessEnvelope(data)
           ? data
           : { data }
+        const wireData = transformResponseCase(envelope.data, bypassPaths)
         const result: SuccessEnvelope = {
-          data: withTaskIdAlias(
-            transformResponseCase(envelope.data, bypassPaths),
-          ),
+          data: wantsTaskIdAlias ? withTaskIdAlias(wireData) : wireData,
         }
         if (envelope.meta !== undefined) {
           result.meta = transformResponseCase(

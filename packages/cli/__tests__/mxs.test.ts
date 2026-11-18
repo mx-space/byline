@@ -39,6 +39,7 @@ describe('mxsEnv', () => {
     expect(env).toEqual({
       PATH: '/bin',
       XDG_CONFIG_HOME: '/home/me/.config/byline/mxs',
+      MXS_NO_AUTO_UPDATE: '1',
       MXS_NO_UPDATE_CHECK: '1',
       MXS_API_URL: 'https://cms.example.com/api/v3',
       MXS_TOKEN: 'tok',

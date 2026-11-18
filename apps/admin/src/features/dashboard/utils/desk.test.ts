@@ -15,8 +15,6 @@ import {
   displayDeskTime,
   postSeoChecks,
   postTranslationCheck,
-  SEO_DESCRIPTION_LIMIT,
-  SEO_TITLE_LIMIT,
   takePublishedPosts,
   taskRecordPath,
   translationGapSummary,
@@ -238,15 +236,15 @@ describe('postSeoChecks', () => {
 
   it('flags a missing cover and an over-long title or description', () => {
     const checks = postSeoChecks({
-      summary: 'y'.repeat(SEO_DESCRIPTION_LIMIT + 1),
-      title: 'x'.repeat(SEO_TITLE_LIMIT + 1),
+      summary: 'y'.repeat(146),
+      title: 'x'.repeat(61),
     })
     expect(checks.map((field) => [field.key, field.state])).toEqual([
       ['image', 'missing'],
       ['title', 'long'],
       ['description', 'long'],
     ])
-    expect(checks[1]?.used).toBe(SEO_TITLE_LIMIT + 1)
+    expect(checks[1]?.used).toBe(61)
   })
 
   it('prefers a stored seo value over the post fallback', () => {
@@ -255,7 +253,7 @@ describe('postSeoChecks', () => {
         image: 'https://cdn.example/cover.jpg',
         seo: { title: 'Short' },
         summary: 'A summary',
-        title: 'x'.repeat(SEO_TITLE_LIMIT + 1),
+        title: 'x'.repeat(61),
       })[1],
     ).toMatchObject({ key: 'title', state: 'ok', used: 5 })
   })

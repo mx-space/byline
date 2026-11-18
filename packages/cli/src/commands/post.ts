@@ -1,14 +1,25 @@
 import { parseArgs } from 'node:util'
 
-import type { BylineClient, Post, UrlOptions } from '@mx-space/byline-api-client'
+import type {
+  BylineClient,
+  Post,
+  UrlOptions,
+} from '@mx-space/byline-api-client'
 
-import { connect, CONNECTION_HELP, CONNECTION_OPTIONS } from '../auth/client'
+import {
+  connect,
+  CONNECTION_HELP,
+  CONNECTION_OPTIONS,
+  createConnectedClient,
+  requireConnection,
+} from '../auth/client'
 import { resolveCover } from '../writing/cover'
 import { Directory, toWriteData } from '../writing/fields'
 import { formatPost, formatPostRow, printJson } from '../writing/format'
 import { readWriteInput, WRITE_HELP, WRITE_OPTIONS } from '../writing/input'
 import { describePublicLink, publicPostLink } from '../writing/urls'
 import { showDraft } from './draft'
+import { runMxsCommand } from './mxs'
 
 export const POST_HELP = `Usage: byline post <command> [options]
 
@@ -136,9 +147,24 @@ export const runPost = async (argv: string[]): Promise<number> => {
     case 'unpublish': {
       const [key] = positionals
       if (!key) throw new Error('Usage: byline post unpublish <slugOrId>')
-      const client = (await connect(values, { required: true }))!
+      const connection = await requireConnection(values)
+      const client = createConnectedClient(connection)
       const post = await loadPost(client, key)
-      await client.posts.setPublished(post.id, false)
+      // Bundled mxs requires Node 26 and a versioned base, and treats short IDs as slugs.
+      if (
+        Number(process.versions.node.split('.')[0]) >= 26 &&
+        /\/api\/v\d+$/.test(connection.apiUrl) &&
+        /^\d{15,}$/.test(post.id)
+      ) {
+        const code = await runMxsCommand(
+          ['post', 'unpublish', post.id],
+          connection,
+          'ignore',
+        )
+        if (code !== 0) return code
+      } else {
+        await client.posts.setPublished(post.id, false)
+      }
       const { data: updated } = await client.posts.get(post.id)
       if (values.json) return printJson(updated)
       process.stdout.write(

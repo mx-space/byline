@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { parsePublicAt } from '../src/commands/draft'
-import { collectSeoIssues } from '../src/writing/check'
-import { SEO_DESCRIPTION_LIMIT, SEO_TITLE_LIMIT } from '../src/writing/limits'
+import { checkDraft, collectSeoIssues } from '../src/writing/check'
 import {
   describePublicLink,
   draftAdminUrl,
@@ -17,8 +16,8 @@ describe('collectSeoIssues', () => {
     const issues = collectSeoIssues({
       title: 'Short',
       seo: {
-        title: 'T'.repeat(SEO_TITLE_LIMIT + 1),
-        description: 'D'.repeat(SEO_DESCRIPTION_LIMIT + 1),
+        title: 'T'.repeat(61),
+        description: 'D'.repeat(146),
       },
     })
     expect(issues.map((issue) => issue.code)).toEqual([
@@ -29,7 +28,7 @@ describe('collectSeoIssues', () => {
 
   it('uses the post title when SEO title is empty', () => {
     const issues = collectSeoIssues({
-      title: 'T'.repeat(SEO_TITLE_LIMIT + 2),
+      title: 'T'.repeat(62),
       seo: { title: '', description: 'ok' },
     })
     expect(issues).toHaveLength(1)
@@ -39,27 +38,56 @@ describe('collectSeoIssues', () => {
   it('accepts titles and descriptions at the limit', () => {
     expect(
       collectSeoIssues({
-        title: 'T'.repeat(SEO_TITLE_LIMIT),
-        seo: { description: 'D'.repeat(SEO_DESCRIPTION_LIMIT) },
+        title: 'T'.repeat(60),
+        seo: { description: 'D'.repeat(145) },
       }),
     ).toEqual([])
+  })
+
+  it('checks the summary as the description when the SEO description is blank', async () => {
+    const client = {
+      summaries: { listByRef: async () => ({ data: { summaries: [] } }) },
+      translations: {
+        listByRef: async () => ({ data: { translations: [{ lang: 'ja' }] } }),
+      },
+    } as unknown as Parameters<typeof checkDraft>[0]
+    const draft = {
+      id: '1',
+      document: { id: '2', refId: null },
+      headRevision: {
+        title: 'Draft title',
+        typeSpecificData: {
+          seo: { description: '   ' },
+          summary: 'S'.repeat(146),
+        },
+      },
+    } as unknown as Parameters<typeof checkDraft>[1]
+
+    const result = await checkDraft(client, draft)
+
+    expect(result.issues).toEqual([
+      {
+        code: 'seo_description_too_long',
+        message: 'SEO description is 146 characters (limit 145)',
+      },
+    ])
   })
 })
 
 describe('URLs', () => {
   it('builds the admin edit path like the admin app', () => {
-    expect(
-      draftEditPath({ id: '1', document: { refId: null } }),
-    ).toBe('/posts/edit?draftId=1')
-    expect(
-      draftEditPath({ id: '1', document: { refId: '9' } }),
-    ).toBe('/posts/edit?draftId=1&id=9')
+    expect(draftEditPath({ id: '1', document: { refId: null } })).toBe(
+      '/posts/edit?draftId=1',
+    )
+    expect(draftEditPath({ id: '1', document: { refId: '9' } })).toBe(
+      '/posts/edit?draftId=1&id=9',
+    )
   })
 
   it('joins the configured admin URL without hardcoding a domain', () => {
-    expect(joinAdminUrl('https://cms.example/admin/', '/posts/edit?draftId=1')).toBe(
-      'https://cms.example/admin/posts/edit?draftId=1',
-    )
+    expect(
+      joinAdminUrl('https://cms.example/admin/', '/posts/edit?draftId=1'),
+    ).toBe('https://cms.example/admin/posts/edit?draftId=1')
     const draft = {
       id: '1',
       document: { refId: null },

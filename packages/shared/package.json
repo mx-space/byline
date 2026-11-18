@@ -1,0 +1,8 @@
+{
+  "name": "@mx-space/byline-shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./post-seo": "./src/post-seo.ts"
+  }
+}

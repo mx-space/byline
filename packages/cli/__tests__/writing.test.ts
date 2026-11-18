@@ -9,10 +9,6 @@ import { buildContent } from '../src/writing/content'
 import { applyPatch, Directory, toWriteData } from '../src/writing/fields'
 import { formatDiscarded } from '../src/writing/format'
 import { readWriteInput } from '../src/writing/input'
-import {
-  SEO_DESCRIPTION_LIMIT,
-  SEO_TITLE_LIMIT,
-} from '../src/writing/limits'
 
 let dir: string
 const envelopePath = () => path.join(dir, 'post.xml')
@@ -226,22 +222,5 @@ describe('readWriteInput cover and source language', () => {
     await expect(readWriteInput({ 'source-lang': '中文' })).rejects.toThrow(
       'Invalid --source-lang',
     )
-  })
-})
-
-describe('SEO limits', () => {
-  it('matches the admin editor title and description limits', async () => {
-    const { readFile } = await import('node:fs/promises')
-    const { fileURLToPath } = await import('node:url')
-    const path = await import('node:path')
-    const admin = await readFile(
-      path.resolve(
-        fileURLToPath(new URL('.', import.meta.url)),
-        '../../../apps/admin/src/features/write/components/PostBylineFields.tsx',
-      ),
-      'utf8',
-    )
-    expect(admin).toContain(`TITLE_LIMIT = ${SEO_TITLE_LIMIT}`)
-    expect(admin).toContain(`DESCRIPTION_LIMIT = ${SEO_DESCRIPTION_LIMIT}`)
   })
 })

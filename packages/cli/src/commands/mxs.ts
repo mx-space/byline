@@ -6,8 +6,7 @@ import path from 'node:path'
 import {
   type Connection,
   type ConnectionFlags,
-  MISSING_CONNECTION,
-  resolveConnection,
+  requireConnection,
 } from '../auth/client'
 import { credentialsPath } from '../auth/credentials'
 
@@ -40,6 +39,7 @@ export const mxsEnv = (
   }
   // An empty config home keeps mxs away from the user's own mx-space profiles.
   next.XDG_CONFIG_HOME = path.join(path.dirname(credentialsPath(env)), 'mxs')
+  next.MXS_NO_AUTO_UPDATE = '1'
   next.MXS_NO_UPDATE_CHECK = '1'
   if (connection) {
     next.MXS_API_URL = connection.apiUrl
@@ -62,23 +62,28 @@ const mxsBin = () => {
 const wantsHelp = (args: string[]) =>
   args.length === 0 || args.includes('--help') || args.includes('-h')
 
-export const runMxs = async (
-  command: string,
+export const runMxsCommand = (
   args: string[],
-  options: { api: boolean },
+  connection: Connection | null,
+  stdout: 'inherit' | 'ignore' = 'inherit',
 ): Promise<number> => {
-  const { flags, rest } = splitConnectionFlags(args)
-  let connection: Connection | null = null
-  if (options.api && !wantsHelp(rest)) {
-    connection = await resolveConnection(flags)
-    if (!connection) throw new Error(MISSING_CONNECTION)
-  }
-  const child = spawn(process.execPath, [mxsBin(), command, ...rest], {
-    stdio: 'inherit',
+  const child = spawn(process.execPath, [mxsBin(), ...args], {
+    stdio: ['inherit', stdout, 'inherit'],
     env: mxsEnv(connection),
   })
   return new Promise((resolve, reject) => {
     child.on('error', reject)
     child.on('exit', (code, signal) => resolve(code ?? (signal ? 1 : 0)))
   })
+}
+
+export const runMxs = async (
+  command: string,
+  args: string[],
+  options: { api: boolean },
+): Promise<number> => {
+  const { flags, rest } = splitConnectionFlags(args)
+  const connection =
+    options.api && !wantsHelp(rest) ? await requireConnection(flags) : null
+  return runMxsCommand([command, ...rest], connection)
 }

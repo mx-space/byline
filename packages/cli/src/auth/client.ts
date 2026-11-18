@@ -53,6 +53,21 @@ export const resolveConnection = async (
 export const MISSING_CONNECTION =
   'An API URL and an API key or token are required; run `byline login` or pass --api-key'
 
+export const requireConnection = async (
+  flags: ConnectionFlags,
+): Promise<Connection> => {
+  const connection = await resolveConnection(flags)
+  if (!connection) throw new Error(MISSING_CONNECTION)
+  return connection
+}
+
+export const createConnectedClient = (connection: Connection): BylineClient =>
+  createClient({
+    endpoint: connection.apiUrl,
+    apiKey: connection.apiKey,
+    token: connection.token,
+  })
+
 export const connect = async (
   flags: ConnectionFlags,
   options: { required: boolean },
@@ -62,9 +77,5 @@ export const connect = async (
     if (!options.required) return null
     throw new Error(MISSING_CONNECTION)
   }
-  return createClient({
-    endpoint: connection.apiUrl,
-    apiKey: connection.apiKey,
-    token: connection.token,
-  })
+  return createConnectedClient(connection)
 }

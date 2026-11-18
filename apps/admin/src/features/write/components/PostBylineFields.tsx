@@ -1,4 +1,8 @@
 import { Avatar, createStaticStyles, Select, Tag } from '@lobehub/ui'
+import {
+  SEO_DESCRIPTION_LIMIT,
+  SEO_TITLE_LIMIT,
+} from '@mx-space/byline-shared/post-seo'
 import { useMemo, useState } from 'react'
 
 import type { AuthorProfile, UserDetail } from '~/api/users'
@@ -175,9 +179,6 @@ export interface SeoFieldsValue {
   seoTitle: string
 }
 
-const TITLE_LIMIT = 60
-const DESCRIPTION_LIMIT = 145
-
 export function SeoFields(props: {
   aiDescription?: string
   coverImage?: string
@@ -213,8 +214,8 @@ export function SeoFields(props: {
         value={props.value.seoTitle}
       />
       <CountHint
-        label={t('write.seo.titleCount', { max: TITLE_LIMIT })}
-        max={TITLE_LIMIT}
+        label={t('write.seo.titleCount', { max: SEO_TITLE_LIMIT })}
+        max={SEO_TITLE_LIMIT}
         used={props.value.seoTitle.length}
       />
       <TextArea
@@ -231,8 +232,8 @@ export function SeoFields(props: {
         <p className={lobeStyles.u59d40084}>{t('write.seo.aiDescription')}</p>
       ) : null}
       <CountHint
-        label={t('write.seo.descriptionCount', { max: DESCRIPTION_LIMIT })}
-        max={DESCRIPTION_LIMIT}
+        label={t('write.seo.descriptionCount', { max: SEO_DESCRIPTION_LIMIT })}
+        max={SEO_DESCRIPTION_LIMIT}
         used={props.value.seoDescription.length}
       />
       <ImageField
