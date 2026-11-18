@@ -129,8 +129,9 @@ export class AiOverviewService {
       throw createAppException(AppErrorCode.CONTENT_NOT_FOUND)
     }
 
+    const canonicalId = String((found.document as { id: string }).id)
     const article: RefArticleInfo = {
-      id: refId,
+      id: canonicalId,
       title: (found.document as { title: string }).title,
       type: found.type,
     }
@@ -146,23 +147,23 @@ export class AiOverviewService {
       localeSources,
     ] = await Promise.all([
       this.repository
-        .summaryAssets(refId)
+        .summaryAssets(canonicalId)
         .then((rows) => this.generationMetrics.attachLatest('summary', rows)),
       this.repository
-        .insightsAssets(refId)
+        .insightsAssets(canonicalId)
         .then((rows) => this.generationMetrics.attachLatest('insights', rows)),
       this.repository
-        .translationAssets(refId)
+        .translationAssets(canonicalId)
         .then((rows) =>
           this.generationMetrics.attachLatest('translation', rows),
         ),
       this.repository
-        .ttsAssets(refId)
+        .ttsAssets(canonicalId)
         .then((rows) => this.generationMetrics.attachLatest('tts', rows)),
       this.resolveConfiguredLanguages(),
-      this.buildCost(refId),
-      this.findActiveTasks(refId),
-      this.repository.localeMetaSources(refId),
+      this.buildCost(canonicalId),
+      this.findActiveTasks(canonicalId),
+      this.repository.localeMetaSources(canonicalId),
     ])
 
     const document = found.document as MetaBearing &

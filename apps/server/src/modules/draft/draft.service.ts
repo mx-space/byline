@@ -648,7 +648,14 @@ export class DraftService {
   }
 
   async linkDocument(documentId: string, publishedId: string) {
-    return this.draftRepository.linkDocument(documentId, publishedId)
+    const document = await this.draftRepository.linkDocument(
+      documentId,
+      publishedId,
+    )
+    if (document && documentId !== publishedId) {
+      await this.draftRepository.rekeyAiResources(documentId, publishedId)
+    }
+    return document
   }
 
   async recordPublication(

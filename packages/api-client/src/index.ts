@@ -18,6 +18,10 @@ export type {
 } from './resources/content'
 export type { DraftsResource } from './resources/drafts'
 export type {
+  OptionsResource,
+  UrlOptions,
+} from './resources/options'
+export type {
   PostSaveOptions,
   PostSaveResult,
   PostsResource,

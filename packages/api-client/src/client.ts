@@ -8,6 +8,7 @@ import {
   TranslationsResource,
 } from './resources/content'
 import { DraftsResource } from './resources/drafts'
+import { OptionsResource } from './resources/options'
 import { PostsResource } from './resources/posts'
 import { PublishJobsResource, TasksResource } from './resources/tasks'
 import { InvitesResource, UsersResource } from './resources/users'
@@ -26,6 +27,7 @@ export class BylineClient {
   readonly invites: InvitesResource
   readonly dynamicComponents: DynamicComponentsResource
   readonly files: FilesResource
+  readonly options: OptionsResource
 
   constructor(options: ClientOptions) {
     this.http = new HttpCore(options)
@@ -41,6 +43,7 @@ export class BylineClient {
     this.invites = new InvitesResource(this.http)
     this.dynamicComponents = new DynamicComponentsResource(this.http)
     this.files = new FilesResource(this.http)
+    this.options = new OptionsResource(this.http)
   }
 }
 

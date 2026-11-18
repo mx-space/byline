@@ -2,10 +2,17 @@ import { Injectable } from '@nestjs/common'
 
 import { CollectionRefTypes } from '~/constants/db.constant'
 import { ConfigsService } from '~/modules/configs/configs.service'
+import { DraftRepository } from '~/modules/draft/draft.repository'
+import type {
+  ContentDocumentRow,
+  DraftBranchRow,
+} from '~/modules/draft/draft.types'
 import { PostRepository } from '~/modules/post/post.repository'
 import type { PostRow } from '~/modules/post/post.types'
 import { isEntityIdString, parseEntityId } from '~/shared/id/entity-id'
 import { normalizeLanguageCode } from '~/utils/lang.util'
+
+import { buildPostRowFromDraft } from './draft-article'
 
 export type RefArticleInfo = {
   id: string
@@ -43,6 +50,7 @@ export class DatabaseService {
   constructor(
     private readonly postRepository: PostRepository,
     private readonly configsService: ConfigsService,
+    private readonly draftRepository: DraftRepository,
   ) {}
 
   private async applyDefaultSourceLang(posts: PostRow[]) {
@@ -61,7 +69,9 @@ export class DatabaseService {
     id: string,
   ): Promise<GlobalDocumentResult | null> {
     parseEntityId(id)
-    const document = await this.postRepository.findById(id)
+    const document =
+      (await this.postRepository.findById(id)) ??
+      (await this.resolveDraftArticle(id))
     if (!document) return null
     await this.applyDefaultSourceLang([document])
     return { document, type: CollectionRefTypes.Post }
@@ -69,10 +79,63 @@ export class DatabaseService {
 
   public async findGlobalByIds(ids: string[]): Promise<IdsCollection> {
     const validIds = ids.filter(isEntityIdString)
-    const posts = await this.applyDefaultSourceLang(
-      await this.postRepository.findManyByIds(validIds),
+    const posts = await this.postRepository.findManyByIds(validIds)
+    const found = new Set(posts.map((post) => String(post.id)))
+    const missing = validIds.filter((id) => !found.has(id))
+    for (const id of missing) {
+      const draftArticle = await this.resolveDraftArticle(id)
+      if (!draftArticle) continue
+      const canonical = String(draftArticle.id)
+      if (found.has(canonical)) continue
+      found.add(canonical)
+      posts.push(draftArticle)
+    }
+    return { posts: await this.applyDefaultSourceLang(posts) }
+  }
+
+  private async resolveDraftArticle(id: string): Promise<PostRow | null> {
+    const branch = await this.draftRepository.findBranchById(id)
+    if (branch) return this.articleFromBranch(branch)
+    const document = await this.draftRepository.findDocumentById(id)
+    if (!document) return null
+    return this.articleFromDocument(document)
+  }
+
+  private async articleFromDocument(
+    document: ContentDocumentRow,
+  ): Promise<PostRow | null> {
+    const branches = await this.draftRepository.findBranchesByDocument(
+      document.id,
+      'active',
     )
-    return { posts }
+    if (branches[0]) return this.articleFromBranch(branches[0], document)
+    if (!document.publishedRevisionId) return null
+    const revision = await this.draftRepository.findRevisionById(
+      document.publishedRevisionId,
+    )
+    if (!revision) return null
+    const existing = document.refId
+      ? await this.postRepository.findById(document.refId)
+      : null
+    return buildPostRowFromDraft({ document, revision, existing })
+  }
+
+  private async articleFromBranch(
+    branch: DraftBranchRow,
+    knownDocument?: ContentDocumentRow,
+  ): Promise<PostRow | null> {
+    const document =
+      knownDocument ??
+      (await this.draftRepository.findDocumentById(branch.documentId))
+    if (!document) return null
+    const revision = await this.draftRepository.findRevisionById(
+      branch.headRevisionId,
+    )
+    if (!revision) return null
+    const existing = document.refId
+      ? await this.postRepository.findById(document.refId)
+      : null
+    return buildPostRowFromDraft({ document, revision, existing })
   }
 
   public async findRefCandidates(

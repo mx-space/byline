@@ -12,7 +12,7 @@ Commands:
   logout             remove the saved session
   whoami             show the signed-in user
   post               list, read and create post drafts (create never publishes)
-  draft              list, read, update and delete drafts
+  draft              list, read, update, check, publish and delete drafts
   author             list the users that can appear in a byline
   ai                 AI summaries, translations, insights, TTS (runs mxs)
   skill              bundled AI agent chapters (runs mxs)

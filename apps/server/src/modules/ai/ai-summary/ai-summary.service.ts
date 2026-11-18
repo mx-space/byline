@@ -179,7 +179,9 @@ export class AiSummaryService implements OnModuleInit {
   ) {
     await this.adapter.assertEnabled()
 
-    const { article } = await this.adapter.resolveArticleDetailed(articleId)
+    const { article } = await this.adapter.resolveArticleDetailed(articleId, {
+      isOwner: true,
+    })
 
     try {
       const { result } = await this.multilang.runBaseGeneration(this.adapter, {
@@ -210,7 +212,9 @@ export class AiSummaryService implements OnModuleInit {
   async findBaseSummaryForArticle(
     refId: string,
   ): Promise<AISummaryModel | null> {
-    const { sourceLang } = await this.adapter.resolveArticleDetailed(refId)
+    const { sourceLang } = await this.adapter.resolveArticleDetailed(refId, {
+      isOwner: true,
+    })
     return this.adapter.findBase(refId, sourceLang)
   }
 
@@ -237,9 +241,10 @@ export class AiSummaryService implements OnModuleInit {
     if (!article) {
       throw createAppException(AppErrorCode.CONTENT_NOT_FOUND, { id: refId })
     }
+    const canonicalId = String((article.document as { id: string }).id)
     const summaries = await this.generationMetrics.attachLatest(
       'summary',
-      this.toSummaryDocs(await this.aiSummaryRepository.listForRef(refId)),
+      this.toSummaryDocs(await this.aiSummaryRepository.listForRef(canonicalId)),
     )
 
     return {

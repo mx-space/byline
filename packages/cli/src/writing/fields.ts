@@ -13,6 +13,8 @@ export interface WriteFields {
   summary?: string
   tags?: string[]
   authors?: string[]
+  image?: string
+  sourceLang?: string
 }
 
 export const splitList = (value: string) =>
@@ -114,6 +116,10 @@ export const toWriteData = async (
   }
   if (fields.authors !== undefined) {
     typeSpecificData.authors = await directory.authorIds(fields.authors)
+  }
+  if (fields.image !== undefined) typeSpecificData.image = fields.image
+  if (fields.sourceLang !== undefined) {
+    typeSpecificData.sourceLang = fields.sourceLang
   }
   if (Object.keys(typeSpecificData).length > 0) {
     data.typeSpecificData = typeSpecificData

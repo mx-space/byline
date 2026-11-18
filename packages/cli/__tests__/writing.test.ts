@@ -9,6 +9,10 @@ import { buildContent } from '../src/writing/content'
 import { applyPatch, Directory, toWriteData } from '../src/writing/fields'
 import { formatDiscarded } from '../src/writing/format'
 import { readWriteInput } from '../src/writing/input'
+import {
+  SEO_DESCRIPTION_LIMIT,
+  SEO_TITLE_LIMIT,
+} from '../src/writing/limits'
 
 let dir: string
 const envelopePath = () => path.join(dir, 'post.xml')
@@ -140,6 +144,21 @@ describe('toWriteData', () => {
     ).rejects.toThrow('Unknown author "nobody"')
   })
 
+  it('writes a cover URL and source language into typeSpecificData', async () => {
+    const data = await toWriteData(
+      {
+        image: 'https://cdn.example/cover.png',
+        sourceLang: 'zh-CN',
+      },
+      null,
+      new Directory(client),
+    )
+    expect(data.typeSpecificData).toEqual({
+      image: 'https://cdn.example/cover.png',
+      sourceLang: 'zh-CN',
+    })
+  })
+
   it('keeps the head revision for fields not given', () => {
     const merged = applyPatch(
       {
@@ -180,5 +199,49 @@ describe('formatDiscarded', () => {
     expect(formatDiscarded(draft('ahead', '7'))).toBe(
       'Discarded unpublished changes to post 7 (Notes); the published post is unchanged',
     )
+  })
+})
+
+describe('readWriteInput cover and source language', () => {
+  it('accepts --cover and --source-lang', async () => {
+    const input = await readWriteInput({
+      title: 'T',
+      cover: 'https://cdn.example/a.png',
+      'source-lang': 'zh-CN',
+    })
+    expect(input.coverSpec).toBe('https://cdn.example/a.png')
+    expect(input.fields.sourceLang).toBe('zh-CN')
+  })
+
+  it('rejects conflicting --cover and --image values', async () => {
+    await expect(
+      readWriteInput({
+        cover: 'https://cdn.example/a.png',
+        image: 'https://cdn.example/b.png',
+      }),
+    ).rejects.toThrow('Pass only one of --cover or --image')
+  })
+
+  it('rejects an invalid --source-lang', async () => {
+    await expect(readWriteInput({ 'source-lang': '中文' })).rejects.toThrow(
+      'Invalid --source-lang',
+    )
+  })
+})
+
+describe('SEO limits', () => {
+  it('matches the admin editor title and description limits', async () => {
+    const { readFile } = await import('node:fs/promises')
+    const { fileURLToPath } = await import('node:url')
+    const path = await import('node:path')
+    const admin = await readFile(
+      path.resolve(
+        fileURLToPath(new URL('.', import.meta.url)),
+        '../../../apps/admin/src/features/write/components/PostBylineFields.tsx',
+      ),
+      'utf8',
+    )
+    expect(admin).toContain(`TITLE_LIMIT = ${SEO_TITLE_LIMIT}`)
+    expect(admin).toContain(`DESCRIPTION_LIMIT = ${SEO_DESCRIPTION_LIMIT}`)
   })
 })

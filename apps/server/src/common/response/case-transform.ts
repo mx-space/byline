@@ -64,3 +64,15 @@ export const transformResponseCase = (
   const bypass = bypassPaths.map(parseBypassPath)
   return isExactBypass([], bypass) ? value : transform(value, [], bypass)
 }
+
+/** Older mxs clients only read camelCase `taskId`. Keep `task_id` and alias it. */
+export const withTaskIdAlias = (value: unknown): unknown => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return value
+  }
+  const record = value as Record<string, unknown>
+  if (typeof record.task_id === 'string' && record.taskId === undefined) {
+    return { ...record, taskId: record.task_id }
+  }
+  return value
+}

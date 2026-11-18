@@ -516,3 +516,44 @@ describe('authors and invites', () => {
     expect(calls[0].body).toEqual({ branchId: '1', revisionId: '2' })
   })
 })
+
+describe('options', () => {
+  it('reads site URL options', async () => {
+    const { fetch, calls } = mockFetch(() => ({
+      body: {
+        data: {
+          admin_url: 'https://cms.example/admin/',
+          web_url: 'https://example.com',
+          server_url: 'https://cms.example',
+          ws_url: 'https://cms.example',
+          post_permalink: '/posts/{category}/{slug}',
+        },
+      },
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    const { data } = await client.options.url()
+    expect(calls.map(route)).toEqual(['GET /options/url'])
+    expect(data).toMatchObject({
+      adminUrl: 'https://cms.example/admin/',
+      webUrl: 'https://example.com',
+      postPermalink: '/posts/{category}/{slug}',
+    })
+  })
+})
+
+describe('summaries', () => {
+  it('lists summaries by article ref', async () => {
+    const { fetch, calls } = mockFetch(() => ({
+      body: {
+        data: {
+          summaries: [{ id: 's1', ref_id: '12', summary: 'Hello' }],
+          article: { type: 'post', document: { id: '12' } },
+        },
+      },
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+    const { data } = await client.summaries.listByRef('12')
+    expect(calls.map(route)).toEqual(['GET /ai/summaries/ref/12'])
+    expect(data.summaries[0]).toMatchObject({ refId: '12', summary: 'Hello' })
+  })
+})

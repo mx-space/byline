@@ -11,6 +11,7 @@ import { map } from 'rxjs/operators'
 import {
   BYPASS_CASE_TRANSFORM_ROOT,
   transformResponseCase,
+  withTaskIdAlias,
 } from '~/common/response/case-transform'
 import {
   isExplicitSuccessEnvelope,
@@ -60,7 +61,9 @@ export class ResponseInterceptor implements NestInterceptor {
           ? data
           : { data }
         const result: SuccessEnvelope = {
-          data: transformResponseCase(envelope.data, bypassPaths),
+          data: withTaskIdAlias(
+            transformResponseCase(envelope.data, bypassPaths),
+          ),
         }
         if (envelope.meta !== undefined) {
           result.meta = transformResponseCase(

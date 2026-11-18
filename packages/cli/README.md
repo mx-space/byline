@@ -43,10 +43,11 @@ the session expires they ask you to run `byline login` again.
 
 ## Writing drafts
 
-`byline post` and `byline draft` write post drafts. They never publish; publish
-from the admin. The flags and the `<mxpost>` envelope are the same as
+`byline post create` and `byline draft update` write post drafts. They never
+publish. To publish, call `byline draft publish` explicitly, or publish from
+the admin. The flags and the `<mxpost>` envelope are the same as
 [`mxs`](https://www.npmjs.com/package/@mx-space/cli), with `--authors` added
-for multi-author bylines.
+for multi-author bylines, plus `--cover`/`--image` and `--source-lang`.
 
 ```sh
 byline author list                      # usernames for --authors
@@ -55,16 +56,75 @@ byline post create --title "Hello" --category engineering \
   --authors ada,grace --content file=body.md --format markdown
 byline draft list --new
 byline draft get <id>
+byline draft url <id>                   # admin edit URL; public URL only if already published
 byline draft update <id> --authors grace,ada --summary "…"
 byline draft update <id> --content - < body.xml
+byline draft update <id> --cover ./hero.png --source-lang zh-CN
+byline draft check <id>                 # SEO length, missing summary, missing translations
 byline draft delete <id>                # deletes a new draft; on a post, discards unpublished changes
 byline post list
 byline post get <slug-or-id>
+byline post url <slug-or-id>
+byline post unpublish <slug-or-id>      # take a published post offline; does not delete it
 ```
 
 `--content` takes inline text, `file=<path>`, or `-` for stdin. `--format lexical`
 (the default) reads LiteXML; `--format markdown` reads Markdown. Flags override
 the envelope, and `draft update` keeps every field and the body it is not given.
+
+`--cover` and `--image` are aliases. A local file path is uploaded with
+`files.upload` and stored on the draft as `typeSpecificData.image`; an `http(s)`
+URL is stored as-is. The draft stays unpublished. This is not the same path as
+`byline import mdx`, whose frontmatter `image` / `cover` is applied through the
+import draft-and-publish flow.
+
+`--source-lang` updates the draft's source language (for example `zh-CN` or
+`en`). Use it when the body language does not match the stored value.
+
+`draft get`, `draft list`, `post get` and `post list` print full URLs. An
+unpublished draft gets the admin edit/preview URL
+(`{adminUrl}/posts/edit?draftId=…`, plus `id=` when the document is already
+linked to a post), built from the site `options/url` settings — not a hardcoded
+domain. If the article is not published, the CLI says there is no public URL
+instead of inventing one. After a post is published, the public URL follows the
+configured frontend URL and post permalink. A scheduled post shows that URL and
+the time it becomes public.
+
+### Quality check
+
+`byline draft check <id>` reports issues on unpublished drafts as well as on
+drafts of published posts. It does not publish. The SEO length limits are the
+same as the admin editor: 60 characters for the SEO title and 145 for the SEO
+description. It also reports a missing manual or AI summary, and missing
+translations.
+
+```sh
+byline draft check <id>
+```
+
+The command exits `1` when issues are found and `0` when the draft is clean.
+It never blocks `draft publish` unless you pass `--strict`.
+
+### Publishing and scheduling
+
+Publishing is a separate, explicit command. `draft update` and `post create`
+do not publish, even if a cover or source language is set.
+
+```sh
+byline draft publish <id>                 # publish now
+byline draft publish <id> --at 2099-12-01T10:00:00+08:00
+byline draft publish <id> --public-at 2099-12-01T10:00:00+08:00
+byline draft publish <id> --strict        # run the quality check and refuse if it finds issues
+```
+
+`--at` and `--public-at` are aliases. They write `typeSpecificData.publicAt`
+and then create a publish job, the same way the admin schedules visibility.
+Omit them to publish immediately (and clear a previously scheduled time).
+`--strict` is optional; without it, issues are reported only by `draft check`.
+
+`byline post unpublish <slug-or-id>` takes a published post offline through
+the existing publish-status API. It does not delete the post and is not the
+same as `draft delete`.
 
 ```xml
 <mxpost>
@@ -94,14 +154,26 @@ ai` and `mxs skill` subcommand and flag works as documented by `mxs`.
 
 ```sh
 byline ai summary by-article <post-id-or-slug>
+byline ai summary regen <draft-id-or-post-id>
+byline ai translate run <draft-id-or-post-id> --to en
 byline ai translate languages <post-id-or-slug>
+byline ai overview article <draft-id-or-post-id>
 byline ai summary list --size 10
 byline skill list
 byline skill get commands-ai
 ```
 
 `byline ai` takes the same `--api-url`, `--api-key` and `--token` as the other
-commands and falls back to the session saved by `byline login`.
+commands and falls back to the session saved by `byline login`. Article
+references accept a published post id or slug, and also an unpublished draft id
+or content document id. Generating a summary or translation does not publish
+the draft. These article lookups run on the Byline server; a server that does
+not yet resolve draft IDs will still fail for unpublished drafts.
+
+The bundled `mxs` from `@mx-space/cli` reads a camelCase `taskId`. Byline's
+HTTP responses are snake_case (`task_id`); the server also includes `taskId`
+so the bundled client can poll a created task. This does not upgrade a
+globally installed `mxs`.
 
 ## `byline import mdx <dir>`
 
@@ -155,6 +227,10 @@ non-empty fields over the source SEO when the post is read in that language.
 3. Finds or creates categories.
 4. Creates the post in the source locale, or updates it when a post with the slug
    exists, through the draft and publish flow, without running AI resources.
+   Frontmatter `image` / `cover` is applied on this import path only. To set a
+   cover on an existing unpublished draft without publishing, use
+   `byline draft update <id> --cover`. `draft: true` still means the file is
+   skipped, not "save as a draft".
 5. Writes every other locale as a locked manual translation with its own SEO,
    which publish-time AI translation will not overwrite.
 
