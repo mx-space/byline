@@ -61,6 +61,7 @@
     "@lobehub/streamdown": "^1.4.0",
     "@lobehub/ui": "^6.9.0",
     "@monaco-editor/react": "4.7.0",
+    "@mx-space/byline-shared": "workspace:*",
     "@mx-space/editor": "0.5.1",
     "@mx-space/ws-client": "0.2.0",
     "@rehookify/datepicker": "6.6.8",

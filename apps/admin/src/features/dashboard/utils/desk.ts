@@ -1,3 +1,9 @@
+import {
+  resolvePostSeoText,
+  SEO_DESCRIPTION_LIMIT,
+  SEO_TITLE_LIMIT,
+} from '@mx-space/byline-shared/post-seo'
+
 import type { AiOverviewListRow, CapabilityCoverage } from '~/api/ai-overview'
 import { draftChangeKind } from '~/features/drafts/utils/draft-decision'
 import { getEditPathForDraft } from '~/features/drafts/utils/draft-edit-path'
@@ -204,10 +210,6 @@ export function postTranslationCheck(
       }
 }
 
-/** Recommended lengths shared with the write-page SEO counters. */
-export const SEO_TITLE_LIMIT = 60
-export const SEO_DESCRIPTION_LIMIT = 145
-
 export type SeoFieldKey = 'description' | 'image' | 'title'
 export type SeoFieldState = 'long' | 'missing' | 'ok'
 
@@ -240,9 +242,7 @@ export function postSeoChecks(post: {
   summary?: string | null
   title?: string | null
 }): SeoFieldCheck[] {
-  const title = post.seo?.title?.trim() || post.title?.trim() || ''
-  const description =
-    post.seo?.description?.trim() || post.summary?.trim() || ''
+  const { title, description } = resolvePostSeoText(post)
   const image = post.seo?.image?.trim() || post.image?.trim() || ''
   return [
     seoField('image', image),

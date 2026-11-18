@@ -1112,13 +1112,13 @@ export class AiTranslationService
   }
 
   async getTranslationsByRefId(refId: string) {
-    const [article, translations] = await Promise.all([
-      this.databaseService.findGlobalById(refId),
-      this.aiTranslationRepository.listByRefId(refId),
-    ])
-    if (!article) {
+    const article = await this.databaseService.findGlobalById(refId)
+    if (!article || !article.document) {
       throw createAppException(AppErrorCode.CONTENT_NOT_FOUND, { id: refId })
     }
+    const canonicalId = String((article.document as { id: string }).id)
+    const translations =
+      await this.aiTranslationRepository.listByRefId(canonicalId)
 
     return {
       translations: await this.generationMetrics.attachLatest(

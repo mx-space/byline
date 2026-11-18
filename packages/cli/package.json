@@ -64,7 +64,7 @@
     "@haklex/rich-headless": "0.61.0",
     "@lexical/headless": "^0.53.0",
     "@lexical/list": "^0.53.0",
-    "@mx-space/cli": "0.21.6",
+    "@mx-space/cli": "0.23.1",
     "@mx-space/editor": "0.5.1",
     "lexical": "^0.53.0",
     "remark-gfm": "^4.0.1",
@@ -75,6 +75,7 @@
   },
   "devDependencies": {
     "@mx-space/byline-api-client": "workspace:*",
+    "@mx-space/byline-shared": "workspace:*",
     "@types/estree": "^1.0.10",
     "@types/mdast": "^4.0.4",
     "@types/node": "26.6.6",

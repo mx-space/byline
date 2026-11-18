@@ -79,12 +79,16 @@ export class PublishJobsResource {
 
   async run(input: CreatePublishJobInput, options?: WaitForTaskOptions) {
     const { data: ref } = await this.create(input)
-    const task = await this.tasks.wait<PublishTaskResult>(ref.taskId, options)
+    return this.wait(ref.taskId, options)
+  }
+
+  async wait(taskId: string, options?: WaitForTaskOptions) {
+    const task = await this.tasks.wait<PublishTaskResult>(taskId, options)
     if (task.status !== 'completed' || !task.result?.articleId) {
       throw new BylineApiError(
         500,
         'PUBLISH_FAILED',
-        `Publish job ${ref.taskId} ended with ${task.status}${task.error ? `: ${task.error}` : ''}`,
+        `Publish job ${taskId} ended with ${task.status}${task.error ? `: ${task.error}` : ''}`,
         '/publish-jobs',
         { task },
       )

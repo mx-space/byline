@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -6,8 +6,7 @@ import path from 'node:path'
 import {
   type Connection,
   type ConnectionFlags,
-  MISSING_CONNECTION,
-  resolveConnection,
+  requireConnection,
 } from '../auth/client'
 import { credentialsPath } from '../auth/credentials'
 
@@ -40,6 +39,7 @@ export const mxsEnv = (
   }
   // An empty config home keeps mxs away from the user's own mx-space profiles.
   next.XDG_CONFIG_HOME = path.join(path.dirname(credentialsPath(env)), 'mxs')
+  next.MXS_NO_AUTO_UPDATE = '1'
   next.MXS_NO_UPDATE_CHECK = '1'
   if (connection) {
     next.MXS_API_URL = connection.apiUrl
@@ -62,23 +62,81 @@ const mxsBin = () => {
 const wantsHelp = (args: string[]) =>
   args.length === 0 || args.includes('--help') || args.includes('-h')
 
-export const runMxs = async (
-  command: string,
+// mxs requires Node 26 and appends a versioned prefix to bare API URLs.
+export const canUseMxs = (connection: Connection) =>
+  Number(process.versions.node.split('.')[0]) >= 26 &&
+  /\/api\/v\d+$/.test(connection.apiUrl)
+
+export const createMxsPublishJob = (
+  connection: Connection,
+  draft: {
+    id: string
+    headRevisionId: string
+    publishedRevisionId: string | null
+  },
+): Promise<string> =>
+  new Promise((resolve, reject) => {
+    execFile(
+      process.execPath,
+      [
+        mxsBin(),
+        'draft',
+        'publish',
+        draft.id,
+        '--expected-head',
+        draft.headRevisionId,
+        '--expected-published',
+        draft.publishedRevisionId ?? 'none',
+        '--json',
+      ],
+      { env: mxsEnv(connection) },
+      (error, stdout) => {
+        try {
+          if (error && !stdout.trim()) throw error
+          const response = JSON.parse(stdout) as {
+            ok?: boolean
+            data?: { data?: { task_id?: string; taskId?: string } }
+            message?: string
+          }
+          if (response.ok === false && response.message) {
+            throw new Error(response.message)
+          }
+          if (error) throw error
+          const taskId =
+            response.data?.data?.task_id ?? response.data?.data?.taskId
+          if (response.ok !== true || typeof taskId !== 'string' || !taskId) {
+            throw new Error('mxs did not return a publish job ID')
+          }
+          resolve(taskId)
+        } catch (cause) {
+          reject(cause)
+        }
+      },
+    )
+  })
+
+export const runMxsCommand = (
   args: string[],
-  options: { api: boolean },
+  connection: Connection | null,
+  stdout: 'inherit' | 'ignore' = 'inherit',
 ): Promise<number> => {
-  const { flags, rest } = splitConnectionFlags(args)
-  let connection: Connection | null = null
-  if (options.api && !wantsHelp(rest)) {
-    connection = await resolveConnection(flags)
-    if (!connection) throw new Error(MISSING_CONNECTION)
-  }
-  const child = spawn(process.execPath, [mxsBin(), command, ...rest], {
-    stdio: 'inherit',
+  const child = spawn(process.execPath, [mxsBin(), ...args], {
+    stdio: ['inherit', stdout, 'inherit'],
     env: mxsEnv(connection),
   })
   return new Promise((resolve, reject) => {
     child.on('error', reject)
     child.on('exit', (code, signal) => resolve(code ?? (signal ? 1 : 0)))
   })
+}
+
+export const runMxs = async (
+  command: string,
+  args: string[],
+  options: { api: boolean },
+): Promise<number> => {
+  const { flags, rest } = splitConnectionFlags(args)
+  const connection =
+    options.api && !wantsHelp(rest) ? await requireConnection(flags) : null
+  return runMxsCommand([command, ...rest], connection)
 }

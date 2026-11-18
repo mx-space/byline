@@ -140,6 +140,21 @@ describe('toWriteData', () => {
     ).rejects.toThrow('Unknown author "nobody"')
   })
 
+  it('writes a cover URL and source language into typeSpecificData', async () => {
+    const data = await toWriteData(
+      {
+        image: 'https://cdn.example/cover.png',
+        sourceLang: 'zh-CN',
+      },
+      null,
+      new Directory(client),
+    )
+    expect(data.typeSpecificData).toEqual({
+      image: 'https://cdn.example/cover.png',
+      sourceLang: 'zh-CN',
+    })
+  })
+
   it('keeps the head revision for fields not given', () => {
     const merged = applyPatch(
       {
@@ -179,6 +194,33 @@ describe('formatDiscarded', () => {
   it('says unpublished changes were dropped and the post kept', () => {
     expect(formatDiscarded(draft('ahead', '7'))).toBe(
       'Discarded unpublished changes to post 7 (Notes); the published post is unchanged',
+    )
+  })
+})
+
+describe('readWriteInput cover and source language', () => {
+  it('accepts --cover and --source-lang', async () => {
+    const input = await readWriteInput({
+      title: 'T',
+      cover: 'https://cdn.example/a.png',
+      'source-lang': 'zh-CN',
+    })
+    expect(input.coverSpec).toBe('https://cdn.example/a.png')
+    expect(input.fields.sourceLang).toBe('zh-CN')
+  })
+
+  it('rejects conflicting --cover and --image values', async () => {
+    await expect(
+      readWriteInput({
+        cover: 'https://cdn.example/a.png',
+        image: 'https://cdn.example/b.png',
+      }),
+    ).rejects.toThrow('Pass only one of --cover or --image')
+  })
+
+  it('rejects an invalid --source-lang', async () => {
+    await expect(readWriteInput({ 'source-lang': '中文' })).rejects.toThrow(
+      'Invalid --source-lang',
     )
   })
 })

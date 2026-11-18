@@ -19,6 +19,9 @@ export const WRITE_OPTIONS = {
   format: { type: 'string' },
   file: { type: 'string' },
   state: { type: 'string' },
+  cover: { type: 'string' },
+  image: { type: 'string' },
+  'source-lang': { type: 'string' },
 } as const
 
 export const WRITE_HELP = `Write flags (the same as mxs, plus --authors; flags override the envelope):
@@ -32,12 +35,16 @@ export const WRITE_HELP = `Write flags (the same as mxs, plus --authors; flags o
   --tags <a,b>
   --authors <a,b>          ordered byline: usernames, emails or user ids
                            (envelope: <authors><author>ada</author></authors>)
-  --state draft            the only state; publishing is done in the admin
+  --cover, --image <spec>  cover image: local file path (uploaded) or URL
+  --source-lang <lang>     source language, e.g. zh-CN or en
+  --state draft            the only state for write commands; publishing is a
+                           separate explicit "draft publish" command
 `
 
 export interface WriteInput {
   fields: WriteFields
   body: { content: string; text: string } | null
+  coverSpec?: string
 }
 
 export const readWriteInput = async (
@@ -52,6 +59,15 @@ export const readWriteInput = async (
       `State "${requestedState}" is not supported: byline CLI only writes drafts`,
     )
   }
+  const cover = values.cover as string | undefined
+  const image = values.image as string | undefined
+  if (cover && image && cover !== image) {
+    throw new Error('Pass only one of --cover or --image')
+  }
+  const sourceLang = values['source-lang'] as string | undefined
+  if (sourceLang && !/^[a-z]{2,3}(?:[_-][\da-z]{2,8})*$/i.test(sourceLang)) {
+    throw new Error(`Invalid --source-lang "${sourceLang}"`)
+  }
   const flags: WriteFields = {
     title: values.title as string | undefined,
     slug: values.slug as string | undefined,
@@ -62,6 +78,7 @@ export const readWriteInput = async (
       typeof values.authors === 'string'
         ? splitList(values.authors)
         : undefined,
+    sourceLang,
   }
   const format: ContentFormat =
     parseFormat(values.format) ?? envelope?.format ?? 'lexical'
@@ -74,5 +91,6 @@ export const readWriteInput = async (
   return {
     fields: mergeFields(envelope?.fields ?? {}, flags),
     body: source === undefined ? null : buildContent(source, format),
+    coverSpec: cover ?? image,
   }
 }

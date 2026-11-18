@@ -109,18 +109,20 @@ export class AiTaskService {
     if (articleInfo) {
       payload.title = articleInfo.title
       payload.refType = articleInfo.type
+      payload.refId = articleInfo.id
     }
   }
 
   private async getArticleInfo(
     refId: string,
-  ): Promise<{ title: string; type: CollectionRefTypes } | null> {
+  ): Promise<{ id: string; title: string; type: CollectionRefTypes } | null> {
     const article = await this.databaseService.findGlobalById(refId)
     if (!article || !article.document) {
       return null
     }
 
     return {
+      id: String((article.document as { id: string }).id),
       title: (article.document as { title?: string }).title || refId,
       type: article.type as CollectionRefTypes,
     }

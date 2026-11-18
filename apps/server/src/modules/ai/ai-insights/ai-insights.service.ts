@@ -100,7 +100,9 @@ export class AiInsightsService implements OnModuleInit {
   ): Promise<AIInsightsModel> {
     await this.adapter.assertEnabled()
     const { article, sourceLang } =
-      await this.adapter.resolveArticleDetailed(articleId)
+      await this.adapter.resolveArticleDetailed(articleId, {
+        isOwner: true,
+      })
     try {
       const { result } = await this.multilang.runBaseGeneration(this.adapter, {
         refId: articleId,
@@ -197,7 +199,9 @@ export class AiInsightsService implements OnModuleInit {
   async findSourceInsightsForArticle(
     refId: string,
   ): Promise<AIInsightsModel | null> {
-    const { sourceLang } = await this.adapter.resolveArticleDetailed(refId)
+    const { sourceLang } = await this.adapter.resolveArticleDetailed(refId, {
+      isOwner: true,
+    })
     return this.adapter.findBase(refId, sourceLang)
   }
 

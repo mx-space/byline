@@ -25,16 +25,27 @@ const createResponse = (): FakeResponse => {
 
 const createContext = (options: {
   hasRequest?: boolean
+  method?: string
   response?: FakeResponse
   type?: string
+  userAgent?: string
 }): ExecutionContext => {
-  const { hasRequest = true, response, type = 'http' } = options
+  const {
+    hasRequest = true,
+    method = 'GET',
+    response,
+    type = 'http',
+    userAgent,
+  } = options
   return {
     getType: () => type,
     getHandler: () => () => void 0,
     getClass: () => class {},
     switchToHttp: () => ({
-      getRequest: () => (hasRequest ? {} : undefined),
+      getRequest: () =>
+        hasRequest
+          ? { headers: { 'user-agent': userAgent }, method }
+          : undefined,
       getResponse: () => response,
     }),
   } as unknown as ExecutionContext
@@ -97,6 +108,28 @@ describe('ResponseInterceptor', () => {
     })
 
     expect(result).toEqual({ data: { created_at: 1, category_id: '2' } })
+  })
+
+  test('returns task_id alone for ordinary HTTP clients', async () => {
+    const result = await run(
+      make(),
+      createContext({ method: 'POST', userAgent: 'byline-editor' }),
+      { created: true, taskId: 'task-1' },
+    )
+
+    expect(result).toEqual({ data: { created: true, task_id: 'task-1' } })
+  })
+
+  test('preserves the legacy taskId alias when mxs creates a task', async () => {
+    const result = await run(
+      make(),
+      createContext({ method: 'POST', userAgent: 'mxs/0.21.6' }),
+      { created: true, taskId: 'task-1' },
+    )
+
+    expect(result).toEqual({
+      data: { created: true, task_id: 'task-1', taskId: 'task-1' },
+    })
   })
 
   test('converts camelCase keys in explicit metadata', async () => {

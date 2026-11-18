@@ -7,6 +7,8 @@ export default defineConfig({
   dts: { eager: true },
   format: ['esm'],
   platform: 'node',
-  deps: { alwaysBundle: ['@mx-space/byline-api-client'] },
+  deps: {
+    alwaysBundle: ['@mx-space/byline-api-client', '@mx-space/byline-shared'],
+  },
   outExtensions: () => ({ js: '.mjs', dts: '.d.mts' }),
 })

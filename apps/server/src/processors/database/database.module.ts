@@ -1,5 +1,6 @@
-import { Global, Module } from '@nestjs/common'
+import { forwardRef,Global, Module } from '@nestjs/common'
 
+import { DraftModule } from '~/modules/draft/draft.module'
 import { PostModule } from '~/modules/post/post.module'
 import { SnowflakeService } from '~/shared/id/snowflake.service'
 
@@ -7,7 +8,7 @@ import { DatabaseService } from './database.service'
 import { PostgresPoolLifecycle, postgresProviders } from './postgres.provider'
 
 @Module({
-  imports: [PostModule],
+  imports: [PostModule, forwardRef(() => DraftModule)],
   providers: [
     DatabaseService,
     ...postgresProviders,

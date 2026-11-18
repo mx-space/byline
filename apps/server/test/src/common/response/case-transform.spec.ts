@@ -1,4 +1,7 @@
-import { transformResponseCase } from '~/common/response/case-transform'
+import {
+  transformResponseCase,
+  withTaskIdAlias,
+} from '~/common/response/case-transform'
 
 describe('transformResponseCase', () => {
   it('converts camelCase object keys to snake_case', () => {
@@ -117,5 +120,30 @@ describe('transformResponseCase', () => {
     ).toEqual({
       outer_field: { inner_field: { deepKey: 1 } },
     })
+  })
+})
+
+describe('withTaskIdAlias', () => {
+  it('adds camelCase taskId next to snake_case task_id', () => {
+    expect(withTaskIdAlias({ task_id: 't1', created: true })).toEqual({
+      task_id: 't1',
+      created: true,
+      taskId: 't1',
+    })
+  })
+
+  it('does not overwrite an existing taskId', () => {
+    expect(
+      withTaskIdAlias({ task_id: 't1', taskId: 'keep', created: true }),
+    ).toEqual({
+      task_id: 't1',
+      taskId: 'keep',
+      created: true,
+    })
+  })
+
+  it('leaves payloads without task_id unchanged', () => {
+    const payload = { created: true }
+    expect(withTaskIdAlias(payload)).toBe(payload)
   })
 })

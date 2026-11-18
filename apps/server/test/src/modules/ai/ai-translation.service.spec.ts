@@ -282,13 +282,35 @@ describe('AiTranslationService', () => {
 
   it('loads translations with their source article from PG-backed services', async () => {
     const { databaseService, repository, service } = createService()
-    databaseService.findGlobalById.mockResolvedValue({ id: 'post-1' })
+    const article = {
+      document: { id: 'post-1' },
+      type: CollectionRefTypes.Post,
+    }
+    databaseService.findGlobalById.mockResolvedValue(article)
     repository.listByRefId.mockResolvedValue([row()])
 
     await expect(service.getTranslationsByRefId('post-1')).resolves.toEqual({
-      article: { id: 'post-1' },
+      article,
       translations: [{ ...row(), generationMetrics: null }],
     })
+    expect(repository.listByRefId).toHaveBeenCalledWith('post-1')
+  })
+
+  it('lists translations by the canonical article id when the lookup used a draft id', async () => {
+    const { databaseService, repository, service } = createService()
+    const article = {
+      document: { id: 'post-1' },
+      type: CollectionRefTypes.Post,
+    }
+    databaseService.findGlobalById.mockResolvedValue(article)
+    repository.listByRefId.mockResolvedValue([row()])
+
+    await expect(service.getTranslationsByRefId('draft-1')).resolves.toEqual({
+      article,
+      translations: [{ ...row(), generationMetrics: null }],
+    })
+    expect(databaseService.findGlobalById).toHaveBeenCalledWith('draft-1')
+    expect(repository.listByRefId).toHaveBeenCalledWith('post-1')
   })
 
   it('updates lexical content by storing markdown text alongside content JSON', async () => {

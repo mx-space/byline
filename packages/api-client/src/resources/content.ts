@@ -52,6 +52,15 @@ export class CategoriesResource {
 export class SummariesResource {
   constructor(private readonly http: HttpCore) {}
 
+  listByRef(articleId: string) {
+    return this.http.request<{
+      summaries: Summary[]
+      article: { type: string; document: Record<string, unknown> }
+    }>('GET', `/ai/summaries/ref/${articleId}`, {
+      preserve: ['article.document.meta'],
+    })
+  }
+
   writeManual(articleId: string, lang: string, input: ManualSummaryInput) {
     return this.http.request<Summary>(
       'PUT',

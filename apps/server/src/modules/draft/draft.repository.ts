@@ -14,6 +14,11 @@ import {
 
 import { PG_DB_TOKEN } from '~/constants/system.constant'
 import {
+  aiGenerationMetrics,
+  aiInsights,
+  aiSummaries,
+  aiTranslations,
+  aiTts,
   contentCrdtDocs,
   contentDocuments,
   contentPublicationEvents,
@@ -474,6 +479,50 @@ export class DraftRepository extends BaseRepository {
       .where(eq(contentDocuments.id, parseEntityId(documentId)))
       .returning()
     return row ? mapDocument(row) : null
+  }
+
+  async rekeyAiResources(
+    fromRefId: EntityId | string,
+    toRefId: EntityId | string,
+  ): Promise<void> {
+    const fromId = parseEntityId(fromRefId)
+    const toId = parseEntityId(toRefId)
+    if (fromId === toId) return
+
+    const rekeyLangTable = async (
+      table: typeof aiSummaries | typeof aiTranslations | typeof aiInsights | typeof aiTts,
+    ) => {
+      const rows = await this.db
+        .select({ id: table.id, lang: table.lang })
+        .from(table)
+        .where(eq(table.refId, fromId))
+      if (!rows.length) return
+      const existing = new Set(
+        (
+          await this.db
+            .select({ lang: table.lang })
+            .from(table)
+            .where(eq(table.refId, toId))
+        ).map((row) => row.lang),
+      )
+      const movable = rows
+        .filter((row) => !existing.has(row.lang))
+        .map((row) => row.id)
+      if (!movable.length) return
+      await this.db
+        .update(table)
+        .set({ refId: toId })
+        .where(inArray(table.id, movable))
+    }
+
+    await rekeyLangTable(aiSummaries)
+    await rekeyLangTable(aiTranslations)
+    await rekeyLangTable(aiInsights)
+    await rekeyLangTable(aiTts)
+    await this.db
+      .update(aiGenerationMetrics)
+      .set({ refId: toId })
+      .where(eq(aiGenerationMetrics.refId, fromId))
   }
 
   async setPublishAiResources(

@@ -439,6 +439,9 @@ importers:
       '@monaco-editor/react':
         specifier: 4.7.0
         version: 4.7.0(monaco-editor@0.57.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@mx-space/byline-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@mx-space/editor':
         specifier: 0.5.1
         version: 0.5.1(@haklex/rich-collab-loro@0.61.1(lexical@0.53.0(typescript@6.0.3))(loro-crdt@1.17.1))(loro-crdt@1.17.1)(typescript@6.0.3)
@@ -955,8 +958,8 @@ importers:
         specifier: 0.53.0
         version: 0.53.0(typescript@6.0.3)
       '@mx-space/cli':
-        specifier: 0.21.6
-        version: 0.21.6(typescript@6.0.3)
+        specifier: 0.23.1
+        version: 0.23.1(typescript@6.0.3)
       '@mx-space/editor':
         specifier: 0.5.1
         version: 0.5.1(@haklex/rich-collab-loro@0.61.1(lexical@0.53.0(typescript@6.0.3))(loro-crdt@1.17.1))(loro-crdt@1.17.1)(typescript@6.0.3)
@@ -982,6 +985,9 @@ importers:
       '@mx-space/byline-api-client':
         specifier: workspace:*
         version: link:../api-client
+      '@mx-space/byline-shared':
+        specifier: workspace:*
+        version: link:../shared
       '@types/estree':
         specifier: ^1.0.10
         version: 1.0.10
@@ -1006,6 +1012,8 @@ importers:
       vitest:
         specifier: 5.0.5
         version: 5.0.5(@types/node@26.6.6)(@vitest/coverage-v8@5.0.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/shared: {}
 
 packages:
 
@@ -3794,8 +3802,8 @@ packages:
   '@mx-space/ai@0.3.1':
     resolution: {integrity: sha512-PzfeMppzpK8bTeqYxWMw0+lWii2ysidj1Y1mWtSq6899djv2ucu2Q4E9mjgQc9qIFoq2uBuSW82HD4sJwGkkzQ==}
 
-  '@mx-space/cli@0.21.6':
-    resolution: {integrity: sha512-+3XMg6RVxZpXPjF3EhxGRaRdH6zxPVN9kAld3zVDPEpxa1y2AU6rFWt23FYU3SrNVKosa4D0rjpC7BzC2avTEQ==}
+  '@mx-space/cli@0.23.1':
+    resolution: {integrity: sha512-lxEocCEWUTWViktqKiktMKRxVocRQZgkOEvTp4mS0hOmZafb2n5iXgm/89doIMWKXSptSajQCD3zHML3Ca2pJQ==}
     engines: {node: '>=26.0.0'}
     hasBin: true
 
@@ -14906,7 +14914,7 @@ snapshots:
       - utf-8-validate
       - ws
 
-  '@mx-space/cli@0.21.6(typescript@6.0.3)':
+  '@mx-space/cli@0.23.1(typescript@6.0.3)':
     dependencies:
       '@haklex/rich-litexml': 0.61.1(typescript@6.0.3)
       loro-crdt: 1.17.1
