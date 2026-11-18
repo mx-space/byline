@@ -958,8 +958,8 @@ importers:
         specifier: 0.53.0
         version: 0.53.0(typescript@6.0.3)
       '@mx-space/cli':
-        specifier: 0.21.6
-        version: 0.21.6(typescript@6.0.3)
+        specifier: 0.23.1
+        version: 0.23.1(typescript@6.0.3)
       '@mx-space/editor':
         specifier: 0.5.1
         version: 0.5.1(@haklex/rich-collab-loro@0.61.1(lexical@0.53.0(typescript@6.0.3))(loro-crdt@1.17.1))(loro-crdt@1.17.1)(typescript@6.0.3)
@@ -3802,8 +3802,8 @@ packages:
   '@mx-space/ai@0.3.1':
     resolution: {integrity: sha512-PzfeMppzpK8bTeqYxWMw0+lWii2ysidj1Y1mWtSq6899djv2ucu2Q4E9mjgQc9qIFoq2uBuSW82HD4sJwGkkzQ==}
 
-  '@mx-space/cli@0.21.6':
-    resolution: {integrity: sha512-+3XMg6RVxZpXPjF3EhxGRaRdH6zxPVN9kAld3zVDPEpxa1y2AU6rFWt23FYU3SrNVKosa4D0rjpC7BzC2avTEQ==}
+  '@mx-space/cli@0.23.1':
+    resolution: {integrity: sha512-lxEocCEWUTWViktqKiktMKRxVocRQZgkOEvTp4mS0hOmZafb2n5iXgm/89doIMWKXSptSajQCD3zHML3Ca2pJQ==}
     engines: {node: '>=26.0.0'}
     hasBin: true
 
@@ -14914,7 +14914,7 @@ snapshots:
       - utf-8-validate
       - ws
 
-  '@mx-space/cli@0.21.6(typescript@6.0.3)':
+  '@mx-space/cli@0.23.1(typescript@6.0.3)':
     dependencies:
       '@haklex/rich-litexml': 0.61.1(typescript@6.0.3)
       loro-crdt: 1.17.1

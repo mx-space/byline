@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -61,6 +61,59 @@ const mxsBin = () => {
 
 const wantsHelp = (args: string[]) =>
   args.length === 0 || args.includes('--help') || args.includes('-h')
+
+// mxs requires Node 26 and appends a versioned prefix to bare API URLs.
+export const canUseMxs = (connection: Connection) =>
+  Number(process.versions.node.split('.')[0]) >= 26 &&
+  /\/api\/v\d+$/.test(connection.apiUrl)
+
+export const createMxsPublishJob = (
+  connection: Connection,
+  draft: {
+    id: string
+    headRevisionId: string
+    publishedRevisionId: string | null
+  },
+): Promise<string> =>
+  new Promise((resolve, reject) => {
+    execFile(
+      process.execPath,
+      [
+        mxsBin(),
+        'draft',
+        'publish',
+        draft.id,
+        '--expected-head',
+        draft.headRevisionId,
+        '--expected-published',
+        draft.publishedRevisionId ?? 'none',
+        '--json',
+      ],
+      { env: mxsEnv(connection) },
+      (error, stdout) => {
+        try {
+          if (error && !stdout.trim()) throw error
+          const response = JSON.parse(stdout) as {
+            ok?: boolean
+            data?: { data?: { task_id?: string; taskId?: string } }
+            message?: string
+          }
+          if (response.ok === false && response.message) {
+            throw new Error(response.message)
+          }
+          if (error) throw error
+          const taskId =
+            response.data?.data?.task_id ?? response.data?.data?.taskId
+          if (response.ok !== true || typeof taskId !== 'string' || !taskId) {
+            throw new Error('mxs did not return a publish job ID')
+          }
+          resolve(taskId)
+        } catch (cause) {
+          reject(cause)
+        }
+      },
+    )
+  })
 
 export const runMxsCommand = (
   args: string[],

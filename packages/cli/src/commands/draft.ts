@@ -6,7 +6,13 @@ import type {
   UrlOptions,
 } from '@mx-space/byline-api-client'
 
-import { connect, CONNECTION_HELP, CONNECTION_OPTIONS } from '../auth/client'
+import {
+  connect,
+  CONNECTION_HELP,
+  CONNECTION_OPTIONS,
+  createConnectedClient,
+  requireConnection,
+} from '../auth/client'
 import { checkDraft, formatCheckResult } from '../writing/check'
 import { resolveCover } from '../writing/cover'
 import {
@@ -29,6 +35,7 @@ import {
   type PublicLink,
   publicPostLink,
 } from '../writing/urls'
+import { canUseMxs, createMxsPublishJob } from './mxs'
 
 export const DRAFT_HELP = `Usage: byline draft <command> [options]
 
@@ -221,10 +228,15 @@ export const runDraft = async (argv: string[]): Promise<number> => {
     }
     case 'publish': {
       const at = values.at ?? values['public-at']
-      if (values.at && values['public-at'] && values.at !== values['public-at']) {
+      if (
+        values.at &&
+        values['public-at'] &&
+        values.at !== values['public-at']
+      ) {
         throw new Error('Pass only one of --at or --public-at')
       }
-      const client = (await connect(values, { required: true }))!
+      const connection = await requireConnection(values)
+      const client = createConnectedClient(connection)
       let { data: current } = await client.drafts.get(id!)
       if (values.strict) {
         const result = await checkDraft(client, current)
@@ -239,9 +251,7 @@ export const runDraft = async (argv: string[]): Promise<number> => {
       const publicAt = scheduled ? parsePublicAt(at!) : null
       const currentPublicAt =
         (current.headRevision.typeSpecificData?.publicAt as
-          | string
-          | null
-          | undefined) ?? null
+          string | null | undefined) ?? null
       if (scheduled || currentPublicAt) {
         const { data: updated } = await client.drafts.update(id!, {
           data: applyPatch(current.headRevision, {
@@ -252,11 +262,25 @@ export const runDraft = async (argv: string[]): Promise<number> => {
         })
         current = updated
       }
-      const task = await client.publishJobs.run({
-        branchId: current.id,
-        revisionId: current.headRevisionId,
-        expectedPublishedRevisionId: current.document.publishedRevisionId,
-      })
+      const publishedRevisionId = current.document.publishedRevisionId
+      let task
+      if (
+        canUseMxs(connection) &&
+        current.headRevision.contentFormat === 'lexical'
+      ) {
+        const taskId = await createMxsPublishJob(connection, {
+          headRevisionId: current.headRevisionId,
+          id: current.id,
+          publishedRevisionId,
+        })
+        task = await client.publishJobs.wait(taskId)
+      } else {
+        task = await client.publishJobs.run({
+          branchId: current.id,
+          revisionId: current.headRevisionId,
+          expectedPublishedRevisionId: publishedRevisionId,
+        })
+      }
       const { data: post } = await client.posts.get(task.result.articleId)
       if (values.json) return printJson({ draft: current, post, task })
       const urls = await loadSiteUrls(client)

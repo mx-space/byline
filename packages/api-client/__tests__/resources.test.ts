@@ -267,6 +267,24 @@ describe('posts', () => {
       client.posts.create({ title: 'x', content: '{"root":{}}' }),
     ).rejects.toMatchObject({ code: 'PUBLISH_FAILED' })
   })
+
+  it('waits for an existing publish job without creating another job', async () => {
+    const { fetch, calls } = mockFetch(() => ({
+      body: {
+        data: {
+          id: 'publish-1',
+          status: 'completed',
+          result: { article_id: 'article-1' },
+        },
+      },
+    }))
+    const client = createClient({ endpoint: 'http://x', fetch })
+
+    await expect(client.publishJobs.wait('publish-1')).resolves.toMatchObject({
+      result: { articleId: 'article-1' },
+    })
+    expect(calls.map(route)).toEqual(['GET /tasks/publish-1'])
+  })
 })
 
 describe('toDraftData', () => {

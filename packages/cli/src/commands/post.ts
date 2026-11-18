@@ -19,7 +19,7 @@ import { formatPost, formatPostRow, printJson } from '../writing/format'
 import { readWriteInput, WRITE_HELP, WRITE_OPTIONS } from '../writing/input'
 import { describePublicLink, publicPostLink } from '../writing/urls'
 import { showDraft } from './draft'
-import { runMxsCommand } from './mxs'
+import { canUseMxs, runMxsCommand } from './mxs'
 
 export const POST_HELP = `Usage: byline post <command> [options]
 
@@ -150,12 +150,8 @@ export const runPost = async (argv: string[]): Promise<number> => {
       const connection = await requireConnection(values)
       const client = createConnectedClient(connection)
       const post = await loadPost(client, key)
-      // Bundled mxs requires Node 26 and a versioned base, and treats short IDs as slugs.
-      if (
-        Number(process.versions.node.split('.')[0]) >= 26 &&
-        /\/api\/v\d+$/.test(connection.apiUrl) &&
-        /^\d{15,}$/.test(post.id)
-      ) {
+      // mxs treats short IDs as slugs.
+      if (canUseMxs(connection) && /^\d{15,}$/.test(post.id)) {
         const code = await runMxsCommand(
           ['post', 'unpublish', post.id],
           connection,
