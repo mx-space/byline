@@ -558,8 +558,8 @@ importers:
         specifier: 0.19.2
         version: 0.19.2
       '@stylexjs/unplugin':
-        specifier: 0.19.1
-        version: 0.19.1(supports-color@9.4.0)(unplugin@2.3.11)
+        specifier: 0.19.2
+        version: 0.19.2(supports-color@9.4.0)(unplugin@2.3.11)
       '@types/babel__core':
         specifier: 7.20.5
         version: 7.20.5
@@ -4997,14 +4997,11 @@ packages:
     peerDependencies:
       react: '>= 16.3.0'
 
-  '@stylexjs/babel-plugin@0.19.1':
-    resolution: {integrity: sha512-Ig3crX6MuGWDEAx+f89aLxTQUWVeEc2Aco2moIdcObyvo7hZJgU26rxJN3k7geFjhi+5dfna6TNR8iTRK0PQGA==}
+  '@stylexjs/babel-plugin@0.19.2':
+    resolution: {integrity: sha512-R6cB7Ym+IAvySNfmtRJ6CZ+83rjZ82Uw4wmG3YtwYY8vrnliUrYy9fOLvZ1nX407zeHNkCnE5AodEnjXXfOSYg==}
 
   '@stylexjs/eslint-plugin@0.19.2':
     resolution: {integrity: sha512-Oynwwe3grD/H1cHOZeUQgodjmhe2CAEhf4MqdWNO95nDw5kANP9Vso/AKifhOrl5za7wpItHCW9bGef5RTl1UA==}
-
-  '@stylexjs/shared@0.19.1':
-    resolution: {integrity: sha512-oFBtW0NPNLJOT1gLweWRNKrIJHjJMwOmSV7fgd6ewok4fwb/Nh95PEaYGKu+ZONk0nNghjLFfOwiIsxJdvh3TQ==}
 
   '@stylexjs/shared@0.19.2':
     resolution: {integrity: sha512-xjTZ/6T/1FV103F2bspmXoDRDy1gM/ZKYEHpQlUC0h4R5q7PqUV6k+DJbrayRAMwALIdzTf7zSTqteRde0ZXWQ==}
@@ -5015,8 +5012,11 @@ packages:
   '@stylexjs/stylex@0.19.1':
     resolution: {integrity: sha512-JwNFm0MOYPqi+M4Ax5Un4ZxfZp4HEAX2sAWetZ88KALFcv1eEiHNJs75oO3V3U7RVWnzfkiM8i9eBowC3hqgUw==}
 
-  '@stylexjs/unplugin@0.19.1':
-    resolution: {integrity: sha512-MJz/IPrFe3hSHbZtjbxaYd3kLgS718/NFBEY/Mf+njteJKLdY7bHHfVka3051LCYy9fKfyZapGCmUpibraHqmQ==}
+  '@stylexjs/stylex@0.19.2':
+    resolution: {integrity: sha512-l0fRhOBZ4rFiZ0GntYSlp4lYO5dPT11F3mLb7O4ShK6eE1WOjHtv9GHGQZuzHJbQkjcEaRjPSpBn6itI7yXc3Q==}
+
+  '@stylexjs/unplugin@0.19.2':
+    resolution: {integrity: sha512-kyHrLCVyKNmycPl+WnjVGJmPgKGAYbtVPasuCe3UgQllennwj2himUKQncG98zt+66nDuGpy7Sx2xCYM03nr3Q==}
     peerDependencies:
       unplugin: ^2.3.11
 
@@ -16030,15 +16030,15 @@ snapshots:
     dependencies:
       react: 19.3.1
 
-  '@stylexjs/babel-plugin@0.19.1(supports-color@9.4.0)':
+  '@stylexjs/babel-plugin@0.19.2(supports-color@9.4.0)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@9.4.0)
       '@babel/helper-module-imports': 7.29.7(supports-color@9.4.0)
       '@babel/traverse': 7.29.10(supports-color@9.4.0)
       '@babel/types': 7.29.8
       '@dual-bundle/import-meta-resolve': 4.2.1
-      '@stylexjs/shared': 0.19.1
-      '@stylexjs/stylex': 0.19.1
+      '@stylexjs/shared': 0.19.2
+      '@stylexjs/stylex': 0.19.2
       postcss-value-parser: 4.2.0
     transitivePeerDependencies:
       - supports-color
@@ -16049,8 +16049,6 @@ snapshots:
       '@stylexjs/shared': 0.19.2
       micromatch: 4.0.8
       postcss-value-parser: 4.2.0
-
-  '@stylexjs/shared@0.19.1': {}
 
   '@stylexjs/shared@0.19.2': {}
 
@@ -16066,13 +16064,17 @@ snapshots:
       invariant: 2.2.4
       styleq: 0.2.1
 
-  '@stylexjs/unplugin@0.19.1(supports-color@9.4.0)(unplugin@2.3.11)':
+  '@stylexjs/stylex@0.19.2':
+    dependencies:
+      styleq: 0.2.1
+
+  '@stylexjs/unplugin@0.19.2(supports-color@9.4.0)(unplugin@2.3.11)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@9.4.0)
       '@babel/plugin-syntax-flow': 7.29.7(@babel/core@7.29.7(supports-color@9.4.0))
       '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7(supports-color@9.4.0))
       '@babel/plugin-syntax-typescript': 7.29.7(@babel/core@7.29.7(supports-color@9.4.0))
-      '@stylexjs/babel-plugin': 0.19.1(supports-color@9.4.0)
+      '@stylexjs/babel-plugin': 0.19.2(supports-color@9.4.0)
       browserslist: 4.29.4
       lightningcss: 1.33.0
       unplugin: 2.3.11
