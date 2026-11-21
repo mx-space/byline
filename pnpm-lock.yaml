@@ -486,7 +486,7 @@ importers:
         version: 3.0.1(@types/react@19.3.0)(react@19.3.1)
       just-bash:
         specifier: ^3.6.0
-        version: 3.6.0(supports-color@9.4.0)
+        version: 3.6.1(supports-color@9.4.0)
       katex:
         specifier: 0.19.1
         version: 0.19.1
@@ -8421,8 +8421,8 @@ packages:
     resolution: {integrity: sha512-ZZow9HBI5O6EPgSJLUb8n2NKgmVWTwCvHGwFuJlMjvLFqlGG6pjirPhtdsseaLZjSibD8eegzmYpUZwoIlj2cQ==}
     engines: {node: '>=4.0'}
 
-  just-bash@3.6.0:
-    resolution: {integrity: sha512-2COjEgcHdqKXeQSiNfPAHmpwQx4S8wATaIwog83g2t645U5tom6FED4CBBdr3M+0ioX4xZ26eODw3/nD6RQ6xw==}
+  just-bash@3.6.1:
+    resolution: {integrity: sha512-+osGKzPqnX4sdOBsaHFJvg1cr3izbkj3c3cyxnK6TLEHUOQrGdtylsrg8p5QjiWqBpyzylAyAY0CPd4KCQ9EUw==}
     engines: {node: '>=20.19'}
     hasBin: true
 
@@ -19831,7 +19831,7 @@ snapshots:
       object.assign: 4.1.7
       object.values: 1.2.1
 
-  just-bash@3.6.0(supports-color@9.4.0):
+  just-bash@3.6.1(supports-color@9.4.0):
     dependencies:
       diff: 8.0.4
       fast-xml-parser: 5.11.2
