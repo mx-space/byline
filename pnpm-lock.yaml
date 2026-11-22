@@ -899,7 +899,7 @@ importers:
         version: 3.1.14
       redis-memory-server:
         specifier: ^0.17.1
-        version: 0.17.1(supports-color@5.5.0)
+        version: 0.17.2(supports-color@5.5.0)
       rimraf:
         specifier: 6.1.4
         version: 6.1.4
@@ -9895,6 +9895,11 @@ packages:
 
   redis-memory-server@0.17.1:
     resolution: {integrity: sha512-obdMVFkzLRM+NaCeuZObYNUY5klmAvv91Hq8UBtGsz6YbZd1s5DauaZpIbmjkDoMgxagWIP3/UJiSkuarXTlBg==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  redis-memory-server@0.17.2:
+    resolution: {integrity: sha512-Ko8c2zgBBsAqIvrqae28hXlw0kvmrfMNa8gsMw/KHQkLMTS87xinR1KzmmL637R9kkj9sOEp7WV7mZpMEtcXDA==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -21608,23 +21613,6 @@ snapshots:
 
   redis-errors@1.2.0: {}
 
-  redis-memory-server@0.17.1(supports-color@5.5.0):
-    dependencies:
-      camelcase: 6.3.0
-      cross-spawn: 7.0.6
-      debug: 4.4.3(supports-color@5.5.0)
-      find-cache-dir: 3.3.2
-      find-package-json: 1.2.0
-      get-port: 5.1.1
-      https-proxy-agent: 7.0.6(supports-color@5.5.0)
-      lockfile: 1.0.4
-      rimraf: 5.0.10
-      semver: 7.8.5
-      tar: 7.5.22
-      tmp: 0.2.7
-    transitivePeerDependencies:
-      - supports-color
-
   redis-memory-server@0.17.1(supports-color@9.4.0):
     dependencies:
       camelcase: 6.3.0
@@ -21636,6 +21624,22 @@ snapshots:
       https-proxy-agent: 7.0.6(supports-color@9.4.0)
       lockfile: 1.0.4
       rimraf: 5.0.10
+      semver: 7.8.5
+      tar: 7.5.22
+      tmp: 0.2.7
+    transitivePeerDependencies:
+      - supports-color
+
+  redis-memory-server@0.17.2(supports-color@5.5.0):
+    dependencies:
+      camelcase: 6.3.0
+      cross-spawn: 7.0.6
+      debug: 4.4.3(supports-color@5.5.0)
+      find-cache-dir: 3.3.2
+      find-package-json: 1.2.0
+      get-port: 5.1.1
+      https-proxy-agent: 7.0.6(supports-color@5.5.0)
+      lockfile: 1.0.4
       semver: 7.8.5
       tar: 7.5.22
       tmp: 0.2.7
